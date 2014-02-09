@@ -170,7 +170,7 @@ namespace cxxnet{
         }
         /*! 
          * \brief slice the tensor
-         * \return tensor after flatten
+         * \return tensor after slice
          */        
         inline Tensor<Device,dimension> Slice( index_t begin, index_t end ) const{
             Shape<dimension> s = this->shape;
@@ -178,7 +178,11 @@ namespace cxxnet{
             return Tensor<Device,dimension>( (real_t*)dptr + s.SubShape().MSize() * begin, s );
         }
     };
-
+    
+    /*!
+     * \brief respecialized class Tensor1D,thei is due to different implementation in operator[] 
+     * \tparam Device device type
+     */
     template<typename Device>
     struct Tensor<Device,1>{
     public:
@@ -189,6 +193,11 @@ namespace cxxnet{
         Tensor( real_t *dptr, Shape<1> shape ) :dptr(dptr),shape(shape){}
         inline Tensor<Device,2> FlatTo2D( void ) const{
             return Tensor<Device,2>( (real_t*)dptr, shape.FlatTo2D() );
+        }
+        inline Tensor<Device,1> Slice( index_t begin, index_t end ) const{
+            Shape<1> s; 
+            s[0] = s.stride_ = end  - begin;
+            return Tensor<Device,1>( (real_t*)dptr + begin, s );            
         }
         inline real_t &operator[]( index_t idx ){ return dptr[ idx ]; }
         inline const real_t &operator[]( index_t idx )const { return dptr[ idx ]; }
@@ -210,6 +219,32 @@ namespace cxxnet{
 
 namespace cxxnet{
     // function declarations   
+    /*! 
+     * \brief binary mapping function dst [st] lhs [op] rhs
+     * \tparam Saver specify storage method [st]
+     * \tparam BinaryMapper specify binary operation [op]
+     * \param dst destination 
+     * \param lhs left operand
+     * \param rhs right operand
+     */
+    template<typename Saver, typename BinaryMapper>
+    inline void Map( CTensor2D dst, const CTensor2D &lhs, const CTensor2D &rhs );
+
+    /*! 
+     * \brief binary mapping function dst [st] lhs [op] rhs
+     * \tparam Saver specify storage method [st]
+     * \tparam BinaryMapper specify binary operation [op]
+     * \param dst destination 
+     * \param lhs left operand
+     * \param rhs right operand
+     */
+    template<typename Saver, typename BinaryMapper>
+    inline void Map( GTensor2D dst, const GTensor2D &lhs, const GTensor2D &rhs );
+
 };
+
+// implementation
+#include "tensor_cpu-inl.hpp"
+#include "tensor_gpu-inl.hpp"
 #pragma GCC pop_options
 #endif
