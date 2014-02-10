@@ -19,4 +19,4 @@ int main( void ){
     printf( "%f,%f\n", ms[0][0], ms[1][0] );
     printf( "%f,%f\n", mat[0][0], mat[1][0] );
     return 0;
-}  
+}

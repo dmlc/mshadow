@@ -40,7 +40,7 @@ namespace cxxnet {
          * \param idx dimension index
          * \return the corresponding dimension size
          */
-        inline index_t& operator[](size_t idx) {
+        inline index_t& operator[](index_t idx) {
             return shape_[ idx ];
         }
         /*!
@@ -48,7 +48,7 @@ namespace cxxnet {
          * \param idx dimension index
          * \return the corresponding dimension size
          */
-        inline const index_t& operator[](size_t idx) const {
+        inline const index_t& operator[](index_t idx) const {
             return shape_[ idx ];
         }
         /*! \return stride */
