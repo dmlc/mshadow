@@ -1,20 +1,20 @@
-export CC  = gcc
-export CXX = g++
-export CFLAGS = -Wall -O3 -msse2  
+export CC  = clang
+export CXX = clang
+export CFLAGS = -Wall -O3 -msse2
 
 # specify tensor path
 BIN = test
-OBJ = 
+OBJ =
 .PHONY: clean all
 
 all: $(BIN) $(OBJ)
-export LDFLAGS= -pthread -lm 
+export LDFLAGS= -pthread -lm -Wunknown-pragmas
 test: testcompile.cpp tensor/*.h
 
-$(BIN) : 
+$(BIN) :
 	$(CXX) $(CFLAGS) $(LDFLAGS) -o $@ $(filter %.cpp %.o %.c, $^)
 
-$(OBJ) : 
+$(OBJ) :
 	$(CXX) -c $(CFLAGS) -o $@ $(firstword $(filter %.cpp %.c, $^) )
 
 install:
