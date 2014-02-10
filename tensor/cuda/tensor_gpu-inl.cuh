@@ -1,10 +1,10 @@
-#ifndef _CXXNET_TENSOR_GPU_INL_CUH_
-#define _CXXNET_TENSOR_GPU_INL_CUH_
+#ifndef TENSOR_GPU_INL_CUH
+#define TENSOR_GPU_INL_CUH
 
-#include "../tensor.h"
+#include "tensor/cuda/tensor.h"
 
-namespace cxxnet{
-    namespace cuda{
+namespace cxxnet {
+    namespace cuda {
         #if __CUDA_ARCH__>=200
         const int MEM_UNIT_BITS = 5;
         const int MAX_THREADS_PER_BLOCK = 1024;
@@ -17,34 +17,35 @@ namespace cxxnet{
         const int BASE_THREAD_NUM  = 1 << BASE_THREAD_BITS;
         const int BASE_GRID_NUM    = 32;
         const int MAX_GRID_NUM     = 65535;
-    };
-    namespace cuda{
-        template<typename Saver,typename BinaryMapper,int block_dim_bits>
-        __global__ void MapBinaryKernel( GTensor2D dst, GTensor2D lhs, GTensor2D rhs ){
+    }; // namespace cuda
+    namespace cuda {
+        template<typename Saver, typename BinaryMapper, int block_dim_bits>
+        __global__ void MapBinaryKernel(GTensor2D dst, GTensor2D lhs, GTensor2D rhs) {
             const index_t tid = (blockIdx.x << block_dim_bits) + threadIdx.x;
-            const index_t x_mm= dst.shape.stride_;
+            const index_t x_mm = dst.shape.stride_;
             const int y   = tid / x_mm;
             const int x   = tid % x_mm;
-            if( y < dst.shape[1] && x < dst.shape[0] ){
-                Saver::DSave( dst[y][x], BinaryMapper::DMap( lhs[y][x], rhs[y][x] ) );
+            if (y < dst.shape[1] && x < dst.shape[0]) {
+                Saver::DSave(dst[y][x], BinaryMapper::DMap(lhs[y][x], rhs[y][x]));
             }
         }
 
         template<typename Saver, typename BinaryMapper>
-        inline void MapBinary( GTensor2D dst, const GTensor2D &lhs, const GTensor2D &rhs ){
-            const int num_block = ( dst.shape.MSize() + BASE_THREAD_NUM-1 )/BASE_THREAD_NUM;
-            dim3 dimBlock( BASE_THREAD_NUM, 1, 1 );
+        inline void MapBinary(GTensor2D dst, const GTensor2D &lhs, const GTensor2D &rhs) {
+            const int num_block = (dst.shape.MSize() + BASE_THREAD_NUM-1) / BASE_THREAD_NUM;
+            dim3 dimBlock(BASE_THREAD_NUM, 1, 1);
 
-            if( num_block < MAX_GRID_NUM ){
-                dim3 dimGrid ( num_block, 1, 1 );
-                MapBinaryKernel<Saver,BinaryMapper,BASE_THREAD_BITS> <<<dimGrid,dimBlock>>>( dst, lhs, rhs );
-            } else{
+            if (num_block < MAX_GRID_NUM) {
+                dim3 dimGrid(num_block, 1, 1);
+                MapBinaryKernel<Saver, BinaryMapper, BASE_THREAD_BITS> \
+                    <<<dimGrid,dimBlock>>>(dst, lhs, rhs);
+            } else {
                 int repeat = (num_block + BASE_GRID_NUM-1) / BASE_GRID_NUM;
-                dim3 dimGrid( BASE_GRID_NUM, 1 , 1 );
+                dim3 dimGrid(BASE_GRID_NUM, 1 , 1);
                 // TODO
             }
         }
 
     }; // namespace cuda
 }; // namespace cxxnet
-#endif
+#endif // TENSOR_GPU_INL_H
