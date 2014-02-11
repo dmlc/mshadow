@@ -1,5 +1,5 @@
-#ifndef TENSOR_H
-#define TENSOR_H
+#ifndef CXXNET_TENSOR_H
+#define CXXNET_TENSOR_H
 /*!
  * \file tensor.h
  * \brief library definition of the tensor
@@ -277,41 +277,42 @@ namespace cxxnet {
 namespace cxxnet {
     // function declarations
     /*!
-     * \brief CPU: allocate space for CTensor, according to the shape in the obj
+     * \brief CPU/CPU: allocate space for CTensor, according to the shape in the obj
      *        this function is responsible to set the stride_ in each obj.shape
      * \tparam dimension specify the dimension of tensor
      * \param obj the tensor object, with shape specified
      */
     template<int dimension>
     inline void AllocSpace(Tensor<cpu,dimension> &obj);
-
-    /*!
-     * \brief GPU: allocate space for GTensor, according to the shape in the obj
-     *        this function is responsible to set the stride_ in each obj.shape
-     * \tparam dimension specify the dimension of tensor
-     * \param obj the tensor object, with shape specified
-     */
     template<int dimension>
     inline void AllocSpace(Tensor<gpu,dimension> &obj);
 
     /*!
-     * \brief CPU: free the space of tensor
+     * \brief CPU/GPU: free the space of tensor
      * \tparam dimension specify the dimension of tensor
      * \param obj the tensor object
      */
     template<int dimension>
     inline void FreeSpace(Tensor<cpu,dimension> &obj);
-
-    /*!
-     * \brief GPU: free the space of tensor
-     * \tparam dimension specify the dimension of tensor
-     * \param obj the tensor object
-     */
     template<int dimension>
     inline void FreeSpace(Tensor<gpu,dimension> &obj);
+
+    /*!
+     * \brief copy data from one tensor to another, with same shape
+     * \tparam dimension specify the dimension of tensor
+     * \param obj the tensor object, with shape specified
+     */
+    template<int dimension>
+    inline void Copy(Tensor<cpu,dimension> dst, const Tensor<cpu,dimension> &src );
+    template<int dimension>
+    inline void Copy(Tensor<cpu,dimension> dst, const Tensor<gpu,dimension> &src );
+    template<int dimension>
+    inline void Copy(Tensor<gpu,dimension> dst, const Tensor<cpu,dimension> &src );
+    template<int dimension>
+    inline void Copy(Tensor<gpu,dimension> dst, const Tensor<gpu,dimension> &src );
     
     /*!
-     * \brief CPU: storing function dst [st] src
+     * \brief CPU/GPU: storing function dst [st] src
      * \tparam SV specify storage method [st]
      * \param dst destination
      * \param src the real data
@@ -319,14 +320,6 @@ namespace cxxnet {
      */
     template<typename SV>
     inline void Store(CTensor2D dst, real_t src);
-
-    /*!
-     * \brief GPU: storing function dst [st] src
-     * \tparam SV specify storage method [st]
-     * \param dst destination
-     * \param src the real data
-     * \sa namespace cxxnet:sv
-     */
     template<typename SV>
     inline void Store(GTensor2D dst, real_t src);
 
@@ -341,16 +334,6 @@ namespace cxxnet {
      */
     template<typename SV, typename OP>
     inline void Map(CTensor2D dst, const CTensor2D &lhs, const CTensor2D &rhs);
-
-    /*!
-     * \brief GPU: binary mapping function dst [st] lhs [op] rhs
-     * \tparam SV specify storage method [st]
-     * \tparam OP specify binary operation [op]
-     * \param dst destination
-     * \param lhs left operand
-     * \param rhs right operand
-     * \sa namespace cxxnet:sv, cxxnet::op
-     */
     template<typename SV, typename OP>
     inline void Map(GTensor2D dst, const GTensor2D &lhs, const GTensor2D &rhs);
 

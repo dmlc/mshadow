@@ -1,5 +1,5 @@
-#ifndef TENSOR_OP_H
-#define TENSOR_OP_H
+#ifndef CXXNET_TENSOR_OP_H
+#define CXXNET_TENSOR_OP_H
 /*!
  * \file tensor_op.h
  * \brief definitions of tensor operators

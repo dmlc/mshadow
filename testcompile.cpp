@@ -8,7 +8,7 @@ int main( void ){
     CTensor2D mat1 = NewCTensor( Shape2(10,10), 10 );
     CTensor2D mat2 = NewCTensor( Shape2(10,10), 20 );
     CTensor2D mat3 = NewCTensor( Shape2(10,10), 30 );
-    
+    Copy( mat1, mat2 );
     Map<sv::saveto, op::plus>(mat3, mat1, mat2);
     for (unsigned i = 0; i < 10; ++i) {
         for (unsigned j = 0; j < 10; ++j) {

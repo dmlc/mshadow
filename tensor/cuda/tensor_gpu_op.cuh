@@ -1,5 +1,5 @@
-#ifndef TENSOR_GPU_OP_CUH
-#define TENSOR_GPU_OP_CUH
+#ifndef CXXNET_TENSOR_GPU_OP_CUH
+#define CXXNET_TENSOR_GPU_OP_CUH
 /*!
  * \file tensor_gpu_op.cuh
  * \brief definitions of tensor operators in GPU

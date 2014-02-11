@@ -1,5 +1,5 @@
-#ifndef TENSOR_GPU_INL_CUH
-#define TENSOR_GPU_INL_CUH
+#ifndef CXXNET_TENSOR_GPU_INL_CUH
+#define CXXNET_TENSOR_GPU_INL_CUH
 
 #include "../tensor.h"
 #include "tensor_gpu_op.cuh"

@@ -1,8 +1,10 @@
-#ifndef TENSOR_CPU_INL_HPP
-#define TENSOR_CPU_INL_HPP
+#ifndef CXXNET_TENSOR_CPU_INL_HPP
+#define CXXNET_TENSOR_CPU_INL_HPP
 
 #include <algorithm>
+#include <cstring>
 #include "tensor_op.h"
+#include "../utils/utils.h"
 
 namespace cxxnet {
     // cozy allocation, no alignment so far
@@ -24,7 +26,17 @@ namespace cxxnet {
     template<int dimension>
     inline void FreeSpace(Tensor<cpu,dimension> &obj){
         delete [] obj.dptr;
-    }        
+    }
+    // implementation of copy
+    template<int dimension>
+    inline void Copy(Tensor<cpu,dimension> dst, const Tensor<cpu,dimension> &src ){
+        utils::Assert( dst.shape == src.shape, "shape must agree during copy" );
+        CTensor2D dst2 = dst.FlatTo2D();
+        CTensor2D src2 = src.FlatTo2D();
+        for (index_t y = 0; y < dst2.shape[1]; y ++) {
+            memcpy( dst2[y].dptr, src2[y].dptr, sizeof(real_t) * dst2.shape[0] );
+        }
+    }    
     // implementation of store
     template<typename SV>
     inline void Store( CTensor2D dst, real_t src ) {
