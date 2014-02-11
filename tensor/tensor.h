@@ -255,6 +255,7 @@ namespace cxxnet {
 }; // namespace cxxnet
 
 // implementation
+#include "tensor_op.h"
 #include "tensor_cpu-inl.hpp"
 #include "tensor_gpu-inl.hpp"
 #pragma GCC pop_options
