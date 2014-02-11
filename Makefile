@@ -1,6 +1,6 @@
 export CC  = gcc
 export CXX = g++
-export CFLAGS = -Wall -O3 -msse2
+export CFLAGS = -Wall -O3 -msse2 -Wno-unknown-pragmas
 
 # specify tensor path
 BIN = test
@@ -8,7 +8,7 @@ OBJ =
 .PHONY: clean all
 
 all: $(BIN) $(OBJ)
-export LDFLAGS= -pthread -lm -Wunknown-pragmas
+export LDFLAGS= -pthread -lm 
 test: testcompile.cpp tensor/*.h
 
 $(BIN) :
