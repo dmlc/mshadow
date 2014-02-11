@@ -9,8 +9,6 @@
 
 #include <cstdio>
 // add unroll loops for the shape
-#pragma GCC push_options
-#pragma GCC optimize("unroll-loops")
 
 /*! \brief namespace for cxxnet */
 namespace cxxnet {
@@ -82,7 +80,7 @@ namespace cxxnet {
         }
         /*! \return number of valid elements */
         inline size_t Size(void) {
-            size_t memsz = this->shape[ 0 ];
+            size_t memsz = this->shape_[ 0 ];
             #pragma unroll
             for (int i = 1; i < zMaxShape; ++i) {
                 memsz *= this->shape_[ i ];
@@ -258,5 +256,5 @@ namespace cxxnet {
 #include "tensor_op.h"
 #include "tensor_cpu-inl.hpp"
 #include "tensor_gpu-inl.hpp"
-#pragma GCC pop_options
+
 #endif // TENSOR_H
