@@ -21,6 +21,9 @@ namespace cxxnet {
 namespace cxxnet {
     /*!
      * \brief shape of a tensor
+     *       IMPORTANT NOTE: this shape is different from numpy.shape
+     *       shape[0] gives the lowest dimension, shape[dimension-1] gives the highest dimension
+     *       shape[k] corresponds to k-th dimension of tensor
      * \tparam dimension dimension of tensor
      */
     template<int dimension>
@@ -119,7 +122,50 @@ namespace cxxnet {
          *    this is used to deal with pitch allocation in gpu or sse(align x dimension to 64bit) for efficiency
          */
         index_t stride_;
-    };
+    };    
+    // useful construction functions to generate shape    
+    /*! 
+     * \brief construct a one dimension shape 
+     * \param s0 size of dimension 0
+     * \return the shape construction
+     */
+    inline Shape<1> Shape1( index_t s0 ){
+        Shape<1> s; s[0] = s0;
+        return s;
+    }
+    /*! 
+     * \brief construct a two dimension shape 
+     * \param s1 size of dimension 1
+     * \param s0 size of dimension 0
+     * \return the shape construction
+     */
+    inline Shape<2> Shape2( index_t s1, index_t s0 ){
+        Shape<2> s; s[0] = s0; s[1] = s1;
+        return s;
+    }
+    /*! 
+     * \brief construct a three dimension shape 
+     * \param s2 size of dimension 2
+     * \param s1 size of dimension 1
+     * \param s0 size of dimension 0
+     * \return the shape construction
+     */
+    inline Shape<3> Shape3( index_t s2, index_t s1, index_t s0 ){
+        Shape<3> s; s[0] = s0; s[1] = s1; s[2] = s2;
+        return s;
+    }
+    /*! 
+     * \brief construct a four dimension shape 
+     * \param s3 size of dimension 3
+     * \param s2 size of dimension 2
+     * \param s1 size of dimension 1
+     * \param s0 size of dimension 0
+     * \return the shape construction
+     */
+    inline Shape<4> Shape4( index_t s3, index_t s2, index_t s1, index_t s0 ){
+        Shape<4> s; s[0] = s0; s[1] = s1; s[2] = s2; s[3] = s3;
+        return s;
+    }
 }; // namespace cxxnet
 
 namespace cxxnet {
@@ -155,6 +201,8 @@ namespace cxxnet {
     public:
         /*! \brief default constructor */
         Tensor(void) {}
+        /*! \brief constructor from shape  */
+        Tensor(Shape<dimension> shape): shape(shape) {}
         /*! \brief constructor from data pointer and shape  */
         Tensor(real_t *dptr, Shape<dimension> shape): dptr(dptr), shape(shape) {}
         /*!
@@ -229,29 +277,106 @@ namespace cxxnet {
 namespace cxxnet {
     // function declarations
     /*!
-     * \brief binary mapping function dst [st] lhs [op] rhs
-     * \tparam Saver specify storage method [st]
-     * \tparam BinaryMapper specify binary operation [op]
+     * \brief CPU: allocate space for CTensor, according to the shape in the obj
+     *        this function is responsible to set the stride_ in each obj.shape
+     * \tparam dimension specify the dimension of tensor
+     * \param obj the tensor object, with shape specified
+     */
+    template<int dimension>
+    inline void AllocSpace(Tensor<cpu,dimension> &obj);
+
+    /*!
+     * \brief GPU: allocate space for GTensor, according to the shape in the obj
+     *        this function is responsible to set the stride_ in each obj.shape
+     * \tparam dimension specify the dimension of tensor
+     * \param obj the tensor object, with shape specified
+     */
+    template<int dimension>
+    inline void AllocSpace(Tensor<gpu,dimension> &obj);
+
+    /*!
+     * \brief CPU: free the space of tensor
+     * \tparam dimension specify the dimension of tensor
+     * \param obj the tensor object
+     */
+    template<int dimension>
+    inline void FreeSpace(Tensor<cpu,dimension> &obj);
+
+    /*!
+     * \brief GPU: free the space of tensor
+     * \tparam dimension specify the dimension of tensor
+     * \param obj the tensor object
+     */
+    template<int dimension>
+    inline void FreeSpace(Tensor<gpu,dimension> &obj);
+    
+    /*!
+     * \brief CPU: storing function dst [st] src
+     * \tparam SV specify storage method [st]
+     * \param dst destination
+     * \param src the real data
+     * \sa namespace cxxnet:sv
+     */
+    template<typename SV>
+    inline void Store(CTensor2D dst, real_t src);
+
+    /*!
+     * \brief GPU: storing function dst [st] src
+     * \tparam SV specify storage method [st]
+     * \param dst destination
+     * \param src the real data
+     * \sa namespace cxxnet:sv
+     */
+    template<typename SV>
+    inline void Store(GTensor2D dst, real_t src);
+
+    /*!
+     * \brief CPU: binary mapping function dst [st] lhs [op] rhs
+     * \tparam SV specify storage method [st]
+     * \tparam OP specify binary operation [op]
      * \param dst destination
      * \param lhs left operand
      * \param rhs right operand
+     * \sa namespace cxxnet:sv, cxxnet::op
      */
-    template<typename Saver, typename BinaryMapper>
+    template<typename SV, typename OP>
     inline void Map(CTensor2D dst, const CTensor2D &lhs, const CTensor2D &rhs);
 
     /*!
-     * \brief binary mapping function dst [st] lhs [op] rhs
-     * \tparam Saver specify storage method [st]
-     * \tparam BinaryMapper specify binary operation [op]
+     * \brief GPU: binary mapping function dst [st] lhs [op] rhs
+     * \tparam SV specify storage method [st]
+     * \tparam OP specify binary operation [op]
      * \param dst destination
      * \param lhs left operand
      * \param rhs right operand
+     * \sa namespace cxxnet:sv, cxxnet::op
      */
-    template<typename Saver, typename BinaryMapper>
+    template<typename SV, typename OP>
     inline void Map(GTensor2D dst, const GTensor2D &lhs, const GTensor2D &rhs);
 
 }; // namespace cxxnet
 
+namespace cxxnet{
+    // the following function is name dependent, have different name for CPU and GPU
+    /*!
+     * \brief CPU: short cut to allocate and initialize a CTensor
+     * \tparam dimension specify the dimension of tensor
+     * \param shape shape of the tensor
+     * \return the allocated tensor
+     */
+    template<int dimension>
+    inline Tensor<cpu,dimension> NewCTensor(const Shape<dimension> &shape, real_t initv);
+
+    /*!
+     * \brief GPU: short cut to allocate and initialize a GTensor
+     * \tparam dimension specify the dimension of tensor
+     * \param shape shape of the tensor
+     * \return the allocated tensor
+     */
+    template<int dimension>
+    inline Tensor<gpu,dimension> NewGTensor(const Shape<dimension> &shape, real_t initv);
+    
+}; // namespace cxxnet
 // implementation
 #include "tensor_op.h"
 #include "tensor_cpu-inl.hpp"

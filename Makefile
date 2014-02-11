@@ -3,7 +3,7 @@ export CXX = g++
 export NVCC =nvcc
 export CFLAGS = -Wall -O3 -msse2 -Wno-unknown-pragmas -funroll-loops
 export LDFLAGS= -lpthread -lm 
-export NVCCFLAGS = -O3 --maxrregcount=20 
+export NVCCFLAGS = -O3 
 
 # specify tensor path
 BIN = test

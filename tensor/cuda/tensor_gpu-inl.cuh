@@ -45,6 +45,7 @@ namespace cxxnet {
                 int repeat = (num_block + BASE_GRID_NUM-1) / BASE_GRID_NUM;
                 dim3 dimGrid(BASE_GRID_NUM, 1 , 1);
                 // TODO
+                
             }
         }
 
