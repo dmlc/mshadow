@@ -288,6 +288,10 @@ namespace cxxnet {
     typedef Tensor<gpu, 4> GTensor4D;
 }; // namespace cxxnet
 
+// operators
+#include "tensor_op.h"
+#include "tensor_exp.h"
+
 // add unroll loops for the shape
 namespace cxxnet {
     // function declarations
@@ -354,20 +358,19 @@ namespace cxxnet {
     template<typename Saver, typename BinaryMapper,int dim>
     inline void Map(Tensor<gpu,dim> dst, const Tensor<gpu,dim> &lhs, const Tensor<gpu,dim> &rhs);
 
-
     /*!
      * \brief CPU/GPU: map a expression to a tensor
      * \tparam Saver specify storage method [st]
-     * \tparam Exp specifies the expression, not need to specify this parameter during usage
+     * \tparam T specifies the expression type, not need to specify this parameter during usage
      * \tparam dim dim of the tensor, during usage, there is no need to specify this parameter
      * \param dst destination
      * \param exp expression
      * \sa namespace cxxnet:sv, cxxnet::op, cxxnet::algebra
      */
-    template<typename Saver, typename Exp,int dim>
-    inline void Map(Tensor<cpu,dim> dst, const Exp &exp );
-    template<typename Saver, typename BinaryMapper,int dim>
-    inline void Map(Tensor<gpu,dim> dst, const Exp &exp );
+    template<typename Saver, typename E, int dim>
+    inline void MapExp(Tensor<cpu,dim> dst, const algebra::Exp<E> &exp );
+    template<typename Saver, typename E,int dim>
+    inline void MapExp(Tensor<gpu,dim> dst, const algebra::Exp<E> &exp );
 }; // namespace cxxnet
 
 namespace cxxnet{
@@ -391,8 +394,6 @@ namespace cxxnet{
     inline Tensor<gpu,dim> NewGTensor(const Shape<dim> &shape, real_t initv);
     
 }; // namespace cxxnet
-// implementation
-#include "tensor_op.h"
 #include "tensor_cpu-inl.hpp"
 #include "tensor_gpu-inl.hpp"
 

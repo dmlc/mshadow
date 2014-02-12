@@ -81,5 +81,31 @@ namespace cxxnet {
             }
         }
     }; // namespace cuda
+
+    namespace cuda {                
+        template<typename Saver, typename Exp, int block_dim_bits>
+        __global__ void MapExpKernel(GTensor2D dst, const Exp exp){
+            const index_t tid = (blockIdx.x << block_dim_bits) + threadIdx.x;
+            const index_t xstride = dst.shape.stride_;
+            const int y   = tid / xstride;
+            const int x   = tid % xstride;
+            if (y < dst.shape[1] && x < dst.shape[0]) {
+                Saver::Save(dst[y][x], exp.eval(y,x));
+            }
+        }
+        template<typename Saver, typename E>
+        inline void MapExp(GTensor2D dst, const algebra::Exp<E> &exp ){
+            const int num_block = (dst.shape.MSize() + kBaseThreadNum-1) / kBaseThreadNum;
+            dim3 dimBlock(kBaseThreadNum, 1, 1);
+            
+            if (num_block < kMaxGridNum) {
+                dim3 dimGrid(num_block, 1, 1);
+                MapExpKernel<Saver, E, kBaseThreadBits>  \
+                    <<<dimGrid,dimBlock>>>(dst, exp.self());
+            } else {
+                utils::Error("not implemented");                
+            }
+        }
+    }; // namespace cuda
 }; // namespace cxxnet
 #endif // TENSOR_GPU_INL_H

@@ -6,37 +6,10 @@
  *
  * \author Bing Hsu, Tianqi Chen
  */
+#include <cmath>
 #include "tensor.h"
 
 namespace cxxnet {
-    /*! \brief namespace for operators */
-    namespace op {
-        /*! \brief mul operator */
-        struct mul{
-            _XINLINE_ static real_t Map(real_t a, real_t b) {
-                return a * b;
-            }
-        };
-        /*! \brief plus operator */
-        struct plus {
-            _XINLINE_ static real_t Map(real_t a, real_t b) {
-                return a + b;
-            }        
-        };
-        /*! \brief minus operator */
-        struct minus {
-            _XINLINE_ static real_t Map(real_t a, real_t b) {
-                return a - b;
-            }
-        };
-        /*! \brief divide operator */
-        struct div {
-            _XINLINE_ static real_t Map(real_t a, real_t b) {
-                return a / b;
-            }        
-        };
-    }; // namespace op
-
     /*! \brief namespace for savers */
     namespace sv { 
         /*! \brief save to saver: = */
@@ -70,5 +43,50 @@ namespace cxxnet {
             }  
         };
     }; // namespace sv
+
+    /*! \brief namespace for operators */
+    namespace op {
+        // binary operator
+        /*! \brief mul operator */
+        struct mul{
+            _XINLINE_ static real_t Map(real_t a, real_t b) {
+                return a * b;
+            }
+        };
+        /*! \brief plus operator */
+        struct plus {
+            _XINLINE_ static real_t Map(real_t a, real_t b) {
+                return a + b;
+            }        
+        };
+        /*! \brief minus operator */
+        struct minus {
+            _XINLINE_ static real_t Map(real_t a, real_t b) {
+                return a - b;
+            }
+        };
+        /*! \brief divide operator */
+        struct div {
+            _XINLINE_ static real_t Map(real_t a, real_t b) {
+                return a / b;
+            }        
+        };
+    }; // namespace op
+
+    namespace op {
+        // unary operator/ function
+        /*! \brief function */
+        struct identity{
+            _XINLINE_ static real_t Map(real_t a) {
+                return a;
+            }
+        };
+        /*! \brief sigmoid operator */
+        struct sigmoid {
+            _XINLINE_ static real_t Map(real_t a) {
+                return 1.0f /(1.0f + expf(-a));
+            }        
+        };
+    }; // namespace op
 }; // namespace cxxnet
 #endif // TENSOR_OP_H

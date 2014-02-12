@@ -3,7 +3,6 @@
 
 #include "tensor.h"
 #include "tensor_op.h"
-
 /*!
  * \file tensor_exp.h
  * \brief definitions of tensor expression
@@ -16,25 +15,30 @@ namespace cxxnet{
      *        abstract expressions in algebra 
      */
     namespace algebra{
-        /*! \brief base class for expression */
+        /*! 
+         * \brief base class for expression 
+         * \tparam SubType inheritated class must put their type into this 
+         *         this is used to restrict the behavior of MakeExp
+         */
+        template<typename SubType>
         class Exp{
         public:
+            /*! \brief get the subtype representation */
+            _XINLINE_ const SubType& self( void ) const{
+                return *static_cast<const SubType*>(this);
+            }
             /*! 
              * \brief evaluate the expression at index [y][x] 
              *        to be implemented by SubType
              */
-            _XINLINE_ real_t eval( index_t y, index_t x ) const;            
+            _XINLINE_ real_t eval( index_t y, index_t x ) const;
         };
 
         /*! \brief tensor expression, evaluate tensor 2D */
-        class TensorExp: public Exp{
+        class TensorExp: public Exp<TensorExp>{
         public:
             TensorExp( const real_t *dptr, index_t stride )
-                :dptr_(dptr),stride_(stride){}
-
-            template<typename Device, int dim>
-            TensorExp( const Tensor<Device,dim> &t )
-                :dptr_(t.dptr), stride_(t.shape.stride_){}
+                :dptr_(dptr),stride_(stride){}                        
             /*! \brief evaluate at [y][x] */
             _XINLINE_ real_t eval( index_t y, index_t x ) const{
                 return dptr_[ y * stride_ + x ];
@@ -45,9 +49,9 @@ namespace cxxnet{
         };
         
         /*! \brief scalar expression, evaluae */
-        class ScalarExp: public Exp{
+        class ScalarExp: public Exp<ScalarExp>{
         public:
-            ScalarExpExp( real_t scalar ):scalar_(scalar){}
+            ScalarExp( real_t scalar ):scalar_(scalar){}
             /*! \brief evaluate at [y][x] */
             _XINLINE_ real_t eval( index_t y, index_t x ) const{
                 return scalar_;
@@ -63,22 +67,58 @@ namespace cxxnet{
          * \tparam TB type of rhs
          */
         template<typename OP, typename TA, typename TB>
-        class BinaryMapExp: public Exp{
+        class BinaryMapExp: public Exp< BinaryMapExp<OP,TA,TB> >{
         public:
-            BinaryMapExp( TA lhs, TB rhs )
-                :lhs_(lhs), rhs_(rhs){}
+            BinaryMapExp( const Exp<TA> &lhs, const Exp<TB> &rhs )
+                :lhs_(lhs.self()), rhs_(rhs.self()){}
             /*! \brief evaluate at [y][x] */
             _XINLINE_ real_t eval( index_t y, index_t x ) const{
-                OP::Map( lhs_.eval( y, x ), rhs_.eval( y, x ) );
+                return OP::Map( lhs_.eval( y, x ), rhs_.eval( y, x ) );
             }
         private:
             TA lhs_;
             TB rhs_;
-        }
-    };
-    
-    namespace algebra{
+        };
 
+        /*! 
+         * \brief binary map expression lhs [op] rhs
+         * \tparam OP operator
+         * \tparam TA type of src
+         */
+        template<typename OP, typename TA>
+        class UnaryMapExp: public Exp< UnaryMapExp<OP,TA> >{
+        public:
+            UnaryMapExp( const Exp<TA> &src ):src_(src.self()){}
+            /*! \brief evaluate at [y][x] */
+            _XINLINE_ real_t eval( index_t y, index_t x ) const{
+                return OP::Map( src_.eval( y, x ) );
+            }
+        private:
+            TA src_;
+        };
+    }; // namespace algebra
+
+    namespace algebra{
+        // helper constructors
+
+        template<typename Device, int dim>
+        inline TensorExp MakeExp( const Tensor<Device,dim> &t ){
+            return TensorExp( t.dptr, t.shape.stride_ );
+        }
+        
+        inline ScalarExp MakeExp( index_t scalar ){
+            return ScalarExp( scalar );
+        }
+        
+        template<typename OP, typename TA,typename TB>
+        inline BinaryMapExp<OP,TA,TB> MakeExp( const Exp<TA> &lhs, const Exp<TB> &rhs ){
+            return BinaryMapExp<OP,TA,TB>( lhs, rhs );
+        }
+        
+        template<typename OP, typename TA>
+        inline UnaryMapExp<OP,TA> MakeExp( const Exp<TA> &src ){
+            return UnaryMapExp<OP,TA>( src );
+        }
     };
 };
 #endif

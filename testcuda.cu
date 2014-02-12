@@ -17,7 +17,12 @@ void testcuda( CTensor3D mat1, CTensor3D mat2, CTensor3D mat3 ){
     Copy( gmat2, mat2 );
     printf("alloc space finish\n");
     //Map<sv::saveto, op::plus>(gmat3, gmat1, gmat2);
-    Map<sv::saveto>( gmat3, BinaryMapExp<op::plus>( TensorExp(gmat1), TensorExp(gmat2) ) );
+    MapExp<sv::saveto>( gmat3, 
+                        MakeExp<op::mul>
+                        (
+                         MakeExp<op::plus> ( MakeExp(gmat1), MakeExp(100.0f) ),
+                         MakeExp(3.0f)
+                         ) );
     
     Copy( mat3, gmat3 );    
     FreeSpace(gmat1);

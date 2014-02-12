@@ -1,5 +1,10 @@
 #ifndef CXXNET_TENSOR_CONTAINER_H
 #define CXXNET_TENSOR_CONTAINER_H
+/*!
+ * \file tensor_container.h
+ * \brief tensor container that does memory allocation and resize like STL
+ * \author Tianqi Chen
+ */
 
 #include "tensor.h"
 
@@ -13,12 +18,12 @@ namespace cxxnet{
      * \tparam dimension dimension of the tensor
      */
     template<typename Device, int dimension>
-    class TensorContainer{
+    class TensorContainer: public Tensor<Device,dimension>{
     public:
         TensorContainer( void ){
-            data_.shape.stride_ = 0;
-            data_.dptr = NULL;
-            view_.dptr = NULL;
+            this->dptr = data_.dptr = NULL;
+            this->shape[0] = 0; 
+            this->shape.stride_ = 0;
         }
         TensorContainer( const Shape<dimension> &shape ){
             data_.dptr = NULL;
@@ -32,27 +37,18 @@ namespace cxxnet{
             if( s2.shape_[0] > data_.shape.stride_ || s2.shape_[1] > data_.shape[1] ){
                 this->AllocByShape( shape );
             }{
-                view_.shape = shape;
-                view_.shape.stride_ = data_.shape.stride_;
+                this->shape = shape;
+                this->shape.stride_ = data_.shape.stride_;
             }
-        }        
-        /*! \brief conversion operator to tensor */
-        inline operator Tensor<Device,dimension> (void) const{
-            return view_;
-        }
-        inline Tensor<Device,dimension> operator()(void) const{
-            return view_;
         }
     private:
         /*! \brief the shape of data_ is actually current data space */
         Tensor<Device, 2> data_;
-        /*! \brief the shape of view_ is what it currently look like, can be smaller than data */
-        Tensor<Device, dimension> view_;
     private:
         inline void FreeSpace (void){
             if( data_.dptr != NULL ){
                 cxxnet::FreeSpace( data_ );
-                data_.dptr = view_.dptr = NULL;
+                data_.dptr = this->dptr = NULL;
             }
         }
         inline void AllocByShape (const Shape<dimension>& shape){
@@ -61,9 +57,9 @@ namespace cxxnet{
             }
             data_.shape = shape.FlatTo2D();
             cxxnet::AllocSpace( data_ );
-            view_.dptr = data_.dptr;
-            view_.shape = shape;
-            view_.shape.stride_ = data_.shape.stride_;
+            this->dptr  = data_.dptr;
+            this->shape = shape;
+            this->shape.stride_ = data_.shape.stride_;
         }
     };
 };// namespace cxxnet

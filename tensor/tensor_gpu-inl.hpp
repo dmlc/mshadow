@@ -70,6 +70,11 @@ namespace cxxnet {
         utils::Assert( _dst.shape == _lhs.shape, "Map:shape mismatch" );        
         cuda::MapBinary<Saver,BinaryMapper>( _dst.FlatTo2D(), _lhs.FlatTo2D(), _rhs.FlatTo2D() );
     }
+
+    template<typename Saver, typename E, int dim>
+    inline void MapExp(Tensor<gpu,dim> _dst, const algebra::Exp<E> &exp ){ 
+        cuda::MapExp<Saver>( _dst.FlatTo2D(), exp );
+    }
 }; // namespace cxxnet
 
 #endif
