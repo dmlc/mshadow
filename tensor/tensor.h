@@ -3,6 +3,9 @@
 /*!
  * \file tensor.h
  * \brief header file of tensor data structure and functions
+ *        covention: this lib requires explicit memory allocation and de-allocation
+ *                   all the data structure CTensor1D, GTensor1D are like handles(pointers),
+ *                   no memory allocation is happening during calculation
  * \author Bing Hsu, Tianqi Chen
  */
 #include <cstdio>
