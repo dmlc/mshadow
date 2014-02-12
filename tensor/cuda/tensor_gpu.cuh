@@ -13,7 +13,7 @@
 #error "_DINLINE_ must not be defined"
 #endif
 
-#include "tensor.h"
+#include "../tensor.h"
 
 namespace cxxnet{
     namespace cuda{

@@ -7,6 +7,7 @@
  * \author Bing Hsu, Tianqi Chen
  */
 #include "tensor.h"
+
 namespace cxxnet {
     /*! \brief namespace for operators */
     namespace op {

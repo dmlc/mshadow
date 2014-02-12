@@ -8,12 +8,7 @@
  */
 #include "../tensor.h"
 #include "../tensor_op.h"
-
-#ifndef _DINLINE_
-#define _DINLINE_ inline __device__
-#else
-#error "_DINLINE_ must not be defined"
-#endif
+#include "tensor_gpu.cuh"
 
 namespace cxxnet {
     /*! \brief namespace for operators */

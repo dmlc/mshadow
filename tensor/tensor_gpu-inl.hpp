@@ -1,7 +1,7 @@
 #ifndef CXXNET_TENSOR_GPU_INL_HPP
 #define CXXNET_TENSOR_GPU_INL_HPP
-// exclude this code if the compiler is not nvcc
-#ifdef __CUDA_ARCH__
+
+// include this file only if the compiler is nvcc
 
 #include "tensor.h"
 #include "../utils/utils.h"
@@ -34,11 +34,11 @@ namespace cxxnet {
         Copy( dst, src, cudaMemcpyDeviceToHost );
     }
     template<int dim>
-    inline void Copy(Tensor<gpu,dim> dst, const Tensor<cpu,dim> &src ){
+    inline void Copy(Tensor<gpu,dim> dst, const Tensor<gpu,dim> &src ){
         Copy( dst, src, cudaMemcpyDeviceToDevice );
     }
     template<int dim>
-    inline void Copy(Tensor<gpu,dim> dst, const Tensor<gpu,dim> &src ){
+    inline void Copy(Tensor<gpu,dim> dst, const Tensor<cpu,dim> &src ){
         Copy( dst, src, cudaMemcpyHostToDevice );
     }
 
@@ -47,8 +47,8 @@ namespace cxxnet {
     inline void Map(Tensor<gpu,dim> _dst, const Tensor<gpu,dim> &_lhs, const Tensor<gpu,dim> &_rhs){
         utils::Assert( _dst.shape == _rhs.shape, "Map:shape mismatch" );
         utils::Assert( _dst.shape == _lhs.shape, "Map:shape mismatch" );        
-        cuda::MapBinary<SV,OP>( _dst.FlatTo2D(), _lhs.FlatTo2D(), _rhs.FlatTo2D() )
-    }    
+        cuda::MapBinary<SV,OP>( _dst.FlatTo2D(), _lhs.FlatTo2D(), _rhs.FlatTo2D() );
+    }
 }; // namespace cxxnet
-#endif
+
 #endif // TENSOR_GPU_INL_HPP

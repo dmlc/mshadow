@@ -6,10 +6,7 @@
  *
  * \author Bing Hsu, Tianqi Chen
  */
-
 #include <cstdio>
-// add unroll loops for the shape
-
 /*! \brief namespace for cxxnet */
 namespace cxxnet {
     /*! \brief type that will be used for content */
@@ -36,6 +33,13 @@ namespace cxxnet {
     public:
         /*! \brief default constructor, do nothing */
         Shape(void) {}
+        Shape( const Shape<dimension> &s ){
+            #pragma unroll
+            for( int i = 0; i < zMaxShape; i ++ ){
+                this->shape_[i] = s[i];
+            }
+            this->stride_ = s.stride_;
+        }
         /*!
          * \brief get corresponding index
          * \param idx dimension index
@@ -185,7 +189,6 @@ namespace cxxnet {
      */
     template<typename Device, int dimension>
     struct Tensor {
-
     public:
         /*! \brief whether current type lies in cpu */
         const static bool kDevCPU = Device::kDevCPU;
@@ -197,14 +200,13 @@ namespace cxxnet {
         real_t *dptr;
         /*! \brief shape of the tensor */
         Shape<dimension> shape;
-
     public:
         /*! \brief default constructor */
         Tensor(void) {}
         /*! \brief constructor from shape  */
-        Tensor(Shape<dimension> shape): shape(shape) {}
+        Tensor(const Shape<dimension> &shape): shape(shape) {}
         /*! \brief constructor from data pointer and shape  */
-        Tensor(real_t *dptr, Shape<dimension> shape): dptr(dptr), shape(shape) {}
+        Tensor(real_t *dptr, const Shape<dimension> &shape): dptr(dptr), shape(shape) {}
         /*!
          * \brief flatten the tensor to 2 dimension, collapse the higher dimensions together
          * \return tensor after flatten
@@ -274,6 +276,7 @@ namespace cxxnet {
     typedef Tensor<gpu, 4> GTensor4D;
 }; // namespace cxxnet
 
+// add unroll loops for the shape
 namespace cxxnet {
     // function declarations
     /*!
@@ -365,6 +368,5 @@ namespace cxxnet{
 // implementation
 #include "tensor_op.h"
 #include "tensor_cpu-inl.hpp"
-#include "tensor_gpu-inl.hpp"
 
 #endif // TENSOR_H
