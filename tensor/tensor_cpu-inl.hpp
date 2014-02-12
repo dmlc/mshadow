@@ -66,5 +66,17 @@ namespace cxxnet {
             }
         }
     }
+
+
+    template<typename Saver, typename Exp, int dim>
+    inline void Map(Tensor<cpu,dim> _dst, const Exp &exp){
+        CTensor2D dst = _dst.FlatTo2D();
+        for (index_t y = 0; y < dst.shape[1]; y ++) {
+            for (index_t x = 0; x < dst.shape[0]; x ++) {
+                // trust your compiler! -_- they will optimize it
+                Saver::Save(dst[y][x], exp.eval( y, x ) );
+            }
+        }
+    }
 }; // namespace cxxnet
 #endif // TENSOR_CPU_INL_HPP

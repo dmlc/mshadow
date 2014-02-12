@@ -354,6 +354,20 @@ namespace cxxnet {
     template<typename Saver, typename BinaryMapper,int dim>
     inline void Map(Tensor<gpu,dim> dst, const Tensor<gpu,dim> &lhs, const Tensor<gpu,dim> &rhs);
 
+
+    /*!
+     * \brief CPU/GPU: map a expression to a tensor
+     * \tparam Saver specify storage method [st]
+     * \tparam Exp specifies the expression, not need to specify this parameter during usage
+     * \tparam dim dim of the tensor, during usage, there is no need to specify this parameter
+     * \param dst destination
+     * \param exp expression
+     * \sa namespace cxxnet:sv, cxxnet::op, cxxnet::algebra
+     */
+    template<typename Saver, typename Exp,int dim>
+    inline void Map(Tensor<cpu,dim> dst, const Exp &exp );
+    template<typename Saver, typename BinaryMapper,int dim>
+    inline void Map(Tensor<gpu,dim> dst, const Exp &exp );
 }; // namespace cxxnet
 
 namespace cxxnet{

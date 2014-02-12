@@ -2,6 +2,7 @@
 // must include this file to get gpu part implementation
 
 using namespace cxxnet;
+using namespace cxxnet::algebra;
 extern void testcuda( CTensor3D mat1, CTensor3D mat2, CTensor3D mat3 );
 
 void testcuda( CTensor3D mat1, CTensor3D mat2, CTensor3D mat3 ){
@@ -15,7 +16,9 @@ void testcuda( CTensor3D mat1, CTensor3D mat2, CTensor3D mat3 ){
     Copy( gmat1, mat1 );
     Copy( gmat2, mat2 );
     printf("alloc space finish\n");
-    Map<sv::saveto, op::plus>(gmat3, gmat1, gmat2);
+    //Map<sv::saveto, op::plus>(gmat3, gmat1, gmat2);
+    Map<sv::saveto>( gmat3, BinaryMapExp<op::plus>( TensorExp(gmat1), TensorExp(gmat2) ) );
+    
     Copy( mat3, gmat3 );    
     FreeSpace(gmat1);
     FreeSpace(gmat2);
