@@ -47,11 +47,11 @@ namespace cxxnet {
     }
 
     // implementation of map
-    template<typename SV, typename OP, int dim>
+    template<typename Saver, typename BinaryMapper, int dim>
     inline void Map(Tensor<gpu,dim> _dst, const Tensor<gpu,dim> &_lhs, const Tensor<gpu,dim> &_rhs){
         utils::Assert( _dst.shape == _rhs.shape, "Map:shape mismatch" );
         utils::Assert( _dst.shape == _lhs.shape, "Map:shape mismatch" );        
-        cuda::MapBinary<SV,OP>( _dst.FlatTo2D(), _lhs.FlatTo2D(), _rhs.FlatTo2D() );
+        cuda::MapBinary<Saver,BinaryMapper>( _dst.FlatTo2D(), _lhs.FlatTo2D(), _rhs.FlatTo2D() );
     }
 }; // namespace cxxnet
 

@@ -38,17 +38,17 @@ namespace cxxnet {
         }
     }
 
-    template<typename SV,int dim>
+    template<typename Saver,int dim>
     inline void Store( Tensor<cpu,dim> _dst, real_t src ) {
         CTensor2D dst = _dst.FlatTo2D();
         for (index_t y = 0; y < dst.shape[1]; y ++) {
             for (index_t x = 0; x < dst.shape[0]; x ++) {
-                sv::Saver<SV>::Save(dst[y][x], src);
+                Saver::Save(dst[y][x], src);
             }        
         }
     }
 
-    template<typename SV, typename OP,int dim>
+    template<typename Saver, typename BinaryMapper,int dim>
     inline void Map(Tensor<cpu,dim> _dst, const Tensor<cpu,dim> &_lhs, const Tensor<cpu,dim> &_rhs){
         utils::Assert( _dst.shape == _lhs.shape, "Map:shape mismatch" );
         utils::Assert( _dst.shape == _rhs.shape, "Map:shape mismatch" );
@@ -58,7 +58,7 @@ namespace cxxnet {
         for (index_t y = 0; y < dst.shape[1]; y ++) {
             for (index_t x = 0; x < dst.shape[0]; x ++) {
                 // trust your compiler! -_- they will optimize it
-                sv::Saver<SV>::Save(dst[y][x], op::BinaryMapper<OP>::Map(lhs[y][x], rhs[y][x]));
+                Saver::Save(dst[y][x], BinaryMapper::Map(lhs[y][x], rhs[y][x]));
             }
         }
     }

@@ -325,30 +325,30 @@ namespace cxxnet {
     
     /*!
      * \brief CPU/GPU: storing function dst [st] src
-     * \tparam SV specify storage method [st]
+     * \tparam Saver specify storage method [st]
      * \tparam dim dim of the tensor, during usage, there is no need to specify this parameter
      * \param dst destination
      * \param src the real data
      * \sa namespace cxxnet:sv
      */
-    template<typename SV,int dim>
+    template<typename Saver,int dim>
     inline void Store(Tensor<cpu,dim> dst, real_t src);
-    template<typename SV,int dim>
+    template<typename Saver,int dim>
     inline void Store(Tensor<gpu,dim> dst, real_t src);
 
     /*!
      * \brief CPU: binary mapping function dst [st] lhs [op] rhs
-     * \tparam SV specify storage method [st]
-     * \tparam OP specify binary operation [op]
+     * \tparam Saver specify storage method [st]
+     * \tparam BinaryMapper specify binary operation [op]
      * \tparam dim dim of the tensor, during usage, there is no need to specify this parameter
      * \param dst destination
      * \param lhs left operand
      * \param rhs right operand
      * \sa namespace cxxnet:sv, cxxnet::op
      */
-    template<typename SV, typename OP,int dim>
+    template<typename Saver, typename BinaryMapper,int dim>
     inline void Map(Tensor<cpu,dim> dst, const Tensor<cpu,dim> &lhs, const Tensor<cpu,dim> &rhs);
-    template<typename SV, typename OP,int dim>
+    template<typename Saver, typename BinaryMapper,int dim>
     inline void Map(Tensor<gpu,dim> dst, const Tensor<gpu,dim> &lhs, const Tensor<gpu,dim> &rhs);
 
 }; // namespace cxxnet
