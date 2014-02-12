@@ -1,18 +1,19 @@
-#ifndef CXXNET_TENSOR_EXP_H
-#define CXXNET_TENSOR_EXP_H
+#ifndef CXXNET_TENSOR_ALGEBRA_H
+#define CXXNET_TENSOR_ALGEBRA_H
 
 #include "tensor.h"
 #include "tensor_op.h"
 /*!
- * \file tensor_exp.h
- * \brief definitions of tensor expression
+ * \file tensor_algebra.h
+ * \brief definitions of tensor algebras
  *
  * \author Tianqi Chen
  */
 namespace cxxnet{
     /*! 
      * \brief namespace for algebra tree,
-     *        abstract expressions in algebra 
+     *        algebra tree is used during actually computation execution,
+     *        the data structure are minimized so that they only contain necessary members
      */
     namespace algebra{
         /*! 
@@ -100,7 +101,6 @@ namespace cxxnet{
 
     namespace algebra{
         // helper constructors
-
         template<typename Device, int dim>
         inline TensorExp MakeExp( const Tensor<Device,dim> &t ){
             return TensorExp( t.dptr, t.shape.stride_ );

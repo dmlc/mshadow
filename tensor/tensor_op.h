@@ -7,7 +7,23 @@
  * \author Bing Hsu, Tianqi Chen
  */
 #include <cmath>
-#include "tensor.h"
+
+#ifdef _XINLINE_
+  #error "_XINLINE_ must not be defined"
+#endif
+#ifdef __CUDACC__
+  #define _XINLINE_ inline __device__ __host__
+#else
+  #define _XINLINE_ inline
+#endif
+
+/*! \brief namespace for cxxnet */
+namespace cxxnet {
+    /*! \brief type that will be used for content */
+    typedef float real_t;
+    /*! \brief type that will be used for index */
+    typedef unsigned index_t;
+}; // namespace cxxnet
 
 namespace cxxnet {
     /*! \brief namespace for savers */

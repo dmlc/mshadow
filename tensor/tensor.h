@@ -10,22 +10,8 @@
  */
 #include <cstdio>
 
-#ifdef _XINLINE_
-  #error "_XINLINE_ must not be defined"
-#endif
-#ifdef __CUDACC__
-  #define _XINLINE_ inline __device__ __host__
-#else
-  #define _XINLINE_ inline
-#endif
-
-/*! \brief namespace for cxxnet */
-namespace cxxnet {
-    /*! \brief type that will be used for content */
-    typedef float real_t;
-    /*! \brief type that will be used for index */
-    typedef unsigned index_t;
-}; // namespace cxxnet
+#include "tensor_op.h"
+#include "tensor_expr.h"
 
 namespace cxxnet {
     /*!
@@ -288,9 +274,8 @@ namespace cxxnet {
     typedef Tensor<gpu, 4> GTensor4D;
 }; // namespace cxxnet
 
-// operators
-#include "tensor_op.h"
-#include "tensor_exp.h"
+// algebra tree for MapExp
+#include "tensor_algebra.h"
 
 // add unroll loops for the shape
 namespace cxxnet {
