@@ -215,7 +215,7 @@ namespace cxxnet {
         /*! \brief constructor from shape  */
         _XINLINE_ Tensor(const Shape<dimension> &shape): shape(shape) {}
         /*! \brief constructor from data pointer and shape  */
-        _XINLINE_ Tensor(real_t *dptr, const Shape<dimension> &shape): dptr(dptr), shape(shape) {}
+        _XINLINE_ Tensor(real_t *dptr, const Shape<dimension> &shape): dptr((real_t*)dptr), shape(shape) {}
         /*!
          * \brief flatten the tensor to 2 dimension, collapse the higher dimensions together
          * \return tensor after flatten

@@ -4,8 +4,8 @@
 
 // include this file only if the compiler is nvcc
 #include "tensor.h"
-#include "../utils/utils.h"
 #include "cuda/tensor_gpu-inl.cuh"
+#include "../utils/utils.h"
 
 namespace cxxnet {
     template<int dim>
@@ -15,6 +15,14 @@ namespace cxxnet {
                                            obj.shape[0] * sizeof(real_t), obj.FlatTo2D().shape[1] );        
         utils::Assert( err == cudaSuccess, cudaGetErrorString(err) );
         obj.shape.stride_ = static_cast<index_t>( pitch / sizeof(real_t) );
+    }
+
+    template<int dim>
+    inline Tensor<gpu,dim> NewGTensor(const Shape<dim> &shape, real_t initv){
+        Tensor<gpu, dim> obj( shape );
+        AllocSpace( obj );
+        Store<sv::saveto>( obj.FlatTo2D(), initv );
+        return obj;
     }
 
     template<int dim>
@@ -46,7 +54,11 @@ namespace cxxnet {
         Copy( dst, src, cudaMemcpyHostToDevice );
     }
 
-    // implementation of map
+    template<typename Saver,int dim>
+    inline void Store(Tensor<gpu,dim> _dst, real_t src){
+        cuda::Store<Saver>( _dst.FlatTo2D(), src );
+    }
+    
     template<typename Saver, typename BinaryMapper, int dim>
     inline void Map(Tensor<gpu,dim> _dst, const Tensor<gpu,dim> &_lhs, const Tensor<gpu,dim> &_rhs){
         utils::Assert( _dst.shape == _rhs.shape, "Map:shape mismatch" );
