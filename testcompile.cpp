@@ -5,14 +5,14 @@
 using namespace cxxnet;
 
 int main( void ){    
-    CTensor2D mat1 = NewCTensor( Shape2(10,10), 10 );
-    CTensor2D mat2 = NewCTensor( Shape2(10,10), 20 );
-    CTensor2D mat3 = NewCTensor( Shape2(10,10), 30 );
+    CTensor3D mat1 = NewCTensor( Shape3(2,4,10), 10 );
+    CTensor3D mat2 = NewCTensor( Shape3(2,4,10), 20 );
+    CTensor3D mat3 = NewCTensor( Shape3(2,4,10), 30 );
     Copy( mat1, mat2 );
     Map<sv::saveto, op::plus>(mat3, mat1, mat2);
-    for (unsigned i = 0; i < 10; ++i) {
-        for (unsigned j = 0; j < 10; ++j) {
-            printf("%.2f ", mat3[i][j]);
+    for (unsigned i = 0; i < 2; ++i) {
+        for (unsigned j = 0; j < 4; ++j) {
+            printf("%.2f ", mat3[i][j][0]);
         }
         printf("\n");
     }

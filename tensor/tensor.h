@@ -279,63 +279,65 @@ namespace cxxnet {
     /*!
      * \brief CPU/CPU: allocate space for CTensor, according to the shape in the obj
      *        this function is responsible to set the stride_ in each obj.shape
-     * \tparam dimension specify the dimension of tensor
+     * \tparam dim specify the dim of tensor
      * \param obj the tensor object, with shape specified
      */
-    template<int dimension>
-    inline void AllocSpace(Tensor<cpu,dimension> &obj);
-    template<int dimension>
-    inline void AllocSpace(Tensor<gpu,dimension> &obj);
+    template<int dim>
+    inline void AllocSpace(Tensor<cpu,dim> &obj);
+    template<int dim>
+    inline void AllocSpace(Tensor<gpu,dim> &obj);
 
     /*!
      * \brief CPU/GPU: free the space of tensor
-     * \tparam dimension specify the dimension of tensor
+     * \tparam dim specify the dim of tensor
      * \param obj the tensor object
      */
-    template<int dimension>
-    inline void FreeSpace(Tensor<cpu,dimension> &obj);
-    template<int dimension>
-    inline void FreeSpace(Tensor<gpu,dimension> &obj);
+    template<int dim>
+    inline void FreeSpace(Tensor<cpu,dim> &obj);
+    template<int dim>
+    inline void FreeSpace(Tensor<gpu,dim> &obj);
 
     /*!
      * \brief copy data from one tensor to another, with same shape
-     * \tparam dimension specify the dimension of tensor
+     * \tparam dim specify the dim of tensor
      * \param obj the tensor object, with shape specified
      */
-    template<int dimension>
-    inline void Copy(Tensor<cpu,dimension> dst, const Tensor<cpu,dimension> &src );
-    template<int dimension>
-    inline void Copy(Tensor<cpu,dimension> dst, const Tensor<gpu,dimension> &src );
-    template<int dimension>
-    inline void Copy(Tensor<gpu,dimension> dst, const Tensor<cpu,dimension> &src );
-    template<int dimension>
-    inline void Copy(Tensor<gpu,dimension> dst, const Tensor<gpu,dimension> &src );
+    template<int dim>
+    inline void Copy(Tensor<cpu,dim> dst, const Tensor<cpu,dim> &src );
+    template<int dim>
+    inline void Copy(Tensor<cpu,dim> dst, const Tensor<gpu,dim> &src );
+    template<int dim>
+    inline void Copy(Tensor<gpu,dim> dst, const Tensor<cpu,dim> &src );
+    template<int dim>
+    inline void Copy(Tensor<gpu,dim> dst, const Tensor<gpu,dim> &src );
     
     /*!
      * \brief CPU/GPU: storing function dst [st] src
      * \tparam SV specify storage method [st]
+     * \tparam dim dim of the tensor, during usage, there is no need to specify this parameter
      * \param dst destination
      * \param src the real data
      * \sa namespace cxxnet:sv
      */
-    template<typename SV>
-    inline void Store(CTensor2D dst, real_t src);
-    template<typename SV>
-    inline void Store(GTensor2D dst, real_t src);
+    template<typename SV,int dim>
+    inline void Store(Tensor<cpu,dim> dst, real_t src);
+    template<typename SV,int dim>
+    inline void Store(Tensor<gpu,dim> dst, real_t src);
 
     /*!
      * \brief CPU: binary mapping function dst [st] lhs [op] rhs
      * \tparam SV specify storage method [st]
      * \tparam OP specify binary operation [op]
+     * \tparam dim dim of the tensor, during usage, there is no need to specify this parameter
      * \param dst destination
      * \param lhs left operand
      * \param rhs right operand
      * \sa namespace cxxnet:sv, cxxnet::op
      */
-    template<typename SV, typename OP>
-    inline void Map(CTensor2D dst, const CTensor2D &lhs, const CTensor2D &rhs);
-    template<typename SV, typename OP>
-    inline void Map(GTensor2D dst, const GTensor2D &lhs, const GTensor2D &rhs);
+    template<typename SV, typename OP,int dim>
+    inline void Map(Tensor<cpu,dim> dst, const Tensor<cpu,dim> &lhs, const Tensor<cpu,dim> &rhs);
+    template<typename SV, typename OP,int dim>
+    inline void Map(Tensor<gpu,dim> dst, const Tensor<gpu,dim> &lhs, const Tensor<gpu,dim> &rhs);
 
 }; // namespace cxxnet
 
@@ -343,21 +345,21 @@ namespace cxxnet{
     // the following function is name dependent, have different name for CPU and GPU
     /*!
      * \brief CPU: short cut to allocate and initialize a CTensor
-     * \tparam dimension specify the dimension of tensor
+     * \tparam dim specify the dim of tensor
      * \param shape shape of the tensor
      * \return the allocated tensor
      */
-    template<int dimension>
-    inline Tensor<cpu,dimension> NewCTensor(const Shape<dimension> &shape, real_t initv);
+    template<int dim>
+    inline Tensor<cpu,dim> NewCTensor(const Shape<dim> &shape, real_t initv);
 
     /*!
      * \brief GPU: short cut to allocate and initialize a GTensor
-     * \tparam dimension specify the dimension of tensor
+     * \tparam dim specify the dim of tensor
      * \param shape shape of the tensor
      * \return the allocated tensor
      */
-    template<int dimension>
-    inline Tensor<gpu,dimension> NewGTensor(const Shape<dimension> &shape, real_t initv);
+    template<int dim>
+    inline Tensor<gpu,dim> NewGTensor(const Shape<dim> &shape, real_t initv);
     
 }; // namespace cxxnet
 // implementation

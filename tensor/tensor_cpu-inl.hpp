@@ -9,37 +9,38 @@
 namespace cxxnet {
     // cozy allocation, no alignment so far
     // TODO: aligned allocation for SSE
-    template<int dimension>
-    inline void AllocSpace(Tensor<cpu,dimension> &obj){
+    template<int dim>
+    inline void AllocSpace(Tensor<cpu,dim> &obj){
         obj.shape.stride_ = obj.shape[ 0 ];
         obj.dptr = new real_t[ obj.shape.MSize() ];
     }
 
-    template<int dimension>
-    inline Tensor<cpu,dimension> NewCTensor(const Shape<dimension> &shape, real_t initv){
-        Tensor<cpu, dimension> obj( shape );
+    template<int dim>
+    inline Tensor<cpu,dim> NewCTensor(const Shape<dim> &shape, real_t initv){
+        Tensor<cpu, dim> obj( shape );
         AllocSpace( obj );
         Store<sv::saveto>( obj.FlatTo2D(), initv );
         return obj;
     }
     // free the space
-    template<int dimension>
-    inline void FreeSpace(Tensor<cpu,dimension> &obj){
+    template<int dim>
+    inline void FreeSpace(Tensor<cpu,dim> &obj){
         delete [] obj.dptr;
     }
     // implementation of copy
-    template<int dimension>
-    inline void Copy(Tensor<cpu,dimension> dst, const Tensor<cpu,dimension> &src ){
-        utils::Assert( dst.shape == src.shape, "shape must agree during copy" );
-        CTensor2D dst2 = dst.FlatTo2D();
-        CTensor2D src2 = src.FlatTo2D();
-        for (index_t y = 0; y < dst2.shape[1]; y ++) {
-            memcpy( dst2[y].dptr, src2[y].dptr, sizeof(real_t) * dst2.shape[0] );
+    template<int dim>
+    inline void Copy(Tensor<cpu,dim> _dst, const Tensor<cpu,dim> &_src ){
+        utils::Assert( _dst.shape == _src.shape, "Copy:shape mismatch" );
+        CTensor2D dst = _dst.FlatTo2D();
+        CTensor2D src = _src.FlatTo2D();
+        for (index_t y = 0; y < dst.shape[1]; y ++) {
+            memcpy( dst[y].dptr, src[y].dptr, sizeof(real_t) * dst.shape[0] );
         }
-    }    
+    }
     // implementation of store
-    template<typename SV>
-    inline void Store( CTensor2D dst, real_t src ) {
+    template<typename SV,int dim>
+    inline void Store( Tensor<cpu,dim> _dst, real_t src ) {
+        CTensor2D dst = _dst.FlatTo2D();
         for (index_t y = 0; y < dst.shape[1]; y ++) {
             for (index_t x = 0; x < dst.shape[0]; x ++) {
                 sv::Saver<SV>::Save(dst[y][x], src);
@@ -47,8 +48,13 @@ namespace cxxnet {
         }
     }
     // implementation of map
-    template<typename SV, typename OP>
-    inline void Map(CTensor2D dst, const CTensor2D &lhs, const CTensor2D &rhs) {
+    template<typename SV, typename OP,int dim>
+    inline void Map(Tensor<cpu,dim> _dst, const Tensor<cpu,dim> &_lhs, const Tensor<cpu,dim> &_rhs){
+        utils::Assert( _dst.shape == _lhs.shape, "Map:shape mismatch" );
+        utils::Assert( _dst.shape == _rhs.shape, "Map:shape mismatch" );
+        CTensor2D dst = _dst.FlatTo2D();
+        CTensor2D lhs = _lhs.FlatTo2D();
+        CTensor2D rhs = _rhs.FlatTo2D();
         for (index_t y = 0; y < dst.shape[1]; y ++) {
             for (index_t x = 0; x < dst.shape[0]; x ++) {
                 // trust your compiler! -_- they will optimize it

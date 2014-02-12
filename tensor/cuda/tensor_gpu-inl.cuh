@@ -21,6 +21,10 @@ namespace cxxnet {
     }; // namespace cuda
 
     namespace cuda {
+        
+
+        
+        // implementation of map binary
         template<typename SV, typename OP, int block_dim_bits>
         __global__ void MapBinaryKernel(GTensor2D dst, GTensor2D lhs, GTensor2D rhs) {
             const index_t tid = (blockIdx.x << block_dim_bits) + threadIdx.x;
@@ -31,7 +35,6 @@ namespace cxxnet {
                 sv::GSaver<SV>::Save(dst[y][x], op::BinaryMapper<OP>::Map(lhs[y][x], rhs[y][x]));
             }
         }
-
         template<typename Saver, typename BinaryMapper>
         inline void MapBinary(GTensor2D dst, const GTensor2D &lhs, const GTensor2D &rhs) {
             const int num_block = (dst.shape.MSize() + BASE_THREAD_NUM-1) / BASE_THREAD_NUM;
@@ -44,8 +47,7 @@ namespace cxxnet {
             } else {
                 int repeat = (num_block + BASE_GRID_NUM-1) / BASE_GRID_NUM;
                 dim3 dimGrid(BASE_GRID_NUM, 1 , 1);
-                // TODO
-                
+                // TODO                
             }
         }
 
