@@ -1,14 +1,13 @@
 #ifndef CXXNET_TENSOR_GPU_INL_HPP
 #define CXXNET_TENSOR_GPU_INL_HPP
+#ifdef __CUDACC__
 
 // include this file only if the compiler is nvcc
-
 #include "tensor.h"
 #include "../utils/utils.h"
 #include "cuda/tensor_gpu-inl.cuh"
 
 namespace cxxnet {
-    // implementation of alloc
     template<int dim>
     inline void AllocSpace(Tensor<gpu,dim> &obj){
         size_t pitch;
@@ -16,6 +15,11 @@ namespace cxxnet {
                                            obj.shape[0] * sizeof(real_t), obj.FlatTo2D().shape[1] );        
         utils::Assert( err == cudaSuccess, cudaGetErrorString(err) );
         obj.shape.stride_ = static_cast<index_t>( pitch / sizeof(real_t) );
+    }
+
+    template<int dim>
+    inline void FreeSpace(Tensor<gpu,dim> &obj){
+        cudaFree( obj.dptr ); obj.dptr = NULL;
     }
 
     template<typename A,typename B, int dim>
@@ -51,4 +55,5 @@ namespace cxxnet {
     }
 }; // namespace cxxnet
 
+#endif
 #endif // TENSOR_GPU_INL_HPP

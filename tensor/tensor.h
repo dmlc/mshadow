@@ -2,11 +2,20 @@
 #define CXXNET_TENSOR_H
 /*!
  * \file tensor.h
- * \brief library definition of the tensor
- *
+ * \brief header file of tensor data structure and functions
  * \author Bing Hsu, Tianqi Chen
  */
 #include <cstdio>
+
+#ifdef _XINLINE_
+  #error "_XINLINE_ must not be defined"
+#endif
+#ifdef __CUDACC__
+  #define _XINLINE_ inline __device__ __host__
+#else
+  #define _XINLINE_ inline
+#endif
+
 /*! \brief namespace for cxxnet */
 namespace cxxnet {
     /*! \brief type that will be used for content */
@@ -32,8 +41,8 @@ namespace cxxnet {
 
     public:
         /*! \brief default constructor, do nothing */
-        Shape(void) {}
-        Shape( const Shape<dimension> &s ){
+        _XINLINE_ Shape(void) {}
+        _XINLINE_ Shape( const Shape<dimension> &s ){
             #pragma unroll
             for( int i = 0; i < zMaxShape; i ++ ){
                 this->shape_[i] = s[i];
@@ -45,7 +54,7 @@ namespace cxxnet {
          * \param idx dimension index
          * \return the corresponding dimension size
          */
-        inline index_t& operator[](index_t idx) {
+        _XINLINE_ index_t& operator[](index_t idx) {
             return shape_[ idx ];
         }
         /*!
@@ -53,15 +62,15 @@ namespace cxxnet {
          * \param idx dimension index
          * \return the corresponding dimension size
          */
-        inline const index_t& operator[](index_t idx) const {
+        _XINLINE_ const index_t& operator[](index_t idx) const {
             return shape_[ idx ];
         }
         /*! \return stride */
-        inline const index_t& stride(void) const {
+        _XINLINE_ const index_t& stride(void) const {
             return stride_;
         }
         /*! \return whether two shape equals */
-        inline bool operator==(const Shape<zMaxShape> &s) const {
+        _XINLINE_ bool operator==(const Shape<zMaxShape> &s) const {
             #pragma unroll
             for (int i = 0; i < zMaxShape; i++) {
                 if (s.shape_[i] != this->shape_[i]) return false;
@@ -72,7 +81,7 @@ namespace cxxnet {
          * flatten the higher dimension to second dimension, return a 2D shape
          * \return the flat 2d shape
          */
-        inline Shape<2> FlatTo2D(void) const {
+        _XINLINE_ Shape<2> FlatTo2D(void) const {
             Shape<2> s;
             s.stride_ = this->stride_;
             s.shape_[ 0 ] = this->shape_[ 0 ];
@@ -86,7 +95,7 @@ namespace cxxnet {
             return s;
         }
         /*! \return number of valid elements */
-        inline size_t Size(void) {
+        _XINLINE_ size_t Size(void) {
             size_t memsz = this->shape_[ 0 ];
             #pragma unroll
             for (int i = 1; i < zMaxShape; ++i) {
@@ -95,7 +104,7 @@ namespace cxxnet {
             return memsz;
         }
         /*! \return memory size, including the aligned x dimension */
-        inline size_t MSize(void) const {
+        _XINLINE_ size_t MSize(void) const {
             size_t memsz = this->stride_;
             #pragma unroll
             for (int i = 1; i < zMaxShape; ++i) {
@@ -107,7 +116,7 @@ namespace cxxnet {
          * \brief get subshape
          * \return subshape
          */
-        inline Shape<zSubShape> SubShape(void) const {
+        _XINLINE_ Shape<zSubShape> SubShape(void) const {
             Shape<zSubShape> s;
             s.stride_ = this->stride_;
             // for cuda
@@ -133,7 +142,7 @@ namespace cxxnet {
      * \param s0 size of dimension 0
      * \return the shape construction
      */
-    inline Shape<1> Shape1( index_t s0 ){
+    _XINLINE_ Shape<1> Shape1( index_t s0 ){
         Shape<1> s; s[0] = s0;
         return s;
     }
@@ -143,7 +152,7 @@ namespace cxxnet {
      * \param s0 size of dimension 0
      * \return the shape construction
      */
-    inline Shape<2> Shape2( index_t s1, index_t s0 ){
+    _XINLINE_ Shape<2> Shape2( index_t s1, index_t s0 ){
         Shape<2> s; s[0] = s0; s[1] = s1;
         return s;
     }
@@ -154,7 +163,7 @@ namespace cxxnet {
      * \param s0 size of dimension 0
      * \return the shape construction
      */
-    inline Shape<3> Shape3( index_t s2, index_t s1, index_t s0 ){
+    _XINLINE_ Shape<3> Shape3( index_t s2, index_t s1, index_t s0 ){
         Shape<3> s; s[0] = s0; s[1] = s1; s[2] = s2;
         return s;
     }
@@ -166,7 +175,7 @@ namespace cxxnet {
      * \param s0 size of dimension 0
      * \return the shape construction
      */
-    inline Shape<4> Shape4( index_t s3, index_t s2, index_t s1, index_t s0 ){
+    _XINLINE_ Shape<4> Shape4( index_t s3, index_t s2, index_t s1, index_t s0 ){
         Shape<4> s; s[0] = s0; s[1] = s1; s[2] = s2; s[3] = s3;
         return s;
     }
@@ -202,16 +211,16 @@ namespace cxxnet {
         Shape<dimension> shape;
     public:
         /*! \brief default constructor */
-        Tensor(void) {}
+        _XINLINE_ Tensor(void) {}
         /*! \brief constructor from shape  */
-        Tensor(const Shape<dimension> &shape): shape(shape) {}
+        _XINLINE_ Tensor(const Shape<dimension> &shape): shape(shape) {}
         /*! \brief constructor from data pointer and shape  */
-        Tensor(real_t *dptr, const Shape<dimension> &shape): dptr(dptr), shape(shape) {}
+        _XINLINE_ Tensor(real_t *dptr, const Shape<dimension> &shape): dptr(dptr), shape(shape) {}
         /*!
          * \brief flatten the tensor to 2 dimension, collapse the higher dimensions together
          * \return tensor after flatten
          */
-        inline Tensor<Device, 2> FlatTo2D(void) const {
+        _XINLINE_ Tensor<Device, 2> FlatTo2D(void) const {
             return Tensor<Device, 2>(reinterpret_cast<real_t*> \
                                      (dptr), shape.FlatTo2D());
         }
@@ -220,7 +229,7 @@ namespace cxxnet {
          * \param idx index
          * \return the result tensor
          */
-        inline Tensor<Device, kSubdim> operator[](index_t idx) const {
+        _XINLINE_ Tensor<Device, kSubdim> operator[](index_t idx) const {
             Shape<kSubdim> s = shape.SubShape();
             return Tensor<Device, kSubdim>(reinterpret_cast<real_t*> \
                                            (dptr) + s.MSize() * idx, s);
@@ -229,7 +238,7 @@ namespace cxxnet {
          * \brief slice the tensor
          * \return tensor after slice
          */
-        inline Tensor<Device, dimension> Slice(index_t begin, index_t end) const {
+        _XINLINE_ Tensor<Device, dimension> Slice(index_t begin, index_t end) const {
             Shape<dimension> s = this->shape;
             s[ dimension - 1 ] = end - begin;
             return Tensor<Device, dimension>(reinterpret_cast<real_t*>\
@@ -247,20 +256,20 @@ namespace cxxnet {
         real_t *dptr;
         Shape<1> shape;
     public:
-        Tensor(void) {}
-        Tensor(real_t *dptr, Shape<1> shape) :dptr(dptr), shape(shape) {}
-        inline Tensor<Device, 2> FlatTo2D(void) const {
+        _XINLINE_ Tensor(void) {}
+        _XINLINE_ Tensor(real_t *dptr, Shape<1> shape) :dptr(dptr), shape(shape) {}
+        _XINLINE_ Tensor<Device, 2> FlatTo2D(void) const {
             return Tensor<Device, 2>(reinterpret_cast<real_t*> \
                                      (dptr), shape.FlatTo2D());
         }
-        inline Tensor<Device, 1> Slice(index_t begin, index_t end) const {
+        _XINLINE_ Tensor<Device, 1> Slice(index_t begin, index_t end) const {
             Shape<1> s;
             s[0] = s.stride_ = end  - begin;
             return Tensor<Device, 1>(reinterpret_cast<real_t*> \
                                      (dptr) + begin, s);
         }
-        inline real_t &operator[](index_t idx) { return dptr[ idx ]; }
-        inline const real_t &operator[](index_t idx)const { return dptr[ idx ]; }
+        _XINLINE_ real_t &operator[](index_t idx) { return dptr[ idx ]; }
+        _XINLINE_ const real_t &operator[](index_t idx)const { return dptr[ idx ]; }
     };
 }; // namespace cxxnet
 
@@ -368,5 +377,6 @@ namespace cxxnet{
 // implementation
 #include "tensor_op.h"
 #include "tensor_cpu-inl.hpp"
+#include "tensor_gpu-inl.hpp"
 
 #endif // TENSOR_H

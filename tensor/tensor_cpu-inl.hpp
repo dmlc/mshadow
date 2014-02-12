@@ -22,12 +22,12 @@ namespace cxxnet {
         Store<sv::saveto>( obj.FlatTo2D(), initv );
         return obj;
     }
-    // free the space
+
     template<int dim>
     inline void FreeSpace(Tensor<cpu,dim> &obj){
-        delete [] obj.dptr;
+        delete [] obj.dptr; obj.dptr = NULL;
     }
-    // implementation of copy
+
     template<int dim>
     inline void Copy(Tensor<cpu,dim> _dst, const Tensor<cpu,dim> &_src ){
         utils::Assert( _dst.shape == _src.shape, "Copy:shape mismatch" );
@@ -37,7 +37,7 @@ namespace cxxnet {
             memcpy( dst[y].dptr, src[y].dptr, sizeof(real_t) * dst.shape[0] );
         }
     }
-    // implementation of store
+
     template<typename SV,int dim>
     inline void Store( Tensor<cpu,dim> _dst, real_t src ) {
         CTensor2D dst = _dst.FlatTo2D();
@@ -47,7 +47,7 @@ namespace cxxnet {
             }        
         }
     }
-    // implementation of map
+
     template<typename SV, typename OP,int dim>
     inline void Map(Tensor<cpu,dim> _dst, const Tensor<cpu,dim> &_lhs, const Tensor<cpu,dim> &_rhs){
         utils::Assert( _dst.shape == _lhs.shape, "Map:shape mismatch" );
