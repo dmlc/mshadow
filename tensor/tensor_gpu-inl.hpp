@@ -1,6 +1,11 @@
 #ifndef CXXNET_TENSOR_GPU_INL_HPP
 #define CXXNET_TENSOR_GPU_INL_HPP
 #ifdef __CUDACC__
+/*!
+ * \file tensor_cpu-inl.hpp
+ * \brief implementation of GPU host code
+ * \author Bing Hsu, Tianqi Chen
+ */
 
 // include this file only if the compiler is nvcc
 #include "tensor.h"

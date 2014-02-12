@@ -5,7 +5,6 @@
 /*!
  * \file utils.h
  * \brief utilities that could be useful
- *
  * \author Tianqi Chen
  */
 namespace cxxnet{

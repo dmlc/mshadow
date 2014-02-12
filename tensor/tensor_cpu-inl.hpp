@@ -1,7 +1,11 @@
 #ifndef CXXNET_TENSOR_CPU_INL_HPP
 #define CXXNET_TENSOR_CPU_INL_HPP
+/*!
+ * \file tensor_cpu-inl.hpp
+ * \brief implementation of CPU host code
+ * \author Bing Hsu, Tianqi Chen
+ */
 
-#include <algorithm>
 #include <cstring>
 #include "tensor_op.h"
 #include "../utils/utils.h"

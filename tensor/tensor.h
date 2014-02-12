@@ -337,7 +337,7 @@ namespace cxxnet {
     inline void Store(Tensor<gpu,dim> dst, real_t src);
 
     /*!
-     * \brief CPU: binary mapping function dst [st] lhs [op] rhs
+     * \brief CPU/GPU: binary mapping function dst [st] lhs [op] rhs
      * \tparam Saver specify storage method [st]
      * \tparam BinaryMapper specify binary operation [op]
      * \tparam dim dim of the tensor, during usage, there is no need to specify this parameter

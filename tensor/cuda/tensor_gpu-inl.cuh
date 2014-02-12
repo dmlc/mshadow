@@ -2,8 +2,7 @@
 #define CXXNET_TENSOR_GPU_INL_CUH
 /*!
  * \file tensor_gpu-inl.cuh
- * \brief implementation of tensor data structure for GPU
- *
+ * \brief implementation of GPU code using CUDA
  * \author Bing Hsu, Tianqi Chen
  */
 #include "../tensor.h"
