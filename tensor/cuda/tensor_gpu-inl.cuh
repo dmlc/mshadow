@@ -83,8 +83,8 @@ namespace cxxnet {
     }; // namespace cuda
 
     namespace cuda {                
-        template<typename Saver, typename Exp, int block_dim_bits>
-        __global__ void MapExpKernel(GTensor2D dst, const Exp exp){
+        template<typename Saver, typename Plan, int block_dim_bits>
+        __global__ void MapPlanKernel(GTensor2D dst, const Plan exp){
             const index_t tid = (blockIdx.x << block_dim_bits) + threadIdx.x;
             const index_t xstride = dst.shape.stride_;
             const int y   = tid / xstride;
@@ -94,14 +94,14 @@ namespace cxxnet {
             }
         }
         template<typename Saver, typename E>
-        inline void MapExp(GTensor2D dst, const algebra::Exp<E> &exp ){
+        inline void MapPlan(GTensor2D dst, const expr::Plan<E> &plan ){
             const int num_block = (dst.shape.MSize() + kBaseThreadNum-1) / kBaseThreadNum;
             dim3 dimBlock(kBaseThreadNum, 1, 1);
             
             if (num_block < kMaxGridNum) {
                 dim3 dimGrid(num_block, 1, 1);
-                MapExpKernel<Saver, E, kBaseThreadBits>  \
-                    <<<dimGrid,dimBlock>>>(dst, exp.self());
+                MapPlanKernel<Saver, expr::Plan<E>, kBaseThreadBits>   \
+                    <<<dimGrid,dimBlock>>>(dst, plan);
             } else {
                 utils::Error("not implemented");                
             }

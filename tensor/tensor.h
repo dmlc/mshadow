@@ -27,7 +27,6 @@ namespace cxxnet {
         /*! \brief maximum dimension of tensor */
         const static int zMaxShape = dimension;
         const static int zSubShape = dimension - 1;
-
     public:
         /*! \brief default constructor, do nothing */
         _XINLINE_ Shape(void) {}
@@ -186,7 +185,7 @@ namespace cxxnet {
      * \tparam dimension dimension of the tensor
      */
     template<typename Device, int dimension>
-    struct Tensor {
+    struct Tensor: public expr::ContainerExp< Tensor<Device,dimension> >{
     public:
         /*! \brief whether current type lies in cpu */
         const static bool kDevCPU = Device::kDevCPU;
@@ -233,6 +232,19 @@ namespace cxxnet {
             return Tensor<Device, dimension>(reinterpret_cast<real_t*>\
                                              (dptr) + s.SubShape().MSize() * begin, s);
         }
+    public:
+        // functions to fit expression template
+        inline Tensor<Device,dimension>& operator=( double s ){
+            return this->__assign( s );
+        }
+        template<typename E>
+        inline Tensor<Device,dimension>& operator=( const expr::Exp<E,expr::type::kMapper> &exp ){
+            return this->__assign( exp );
+        }
+        template<typename E>
+        inline Tensor<Device,dimension>& operator=( const expr::Exp<E,expr::type::kComplex> &exp ){
+            return this->__assign( exp );
+        }
     };
 
     /*!
@@ -240,7 +252,7 @@ namespace cxxnet {
      * \tparam Device device type
      */
     template<typename Device>
-    struct Tensor<Device, 1> {
+    struct Tensor<Device, 1>: public expr::ContainerExp< Tensor<Device,1> >{
     public:
         real_t *dptr;
         Shape<1> shape;
@@ -259,6 +271,19 @@ namespace cxxnet {
         }
         _XINLINE_ real_t &operator[](index_t idx) { return dptr[ idx ]; }
         _XINLINE_ const real_t &operator[](index_t idx)const { return dptr[ idx ]; }
+    public:
+        // functions to fit expression template
+        inline Tensor<Device,1>& operator=( double s ){
+            return this->__assign( s );
+        }
+        template<typename E>
+        inline Tensor<Device,1>& operator=( const expr::Exp<E,expr::type::kMapper> &exp ){
+            return this->__assign( exp );
+        }
+        template<typename E>
+        inline Tensor<Device,1>& operator=( const expr::Exp<E,expr::type::kComplex> &exp ){
+            return this->__assign( exp );
+        }
     };
 }; // namespace cxxnet
 
@@ -274,8 +299,6 @@ namespace cxxnet {
     typedef Tensor<gpu, 4> GTensor4D;
 }; // namespace cxxnet
 
-// algebra tree for MapExp
-#include "tensor_algebra.h"
 
 // add unroll loops for the shape
 namespace cxxnet {
@@ -343,19 +366,41 @@ namespace cxxnet {
     template<typename Saver, typename BinaryMapper,int dim>
     inline void Map(Tensor<gpu,dim> dst, const Tensor<gpu,dim> &lhs, const Tensor<gpu,dim> &rhs);
 
+    namespace expr{
+        /*!
+         * \brief execution plan hat can be used to carry out calculation for specific expression
+         * \tparam ExpType type of expression
+         */
+        template<typename ExpType>
+        class Plan;        
+    };    
     /*!
-     * \brief CPU/GPU: map a expression to a tensor
+     * \brief CPU/GPU: map a expression plan to a tensor
      * \tparam Saver specify storage method [st]
-     * \tparam T specifies the expression type, not need to specify this parameter during usage
+     * \tparam E specifies the expression type, not need to specify this parameter during usage
      * \tparam dim dim of the tensor, during usage, there is no need to specify this parameter
      * \param dst destination
-     * \param exp expression
-     * \sa namespace cxxnet:sv, cxxnet::op, cxxnet::algebra
+     * \param plan expression plan of expression
+     * \sa namespace cxxnet:sv, cxxnet::op, cxxnet::expr
      */
     template<typename Saver, typename E, int dim>
-    inline void MapExp(Tensor<cpu,dim> dst, const algebra::Exp<E> &exp );
-    template<typename Saver, typename E,int dim>
-    inline void MapExp(Tensor<gpu,dim> dst, const algebra::Exp<E> &exp );
+    inline void MapPlan(Tensor<cpu,dim> dst, const expr::Plan<E> &plan );
+    template<typename Saver, typename E, int dim>
+    inline void MapPlan(Tensor<gpu,dim> dst, const expr::Plan<E> &plan );
+
+    /*!
+     * \brief CPU/GPU: map a expression to a tensor, this function calls MapPlan
+     * \tparam Saver specify storage method [st]
+     * \tparam Device cpu or gpu
+     * \tparam dim dim of the tensor, during usage, there is no need to specify this parameter
+     * \tparam E specifies the expression type, not need to specify this parameter during usage
+     * \param dst destination
+     * \param exp expression
+     * \sa namespace cxxnet:sv, cxxnet::op, cxxnet::expr
+     */
+    template<typename Saver, typename Device, int dim, typename E, int etype>
+    inline void MapExp(Tensor<Device,dim> dst, const expr::Exp<E,etype> &exp );
+
 }; // namespace cxxnet
 
 namespace cxxnet{
@@ -379,7 +424,9 @@ namespace cxxnet{
     inline Tensor<gpu,dim> NewGTensor(const Shape<dim> &shape, real_t initv);
     
 }; // namespace cxxnet
+
 #include "tensor_cpu-inl.hpp"
 #include "tensor_gpu-inl.hpp"
+#include "tensor_expr_engine-inl.hpp"
 
 #endif // TENSOR_H

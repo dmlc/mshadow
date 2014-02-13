@@ -69,12 +69,12 @@ namespace cxxnet {
 
 
     template<typename Saver, typename E, int dim>
-    inline void MapExp(Tensor<cpu,dim> _dst, const algebra::Exp<E> &exp){
+    inline void MapPlan(Tensor<cpu,dim> _dst, const expr::Plan<E> &plan){
         CTensor2D dst = _dst.FlatTo2D();
         for (index_t y = 0; y < dst.shape[1]; y ++) {
             for (index_t x = 0; x < dst.shape[0]; x ++) {
                 // trust your compiler! -_- they will optimize it
-                Saver::Save(dst[y][x], exp.self().eval( y, x ) );
+                Saver::Save(dst[y][x], plan.eval( y, x ) );
             }
         }
     }

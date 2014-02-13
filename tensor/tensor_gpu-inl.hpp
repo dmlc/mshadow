@@ -72,8 +72,8 @@ namespace cxxnet {
     }
 
     template<typename Saver, typename E, int dim>
-    inline void MapExp(Tensor<gpu,dim> _dst, const algebra::Exp<E> &exp ){ 
-        cuda::MapExp<Saver>( _dst.FlatTo2D(), exp );
+    inline void MapPlan(Tensor<gpu,dim> _dst, const expr::Plan<E> &plan ){ 
+        cuda::MapPlan<Saver>( _dst.FlatTo2D(), plan );
     }
 }; // namespace cxxnet
 

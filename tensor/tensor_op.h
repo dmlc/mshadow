@@ -35,7 +35,7 @@ namespace cxxnet {
             }            
         };
         /*! \brief save to saver: += */
-        struct addto {
+        struct plusto {
             _XINLINE_ static void Save(real_t& a, real_t b) {
                 a += b;
             }        
