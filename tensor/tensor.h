@@ -27,8 +27,8 @@ namespace mshadow {
         const static int zSubShape = dimension - 1;
     public:
         /*! \brief default constructor, do nothing */
-        _XINLINE_ Shape(void) {}
-        _XINLINE_ Shape( const Shape<dimension> &s ){
+        MSHADOW_XINLINE Shape(void) {}
+        MSHADOW_XINLINE Shape( const Shape<dimension> &s ){
             #pragma unroll
             for( int i = 0; i < zMaxShape; i ++ ){
                 this->shape_[i] = s[i];
@@ -40,7 +40,7 @@ namespace mshadow {
          * \param idx dimension index
          * \return the corresponding dimension size
          */
-        _XINLINE_ index_t& operator[](index_t idx) {
+        MSHADOW_XINLINE index_t& operator[](index_t idx) {
             return shape_[ idx ];
         }
         /*!
@@ -48,15 +48,15 @@ namespace mshadow {
          * \param idx dimension index
          * \return the corresponding dimension size
          */
-        _XINLINE_ const index_t& operator[](index_t idx) const {
+        MSHADOW_XINLINE const index_t& operator[](index_t idx) const {
             return shape_[ idx ];
         }
         /*! \return stride */
-        _XINLINE_ const index_t& stride(void) const {
+        MSHADOW_XINLINE const index_t& stride(void) const {
             return stride_;
         }
         /*! \return whether two shape equals */
-        _XINLINE_ bool operator==(const Shape<zMaxShape> &s) const {
+        MSHADOW_XINLINE bool operator==(const Shape<zMaxShape> &s) const {
             #pragma unroll
             for (int i = 0; i < zMaxShape; i++) {
                 if (s.shape_[i] != this->shape_[i]) return false;
@@ -67,7 +67,7 @@ namespace mshadow {
          * flatten the higher dimension to second dimension, return a 2D shape
          * \return the flat 2d shape
          */
-        _XINLINE_ Shape<2> FlatTo2D(void) const {
+        MSHADOW_XINLINE Shape<2> FlatTo2D(void) const {
             Shape<2> s;
             s.stride_ = this->stride_;
             s.shape_[ 0 ] = this->shape_[ 0 ];
@@ -81,7 +81,7 @@ namespace mshadow {
             return s;
         }
         /*! \return number of valid elements */
-        _XINLINE_ size_t Size(void) {
+        MSHADOW_XINLINE size_t Size(void) {
             size_t memsz = this->shape_[ 0 ];
             #pragma unroll
             for (int i = 1; i < zMaxShape; ++i) {
@@ -90,7 +90,7 @@ namespace mshadow {
             return memsz;
         }
         /*! \return memory size, including the aligned x dimension */
-        _XINLINE_ size_t MSize(void) const {
+        MSHADOW_XINLINE size_t MSize(void) const {
             size_t memsz = this->stride_;
             #pragma unroll
             for (int i = 1; i < zMaxShape; ++i) {
@@ -102,7 +102,7 @@ namespace mshadow {
          * \brief get subshape
          * \return subshape
          */
-        _XINLINE_ Shape<zSubShape> SubShape(void) const {
+        MSHADOW_XINLINE Shape<zSubShape> SubShape(void) const {
             Shape<zSubShape> s;
             s.stride_ = this->stride_;
             // for cuda
@@ -128,7 +128,7 @@ namespace mshadow {
      * \param s0 size of dimension 0
      * \return the shape construction
      */
-    _XINLINE_ Shape<1> Shape1( index_t s0 ){
+    MSHADOW_XINLINE Shape<1> Shape1( index_t s0 ){
         Shape<1> s; s[0] = s0;
         return s;
     }
@@ -138,7 +138,7 @@ namespace mshadow {
      * \param s0 size of dimension 0
      * \return the shape construction
      */
-    _XINLINE_ Shape<2> Shape2( index_t s1, index_t s0 ){
+    MSHADOW_XINLINE Shape<2> Shape2( index_t s1, index_t s0 ){
         Shape<2> s; s[0] = s0; s[1] = s1;
         return s;
     }
@@ -149,7 +149,7 @@ namespace mshadow {
      * \param s0 size of dimension 0
      * \return the shape construction
      */
-    _XINLINE_ Shape<3> Shape3( index_t s2, index_t s1, index_t s0 ){
+    MSHADOW_XINLINE Shape<3> Shape3( index_t s2, index_t s1, index_t s0 ){
         Shape<3> s; s[0] = s0; s[1] = s1; s[2] = s2;
         return s;
     }
@@ -161,7 +161,7 @@ namespace mshadow {
      * \param s0 size of dimension 0
      * \return the shape construction
      */
-    _XINLINE_ Shape<4> Shape4( index_t s3, index_t s2, index_t s1, index_t s0 ){
+    MSHADOW_XINLINE Shape<4> Shape4( index_t s3, index_t s2, index_t s1, index_t s0 ){
         Shape<4> s; s[0] = s0; s[1] = s1; s[2] = s2; s[3] = s3;
         return s;
     }
@@ -197,16 +197,16 @@ namespace mshadow {
         Shape<dimension> shape;
     public:
         /*! \brief default constructor */
-        _XINLINE_ Tensor(void) {}
+        MSHADOW_XINLINE Tensor(void) {}
         /*! \brief constructor from shape  */
-        _XINLINE_ Tensor(const Shape<dimension> &shape): shape(shape) {}
+        MSHADOW_XINLINE Tensor(const Shape<dimension> &shape): shape(shape) {}
         /*! \brief constructor from data pointer and shape  */
-        _XINLINE_ Tensor(real_t *dptr, const Shape<dimension> &shape): dptr((real_t*)dptr), shape(shape) {}
+        MSHADOW_XINLINE Tensor(real_t *dptr, const Shape<dimension> &shape): dptr((real_t*)dptr), shape(shape) {}
         /*!
          * \brief flatten the tensor to 2 dimension, collapse the higher dimensions together
          * \return tensor after flatten
          */
-        _XINLINE_ Tensor<Device, 2> FlatTo2D(void) const {
+        MSHADOW_XINLINE Tensor<Device, 2> FlatTo2D(void) const {
             return Tensor<Device, 2>(reinterpret_cast<real_t*> \
                                      (dptr), shape.FlatTo2D());
         }
@@ -215,7 +215,7 @@ namespace mshadow {
          * \param idx index
          * \return the result tensor
          */
-        _XINLINE_ Tensor<Device, kSubdim> operator[](index_t idx) const {
+        MSHADOW_XINLINE Tensor<Device, kSubdim> operator[](index_t idx) const {
             Shape<kSubdim> s = shape.SubShape();
             return Tensor<Device, kSubdim>(reinterpret_cast<real_t*> \
                                            (dptr) + s.MSize() * idx, s);
@@ -224,7 +224,7 @@ namespace mshadow {
          * \brief slice the tensor
          * \return tensor after slice
          */
-        _XINLINE_ Tensor<Device, dimension> Slice(index_t begin, index_t end) const {
+        MSHADOW_XINLINE Tensor<Device, dimension> Slice(index_t begin, index_t end) const {
             Shape<dimension> s = this->shape;
             s[ dimension - 1 ] = end - begin;
             return Tensor<Device, dimension>(reinterpret_cast<real_t*>\
@@ -255,20 +255,20 @@ namespace mshadow {
         real_t *dptr;
         Shape<1> shape;
     public:
-        _XINLINE_ Tensor(void) {}
-        _XINLINE_ Tensor(real_t *dptr, Shape<1> shape) :dptr(dptr), shape(shape) {}
-        _XINLINE_ Tensor<Device, 2> FlatTo2D(void) const {
+        MSHADOW_XINLINE Tensor(void) {}
+        MSHADOW_XINLINE Tensor(real_t *dptr, Shape<1> shape) :dptr(dptr), shape(shape) {}
+        MSHADOW_XINLINE Tensor<Device, 2> FlatTo2D(void) const {
             return Tensor<Device, 2>(reinterpret_cast<real_t*> \
                                      (dptr), shape.FlatTo2D());
         }
-        _XINLINE_ Tensor<Device, 1> Slice(index_t begin, index_t end) const {
+        MSHADOW_XINLINE Tensor<Device, 1> Slice(index_t begin, index_t end) const {
             Shape<1> s;
             s[0] = s.stride_ = end  - begin;
             return Tensor<Device, 1>(reinterpret_cast<real_t*> \
                                      (dptr) + begin, s);
         }
-        _XINLINE_ real_t &operator[](index_t idx) { return dptr[ idx ]; }
-        _XINLINE_ const real_t &operator[](index_t idx)const { return dptr[ idx ]; }
+        MSHADOW_XINLINE real_t &operator[](index_t idx) { return dptr[ idx ]; }
+        MSHADOW_XINLINE const real_t &operator[](index_t idx)const { return dptr[ idx ]; }
     public:
         // functions to fit expression template
         inline Tensor<Device,1>& operator=( double s ){

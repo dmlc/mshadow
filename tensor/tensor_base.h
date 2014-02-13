@@ -10,13 +10,14 @@
 #include <cstdio>
 #include <cstdlib>
 
-#ifdef _XINLINE_
-  #error "_XINLINE_ must not be defined"
+// MSHADOW_XINLINE is used for inlining template code for both CUDA and CPU code.
+#ifdef MSHADOW_XINLINE
+  #error "MSHADOW_XINLINE must not be defined"
 #endif
 #ifdef __CUDACC__
-  #define _XINLINE_ inline __device__ __host__
+  #define MSHADOW_XINLINE inline __attribute__((always_inline)) __device__ __host__
 #else
-  #define _XINLINE_ inline
+  #define MSHADOW_XINLINE inline __attribute__((always_inline))
 #endif
 
 /*! \brief namespace for mshadow */
@@ -32,31 +33,31 @@ namespace mshadow {
     namespace sv { 
         /*! \brief save to saver: = */
         struct saveto {
-            _XINLINE_ static void Save(real_t& a, real_t b) {
+            MSHADOW_XINLINE static void Save(real_t& a, real_t b) {
                 a  = b;
             }            
         };
         /*! \brief save to saver: += */
         struct plusto {
-            _XINLINE_ static void Save(real_t& a, real_t b) {
+            MSHADOW_XINLINE static void Save(real_t& a, real_t b) {
                 a += b;
             }        
         };
         /*! \brief minus to saver: -= */
         struct minusto {
-            _XINLINE_ static void Save(real_t& a, real_t b) {
+            MSHADOW_XINLINE static void Save(real_t& a, real_t b) {
                 a -= b;
             }        
         };
         /*! \brief multiply to saver: *= */
         struct multo {
-            _XINLINE_ static void Save(real_t& a, real_t b) {
+            MSHADOW_XINLINE static void Save(real_t& a, real_t b) {
                 a *= b;
             }        
         };
         /*! \brief divide to saver: /= */
         struct divto {
-            _XINLINE_ static void Save(real_t& a, real_t b) {
+            MSHADOW_XINLINE static void Save(real_t& a, real_t b) {
                 a /= b;
             }  
         };
@@ -67,25 +68,25 @@ namespace mshadow {
         // binary operator
         /*! \brief mul operator */
         struct mul{
-            _XINLINE_ static real_t Map(real_t a, real_t b) {
+            MSHADOW_XINLINE static real_t Map(real_t a, real_t b) {
                 return a * b;
             }
         };
         /*! \brief plus operator */
         struct plus {
-            _XINLINE_ static real_t Map(real_t a, real_t b) {
+            MSHADOW_XINLINE static real_t Map(real_t a, real_t b) {
                 return a + b;
             }        
         };
         /*! \brief minus operator */
         struct minus {
-            _XINLINE_ static real_t Map(real_t a, real_t b) {
+            MSHADOW_XINLINE static real_t Map(real_t a, real_t b) {
                 return a - b;
             }
         };
         /*! \brief divide operator */
         struct div {
-            _XINLINE_ static real_t Map(real_t a, real_t b) {
+            MSHADOW_XINLINE static real_t Map(real_t a, real_t b) {
                 return a / b;
             }        
         };
@@ -95,13 +96,13 @@ namespace mshadow {
         // unary operator/ function
         /*! \brief function */
         struct identity{
-            _XINLINE_ static real_t Map(real_t a) {
+            MSHADOW_XINLINE static real_t Map(real_t a) {
                 return a;
             }
         };
         /*! \brief sigmoid operator */
         struct sigmoid {
-            _XINLINE_ static real_t Map(real_t a) {
+            MSHADOW_XINLINE static real_t Map(real_t a) {
                 return 1.0f /(1.0f + expf(-a));
             }        
         };
