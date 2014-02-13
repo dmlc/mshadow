@@ -13,10 +13,8 @@ void testcuda2( CTensor3D mat1, CTensor3D mat2, CTensor3D mat3 ){
     Copy( gmat2, mat2 );
     printf("alloc space finish\n");
     MapExp<sv::saveto>( gmat3, 
-                        MakeExp<op::mul>
-                        (
-                         MakeExp<op::plus> ( gmat1, ScalarExp(100.0f) ),
-                         ScalarExp(3.0f)
-                         ) );
-    Copy( mat3, gmat3 );    
+                        F<op::mul>( F<op::plus>( gmat1, ScalarExp(100.0f) ),
+                                    ScalarExp(3.0f) ) );
+    gmat3 += gmat1;
+    Copy( mat3, gmat3 );
 }

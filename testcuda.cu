@@ -16,9 +16,9 @@ void testcuda( CTensor3D mat1, CTensor3D mat2, CTensor3D mat3 ){
     Copy( gmat1, mat1 );
     Copy( gmat2, mat2 );
     printf("alloc space finish\n");
-    gmat3  = MakeExp<op::identity>( gmat1 +gmat2+3.0 );
+    gmat3  = F<op::identity>( gmat1 +gmat2+3.0 );
     gmat3 += gmat1;
-
+    
     Copy( mat3, gmat3 );    
     gmat4 = gmat1;
     printf("%d==1\n", gmat4.dptr == gmat1.dptr);

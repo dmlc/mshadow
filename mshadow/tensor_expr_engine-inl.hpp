@@ -23,8 +23,8 @@ namespace mshadow{
         template <typename Device, int dim>
         class Plan< Tensor<Device,dim> >{
         public:
-            Plan( const real_t *dptr, index_t stride )
-                :dptr_(dptr),stride_(stride){}
+            Plan( const Tensor<Device,dim> &t )
+                :dptr_(t.dptr),stride_(t.shape.stride_){}
             MSHADOW_XINLINE real_t Eval( index_t y, index_t x ) const{
                 return dptr_[ y * stride_ + x ];
             }            
@@ -76,9 +76,9 @@ namespace mshadow{
                 return Plan<ScalarExp>( e.scalar_ );
             }
             
-            template<typename Device, int dim>
-            inline Plan< Tensor<Device,dim> > MakePlan( const Tensor<Device,dim> &e ){
-                return Plan< Tensor<Device,dim> >( e.dptr, e.shape.stride_ );
+            template<typename T>
+            inline Plan<T> MakePlan( const ContainerExp<T> &e ){
+                return Plan<T>( e.self() );
             }
 
             template<typename OP, typename TA, typename TB, int etype>

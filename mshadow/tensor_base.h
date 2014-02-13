@@ -93,18 +93,14 @@ namespace mshadow {
     }; // namespace op
 
     namespace op {
-        // unary operator/ function
-        /*! \brief function */
+        // unary operator/ function: example
+        // these operators can be defined by user, in the same style as binary and unary operator
+        // to use, simply write F<op::identity>( src )
+        /*! \brief identity function that maps a real number to it self */
         struct identity{
             MSHADOW_XINLINE static real_t Map(real_t a) {
                 return a;
             }
-        };
-        /*! \brief sigmoid operator */
-        struct sigmoid {
-            MSHADOW_XINLINE static real_t Map(real_t a) {
-                return 1.0f /(1.0f + expf(-a));
-            }        
         };
     }; // namespace op
 

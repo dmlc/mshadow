@@ -160,6 +160,7 @@ namespace mshadow{
          * \tparam OP operator
          * \tparam TA type of lhs
          * \tparam TB type of rhs
+         * \tparam etype expression type, sa namespace::type
          */
         template<typename OP, typename TA, typename TB, int etype >
         struct BinaryMapExp: public Exp< BinaryMapExp<OP,TA,TB,etype>, etype >{
@@ -171,60 +172,65 @@ namespace mshadow{
 
         // make expression
         template<typename OP,typename TA, typename TB, int ta, int tb>
-        inline BinaryMapExp<OP,TA,TB, (ta|tb|type::kMapper) >  MakeExp( const Exp<TA,ta> &lhs, const Exp<TB,tb> &rhs ){
+        inline BinaryMapExp<OP,TA,TB, (ta|tb|type::kMapper) > MakeExp( const Exp<TA,ta> &lhs, const Exp<TB,tb> &rhs ){
             return BinaryMapExp<OP,TA,TB, (ta|tb|type::kMapper) >( lhs.self(), rhs.self() );
+        }
+        // short hand for MakeExp, F stands for function
+        template<typename OP,typename TA, typename TB, int ta, int tb>
+        inline BinaryMapExp<OP,TA,TB, (ta|tb|type::kMapper) > F( const Exp<TA,ta> &lhs, const Exp<TB,tb> &rhs ){
+            return MakeExp<OP>( lhs, rhs );
         }
 
         // operator rules
         template<typename TA, typename TB, int ta, int tb>
         inline BinaryMapExp<op::plus,TA,TB, (ta|tb|type::kMapper) > operator+( const Exp<TA,ta> &lhs, const Exp<TB,tb> &rhs ){
-            return MakeExp<op::plus>( lhs.self(), rhs.self() );
+            return MakeExp<op::plus>( lhs, rhs );
         }
         template<typename TA, typename TB, int ta, int tb>
         inline BinaryMapExp<op::minus,TA,TB, (ta|tb|type::kMapper) > operator-( const Exp<TA,ta> &lhs, const Exp<TB,tb> &rhs ){
-            return MakeExp<op::minus>( lhs.self(), rhs.self() );
+            return MakeExp<op::minus>( lhs, rhs );
         }
         template<typename TA, typename TB, int ta, int tb>
         inline BinaryMapExp<op::mul,TA,TB, (ta|tb|type::kMapper) > operator*( const Exp<TA,ta> &lhs, const Exp<TB,tb> &rhs ){
-            return MakeExp<op::mul>( lhs.self(), rhs.self() );
+            return MakeExp<op::mul>( lhs, rhs );
         }
         template<typename TA, typename TB, int ta, int tb>
         inline BinaryMapExp<op::div,TA,TB, (ta|tb|type::kMapper) > operator/( const Exp<TA,ta> &lhs, const Exp<TB,tb> &rhs ){
-            return MakeExp<op::div>( lhs.self(), rhs.self() );
+            return MakeExp<op::div>( lhs, rhs );
         }
         // constant operators 
         template<typename TA, int ta>
         inline BinaryMapExp<op::plus, TA, ScalarExp, (ta|type::kMapper) > operator+( const Exp<TA,ta>& lhs,  real_t rhs ){
-            return MakeExp<op::plus>( lhs.self(), ScalarExp(rhs) );
+            return MakeExp<op::plus>( lhs, ScalarExp(rhs) );
         }
         template<typename TA, int ta>
         inline BinaryMapExp<op::plus, TA, ScalarExp, (ta|type::kMapper) > operator-( const Exp<TA,ta>& lhs,  real_t rhs ){
-            return MakeExp<op::plus>( lhs.self(), ScalarExp(-rhs) );
+            return MakeExp<op::plus>( lhs, ScalarExp(-rhs) );
         }
         template<typename TA, int ta>
         inline BinaryMapExp<op::mul, TA, ScalarExp, (ta|type::kMapper) > operator*( const Exp<TA,ta>& lhs,  real_t rhs ){
-            return MakeExp<op::mul>( lhs.self(), ScalarExp(rhs) );
+            return MakeExp<op::mul>( lhs, ScalarExp(rhs) );
         }
         template<typename TA, int ta>
         inline BinaryMapExp<op::div, TA, ScalarExp, (ta|type::kMapper) > operator/( const Exp<TA,ta>& lhs,  real_t rhs ){
-            return MakeExp<op::div>( lhs.self(), ScalarExp(rhs) );
+            return MakeExp<op::div>( lhs, ScalarExp(rhs) );
         }
         // constant operators 2
         template<typename TB, int tb>
         inline BinaryMapExp<op::plus, ScalarExp, TB, (tb|type::kMapper) > operator+( real_t lhs, const Exp<TB,tb>& rhs ){
-            return MakeExp<op::plus>( ScalarExp(lhs), rhs.self() );
+            return MakeExp<op::plus>( ScalarExp(lhs), rhs );
         }
         template<typename TB, int tb>
         inline BinaryMapExp<op::minus, ScalarExp, TB, (tb|type::kMapper) > operator-( real_t lhs, const Exp<TB,tb>& rhs ){
-            return MakeExp<op::minus>( ScalarExp(lhs), rhs.self() );
+            return MakeExp<op::minus>( ScalarExp(lhs), rhs );
         }
         template<typename TB, int tb>
         inline BinaryMapExp<op::mul, ScalarExp, TB, (tb|type::kMapper) > operator*( real_t lhs, const Exp<TB,tb>& rhs ){
-            return MakeExp<op::mul>( ScalarExp(lhs), rhs.self() );
+            return MakeExp<op::mul>( ScalarExp(lhs), rhs );
         }
         template<typename TB, int tb>
         inline BinaryMapExp<op::div, ScalarExp, TB, (tb|type::kMapper) > operator/( real_t lhs, const Exp<TB,tb>& rhs ){
-            return MakeExp<op::div>( ScalarExp(lhs), rhs.self() );
+            return MakeExp<op::div>( ScalarExp(lhs), rhs );
         }
     };
 
@@ -233,18 +239,25 @@ namespace mshadow{
          * \brief unary map expression op(src)
          * \tparam OP operator
          * \tparam TA type of src
+         * \tparam etype expression type, sa namespace::type
          */
         template<typename OP, typename TA, int etype >
         struct UnaryMapExp: public Exp< UnaryMapExp<OP,TA,etype>, etype >{
             const TA &src_;
             UnaryMapExp( const TA &src )
-                :src_(src.self()){}
+                :src_(src){}
         };
         
         // make expression
         template<typename OP,typename TA, int ta>
-        inline UnaryMapExp<OP,TA,(ta|type::kMapper) >  MakeExp( const Exp<TA,ta> &src){
+        inline UnaryMapExp<OP,TA,(ta|type::kMapper) > MakeExp( const Exp<TA,ta> &src ){
             return UnaryMapExp<OP,TA, (ta|type::kMapper) >( src.self() );
+        }
+
+        // short hand for MakeExp
+        template<typename OP,typename TA, int ta>
+        inline UnaryMapExp<OP,TA,(ta|type::kMapper) > F( const Exp<TA,ta> &src ){
+            return MakeExp<OP>(src);
         }
     };
 };

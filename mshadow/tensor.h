@@ -51,10 +51,6 @@ namespace mshadow {
         MSHADOW_XINLINE const index_t& operator[](index_t idx) const {
             return shape_[ idx ];
         }
-        /*! \return stride */
-        MSHADOW_XINLINE const index_t& stride(void) const {
-            return stride_;
-        }
         /*! \return whether two shape equals */
         MSHADOW_XINLINE bool operator==(const Shape<zMaxShape> &s) const {
             #pragma unroll
