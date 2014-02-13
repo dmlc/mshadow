@@ -14,9 +14,9 @@ CUBIN =
 
 all: $(BIN) $(OBJ) $(CUBIN) $(CUOBJ)
 
-test: testcompile.cpp tensor/*.h testcuda.o testcuda2.o
-testcuda.o: testcuda.cu tensor/*.h tensor/cuda/*.cuh
-testcuda2.o: testcuda2.cu tensor/*.h tensor/cuda/*.cuh
+test: testcompile.cpp mshadow/*.h testcuda.o testcuda2.o
+testcuda.o: testcuda.cu mshadow/*.h mshadow/cuda/*.cuh
+testcuda2.o: testcuda2.cu mshadow/*.h mshadow/cuda/*.cuh
 
 $(BIN) :
 	$(CXX) $(CFLAGS) $(LDFLAGS) -o $@ $(filter %.cpp %.o %.c, $^)

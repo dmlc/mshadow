@@ -1,4 +1,4 @@
-#include "tensor/tensor.h"
+#include "mshadow/tensor.h"
 // must include this file to get gpu part implementation
 
 using namespace mshadow;

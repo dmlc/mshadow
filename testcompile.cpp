@@ -1,4 +1,4 @@
-#include "tensor/tensor.h"
+#include "mshadow/tensor.h"
 #include <cstdio>
 // simple file to test if it compiles
 using namespace mshadow;
