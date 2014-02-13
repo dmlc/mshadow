@@ -1,8 +1,7 @@
 #include "tensor/tensor.h"
-#include "tensor/tensor_op.h"
 #include <cstdio>
 // simple file to test if it compiles
-using namespace cxxnet;
+using namespace mshadow;
 
 // implemented by testcuda.cu
 void testcuda( CTensor3D mat1, CTensor3D mat2, CTensor3D mat3 );

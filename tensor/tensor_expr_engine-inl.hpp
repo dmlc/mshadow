@@ -1,5 +1,5 @@
-#ifndef CXXNET_TENSOR_EXPR_ENGINE_INL_HPP
-#define CXXNET_TENSOR_EXPR_ENGINE_INL_HPP
+#ifndef MSHADOW_TENSOR_EXPR_ENGINE_INL_HPP
+#define MSHADOW_TENSOR_EXPR_ENGINE_INL_HPP
 /*!
  * \file tensor_expr_engine-inl.hpp
  * \brief definitions of how expressions should be evaluated
@@ -7,7 +7,7 @@
  */
 #include "tensor_expr.h"
 
-namespace cxxnet{    
+namespace mshadow{    
     namespace expr{
         // plan that can be used to carry out execution
         template<typename ExpType>

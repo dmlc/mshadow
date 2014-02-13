@@ -1,5 +1,5 @@
-#ifndef CXXNET_TENSOR_H
-#define CXXNET_TENSOR_H
+#ifndef MSHADOW_TENSOR_H
+#define MSHADOW_TENSOR_H
 /*!
  * \file tensor.h
  * \brief header file of tensor data structure and functions
@@ -8,12 +8,10 @@
  *                   no memory allocation is happening during calculation
  * \author Bing Hsu, Tianqi Chen
  */
-#include <cstdio>
-
-#include "tensor_op.h"
+#include "tensor_base.h"
 #include "tensor_expr.h"
 
-namespace cxxnet {
+namespace mshadow {
     /*!
      * \brief shape of a tensor
      *       IMPORTANT NOTE: this shape is different from numpy.shape
@@ -167,9 +165,9 @@ namespace cxxnet {
         Shape<4> s; s[0] = s0; s[1] = s1; s[2] = s2; s[3] = s3;
         return s;
     }
-}; // namespace cxxnet
+}; // namespace mshadow
 
-namespace cxxnet {
+namespace mshadow {
     // simple device name
     struct cpu {
         const static bool kDevCPU = true;
@@ -285,9 +283,9 @@ namespace cxxnet {
             return this->__assign( exp );
         }
     };
-}; // namespace cxxnet
+}; // namespace mshadow
 
-namespace cxxnet {
+namespace mshadow {
     typedef Tensor<cpu, 1> CTensor1D;
     typedef Tensor<cpu, 2> CTensor2D;
     typedef Tensor<cpu, 3> CTensor3D;
@@ -297,11 +295,11 @@ namespace cxxnet {
     typedef Tensor<gpu, 2> GTensor2D;
     typedef Tensor<gpu, 3> GTensor3D;
     typedef Tensor<gpu, 4> GTensor4D;
-}; // namespace cxxnet
+}; // namespace mshadow
 
 
 // add unroll loops for the shape
-namespace cxxnet {
+namespace mshadow {
     // function declarations
     /*!
      * \brief CPU/CPU: allocate space for CTensor, according to the shape in the obj
@@ -338,34 +336,6 @@ namespace cxxnet {
     template<int dim>
     inline void Copy(Tensor<gpu,dim> dst, const Tensor<gpu,dim> &src );
     
-    /*!
-     * \brief CPU/GPU: storing function dst [st] src
-     * \tparam Saver specify storage method [st]
-     * \tparam dim dim of the tensor, during usage, there is no need to specify this parameter
-     * \param dst destination
-     * \param src the real data
-     * \sa namespace cxxnet:sv
-     */
-    template<typename Saver,int dim>
-    inline void Store(Tensor<cpu,dim> dst, real_t src);
-    template<typename Saver,int dim>
-    inline void Store(Tensor<gpu,dim> dst, real_t src);
-
-    /*!
-     * \brief CPU/GPU: binary mapping function dst [st] lhs [op] rhs
-     * \tparam Saver specify storage method [st]
-     * \tparam BinaryMapper specify binary operation [op]
-     * \tparam dim dim of the tensor, during usage, there is no need to specify this parameter
-     * \param dst destination
-     * \param lhs left operand
-     * \param rhs right operand
-     * \sa namespace cxxnet:sv, cxxnet::op
-     */
-    template<typename Saver, typename BinaryMapper,int dim>
-    inline void Map(Tensor<cpu,dim> dst, const Tensor<cpu,dim> &lhs, const Tensor<cpu,dim> &rhs);
-    template<typename Saver, typename BinaryMapper,int dim>
-    inline void Map(Tensor<gpu,dim> dst, const Tensor<gpu,dim> &lhs, const Tensor<gpu,dim> &rhs);
-
     namespace expr{
         /*!
          * \brief execution plan hat can be used to carry out calculation for specific expression
@@ -381,7 +351,7 @@ namespace cxxnet {
      * \tparam dim dim of the tensor, during usage, there is no need to specify this parameter
      * \param dst destination
      * \param plan expression plan of expression
-     * \sa namespace cxxnet:sv, cxxnet::op, cxxnet::expr
+     * \sa namespace mshadow:sv, mshadow::op, mshadow::expr
      */
     template<typename Saver, typename E, int dim>
     inline void MapPlan(Tensor<cpu,dim> dst, const expr::Plan<E> &plan );
@@ -396,14 +366,14 @@ namespace cxxnet {
      * \tparam E specifies the expression type, not need to specify this parameter during usage
      * \param dst destination
      * \param exp expression
-     * \sa namespace cxxnet:sv, cxxnet::op, cxxnet::expr
+     * \sa namespace mshadow:sv, mshadow::op, mshadow::expr
      */
     template<typename Saver, typename Device, int dim, typename E, int etype>
     inline void MapExp(Tensor<Device,dim> dst, const expr::Exp<E,etype> &exp );
 
-}; // namespace cxxnet
+}; // namespace mshadow
 
-namespace cxxnet{
+namespace mshadow{
     // the following function is name dependent, have different name for CPU and GPU
     /*!
      * \brief CPU: short cut to allocate and initialize a CTensor
@@ -423,7 +393,7 @@ namespace cxxnet{
     template<int dim>
     inline Tensor<gpu,dim> NewGTensor(const Shape<dim> &shape, real_t initv);
     
-}; // namespace cxxnet
+}; // namespace mshadow
 
 #include "tensor_cpu-inl.hpp"
 #include "tensor_gpu-inl.hpp"

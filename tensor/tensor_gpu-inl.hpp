@@ -1,5 +1,5 @@
-#ifndef CXXNET_TENSOR_GPU_INL_HPP
-#define CXXNET_TENSOR_GPU_INL_HPP
+#ifndef MSHADOW_TENSOR_GPU_INL_HPP
+#define MSHADOW_TENSOR_GPU_INL_HPP
 #ifdef __CUDACC__
 /*!
  * \file tensor_cpu-inl.hpp
@@ -10,9 +10,8 @@
 // include this file only if the compiler is nvcc
 #include "tensor.h"
 #include "cuda/tensor_gpu-inl.cuh"
-#include "../utils/utils.h"
 
-namespace cxxnet {
+namespace mshadow {
     template<int dim>
     inline void AllocSpace(Tensor<gpu,dim> &obj){
         size_t pitch;
@@ -26,7 +25,7 @@ namespace cxxnet {
     inline Tensor<gpu,dim> NewGTensor(const Shape<dim> &shape, real_t initv){
         Tensor<gpu, dim> obj( shape );
         AllocSpace( obj );
-        Store<sv::saveto>( obj.FlatTo2D(), initv );
+        MapExp<sv::saveto>( obj, expr::ScalarExp( initv ) );
         return obj;
     }
 
@@ -59,23 +58,11 @@ namespace cxxnet {
         Copy( dst, src, cudaMemcpyHostToDevice );
     }
 
-    template<typename Saver,int dim>
-    inline void Store(Tensor<gpu,dim> _dst, real_t src){
-        cuda::Store<Saver>( _dst.FlatTo2D(), src );
-    }
-    
-    template<typename Saver, typename BinaryMapper, int dim>
-    inline void Map(Tensor<gpu,dim> _dst, const Tensor<gpu,dim> &_lhs, const Tensor<gpu,dim> &_rhs){
-        utils::Assert( _dst.shape == _rhs.shape, "Map:shape mismatch" );
-        utils::Assert( _dst.shape == _lhs.shape, "Map:shape mismatch" );        
-        cuda::MapBinary<Saver,BinaryMapper>( _dst.FlatTo2D(), _lhs.FlatTo2D(), _rhs.FlatTo2D() );
-    }
-
     template<typename Saver, typename E, int dim>
     inline void MapPlan(Tensor<gpu,dim> _dst, const expr::Plan<E> &plan ){ 
         cuda::MapPlan<Saver>( _dst.FlatTo2D(), plan );
     }
-}; // namespace cxxnet
+}; // namespace mshadow
 
 #endif
 #endif // TENSOR_GPU_INL_HPP

@@ -1,13 +1,13 @@
-#ifndef CXXNET_TENSOR_EXPR_H
-#define CXXNET_TENSOR_EXPR_H
+#ifndef MSHADOW_TENSOR_EXPR_H
+#define MSHADOW_TENSOR_EXPR_H
 /*!
  * \file tensor_expr.h
  * \brief definitions of abstract expressions and expressions template
  * \author Tianqi Chen
  */
-#include "tensor_op.h"
+#include "tensor_base.h"
 
-namespace cxxnet{
+namespace mshadow{
     /*! 
      * \brief namespace for abstract expressions and expressions template,
      *        have no dependecy on tensor.h, 

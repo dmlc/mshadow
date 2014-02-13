@@ -1,14 +1,13 @@
-#ifndef CXXNET_TENSOR_CONTAINER_H
-#define CXXNET_TENSOR_CONTAINER_H
+#ifndef MSHADOW_TENSOR_CONTAINER_H
+#define MSHADOW_TENSOR_CONTAINER_H
 /*!
  * \file tensor_container.h
  * \brief tensor container that does memory allocation and resize like STL
  * \author Tianqi Chen
  */
-
 #include "tensor.h"
 
-namespace cxxnet{
+namespace mshadow{
     /*!
      * \brief tensor container that does memory allocation and resize like STL,
      *        use it to save the lines of FreeSpace in class.
@@ -47,7 +46,7 @@ namespace cxxnet{
     private:
         inline void FreeSpace (void){
             if( data_.dptr != NULL ){
-                cxxnet::FreeSpace( data_ );
+                mshadow::FreeSpace( data_ );
                 data_.dptr = this->dptr = NULL;
             }
         }
@@ -56,12 +55,12 @@ namespace cxxnet{
                 this->FreeSpace();
             }
             data_.shape = shape.FlatTo2D();
-            cxxnet::AllocSpace( data_ );
+            mshadow::AllocSpace( data_ );
             this->dptr  = data_.dptr;
             this->shape = shape;
             this->shape.stride_ = data_.shape.stride_;
         }
     };
-};// namespace cxxnet
+};// namespace mshadow
 
 #endif

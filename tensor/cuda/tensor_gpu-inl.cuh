@@ -1,5 +1,5 @@
-#ifndef CXXNET_TENSOR_GPU_INL_CUH
-#define CXXNET_TENSOR_GPU_INL_CUH
+#ifndef MSHADOW_TENSOR_GPU_INL_CUH
+#define MSHADOW_TENSOR_GPU_INL_CUH
 /*!
  * \file tensor_gpu-inl.cuh
  * \brief implementation of GPU code using CUDA
@@ -7,7 +7,7 @@
  */
 #include "../tensor.h"
 
-namespace cxxnet{
+namespace mshadow{
     namespace cuda{
         /* load unit for memory access */
         #if __CUDA_ARCH__>=200
@@ -28,59 +28,6 @@ namespace cxxnet{
         /*! \brief maximum value of grid */
         const int kMaxGridNum     = 65535;
     };
-};
-
-namespace cxxnet {
-    namespace cuda{
-        template<typename Saver, int block_dim_bits>
-        __global__ void StoreKernel(GTensor2D dst, real_t src) {
-            const index_t tid = (blockIdx.x << block_dim_bits) + threadIdx.x;
-            const index_t xstride = dst.shape.stride_;
-            const int y   = tid / xstride;
-            const int x   = tid % xstride;
-            if (y < dst.shape[1] && x < dst.shape[0]) {
-                Saver::Save(dst[y][x], src );
-            }
-        }
-        template<typename Saver>
-        inline void Store(GTensor2D dst, real_t src){
-            const int num_block = (dst.shape.MSize() + kBaseThreadNum-1) / kBaseThreadNum;
-            dim3 dimBlock(kBaseThreadNum, 1, 1);
-            
-            if (num_block < kMaxGridNum) {
-                dim3 dimGrid(num_block, 1, 1);
-                Store<Saver, kBaseThreadBits> \
-                    <<<dimGrid,dimBlock>>>(dst, src);
-            } else {
-                utils::Error("not implemented");                
-            }
-        }
-    }; // namespace cuda
-    namespace cuda {                
-        template<typename Saver, typename BinaryMapper, int block_dim_bits>
-        __global__ void MapBinaryKernel(GTensor2D dst, const GTensor2D lhs, const GTensor2D rhs) {
-            const index_t tid = (blockIdx.x << block_dim_bits) + threadIdx.x;
-            const index_t xstride = dst.shape.stride_;
-            const int y   = tid / xstride;
-            const int x   = tid % xstride;
-            if (y < dst.shape[1] && x < dst.shape[0]) {
-                Saver::Save(dst[y][x], BinaryMapper::Map(lhs[y][x], rhs[y][x]));
-            }
-        }
-        template<typename Saver, typename BinaryMapper>
-        inline void MapBinary(GTensor2D dst, const GTensor2D &lhs, const GTensor2D &rhs) {            
-            const int num_block = (dst.shape.MSize() + kBaseThreadNum-1) / kBaseThreadNum;
-            dim3 dimBlock(kBaseThreadNum, 1, 1);
-            
-            if (num_block < kMaxGridNum) {
-                dim3 dimGrid(num_block, 1, 1);
-                MapBinaryKernel<Saver, BinaryMapper, kBaseThreadBits> \
-                    <<<dimGrid,dimBlock>>>(dst, lhs, rhs);
-            } else {
-                utils::Error("not implemented");                
-            }
-        }
-    }; // namespace cuda
 
     namespace cuda {                
         template<typename Saver, typename Plan, int block_dim_bits>
@@ -107,5 +54,5 @@ namespace cxxnet {
             }
         }
     }; // namespace cuda
-}; // namespace cxxnet
+}; // namespace mshadow
 #endif // TENSOR_GPU_INL_H
