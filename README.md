@@ -1,6 +1,4 @@
-cxxnet
+mshadow
 ======
 
-Network in CXX
-
-
+A lightweight CPU/GPU Matrix/Tensor Library in C++.
