@@ -35,7 +35,7 @@ namespace mshadow {
     }
 
     template<typename A,typename B, int dim>
-    inline void Copy( Tensor<A,dim> _dst, Tensor<B,dim> _src, cudaMemcpyKind kind ){
+    inline void Copy(Tensor<A,dim> _dst, Tensor<B,dim> _src, cudaMemcpyKind kind){
         utils::Assert( _dst.shape == _src.shape, "Copy:shape mismatch" );
         Tensor<A,2> dst = _dst.FlatTo2D();
         Tensor<B,2> src = _src.FlatTo2D();
@@ -46,20 +46,20 @@ namespace mshadow {
         utils::Assert( err == cudaSuccess, cudaGetErrorString(err) );
     }    
     template<int dim>
-    inline void Copy(Tensor<cpu,dim> dst, const Tensor<gpu,dim> &src ){
+    inline void Copy(Tensor<cpu,dim> dst, const Tensor<gpu,dim> &src){
         Copy( dst, src, cudaMemcpyDeviceToHost );
     }
     template<int dim>
-    inline void Copy(Tensor<gpu,dim> dst, const Tensor<gpu,dim> &src ){
+    inline void Copy(Tensor<gpu,dim> dst, const Tensor<gpu,dim> &src){
         Copy( dst, src, cudaMemcpyDeviceToDevice );
     }
     template<int dim>
-    inline void Copy(Tensor<gpu,dim> dst, const Tensor<cpu,dim> &src ){
+    inline void Copy(Tensor<gpu,dim> dst, const Tensor<cpu,dim> &src){
         Copy( dst, src, cudaMemcpyHostToDevice );
     }
 
     template<typename Saver, typename E, int dim>
-    inline void MapPlan(Tensor<gpu,dim> _dst, const expr::Plan<E> &plan ){ 
+    inline void MapPlan(Tensor<gpu,dim> _dst, const expr::Plan<E> &plan){ 
         cuda::MapPlan<Saver>( _dst.FlatTo2D(), plan );
     }
 }; // namespace mshadow
