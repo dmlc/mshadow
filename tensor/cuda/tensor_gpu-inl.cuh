@@ -37,7 +37,7 @@ namespace mshadow{
             const int y   = tid / xstride;
             const int x   = tid % xstride;
             if (y < dst.shape[1] && x < dst.shape[0]) {
-                Saver::Save(dst[y][x], exp.eval(y,x));
+                Saver::Save(dst[y][x], exp.Eval(y,x));
             }
         }
         template<typename Saver, typename E>

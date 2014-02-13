@@ -17,7 +17,7 @@ namespace mshadow{
              * \brief evaluate the expression at index [y][x] 
              *        to be implemented by SubType
              */
-            _XINLINE_ real_t eval( index_t y, index_t x ) const;            
+            _XINLINE_ real_t Eval( index_t y, index_t x ) const;            
         };
         
         template <typename Device, int dim>
@@ -25,7 +25,7 @@ namespace mshadow{
         public:
             Plan( const real_t *dptr, index_t stride )
                 :dptr_(dptr),stride_(stride){}
-            _XINLINE_ real_t eval( index_t y, index_t x ) const{
+            _XINLINE_ real_t Eval( index_t y, index_t x ) const{
                 return dptr_[ y * stride_ + x ];
             }            
         private:
@@ -38,7 +38,7 @@ namespace mshadow{
         public:
             Plan( real_t scalar ):scalar_(scalar){}
             /*! \brief evaluate at [y][x] */
-            _XINLINE_ real_t eval( index_t y, index_t x ) const{
+            _XINLINE_ real_t Eval( index_t y, index_t x ) const{
                     return scalar_;
             }
         private:
@@ -50,8 +50,8 @@ namespace mshadow{
         public:
             Plan( const Plan<TA> &lhs, const Plan<TB> &rhs )
                 :lhs_(lhs), rhs_(rhs){}
-            _XINLINE_ real_t eval( index_t y, index_t x ) const{
-                return OP::Map( lhs_.eval( y, x ), rhs_.eval( y, x ) );
+            _XINLINE_ real_t Eval( index_t y, index_t x ) const{
+                return OP::Map( lhs_.Eval( y, x ), rhs_.Eval( y, x ) );
             }
         private:
             Plan<TA> lhs_;
@@ -62,8 +62,8 @@ namespace mshadow{
         class Plan< UnaryMapExp<OP,TA,etype> >{
         public:
             Plan( const Plan<TA> &src ):src_(src){}
-            _XINLINE_ real_t eval( index_t y, index_t x ) const{
-                return OP::Map( src_.eval( y, x ) );
+            _XINLINE_ real_t Eval( index_t y, index_t x ) const{
+                return OP::Map( src_.Eval( y, x ) );
             }
         private:
             Plan<TA> src_;
@@ -98,11 +98,11 @@ namespace mshadow{
         template<typename SV, typename Device, int dim> 
         struct ExpEngine<SV, Tensor<Device,dim> >{
             template<typename E>
-            inline static void eval( Tensor<Device,dim>& dst, const Exp<E,type::kMapper> &exp ){
+            inline static void Eval( Tensor<Device,dim>& dst, const Exp<E,type::kMapper> &exp ){
                 MapPlan<SV>( dst, engine::MakePlan( exp.self() ) );
             }
             template<typename E>
-            inline static void eval( Tensor<Device,dim>& dst, const Exp<E,type::kContainer> &exp ){
+            inline static void Eval( Tensor<Device,dim>& dst, const Exp<E,type::kContainer> &exp ){
                 MapPlan<SV>( dst, engine::MakePlan( exp.self() ) );
             }
         };
@@ -111,7 +111,7 @@ namespace mshadow{
     // implementation of MapExp
     template<typename Saver, typename Device, int dim, typename E, int etype>
     inline void MapExp(Tensor<Device,dim> dst, const expr::Exp<E,etype> &exp ){
-        expr::ExpEngine<Saver,Tensor<Device,dim> >::eval( dst, exp );
+        expr::ExpEngine<Saver,Tensor<Device,dim> >::Eval( dst, exp );
     }
 };
 #endif

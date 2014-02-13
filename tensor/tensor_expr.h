@@ -23,7 +23,7 @@ namespace mshadow{
             /*! \brief this only contains element-wise vector operations */
             const int kMapper    = 1;
             /*! \brief othercase: e.g dot product */
-            const int kComplex   = 3;
+            const int kComplex   = 3;                        
         };
 
         /*! 
@@ -33,7 +33,7 @@ namespace mshadow{
         template<typename Saver,typename Container>
         struct ExpEngine{
             template<typename EType>
-            inline static void eval( Container& dst, const EType &exp );
+            inline static void Eval( Container& dst, const EType &exp );
         };
 
 
@@ -96,59 +96,59 @@ namespace mshadow{
         class ContainerExp: public Exp< Container, type::kContainer >{
         public:
             inline Container &operator+=( double s ){
-                ExpEngine<sv::plusto,Container>::eval( this->refself(), ScalarExp(s) );
+                ExpEngine<sv::plusto,Container>::Eval( this->refself(), ScalarExp(s) );
                 return this->refself();
             }
             inline Container &operator-=( double s ){
-                ExpEngine<sv::minusto,Container>::eval( this->refself(), ScalarExp(s) );
+                ExpEngine<sv::minusto,Container>::Eval( this->refself(), ScalarExp(s) );
                 return this->refself();
             }
             inline Container &operator*=( double s ){
-                ExpEngine<sv::multo,Container>::eval( this->refself(), ScalarExp(s) );
+                ExpEngine<sv::multo,Container>::Eval( this->refself(), ScalarExp(s) );
                 return this->refself();
             }
             inline Container &operator/=( double s ){
-                ExpEngine<sv::divto,Container>::eval( this->refself(), ScalarExp(s) );
+                ExpEngine<sv::divto,Container>::Eval( this->refself(), ScalarExp(s) );
                 return this->refself();
             }
             inline Container &__assign( double s ){
-                ExpEngine<sv::saveto,Container>::eval( this->refself(), ScalarExp(s) );
+                ExpEngine<sv::saveto,Container>::Eval( this->refself(), ScalarExp(s) );
                 return this->refself();
             }
         public:                
             /*! \brief implementation of operator=, note that we can not define container = container */
             template<typename E>
             inline Container &__assign( const Exp<E,type::kMapper> &exp ){
-                ExpEngine<sv::saveto,Container>::eval( this->refself(), exp.self() );
+                ExpEngine<sv::saveto,Container>::Eval( this->refself(), exp.self() );
                 return this->refself();
             }
             template<typename E>
             inline Container &__assign( const Exp<E,type::kComplex> &exp ){
-                ExpEngine<sv::saveto,Container>::eval( this->refself(), exp.self() );
+                ExpEngine<sv::saveto,Container>::Eval( this->refself(), exp.self() );
                 return this->refself();
             }
             /*! \brief implementation of operator+= */
             template<typename E,int etype>
             inline Container &operator+=( const Exp<E,etype> &exp ){
-                ExpEngine<sv::plusto,Container>::eval( this->refself(), exp.self() );
+                ExpEngine<sv::plusto,Container>::Eval( this->refself(), exp.self() );
                 return this->refself();
             }
             /*! \brief implementation of operator-= */
             template<typename E,int etype>
             inline Container &operator-=( const Exp<E,etype> &exp ){
-                ExpEngine<sv::minusto,Container>::eval( this->refself(), exp.self() );
+                ExpEngine<sv::minusto,Container>::Eval( this->refself(), exp.self() );
                 return this->refself();
             }
             /*! \brief implementation of operator*= */
             template<typename E,int etype>
             inline Container &operator*=( const Exp<E,etype> &exp ){
-                ExpEngine<sv::multo,Container>::eval( this->refself(), exp.self() );
+                ExpEngine<sv::multo,Container>::Eval( this->refself(), exp.self() );
                 return this->refself();
             }
             /*! \brief implementation of operator/= */
             template<typename E,int etype>
             inline Container &operator/=( const Exp<E,etype> &exp ){
-                ExpEngine<sv::divto,Container>::eval( this->refself(), exp.self() );
+                ExpEngine<sv::divto,Container>::Eval( this->refself(), exp.self() );
                 return this->refself();
             }
         };
