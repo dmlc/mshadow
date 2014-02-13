@@ -1,12 +1,14 @@
-#ifndef CXXNET_TENSOR_OP_H
-#define CXXNET_TENSOR_OP_H
+#ifndef MSHADOW_TENSOR_BASE_H
+#define MSHADOW_TENSOR_BASE_H
 /*!
- * \file tensor_op.h
- * \brief definitions of tensor operators
+ * \file tensor_base.h
+ * \brief definitions of base types, macros functions
  *
  * \author Bing Hsu, Tianqi Chen
  */
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
 
 #ifdef _XINLINE_
   #error "_XINLINE_ must not be defined"
@@ -17,15 +19,15 @@
   #define _XINLINE_ inline
 #endif
 
-/*! \brief namespace for cxxnet */
-namespace cxxnet {
+/*! \brief namespace for mshadow */
+namespace mshadow {
     /*! \brief type that will be used for content */
     typedef float real_t;
     /*! \brief type that will be used for index */
     typedef unsigned index_t;
-}; // namespace cxxnet
+}; // namespace mshadow
 
-namespace cxxnet {
+namespace mshadow {
     /*! \brief namespace for savers */
     namespace sv { 
         /*! \brief save to saver: = */
@@ -104,5 +106,25 @@ namespace cxxnet {
             }        
         };
     }; // namespace op
-}; // namespace cxxnet
-#endif // TENSOR_OP_H
+
+    /*! \brief namespace for helper utils of the project */
+    namespace utils{
+        inline void Error( const char *msg ){
+            fprintf( stderr, "Error:%s\n",msg );
+            exit( -1 );
+        }
+        
+        inline void Assert( bool exp ){
+            if( !exp ) Error( "AssertError" );
+        }
+        
+        inline void Assert( bool exp, const char *msg ){
+            if( !exp ) Error( msg );
+        }
+
+        inline void Warning( const char *msg ){
+            fprintf( stderr, "warning:%s\n",msg );
+        }
+    }; // namespace utils
+}; // namespace mshadow
+#endif // TENSOR_BASE_H
