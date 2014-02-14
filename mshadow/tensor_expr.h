@@ -3,19 +3,19 @@
 /*!
  * \file tensor_expr.h
  * \brief definitions of abstract expressions and expressions template
- * \author Tianqi Chen
+ * \author Tianqi Chen, Bing Hsu
  */
 #include "tensor_base.h"
 
 namespace mshadow{
-    /*! 
+    /*!
      * \brief namespace for abstract expressions and expressions template,
-     *        have no dependecy on tensor.h, 
-     *        These data structure takes no charge in computations, 
+     *        have no dependecy on tensor.h,
+     *        These data structure takes no charge in computations,
      *        they are only used to define operations and represent expression in a symbolic way
      */
     namespace expr{
-        
+
         /*! \brief type of expressions */
         namespace type{
             /*! \brief this expression directly correspnds to a data class */
@@ -23,11 +23,11 @@ namespace mshadow{
             /*! \brief this only contains element-wise vector operations */
             const int kMapper    = 1;
             /*! \brief othercase: e.g dot product */
-            const int kComplex   = 3;                        
+            const int kComplex   = 3;
         };
 
-        /*! 
-         * \brief expression engine that actually interprets these expressions 
+        /*!
+         * \brief expression engine that actually interprets these expressions
          *        this is a function template that needed to be implemented for specific expressions
          */
         template<typename Saver,typename Container>
@@ -40,8 +40,8 @@ namespace mshadow{
         class ContainerExp;
         class ScalarExp;
 
-        /*! 
-         * \brief base class for expression 
+        /*!
+         * \brief base class for expression
          * \tparam SubType inheritated class must put their type into this parameter
          * \tparam exp_type expression type, see namespace type
          */
@@ -79,8 +79,7 @@ namespace mshadow{
                 return exp;
             }
         };
-        
-        /*! 
+        /*!
          * \brief base class of all variables, that can be assigned to values
          * \tparam Container the actually class of data container, e.g. CTensor1D
          */
@@ -95,27 +94,27 @@ namespace mshadow{
                 return TransposeExp<Container>( this->self() );
             }
         public:
-            inline Container &operator+=( double s ){
+            inline Container &operator+=( real_t s ){
                 ExpEngine<sv::plusto,Container>::Eval( this->refself(), ScalarExp(s) );
                 return this->refself();
             }
-            inline Container &operator-=( double s ){
+            inline Container &operator-=( real_t s ){
                 ExpEngine<sv::minusto,Container>::Eval( this->refself(), ScalarExp(s) );
                 return this->refself();
             }
-            inline Container &operator*=( double s ){
+            inline Container &operator*=( real_t s ){
                 ExpEngine<sv::multo,Container>::Eval( this->refself(), ScalarExp(s) );
                 return this->refself();
             }
-            inline Container &operator/=( double s ){
+            inline Container &operator/=( real_t s ){
                 ExpEngine<sv::divto,Container>::Eval( this->refself(), ScalarExp(s) );
                 return this->refself();
             }
-            inline Container &__assign( double s ){
+            inline Container &__assign( real_t s ){
                 ExpEngine<sv::saveto,Container>::Eval( this->refself(), ScalarExp(s) );
                 return this->refself();
             }
-        public:                
+        public:
             /*! \brief implementation of operator=, note that we can not define container = container */
             template<typename E>
             inline Container &__assign( const Exp<E,type::kMapper> &exp ){
@@ -198,7 +197,7 @@ namespace mshadow{
     }; // namespace expr
 
     namespace expr{
-        /*! 
+        /*!
          * \brief binary map expression lhs [op] rhs
          * \tparam OP operator
          * \tparam TA type of lhs
@@ -241,7 +240,7 @@ namespace mshadow{
         inline BinaryMapExp<op::div,TA,TB, (ta|tb|type::kMapper) > operator/( const Exp<TA,ta> &lhs, const Exp<TB,tb> &rhs ){
             return MakeExp<op::div>( lhs, rhs );
         }
-        // constant operators 
+        // constant operators
         template<typename TA, int ta>
         inline BinaryMapExp<op::plus, TA, ScalarExp, (ta|type::kMapper) > operator+( const Exp<TA,ta>& lhs,  real_t rhs ){
             return MakeExp<op::plus>( lhs, ScalarExp(rhs) );
@@ -278,7 +277,7 @@ namespace mshadow{
     };
 
     namespace expr{
-        /*! 
+        /*!
          * \brief unary map expression op(src)
          * \tparam OP operator
          * \tparam TA type of src
@@ -290,7 +289,7 @@ namespace mshadow{
             UnaryMapExp( const TA &src )
                 :src_(src){}
         };
-        
+
         // make expression
         template<typename OP,typename TA, int ta>
         inline UnaryMapExp<OP,TA,(ta|type::kMapper) > MakeExp( const Exp<TA,ta> &src ){

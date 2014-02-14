@@ -1,15 +1,15 @@
 export CC  = gcc
 export CXX = g++
 export NVCC =nvcc
-export CFLAGS = -Wall -O3 -msse2 -Wno-unknown-pragmas -funroll-loops
+export CFLAGS = -Wall -O3 -msse3 -Wno-unknown-pragmas -funroll-loops
 export LDFLAGS= -L$(LD_LIBRARY_PATH) -lpthread -lm -lcudart
-export NVCCFLAGS = -O3 
+export NVCCFLAGS = -O3 --use_fast_math
 
 # specify tensor path
 BIN = test
-OBJ = 
+OBJ =
 CUOBJ = testcuda.o testcuda2.o
-CUBIN = 
+CUBIN =
 .PHONY: clean all
 
 all: $(BIN) $(OBJ) $(CUBIN) $(CUOBJ)
