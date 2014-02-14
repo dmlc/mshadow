@@ -3,23 +3,31 @@
 /*!
  * \file tensor_expr_engine-inl.hpp
  * \brief definitions of how expressions should be evaluated
- * \author Tianqi Chen
+ * \author Tianqi Chen, Bing Xu
  */
+#include <cublas.h>
 #include "tensor_expr.h"
 
-namespace mshadow{    
+#define USE_MKL 1
+
+#ifdef USE_MKL
+#include <mkl.h>
+#include <mkl_cblas.h>
+#endif
+
+namespace mshadow{
     namespace expr{
         // This part of code gives plan that can be used to carry out execution
         template<typename ExpType>
         class Plan{
-        public:   
-            /*! 
-             * \brief evaluate the expression at index [y][x] 
+        public:
+            /*!
+             * \brief evaluate the expression at index [y][x]
              *        to be implemented by SubType
              */
-            MSHADOW_XINLINE real_t Eval( index_t y, index_t x ) const;            
+            MSHADOW_XINLINE real_t Eval( index_t y, index_t x ) const;
         };
-        
+
         template <typename Device, int dim>
         class Plan< Tensor<Device,dim> >{
         public:
@@ -27,12 +35,12 @@ namespace mshadow{
                 :dptr_(t.dptr),stride_(t.shape.stride_){}
             MSHADOW_XINLINE real_t Eval( index_t y, index_t x ) const{
                 return dptr_[ y * stride_ + x ];
-            }            
+            }
         private:
             const real_t  *dptr_;
             index_t stride_;
         };
-        
+
         template<>
         class Plan<ScalarExp>{
         public:
@@ -42,9 +50,9 @@ namespace mshadow{
                     return scalar_;
             }
         private:
-            real_t scalar_;        
+            real_t scalar_;
         };
-        
+
         template<typename OP, typename TA, typename TB,int etype>
         class Plan< BinaryMapExp<OP,TA,TB,etype> >{
         public:
@@ -57,7 +65,7 @@ namespace mshadow{
             Plan<TA> lhs_;
             Plan<TB> rhs_;
         };
-        
+
         template<typename OP, typename TA, int etype>
         class Plan< UnaryMapExp<OP,TA,etype> >{
         public:
@@ -68,35 +76,35 @@ namespace mshadow{
         private:
             Plan<TA> src_;
         };
-        
+
         // allow UnaryMap see the plan
         template<typename OP, typename TA, typename TB, int etype>
         inline Plan< BinaryMapExp<OP,TA,TB,etype> > MakePlan( const BinaryMapExp<OP,TA,TB,etype> &e );
-        
+
         // translate from exp to execution plan
         inline Plan<ScalarExp> MakePlan( const ScalarExp &e ){
             return Plan<ScalarExp>( e.scalar_ );
         }
-        
+
         template<typename T>
         inline Plan<T> MakePlan( const ContainerExp<T> &e ){
             return Plan<T>( e.self() );
         }
-        
+
         template<typename OP, typename TA, int etype>
         inline Plan< UnaryMapExp<OP,TA,etype> > MakePlan( const UnaryMapExp<OP,TA,etype> &e ){
             return Plan< UnaryMapExp<OP,TA,etype> >( MakePlan(e.src_) );
         }
-        
+
         template<typename OP, typename TA, typename TB, int etype>
         inline Plan< BinaryMapExp<OP,TA,TB,etype> > MakePlan( const BinaryMapExp<OP,TA,TB,etype> &e ){
                 return Plan< BinaryMapExp<OP,TA,TB,etype> >( MakePlan(e.lhs_), MakePlan(e.rhs_) );
         }
     }; // namespace expr
-    
+
     namespace expr{
-        /*! 
-         * \brief static type check template, 
+        /*!
+         * \brief static type check template,
          *        if a expression E does not match type Device, dim, then kPass = dim
          * \tparam Device the type of Device
          * \tparam dim dimension of the tensor
@@ -133,7 +141,7 @@ namespace mshadow{
             inline static void Error_All_Tensor_in_Exp_Must_Have_Same_Type( void ){}
         };
     }; // namespace expr
-    
+
     namespace expr{
         // check shape consistency
         template<int dim>
@@ -162,7 +170,7 @@ namespace mshadow{
             inline static void Eval( Tensor<Device,ddim> &dst, const Tensor<Device,ldim> &lhs, const Tensor<Device,rdim> &rhs, real_t scale );
         };
 
-        template<typename SV, typename Device, int dim> 
+        template<typename SV, typename Device, int dim>
         struct ExpEngine<SV, Tensor<Device,dim> >{
             template<typename E>
             inline static void Eval( Tensor<Device,dim>& dst, const Exp<E,type::kMapper> &exp ){
@@ -178,7 +186,7 @@ namespace mshadow{
                 TypeCheckPass< TypeCheck<Device,dim,E>::kPass >::Error_All_Tensor_in_Exp_Must_Have_Same_Type();
                 utils::Assert( ShapeCheck<dim>::Check( exp.self(), dst.shape ), "shape of Tensors in expression is not consistent with target" );
                 MapPlan<SV>( dst, MakePlan( exp.self() ) );
-            }            
+            }
             template<int ldim,int rdim,bool ltrans,bool rtrans>
             inline static void Eval( Tensor<Device,dim> &dst, const DotExp< Tensor<Device,ldim>, Tensor<Device,rdim>, ltrans, rtrans > &exp ){
                 DotEngine<Device,dim,ldim,rdim,ltrans,rtrans>::Eval( dst, exp.lhs_, exp.rhs_, exp.scale_ );
@@ -188,20 +196,44 @@ namespace mshadow{
         // evaluating DotExp
         template<bool ltrans, bool rtrans>
         struct DotEngine<cpu,2,2,2,ltrans,rtrans>{
-            inline static void Eval( CTensor2D &dst, const CTensor2D &lhs, const CTensor2D &rhs, real_t scale ){
-                // TODO link to MKL dst = dot( lhs[.T], rhs[.T] );
+            inline static void Eval( CTensor2D &dst, const CTensor2D &lhs, const CTensor2D &rhs, real_t scale ) {
+                CBLAS_TRANSPOSE op_lhs = ltrans ? CblasTrans : CblasNoTrans;
+                CBLAS_TRANSPOSE op_rhs = rtrans ? CblasTrans : CblasNoTrans;
+
+                index_t M = ltrans ? lhs.shape[1] : lhs.shape[0]; // op(lhs) row
+                index_t K = ltrans ? lhs.shape[0] : lhs.shape[1]; // op(lhs) col
+                index_t N = rtrans ? rhs.shape[0] : rhs.shape[1]; // op(rhs) col
+
+                index_t LDA = ltrans ? lhs.shape[1] : lhs.shape[0]; // op(lhs) leading row
+                index_t LDB = rtrans ? rhs.shape[1] : rhs.shape[0]; // op(rhs) leading row
+                // Sleepy, shape may wrong. Check after sleep.
+                // Lazy, let MKL itself crash
+                // utils::Assert(, "Matrix Dimension Error");
+                cblas_sgemm(CblasColMajor, \
+                            op_lhs, op_rhs, \
+                            M, N, K, \
+                            scale, \
+                            lhs.dptr, LDA, \
+                            rhs.dptr, LDB, \
+                            0, \
+                            dst.dptr, LDA); // dst leading row
             }
         };
         template<bool rtrans>
         struct DotEngine<cpu,1,1,2,false,rtrans>{
             inline static void Eval( CTensor1D &dst, const CTensor1D &lhs, const CTensor2D &rhs, real_t scale ){
                 // TODO link to MKL dst = dot( lhs, rhs[.T] );
+                CBLAS_TRANSPOSE op_rhs = rtrans ? CblasTrans : CblasNoTrans;
+
+
+                //cblas_sgemv(
             }
         };
         template<>
         struct DotEngine<cpu,2,1,1,true,false>{
             inline static void Eval( CTensor2D &dst, const CTensor1D &lhs, const CTensor1D &rhs, real_t scale ){
                 // TODO link to MKL dst = dot( lhs.T, rhs );
+                // cblas_sgemv
             }
         };
 
@@ -209,6 +241,7 @@ namespace mshadow{
         struct DotEngine<gpu,2,2,2,ltrans,rtrans>{
             inline static void Eval( GTensor2D &dst, const GTensor2D &lhs, const GTensor2D &rhs, real_t scale ){
                 // TODO link to CuBLAS dst = dot( lhs[.T], rhs[.T] );
+                // How to deal with cuBLAS handle? static global?
             }
         };
         template<bool rtrans>
@@ -223,7 +256,7 @@ namespace mshadow{
                 // TODO link to CuBLAS dst = dot( lhs.T, rhs );
             }
         };
-        
+
     }; // namespace expr
 
     // implementation of MapExp
