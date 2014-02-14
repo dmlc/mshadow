@@ -55,7 +55,7 @@ namespace mshadow{
                 return *static_cast<const SubType*>(this);
             }
             inline SubType& refself( void ){
-                return *static_cast<const SubType*>(this);
+                return *static_cast<SubType*>(this);
             }
         };
         
