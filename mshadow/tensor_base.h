@@ -11,12 +11,13 @@
 #include <cstdlib>
 // dependencies on external package is all declared here
 
-#define MSHADOW_USE_CBLAS 1
+#define MSHADOW_USE_CBLAS 0
+#define MSHADOW_USE_MKL 1
 #if MSHADOW_USE_CBLAS
 #include <cblas.h>
-// use MKL, also works for other cblas (ATLAS,BLAS)
-//#include <mkl.h>
-//#include <mkl_cblas.h>
+#elif MSHADOW_USE_MKL
+#include <mkl.h>
+#include <mkl_cblas.h>
 #endif
 
 #ifdef __CUDACC__
@@ -43,7 +44,7 @@ namespace mshadow {
 
 namespace mshadow {
     /*! \brief namespace for savers */
-    namespace sv { 
+    namespace sv {
         /*! \brief save to saver: = */
         struct saveto {
             MSHADOW_XINLINE static void Save(real_t& a, real_t b) {
@@ -52,7 +53,7 @@ namespace mshadow {
             /*! \brief helper constant to use BLAS, alpha */
             const static real_t kAlphaBLAS = 1.0f;
             /*! \brief helper constant to use BLAS, beta */
-            const static real_t kBetaBLAS  = 0.0f;  
+            const static real_t kBetaBLAS  = 0.0f;
         };
         /*! \brief save to saver: += */
         struct plusto {
@@ -62,7 +63,7 @@ namespace mshadow {
             /*! \brief helper constant to use BLAS, alpha */
             const static real_t kAlphaBLAS = 1.0f;
             /*! \brief helper constant to use BLAS, beta */
-            const static real_t kBetaBLAS  = 1.0f;  
+            const static real_t kBetaBLAS  = 1.0f;
         };
         /*! \brief minus to saver: -= */
         struct minusto {
@@ -72,19 +73,19 @@ namespace mshadow {
             /*! \brief helper constant to use BLAS, alpha */
             const static real_t kAlphaBLAS = -1.0f;
             /*! \brief helper constant to use BLAS, beta */
-            const static real_t kBetaBLAS  = 1.0f;  
+            const static real_t kBetaBLAS  = 1.0f;
         };
         /*! \brief multiply to saver: *= */
         struct multo {
             MSHADOW_XINLINE static void Save(real_t& a, real_t b) {
                 a *= b;
-            }        
+            }
         };
         /*! \brief divide to saver: /= */
         struct divto {
             MSHADOW_XINLINE static void Save(real_t& a, real_t b) {
                 a /= b;
-            }  
+            }
         };
     }; // namespace sv
 
@@ -101,7 +102,7 @@ namespace mshadow {
         struct plus {
             MSHADOW_XINLINE static real_t Map(real_t a, real_t b) {
                 return a + b;
-            }        
+            }
         };
         /*! \brief minus operator */
         struct minus {
@@ -113,7 +114,7 @@ namespace mshadow {
         struct div {
             MSHADOW_XINLINE static real_t Map(real_t a, real_t b) {
                 return a / b;
-            }        
+            }
         };
     }; // namespace op
 
@@ -135,11 +136,11 @@ namespace mshadow {
             fprintf( stderr, "Error:%s\n",msg );
             exit( -1 );
         }
-        
+
         inline void Assert( bool exp ){
             if( !exp ) Error( "AssertError" );
         }
-        
+
         inline void Assert( bool exp, const char *msg ){
             if( !exp ) Error( msg );
         }
