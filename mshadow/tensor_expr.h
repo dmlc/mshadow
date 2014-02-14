@@ -36,9 +36,6 @@ namespace mshadow{
             inline static void Eval( Container& dst, const EType &exp );
         };
 
-
-        template<typename E>
-        class TransposeExp;
         template<typename Container>
         class ContainerExp;
         class ScalarExp;
@@ -60,32 +57,27 @@ namespace mshadow{
             inline SubType& refself( void ){
                 return *static_cast<const SubType*>(this);
             }
-            /*! 
-             *\brief transpose of a matrix
-             *\return transpose of current expression
-             */
-            inline const TransposeExp<EType> T( void ) const{
-                return TransposeExp<EType>( self() );
-            }
         };
-                  
-        /*! \brief transpose of a expression*/
-        template<typename EType>
-        struct TransposeExp: public Exp< TransposeExp<EType>, type::kComplex >{
-            /*! \brief expression to be transposed */
-            const EType &exp;
-            /*! \brief constructor */
-            TransposeExp( const EType &e ):exp(e){}        
-            inline const EType & T( void ) const{
-                return exp;
-            }
-        };
-
+        
         /*! \brief scalar expression */
         struct ScalarExp: public Exp<ScalarExp, type::kMapper>{
             real_t scalar_;
             ScalarExp( real_t scalar ):scalar_(scalar){}
             ScalarExp( double scalar ):scalar_(scalar){}
+        };
+
+        /*! \brief represent a transpose expression of a container */
+        template<typename EType>
+        struct TransposeExp: public Exp< TransposeExp<EType>, type::kComplex >{
+        public:
+            /*! \brief expression to be transposed */
+            const EType &exp;
+            /*! \brief constructor */
+            TransposeExp( const EType &e ):exp(e){}
+            /*! \brief transpose expression */
+            inline const EType & T( void ) const{
+                return exp;
+            }
         };
         
         /*! 
@@ -94,6 +86,14 @@ namespace mshadow{
          */
         template<typename Container>
         class ContainerExp: public Exp< Container, type::kContainer >{
+        public:
+            /*! 
+             *\brief transpose of a matrix
+             *\return transpose of current expression
+             */
+            inline const TransposeExp<Container> T( void ) const{
+                return TransposeExp<Container>( this->self() );
+            }
         public:
             inline Container &operator+=( double s ){
                 ExpEngine<sv::plusto,Container>::Eval( this->refself(), ScalarExp(s) );
@@ -152,7 +152,50 @@ namespace mshadow{
                 return this->refself();
             }
         };
-    };
+    }; // namespace expr
+
+    namespace expr{
+        /*! 
+         * \brief matrix multiplication expression dot( lhs[.T], rhs[.T] )
+         * \tparam TA type of lhs
+         * \tparam TB type of rhs
+         * \tparam ltrans whether lhs is transposed
+         * \tparam rtrans whether rhs is transposed
+         */
+        template<typename TA,typename TB,bool ltrans,bool rtrans>
+        struct DotExp: public Exp< DotExp<TA,TB,ltrans,rtrans>, type::kComplex >{
+            const TA &lhs_;
+            const TB &rhs_;
+            real_t scale_;
+            DotExp( const TA &lhs, const TB &rhs, real_t scale )
+                :lhs_(lhs), rhs_(rhs){}
+        };
+        
+        template<typename TA, typename TB>
+        inline DotExp<TA,TB,false,false> dot( const ContainerExp<TA> &lhs, const ContainerExp<TB> &rhs ){
+            return DotExp<TA,TB,false,false>( lhs.self(), rhs.self(), 1.0f );
+        }
+        template<typename TA, typename TB>
+        inline DotExp<TA,TB,true,false> dot( const TransposeExp<TA> &lhs, const ContainerExp<TB> &rhs ){
+            return DotExp<TA,TB,true,false>( lhs.exp, rhs.self(), 1.0f );
+        }
+        template<typename TA, typename TB>
+        inline DotExp<TA,TB,false,true> dot( const ContainerExp<TA> &lhs, const TransposeExp<TB> &rhs ){
+            return DotExp<TA,TB,false,true>( lhs.self(), rhs.exp, 1.0f );
+        }
+        template<typename TA, typename TB>
+        inline DotExp<TA,TB,true,true> dot( const TransposeExp<TA> &lhs, const TransposeExp<TB> &rhs ){
+            return DotExp<TA,TB,true,true>( lhs.exp, rhs.exp, 1.0f );
+        }
+        template<typename TA, typename TB, bool ltrans, bool rtrans >
+        inline DotExp<TA,TB,ltrans,rtrans> operator*( const DotExp<TA,TB,ltrans,rtrans> &lhs, real_t rhs ){
+            return DotExp<TA,TB,ltrans,rtrans>( lhs.lhs_, lhs.rhs_, lhs.scale_ * rhs );
+        }
+        template<typename TA, typename TB, bool ltrans, bool rtrans >
+        inline DotExp<TA,TB,ltrans,rtrans> operator*( real_t lhs, const DotExp<TA,TB,ltrans,rtrans> &rhs ){
+            return DotExp<TA,TB,ltrans,rtrans>( rhs.lhs_, rhs.rhs_, rhs.scale_ * lhs );
+        }
+    }; // namespace expr
 
     namespace expr{
         /*! 
@@ -167,7 +210,7 @@ namespace mshadow{
             const TA &lhs_;
             const TB &rhs_;
             BinaryMapExp( const TA &lhs, const TB &rhs )
-                :lhs_(lhs.self()), rhs_(rhs.self()){}
+                :lhs_(lhs), rhs_(rhs){}
         };
 
         // make expression

@@ -157,6 +157,11 @@ namespace mshadow{
     }; // namespace expr
 
     namespace expr{
+        template<typename Device, int ddim, int ldim, int rdim, bool ltrans, bool rtrans>
+        struct DotEngine{
+            inline static void Eval( Tensor<Device,ddim> &dst, const Tensor<Device,ldim> &lhs, const Tensor<Device,rdim> &rhs, real_t scale );
+        };
+
         template<typename SV, typename Device, int dim> 
         struct ExpEngine<SV, Tensor<Device,dim> >{
             template<typename E>
@@ -173,8 +178,52 @@ namespace mshadow{
                 TypeCheckPass< TypeCheck<Device,dim,E>::kPass >::Error_All_Tensor_in_Exp_Must_Have_Same_Type();
                 utils::Assert( ShapeCheck<dim>::Check( exp.self(), dst.shape ), "shape of Tensors in expression is not consistent with target" );
                 MapPlan<SV>( dst, MakePlan( exp.self() ) );
+            }            
+            template<int ldim,int rdim,bool ltrans,bool rtrans>
+            inline static void Eval( Tensor<Device,dim> &dst, const DotExp< Tensor<Device,ldim>, Tensor<Device,rdim>, ltrans, rtrans > &exp ){
+                DotEngine<Device,dim,ldim,rdim,ltrans,rtrans>::Eval( dst, exp.lhs_, exp.rhs_, exp.scale_ );
             }
         };
+
+        // evaluating DotExp
+        template<bool ltrans, bool rtrans>
+        struct DotEngine<cpu,2,2,2,ltrans,rtrans>{
+            inline static void Eval( CTensor2D &dst, const CTensor2D &lhs, const CTensor2D &rhs, real_t scale ){
+                // TODO link to MKL dst = dot( lhs[.T], rhs[.T] );
+            }
+        };
+        template<bool rtrans>
+        struct DotEngine<cpu,1,1,2,false,rtrans>{
+            inline static void Eval( CTensor1D &dst, const CTensor1D &lhs, const CTensor2D &rhs, real_t scale ){
+                // TODO link to MKL dst = dot( lhs, rhs[.T] );
+            }
+        };
+        template<>
+        struct DotEngine<cpu,2,1,1,true,false>{
+            inline static void Eval( CTensor2D &dst, const CTensor1D &lhs, const CTensor1D &rhs, real_t scale ){
+                // TODO link to MKL dst = dot( lhs.T, rhs );
+            }
+        };
+
+        template<bool ltrans, bool rtrans>
+        struct DotEngine<gpu,2,2,2,ltrans,rtrans>{
+            inline static void Eval( GTensor2D &dst, const GTensor2D &lhs, const GTensor2D &rhs, real_t scale ){
+                // TODO link to CuBLAS dst = dot( lhs[.T], rhs[.T] );
+            }
+        };
+        template<bool rtrans>
+        struct DotEngine<gpu,1,1,2,false,rtrans>{
+            inline static void Eval( GTensor1D &dst, const GTensor1D &lhs, const GTensor2D &rhs, real_t scale ){
+                // TODO link to CuBLAS dst = dot( lhs, rhs[.T] );
+            }
+        };
+        template<>
+        struct DotEngine<gpu,2,1,1,true,false>{
+            inline static void Eval( GTensor2D &dst, const GTensor1D &lhs, const GTensor1D &rhs, real_t scale ){
+                // TODO link to CuBLAS dst = dot( lhs.T, rhs );
+            }
+        };
+        
     }; // namespace expr
 
     // implementation of MapExp
