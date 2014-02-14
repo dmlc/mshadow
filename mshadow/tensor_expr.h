@@ -55,10 +55,10 @@ namespace mshadow{
                 return *static_cast<const SubType*>(this);
             }
             inline SubType& refself( void ){
-                return *static_cast<const SubType*>(this);
+                return *static_cast<SubType*>(this);
             }
         };
-        
+
         /*! \brief scalar expression */
         struct ScalarExp: public Exp<ScalarExp, type::kMapper>{
             real_t scalar_;
@@ -86,7 +86,7 @@ namespace mshadow{
         template<typename Container>
         class ContainerExp: public Exp< Container, type::kContainer >{
         public:
-            /*! 
+            /*!
              *\brief transpose of a matrix
              *\return transpose of current expression
              */
@@ -154,7 +154,7 @@ namespace mshadow{
     }; // namespace expr
 
     namespace expr{
-        /*! 
+        /*!
          * \brief matrix multiplication expression dot( lhs[.T], rhs[.T] )
          * \tparam TA type of lhs
          * \tparam TB type of rhs
@@ -169,7 +169,7 @@ namespace mshadow{
             DotExp( const TA &lhs, const TB &rhs, real_t scale )
                 :lhs_(lhs), rhs_(rhs){}
         };
-        
+
         template<typename TA, typename TB>
         inline DotExp<TA,TB,false,false> dot( const ContainerExp<TA> &lhs, const ContainerExp<TB> &rhs ){
             return DotExp<TA,TB,false,false>( lhs.self(), rhs.self(), 1.0f );
