@@ -9,7 +9,20 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+// dependencies on external package is all declared here
 
+#define MSHADOW_USE_CBLAS 1
+#if MSHADOW_USE_CBLAS
+#include <cblas.h>
+// use MKL, also works for other cblas (ATLAS,BLAS)
+//#include <mkl.h>
+//#include <mkl_cblas.h>
+#endif
+
+#ifdef __CUDACC__
+#include <cublas.h>
+#endif
+// --------------------------------
 // MSHADOW_XINLINE is used for inlining template code for both CUDA and CPU code.
 #ifdef MSHADOW_XINLINE
   #error "MSHADOW_XINLINE must not be defined"
@@ -35,19 +48,31 @@ namespace mshadow {
         struct saveto {
             MSHADOW_XINLINE static void Save(real_t& a, real_t b) {
                 a  = b;
-            }            
+            }
+            /*! \brief helper constant to use BLAS, alpha */
+            const static real_t kAlphaBLAS = 1.0f;
+            /*! \brief helper constant to use BLAS, beta */
+            const static real_t kBetaBLAS  = 0.0f;  
         };
         /*! \brief save to saver: += */
         struct plusto {
             MSHADOW_XINLINE static void Save(real_t& a, real_t b) {
                 a += b;
-            }        
+            }
+            /*! \brief helper constant to use BLAS, alpha */
+            const static real_t kAlphaBLAS = 1.0f;
+            /*! \brief helper constant to use BLAS, beta */
+            const static real_t kBetaBLAS  = 1.0f;  
         };
         /*! \brief minus to saver: -= */
         struct minusto {
             MSHADOW_XINLINE static void Save(real_t& a, real_t b) {
                 a -= b;
-            }        
+            }
+            /*! \brief helper constant to use BLAS, alpha */
+            const static real_t kAlphaBLAS = -1.0f;
+            /*! \brief helper constant to use BLAS, beta */
+            const static real_t kBetaBLAS  = 1.0f;  
         };
         /*! \brief multiply to saver: *= */
         struct multo {
