@@ -96,7 +96,7 @@ namespace mshadow{
     
     namespace expr{
         /*! 
-         * \brief type check template, 
+         * \brief static type check template, 
          *        if a expression E does not match type Device, dim, then kPass = dim
          * \tparam Device the type of Device
          * \tparam dim dimension of the tensor
@@ -135,19 +135,43 @@ namespace mshadow{
     }; // namespace expr
     
     namespace expr{
+        // check shape consistency
+        template<int dim>
+        struct ShapeCheck{
+            inline static bool Check( const ScalarExp &exp, const Shape<dim> &shape ){
+                return true;
+            }
+            template<typename Device>
+            inline static bool Check( const Tensor<Device,dim> &t, const Shape<dim> &shape ){
+                return t.shape == shape;
+            }
+            template<typename OP, typename TA, int etype>
+            inline static bool Check( const UnaryMapExp<OP,TA,etype> &t, const Shape<dim> &shape ){
+                return Check( t.src_, shape );
+            }
+            template<typename OP, typename TA, typename TB, int etype>
+            inline static bool Check( const BinaryMapExp<OP,TA,TB,etype> &t, const Shape<dim> &shape ){
+                return Check( t.lhs_, shape ) && Check( t.rhs_, shape );
+            }
+        };
+    }; // namespace expr
+
+    namespace expr{
         template<typename SV, typename Device, int dim> 
         struct ExpEngine<SV, Tensor<Device,dim> >{
             template<typename E>
             inline static void Eval( Tensor<Device,dim>& dst, const Exp<E,type::kMapper> &exp ){
-                // static type check
+                // static type check and shape check
                 TypeCheckPass< TypeCheck<Device,dim,E>::kPass >::Error_All_Tensor_in_Exp_Must_Have_Same_Type();
+                utils::Assert( ShapeCheck<dim>::Check( exp.self(), dst.shape ), "shape of Tensors in expression is not consistent with target" );
                 MapPlan<SV>( dst, MakePlan( exp.self() ) );
 
             }
             template<typename E>
             inline static void Eval( Tensor<Device,dim>& dst, const Exp<E,type::kContainer> &exp ){
-                // static type check
+                // static type check and shape check
                 TypeCheckPass< TypeCheck<Device,dim,E>::kPass >::Error_All_Tensor_in_Exp_Must_Have_Same_Type();
+                utils::Assert( ShapeCheck<dim>::Check( exp.self(), dst.shape ), "shape of Tensors in expression is not consistent with target" );
                 MapPlan<SV>( dst, MakePlan( exp.self() ) );
             }
         };
