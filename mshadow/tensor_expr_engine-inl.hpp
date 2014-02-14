@@ -9,7 +9,7 @@
 
 namespace mshadow{    
     namespace expr{
-        // plan that can be used to carry out execution
+        // This part of code gives plan that can be used to carry out execution
         template<typename ExpType>
         class Plan{
         public:   
@@ -68,42 +68,87 @@ namespace mshadow{
         private:
             Plan<TA> src_;
         };
-
-        /*! \brief namespace of execution engine */
-        namespace engine{
-            // translate from exp to execution plan
-            inline Plan<ScalarExp> MakePlan( const ScalarExp &e ){
-                return Plan<ScalarExp>( e.scalar_ );
-            }
-            
-            template<typename T>
-            inline Plan<T> MakePlan( const ContainerExp<T> &e ){
-                return Plan<T>( e.self() );
-            }
-
-            template<typename OP, typename TA, typename TB, int etype>
-            inline Plan< BinaryMapExp<OP,TA,TB,etype> > MakePlan( const BinaryMapExp<OP,TA,TB,etype> &e ){
+        
+        // allow UnaryMap see the plan
+        template<typename OP, typename TA, typename TB, int etype>
+        inline Plan< BinaryMapExp<OP,TA,TB,etype> > MakePlan( const BinaryMapExp<OP,TA,TB,etype> &e );
+        
+        // translate from exp to execution plan
+        inline Plan<ScalarExp> MakePlan( const ScalarExp &e ){
+            return Plan<ScalarExp>( e.scalar_ );
+        }
+        
+        template<typename T>
+        inline Plan<T> MakePlan( const ContainerExp<T> &e ){
+            return Plan<T>( e.self() );
+        }
+        
+        template<typename OP, typename TA, int etype>
+        inline Plan< UnaryMapExp<OP,TA,etype> > MakePlan( const UnaryMapExp<OP,TA,etype> &e ){
+            return Plan< UnaryMapExp<OP,TA,etype> >( MakePlan(e.src_) );
+        }
+        
+        template<typename OP, typename TA, typename TB, int etype>
+        inline Plan< BinaryMapExp<OP,TA,TB,etype> > MakePlan( const BinaryMapExp<OP,TA,TB,etype> &e ){
                 return Plan< BinaryMapExp<OP,TA,TB,etype> >( MakePlan(e.lhs_), MakePlan(e.rhs_) );
-            }
-
-            template<typename OP, typename TA, int etype>
-            inline Plan< UnaryMapExp<OP,TA,etype> > MakePlan( const UnaryMapExp<OP,TA,etype> &e ){
-                return Plan< UnaryMapExp<OP,TA,etype> >( MakePlan(e.src_) );
-            }
-        }; // namespace engine
-
+        }
     }; // namespace expr
+    
+    namespace expr{
+        /*! 
+         * \brief type check template, 
+         *        if a expression E does not match type Device, dim, then kPass = dim
+         * \tparam Device the type of Device
+         * \tparam dim dimension of the tensor
+         * \tparam E expression
+         */
+        template<typename Device, int dim, typename E>
+        struct TypeCheck{
+            const static bool kPass = false;
+        };
 
+        template<typename Device, int dim>
+        struct TypeCheck<Device,dim,ScalarExp>{
+            const static bool kPass = true;
+        };
+        template<typename Device, int dim>
+        struct TypeCheck<Device,dim, Tensor<Device,dim> >{
+            const static bool kPass = true;
+        };
+        template<typename Device, int dim, typename OP, typename TA, int etype>
+        struct TypeCheck<Device,dim, UnaryMapExp<OP,TA,etype> >{
+            const static bool kPass = TypeCheck<Device, dim, TA>::kPass;
+        };
+        template<typename Device, int dim, typename OP, typename TA, typename TB, int etype>
+        struct TypeCheck<Device,dim, BinaryMapExp<OP,TA,TB,etype> >{
+            const static bool kPass = TypeCheck<Device, dim, TA>::kPass && TypeCheck<Device,dim, TB>::kPass;
+        };
+
+        template<bool kPass>
+        struct TypeCheckPass;
+        template<>
+        struct TypeCheckPass<false>{};
+        template<>
+        struct TypeCheckPass<true>{
+            inline static void Error_All_Tensor_in_Exp_Must_Have_Same_Type( void ){}
+        };
+    }; // namespace expr
+    
     namespace expr{
         template<typename SV, typename Device, int dim> 
         struct ExpEngine<SV, Tensor<Device,dim> >{
             template<typename E>
             inline static void Eval( Tensor<Device,dim>& dst, const Exp<E,type::kMapper> &exp ){
-                MapPlan<SV>( dst, engine::MakePlan( exp.self() ) );
+                // static type check
+                TypeCheckPass< TypeCheck<Device,dim,E>::kPass >::Error_All_Tensor_in_Exp_Must_Have_Same_Type();
+                MapPlan<SV>( dst, MakePlan( exp.self() ) );
+
             }
             template<typename E>
             inline static void Eval( Tensor<Device,dim>& dst, const Exp<E,type::kContainer> &exp ){
-                MapPlan<SV>( dst, engine::MakePlan( exp.self() ) );
+                // static type check
+                TypeCheckPass< TypeCheck<Device,dim,E>::kPass >::Error_All_Tensor_in_Exp_Must_Have_Same_Type();
+                MapPlan<SV>( dst, MakePlan( exp.self() ) );
             }
         };
     }; // namespace expr
