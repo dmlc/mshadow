@@ -35,8 +35,7 @@ int main( void ){
 
     print(rhs);
     // A += 0.1*dot(B.T(),C)
-    MapExp<sv::plusto>(dst, \
-                       F<op::mul>(DotExp<CTensor2D, CTensor2D, 1, 0>(lhs, rhs, 1), ScalarExp(0.1)));
+    dst += 0.1 * dot(lhs.T(), rhs);
     print(dst);
     FreeSpace( lhs );
     FreeSpace( rhs );
