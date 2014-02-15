@@ -36,6 +36,4 @@ Goals
 * Whitebox instead of blackbox: put a float* into the Tensor struct and take the benefit of the package, no memory allocation is happened unless explicitly called
 * Unified CPU/GPU code: write a code and it should run in both CPU and GPU
 * Lightweight library: light amount of code to support frequently used functions in machine learning
-* Extendable: user can write functions that plugs into mshadow and run on GPU/CPU, no experience in CUDA is required.
- 
-
+* Extendable: user can write simple functions that plugs into mshadow and run on GPU/CPU, no experience in CUDA is required.
