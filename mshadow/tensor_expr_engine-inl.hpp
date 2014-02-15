@@ -188,7 +188,7 @@ namespace mshadow{
     }; // namespace expr
     
     // the matrix OP depends on BLAS
-    #if !(MSHADOW_USE_CBLAS||MSHADOW_USE_MKL)
+    #if (MSHADOW_USE_CBLAS||MSHADOW_USE_MKL)
     namespace expr{
         // handles the dot
         template<typename Device>
