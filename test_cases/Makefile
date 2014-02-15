@@ -19,7 +19,7 @@ CUBIN =
 all: $(BIN) $(OBJ) $(CUBIN) $(CUOBJ)
 
 test: mkl_sgemm.cpp ../mshadow/*.h testcuda.o
-testcuda.o: ../testcuda.cu ../mshadow/*.h ../mshadow/cuda/*.cuh
+testcuda.o: testcuda.cu ../mshadow/*.h ../mshadow/cuda/*.cuh
 #testmkl.o: testmkl.cpp mshadow/*.h mshadow/cuda/*.cuh
 
 $(BIN) :
