@@ -125,7 +125,7 @@ namespace mshadow {
      * \return the shape construction
      */
     MSHADOW_XINLINE Shape<1> Shape1( index_t s0 ){
-        Shape<1> s; s[0] = s0;
+        Shape<1> s; s[0] = s0; s.stride_ = s0;
         return s;
     }
     /*! 
@@ -135,7 +135,7 @@ namespace mshadow {
      * \return the shape construction
      */
     MSHADOW_XINLINE Shape<2> Shape2( index_t s1, index_t s0 ){
-        Shape<2> s; s[0] = s0; s[1] = s1;
+        Shape<2> s; s[0] = s0; s[1] = s1; s.stride_ = s0;
         return s;
     }
     /*! 
@@ -146,7 +146,8 @@ namespace mshadow {
      * \return the shape construction
      */
     MSHADOW_XINLINE Shape<3> Shape3( index_t s2, index_t s1, index_t s0 ){
-        Shape<3> s; s[0] = s0; s[1] = s1; s[2] = s2;
+        Shape<3> s; 
+        s[0] = s0; s[1] = s1; s[2] = s2; s.stride_ = s0;
         return s;
     }
     /*! 
@@ -158,7 +159,8 @@ namespace mshadow {
      * \return the shape construction
      */
     MSHADOW_XINLINE Shape<4> Shape4( index_t s3, index_t s2, index_t s1, index_t s0 ){
-        Shape<4> s; s[0] = s0; s[1] = s1; s[2] = s2; s[3] = s3;
+        Shape<4> s; 
+        s[0] = s0; s[1] = s1; s[2] = s2; s[3] = s3; s.stride_ = s0;
         return s;
     }
 }; // namespace mshadow

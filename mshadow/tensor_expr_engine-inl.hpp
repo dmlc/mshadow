@@ -197,7 +197,9 @@ namespace mshadow{
         struct BLASEngine<cpu>{
             inline static void gemm( bool transa, bool transb, int m, int n, int k, real_t alpha, 
                                      const real_t *A, int lda, const real_t *B, int ldb, real_t beta, real_t *C, int ldc ){
-                cblas_sgemm(CblasColMajor, transa?CblasTrans:CblasNoTrans, transb?CblasTrans:CblasNoTrans ,m,n,k,alpha,A,lda,B,ldb,beta,C,ldc);
+                cblas_sgemm(CblasColMajor, transa?CblasTrans:CblasNoTrans, \
+                            transb?CblasTrans:CblasNoTrans, \
+                            m,n,k,alpha,A,lda,B,ldb,beta,C,ldc);
             }
         };
 
@@ -216,14 +218,14 @@ namespace mshadow{
         template<typename SV, typename xpu, bool transposeLeft, bool transposeRight>
         struct DotEngine<SV,xpu,2,2,2,transposeLeft,transposeRight>{
             // for now, only support A = dot( B,c)
-            inline static void Eval( Tensor<xpu,2> &dst, const Tensor<xpu,2> &lhs, const Tensor<xpu,2> &rhs, real_t alpha ) {
+            inline static void Eval( Tensor<xpu,2> &dst, const Tensor<xpu,2> &lhs, const Tensor<xpu,2> &rhs, real_t scale ) {
                 // use column major argument to compatible with most BLAS                
                 BLASEngine<xpu>::gemm
                     ( transposeRight, transposeLeft,
                       transposeRight ? rhs.shape[1] : rhs.shape[0],
                       transposeLeft  ? lhs.shape[0] : lhs.shape[1],
                       transposeRight ? rhs.shape[0] : rhs.shape[1], 
-                      alpha * SV::kAlphaBLAS, 
+                      scale * SV::kAlphaBLAS, 
                       rhs.dptr, rhs.shape.stride_,
                       lhs.dptr, lhs.shape.stride_,
                       SV::kBetaBLAS, 

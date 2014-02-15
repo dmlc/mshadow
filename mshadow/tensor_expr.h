@@ -167,7 +167,7 @@ namespace mshadow{
             const TB &rhs_;
             real_t scale_;
             DotExp( const TA &lhs, const TB &rhs, real_t scale )
-                :lhs_(lhs), rhs_(rhs){}
+                :lhs_(lhs),rhs_(rhs),scale_(scale){}
         };
 
         template<typename TA, typename TB>
@@ -186,6 +186,7 @@ namespace mshadow{
         inline DotExp<TA,TB,true,true> dot( const TransposeExp<TA> &lhs, const TransposeExp<TB> &rhs ){
             return DotExp<TA,TB,true,true>( lhs.exp, rhs.exp, 1.0f );
         }
+
         template<typename TA, typename TB, bool ltrans, bool rtrans >
         inline DotExp<TA,TB,ltrans,rtrans> operator*( const DotExp<TA,TB,ltrans,rtrans> &lhs, real_t rhs ){
             return DotExp<TA,TB,ltrans,rtrans>( lhs.lhs_, lhs.rhs_, lhs.scale_ * rhs );
@@ -217,6 +218,7 @@ namespace mshadow{
         inline BinaryMapExp<OP,TA,TB, (ta|tb|type::kMapper) > MakeExp( const Exp<TA,ta> &lhs, const Exp<TB,tb> &rhs ){
             return BinaryMapExp<OP,TA,TB, (ta|tb|type::kMapper) >( lhs.self(), rhs.self() );
         }
+
         // short hand for MakeExp, F stands for function
         template<typename OP,typename TA, typename TB, int ta, int tb>
         inline BinaryMapExp<OP,TA,TB, (ta|tb|type::kMapper) > F( const Exp<TA,ta> &lhs, const Exp<TB,tb> &rhs ){

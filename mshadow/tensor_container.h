@@ -28,9 +28,18 @@ namespace mshadow{
             data_.dptr = NULL;
             this->AllocByShape( shape );
         }
+        TensorContainer( const Shape<dimension> &shape, real_t initv ){
+            data_.dptr = NULL;
+            this->AllocByShape( shape );
+            (*this) = initv;
+        }
         ~TensorContainer( void ){
             this->FreeSpace();
         }
+        /*! 
+         * \brief resize the container to given shape, content is NOT preserved
+         * \param shape target shape
+         */
         inline void Resize( const Shape<dimension> &shape ){
             Shape<2> s2 = shape.FlatTo2D();
             if( s2.shape_[0] > data_.shape.stride_ || s2.shape_[1] > data_.shape[1] ){
@@ -39,6 +48,28 @@ namespace mshadow{
                 this->shape = shape;
                 this->shape.stride_ = data_.shape.stride_;
             }
+        }
+        /*! 
+         * \brief resize the container to given shape, and initialize, content is NOT preserved
+         * \param shape target shape
+         * \param initv initialization value
+         */
+        inline void Resize( const Shape<dimension> &shape, real_t initv ){
+            this->Resize( shape );
+            (*this) = initv;
+        }
+    public:
+        // functions to fit exp template
+        inline Tensor<Device,dimension>& operator=( real_t s ){
+            return this->__assign( s );
+        }
+        template<typename E>
+        inline Tensor<Device,dimension>& operator=( const expr::Exp<E,expr::type::kMapper> &exp ){
+            return this->__assign( exp );
+        }
+        template<typename E>
+        inline Tensor<Device,dimension>& operator=( const expr::Exp<E,expr::type::kComplex> &exp ){
+            return this->__assign( exp );
         }
     private:
         /*! \brief the shape of data_ is actually current data space */
