@@ -31,7 +31,7 @@ namespace mshadow{
 
     namespace cuda {                
         template<typename Saver, typename Plan, int block_dim_bits>
-        __global__ void MapPlanKernel(GTensor2D dst, const Plan exp){
+        __global__ void MapPlanKernel(Tensor<gpu,2> dst, const Plan exp){
             const index_t tid = (blockIdx.x << block_dim_bits) + threadIdx.x;
             const index_t xstride = dst.shape.stride_;
             const int y   = tid / xstride;
@@ -41,7 +41,7 @@ namespace mshadow{
             }
         }
         template<typename Saver, typename E>
-        inline void MapPlan(GTensor2D dst, const expr::Plan<E> &plan ){
+        inline void MapPlan(Tensor<gpu,2> dst, const expr::Plan<E> &plan ){
             const int num_block = (dst.shape.MSize() + kBaseThreadNum-1) / kBaseThreadNum;
             dim3 dimBlock(kBaseThreadNum, 1, 1);
             

@@ -4,13 +4,13 @@
 using namespace mshadow;
 
 // implemented by testcuda.cu
-void testcuda( CTensor3D mat1, CTensor3D mat2, CTensor3D mat3 );
-void testcuda2( CTensor3D mat1, CTensor3D mat2, CTensor3D mat3 );
+void testcuda( Tensor<cpu,3> mat1, Tensor<cpu,3> mat2, Tensor<cpu,3> mat3 );
+void testcuda2( Tensor<cpu,3> mat1, Tensor<cpu,3> mat2, Tensor<cpu,3> mat3 );
 
 int main( void ){    
-    CTensor3D mat1 = NewCTensor( Shape3(2,4,10), 10 );
-    CTensor3D mat2 = NewCTensor( Shape3(2,4,10), 20 );
-    CTensor3D mat3 = NewCTensor( Shape3(2,4,10), 30 );
+    Tensor<cpu,3> mat1 = NewCTensor( Shape3(2,4,10), 10 );
+    Tensor<cpu,3> mat2 = NewCTensor( Shape3(2,4,10), 20 );
+    Tensor<cpu,3> mat3 = NewCTensor( Shape3(2,4,10), 30 );
     //    testcuda2( mat1, mat2, mat3 );
     testcuda( mat1, mat2, mat3 );
     for (unsigned i = 0; i < 2; ++i) {

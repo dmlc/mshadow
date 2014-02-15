@@ -8,7 +8,7 @@ export LDFLAGS= -lm -lcudart -lcublas -lmkl_core -lmkl_intel_lp64 -lmkl_intel_th
 export NVCCFLAGS = -O3 --use_fast_math -ccbin $(CXX)
 
 # specify tensor path
-BIN = basic
+BIN = basic defop
 OBJ =
 CUOBJ = 
 CUBIN =
@@ -17,6 +17,7 @@ CUBIN =
 all: $(BIN) $(OBJ) $(CUBIN) $(CUOBJ)
 
 basic: basic.cpp
+defop: defop.cpp
 
 $(BIN) :
 	$(CXX) $(CFLAGS) $(LDFLAGS) -o $@ $(filter %.cpp %.o %.c, $^)

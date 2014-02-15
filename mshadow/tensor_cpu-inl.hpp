@@ -34,8 +34,8 @@ namespace mshadow {
     template<int dim>
     inline void Copy(Tensor<cpu,dim> _dst, const Tensor<cpu,dim> &_src ){
         utils::Assert( _dst.shape == _src.shape, "Copy:shape mismatch" );
-        CTensor2D dst = _dst.FlatTo2D();
-        CTensor2D src = _src.FlatTo2D();
+        Tensor<cpu,2> dst = _dst.FlatTo2D();
+        Tensor<cpu,2> src = _src.FlatTo2D();
         for (index_t y = 0; y < dst.shape[1]; y ++) {
             memcpy( dst[y].dptr, src[y].dptr, sizeof(real_t) * dst.shape[0] );
         }
@@ -43,7 +43,7 @@ namespace mshadow {
 
     template<typename Saver, typename E, int dim>
     inline void MapPlan(Tensor<cpu,dim> _dst, const expr::Plan<E> &plan){
-        CTensor2D dst = _dst.FlatTo2D();
+        Tensor<cpu,2> dst = _dst.FlatTo2D();
         for (index_t y = 0; y < dst.shape[1]; y ++) {
             for (index_t x = 0; x < dst.shape[0]; x ++) {
                 // trust your compiler! -_- they will optimize it

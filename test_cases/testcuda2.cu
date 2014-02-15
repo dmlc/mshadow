@@ -4,9 +4,9 @@
 
 using namespace mshadow;
 using namespace mshadow::expr;
-extern void testcuda2( CTensor3D mat1, CTensor3D mat2, CTensor3D mat3 );
+extern void testcuda2( Tensor<cpu,3> mat1, Tensor<cpu,3> mat2, Tensor<cpu,3> mat3 );
 
-void testcuda2( CTensor3D mat1, CTensor3D mat2, CTensor3D mat3 ){
+void testcuda2( Tensor<cpu,3> mat1, Tensor<cpu,3> mat2, Tensor<cpu,3> mat3 ){
     Shape<3> s = mat1.shape;
     TensorContainer<cpu,3>  gmat1(s), gmat2(s), gmat3(s);
     TensorContainer<cpu,3>  gmat4(Shape3(1,1,1));

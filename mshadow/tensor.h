@@ -4,7 +4,7 @@
  * \file tensor.h
  * \brief header file of tensor data structure and functions
  *        covention: this lib requires explicit memory allocation and de-allocation
- *                   all the data structure CTensor1D, GTensor1D are like handles(pointers),
+ *                   all the data structure Tensor<cpu,1>, Tensor<gpu,1> are like handles(pointers),
  *                   no memory allocation is happening during calculation
  * \author Bing Hsu, Tianqi Chen
  */
@@ -282,19 +282,6 @@ namespace mshadow {
         }
     };
 }; // namespace mshadow
-
-namespace mshadow {
-    typedef Tensor<cpu, 1> CTensor1D;
-    typedef Tensor<cpu, 2> CTensor2D;
-    typedef Tensor<cpu, 3> CTensor3D;
-    typedef Tensor<cpu, 4> CTensor4D;
-
-    typedef Tensor<gpu, 1> GTensor1D;
-    typedef Tensor<gpu, 2> GTensor2D;
-    typedef Tensor<gpu, 3> GTensor3D;
-    typedef Tensor<gpu, 4> GTensor4D;
-}; // namespace mshadow
-
 
 // add unroll loops for the shape
 namespace mshadow {

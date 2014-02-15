@@ -3,11 +3,11 @@
 
 using namespace mshadow;
 using namespace mshadow::expr;
-extern void testcuda( CTensor3D mat1, CTensor3D mat2, CTensor3D mat3 );
+extern void testcuda( Tensor<cpu,3> mat1, Tensor<cpu,3> mat2, Tensor<cpu,3> mat3 );
 
-void testcuda( CTensor3D mat1, CTensor3D mat2, CTensor3D mat3 ){
+void testcuda( Tensor<cpu,3> mat1, Tensor<cpu,3> mat2, Tensor<cpu,3> mat3 ){
     Shape<3> s = mat1.shape;
-    GTensor3D gmat1(s), gmat2(s), gmat3(s), gmat4;    
+    Tensor<gpu,3> gmat1(s), gmat2(s), gmat3(s), gmat4;    
     printf("alloc space\n");
     AllocSpace(gmat1); 
     AllocSpace(gmat2); 

@@ -6,7 +6,7 @@
 using namespace mshadow;
 using namespace mshadow::expr;
 
-void print(const CTensor2D &t) {
+void print(const Tensor<cpu,2> &t) {
     index_t row = t.shape[1];
     index_t col = t.shape[0];
     printf("%2d X %2d\n", row, col);
@@ -18,7 +18,7 @@ void print(const CTensor2D &t) {
     }
 }
 // implemented by testcuda.cu
-void testmkl( CTensor2D mat1, CTensor2D mat2, CTensor2D mat3 );
+void testmkl( Tensor<cpu,2> mat1, Tensor<cpu,2> mat2, Tensor<cpu,2> mat3 );
 
 int main( void ){
     TensorContainer<cpu,2> lhs( Shape2(4,3), 0 );
