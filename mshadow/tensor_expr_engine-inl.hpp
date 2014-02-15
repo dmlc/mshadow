@@ -179,13 +179,16 @@ namespace mshadow{
                 utils::Assert( ShapeCheck<dim>::Check( exp.self(), dst.shape ), "shape of Tensors in expression is not consistent with target" );
                 MapPlan<SV>( dst, MakePlan( exp.self() ) );
             }
+
             template<int ldim,int rdim,bool ltrans,bool rtrans>
             inline static void Eval( Tensor<Device,dim> &dst, const DotExp< Tensor<Device,ldim>, Tensor<Device,rdim>, ltrans, rtrans > &exp ){
                 DotEngine<SV,Device,dim,ldim,rdim,ltrans,rtrans>::Eval( dst, exp.lhs_, exp.rhs_, exp.scale_ );
             }
         };
     }; // namespace expr
-
+    
+    // the matrix OP depends on BLAS
+    #if !(MSHADOW_USE_CBLAS||MSHADOW_USE_MKL)
     namespace expr{
         // handles the dot
         template<typename Device>
@@ -227,9 +230,8 @@ namespace mshadow{
                       dst.dptr, dst.shape.stride_ );
             }
         };
-
-
     }; // namespace expr
+    #endif
 
     // implementation of MapExp
     template<typename Saver, typename Device, int dim, typename E, int etype>

@@ -9,19 +9,21 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-// dependencies on external package is all declared here
-
+// defintiions 
+/*! \brief use CBLAS for CBLAS */
 #define MSHADOW_USE_CBLAS 0
-#define MSHADOW_USE_MKL 1
+/*! \brief use MKL for BLAS */
+#define MSHADOW_USE_MKL   1
+
 #if MSHADOW_USE_CBLAS
-#include <cblas.h>
+  #include <cblas.h>
 #elif MSHADOW_USE_MKL
-#include <mkl.h>
-#include <mkl_cblas.h>
+  #include <mkl.h>
+  #include <mkl_cblas.h>
 #endif
 
 #ifdef __CUDACC__
-#include <cublas.h>
+  #include <cublas.h>
 #endif
 // --------------------------------
 // MSHADOW_XINLINE is used for inlining template code for both CUDA and CPU code.

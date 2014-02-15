@@ -46,7 +46,7 @@ int main( void ){
     index_t LDB = rtrans ? rhs.shape[1] : rhs.shape[0];
     // utils::Assert(HDA == LDB, "Matrix Dimension Mismatch\n");
     printf("M:%d K:%d N:%d LDA:%d LDB:%d\n", M, K, N, LDA, LDB);
-    cblas_sgemm(CblasColMajor, \
+    cblas_sgemm(CblasColMajor,              \
                             op_lhs, op_rhs, \
                             M, \
                             N, \
