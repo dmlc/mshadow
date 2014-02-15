@@ -5,6 +5,9 @@ Lightweight CPU/GPU Matrix/Tensor Template Library in C++/CUDA
 
 Creater: Bing Hsu and Tianqi Chen
 
+
+Tutorial: https://github.com/tqchen/mshadow/wiki/Tutorial
+
 Description
 =====
 Most machine learning algorithms requires matrix,tensor operations frequently. For example, Eq.(1) is a common SGD update rule, where the weight can be a vector, matrix or 3D tensor. Eq.(2) is the backpropagtion rule:
@@ -29,6 +32,7 @@ However:
 * What if we want to port our code to GPU? We need to rewrite our code in CUDA
 
 mshadow is a unified C++/CUDA lib to to write Eq.(1) and Eq.(2) in C++, and *translate* them to the for loop and standard packages such as MKL, CuBLAS *in compile time*. 
+
 
 Goals
 =====
