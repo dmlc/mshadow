@@ -14,6 +14,8 @@
 #define MSHADOW_USE_CBLAS 0
 /*! \brief use MKL for BLAS */
 #define MSHADOW_USE_MKL   1
+/*! \breif use single precition float */
+#define MSHADOW_SINGLE_PRECISION 1
 
 #if MSHADOW_USE_CBLAS
   #include <cblas.h>
@@ -38,8 +40,12 @@
 
 /*! \brief namespace for mshadow */
 namespace mshadow {
+#if MSHADOW_SINGLE_PRECISION 
     /*! \brief type that will be used for content */
     typedef float real_t;
+#else
+    typedef double real_t;
+#endif
     /*! \brief type that will be used for index */
     typedef unsigned index_t;
 }; // namespace mshadow

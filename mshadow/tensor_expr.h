@@ -63,7 +63,6 @@ namespace mshadow{
         struct ScalarExp: public Exp<ScalarExp, type::kMapper>{
             real_t scalar_;
             ScalarExp( real_t scalar ):scalar_(scalar){}
-            ScalarExp( double scalar ):scalar_(scalar){}
         };
 
         /*! \brief represent a transpose expression of a container */

@@ -156,12 +156,75 @@ namespace mshadow{
         };
     }; // namespace expr
 
+    // the matrix OP depends on BLAS
+    #if (MSHADOW_USE_CBLAS||MSHADOW_USE_MKL)
     namespace expr{
+        // handles the dot
+        template<typename Device>
+        struct BLASEngine;
+        template<>
+        struct BLASEngine<cpu>{
+            inline static void gemm( bool transa, bool transb, int m, int n, int k, real_t alpha, 
+                                     const real_t *A, int lda, const real_t *B, int ldb, real_t beta, real_t *C, int ldc ){
+                #if MSHADOW_SINGLE_PRECISION
+                cblas_sgemm(CblasColMajor, transa?CblasTrans:CblasNoTrans, transb?CblasTrans:CblasNoTrans, \
+                            m,n,k,alpha,A,lda,B,ldb,beta,C,ldc);
+                #else
+                cblas_dgemm(CblasColMajor, transa?CblasTrans:CblasNoTrans, transb?CblasTrans:CblasNoTrans, \
+                            m,n,k,alpha,A,lda,B,ldb,beta,C,ldc);                
+                #endif
+            }
+        };
+
+        #ifdef __CUDACC__
+        // all cublas goes to here
+        template<>
+        struct BLASEngine<gpu>{
+            inline static void gemm( bool transa, bool transb, int m, int n, int k, real_t alpha, 
+                                     const real_t *A, int lda, const real_t *B, int ldb, real_t beta, real_t *C, int ldc ){
+                // TODO, add handle
+                #if MSHADOW_SINGLE_PRECISION
+                cublasSgemm(transa?'T':'N',transb?'T':'N',m,n,k,alpha,A,lda,B,ldb,beta,C,ldc);
+                #else
+                cublasDgemm(transa?'T':'N',transb?'T':'N',m,n,k,alpha,A,lda,B,ldb,beta,C,ldc);
+                #endif
+            }
+        };
+        #endif
         template<typename SV,typename Device, int ddim, int ldim, int rdim, bool ltrans, bool rtrans>
         struct DotEngine{
             inline static void Eval( Tensor<Device,ddim> &dst, const Tensor<Device,ldim> &lhs, const Tensor<Device,rdim> &rhs, real_t scale );
         };
 
+        // helper function to decide which shape we are in 
+        inline static Shape<2> GetShape( const Shape<2> &shape, bool transpose ){
+            return transpose ? Shape2(shape[0],shape[1]) : shape;
+        }
+
+        template<typename SV, typename xpu, bool transposeLeft, bool transposeRight>
+        struct DotEngine<SV,xpu,2,2,2,transposeLeft,transposeRight>{
+            inline static void Eval( Tensor<xpu,2> &dst, const Tensor<xpu,2> &lhs, const Tensor<xpu,2> &rhs, real_t scale ) {
+                Shape<2> sleft  = GetShape( lhs.shape, transposeLeft );
+                Shape<2> sright = GetShape( rhs.shape, transposeRight );
+                utils::Assert( dst.shape[1] == sleft[1] && dst.shape[0] == sright[0] \
+                               && sleft[0] == sright[1] , "dot: matrix shape mismatch" );
+                // use column major argument to compatible with most BLAS
+                BLASEngine<xpu>::gemm
+                    ( transposeRight, transposeLeft,
+                      transposeRight ? rhs.shape[1] : rhs.shape[0],
+                      transposeLeft  ? lhs.shape[0] : lhs.shape[1],
+                      transposeRight ? rhs.shape[0] : rhs.shape[1], 
+                      scale * SV::kAlphaBLAS, 
+                      rhs.dptr, rhs.shape.stride_,
+                      lhs.dptr, lhs.shape.stride_,
+                      SV::kBetaBLAS, 
+                      dst.dptr, dst.shape.stride_ );
+            }
+        };
+    }; // namespace expr
+    #endif
+
+    namespace expr{
         template<typename SV, typename Device, int dim>
         struct ExpEngine<SV, Tensor<Device,dim> >{
             template<typename E>
@@ -187,54 +250,6 @@ namespace mshadow{
         };
     }; // namespace expr
     
-    // the matrix OP depends on BLAS
-    #if (MSHADOW_USE_CBLAS||MSHADOW_USE_MKL)
-    namespace expr{
-        // handles the dot
-        template<typename Device>
-        struct BLASEngine;
-        template<>
-        struct BLASEngine<cpu>{
-            inline static void gemm( bool transa, bool transb, int m, int n, int k, real_t alpha, 
-                                     const real_t *A, int lda, const real_t *B, int ldb, real_t beta, real_t *C, int ldc ){
-                cblas_sgemm(CblasColMajor, transa?CblasTrans:CblasNoTrans, \
-                            transb?CblasTrans:CblasNoTrans, \
-                            m,n,k,alpha,A,lda,B,ldb,beta,C,ldc);
-            }
-        };
-
-        #ifdef __CUDACC__
-        // all cublas goes to here
-        template<>
-        struct BLASEngine<gpu>{
-            inline static void gemm( bool transa, bool transb, int m, int n, int k, real_t alpha, 
-                                     const real_t *A, int lda, const real_t *B, int ldb, real_t beta, real_t *C, int ldc ){
-                // TODO, add handle
-                cublasSgemm(transa?'T':'N',transb?'T':'N',m,n,k,alpha,A,lda,B,ldb,beta,C,ldc);
-            }
-        };
-        #endif
-        
-        template<typename SV, typename xpu, bool transposeLeft, bool transposeRight>
-        struct DotEngine<SV,xpu,2,2,2,transposeLeft,transposeRight>{
-            // for now, only support A = dot( B,c)
-            inline static void Eval( Tensor<xpu,2> &dst, const Tensor<xpu,2> &lhs, const Tensor<xpu,2> &rhs, real_t scale ) {
-                // use column major argument to compatible with most BLAS                
-                BLASEngine<xpu>::gemm
-                    ( transposeRight, transposeLeft,
-                      transposeRight ? rhs.shape[1] : rhs.shape[0],
-                      transposeLeft  ? lhs.shape[0] : lhs.shape[1],
-                      transposeRight ? rhs.shape[0] : rhs.shape[1], 
-                      scale * SV::kAlphaBLAS, 
-                      rhs.dptr, rhs.shape.stride_,
-                      lhs.dptr, lhs.shape.stride_,
-                      SV::kBetaBLAS, 
-                      dst.dptr, dst.shape.stride_ );
-            }
-        };
-    }; // namespace expr
-    #endif
-
     // implementation of MapExp
     template<typename Saver, typename Device, int dim, typename E, int etype>
     inline void MapExp(Tensor<Device,dim> dst, const expr::Exp<E,etype> &exp ){
