@@ -164,15 +164,30 @@ namespace mshadow{
         struct BLASEngine;
         template<>
         struct BLASEngine<cpu>{
-            inline static void gemm( bool transa, bool transb, int m, int n, int k, real_t alpha, 
-                                     const real_t *A, int lda, const real_t *B, int ldb, real_t beta, real_t *C, int ldc ){
-                #if MSHADOW_SINGLE_PRECISION
-                cblas_sgemm(CblasColMajor, transa?CblasTrans:CblasNoTrans, transb?CblasTrans:CblasNoTrans, \
-                            m,n,k,alpha,A,lda,B,ldb,beta,C,ldc);
-                #else
-                cblas_dgemm(CblasColMajor, transa?CblasTrans:CblasNoTrans, transb?CblasTrans:CblasNoTrans, \
-                            m,n,k,alpha,A,lda,B,ldb,beta,C,ldc);                
-                #endif
+            inline static CBLAS_TRANSPOSE GetT( bool t ){
+                return t ? CblasTrans : CblasNoTrans;
+            }
+            inline static void gemm( bool transa, bool transb, int m, int n, int k, float alpha, \
+                                     const float *A, int lda, const float *B, int ldb, float beta, float *C, int ldc ){
+                cblas_sgemm(CblasColMajor, GetT(transa), GetT(transb), m,n,k,alpha,A,lda,B,ldb,beta,C,ldc);
+            }
+            inline static void gemm( bool transa, bool transb, int m, int n, int k, double alpha, \
+                                     const double *A, int lda, const double *B, int ldb, double beta, double *C, int ldc ){
+                cblas_dgemm(CblasColMajor, GetT(transa), GetT(transb), m,n,k,alpha,A,lda,B,ldb,beta,C,ldc);
+            }
+            inline static void gemv( bool trans, int m, int n, float alpha, const float *A, int lda, \
+                                     const float *X, int incX, float beta, float *Y, int incY ){
+                cblas_sgemv(CblasColMajor, GetT(trans), m,n,alpha,A,lda,X,incX,beta,Y,incY);
+            }
+            inline static void gemv( bool trans, int m, int n, double alpha, const double *A, int lda, \
+                                     const double *X, int incX, double beta, double *Y, int incY ){
+                cblas_dgemv(CblasColMajor, GetT(trans), m,n,alpha,A,lda,X,incX,beta,Y,incY);
+            }
+            inline static void ger( int m, int n, float alpha, const float *X, int incX, const float *Y, int incY, float *A, int lda ){
+                cblas_sger(CblasColMajor,m,n,alpha,X,incX,Y,incY,A,lda);
+            }
+            inline static void ger( int m, int n, double alpha, const double *X, int incX, const double *Y, int incY, double *A, int lda ){
+                cblas_dger(CblasColMajor,m,n,alpha,X,incX,Y,incY,A,lda);
             }
         };
 
@@ -180,14 +195,30 @@ namespace mshadow{
         // all cublas goes to here
         template<>
         struct BLASEngine<gpu>{
-            inline static void gemm( bool transa, bool transb, int m, int n, int k, real_t alpha, 
-                                     const real_t *A, int lda, const real_t *B, int ldb, real_t beta, real_t *C, int ldc ){
-                // TODO, add handle
-                #if MSHADOW_SINGLE_PRECISION
-                cublasSgemm(transa?'T':'N',transb?'T':'N',m,n,k,alpha,A,lda,B,ldb,beta,C,ldc);
-                #else
-                cublasDgemm(transa?'T':'N',transb?'T':'N',m,n,k,alpha,A,lda,B,ldb,beta,C,ldc);
-                #endif
+            inline static char GetT( bool t ){
+                return t ? 'T' : 'N';
+            }
+            inline static void gemm( bool transa, bool transb, int m, int n, int k, float alpha, 
+                                     const float *A, int lda, const float *B, int ldb, float beta, float *C, int ldc ){
+                cublasSgemm(GetT(transa),GetT(transb),m,n,k,alpha,A,lda,B,ldb,beta,C,ldc);
+            }
+            inline static void gemm( bool transa, bool transb, int m, int n, int k, double alpha, 
+                                     const double *A, int lda, const double *B, int ldb, double beta, double *C, int ldc ){
+                cublasDgemm(GetT(transa),GetT(transb),m,n,k,alpha,A,lda,B,ldb,beta,C,ldc);                
+            }
+            inline static void gemv( bool trans, int m, int n, float alpha, const float *A, int lda, \
+                                     const float *X, int incX, float beta, float *Y, int incY ){
+                cublasSgemv(GetT(trans), m,n,alpha,A,lda,X,incX,beta,Y,incY);
+            }
+            inline static void gemv( bool trans, int m, int n, double alpha, const double *A, int lda, \
+                                     const double *X, int incX, double beta, double *Y, int incY ){
+                cublasDgemv(GetT(trans), m,n,alpha,A,lda,X,incX,beta,Y,incY);
+            }
+            inline static void ger( int m, int n, float alpha, const float *X, int incX, const float *Y, int incY, float *A, int lda ){
+                cublasSger(CblasColMajor,m,n,alpha,X,incX,Y,incY,A,lda);
+            }
+            inline static void ger( int m, int n, double alpha, const double *X, int incX, const double *Y, int incY, double *A, int lda ){
+                cublasDger(CblasColMajor,m,n,alpha,X,incX,Y,incY,A,lda);
             }
         };
         #endif
@@ -200,20 +231,20 @@ namespace mshadow{
         inline static Shape<2> GetShape( const Shape<2> &shape, bool transpose ){
             return transpose ? Shape2(shape[0],shape[1]) : shape;
         }
-
-        template<typename SV, typename xpu, bool transposeLeft, bool transposeRight>
-        struct DotEngine<SV,xpu,2,2,2,transposeLeft,transposeRight>{
+        // dst = dot( lhs[.T], rhs[.T] )
+        template<typename SV, typename xpu, bool transpose_left, bool transpose_right>
+        struct DotEngine<SV,xpu,2,2,2,transpose_left,transpose_right>{
             inline static void Eval( Tensor<xpu,2> &dst, const Tensor<xpu,2> &lhs, const Tensor<xpu,2> &rhs, real_t scale ) {
-                Shape<2> sleft  = GetShape( lhs.shape, transposeLeft );
-                Shape<2> sright = GetShape( rhs.shape, transposeRight );
+                Shape<2> sleft  = GetShape( lhs.shape, transpose_left );
+                Shape<2> sright = GetShape( rhs.shape, transpose_right );
                 utils::Assert( dst.shape[1] == sleft[1] && dst.shape[0] == sright[0] \
-                               && sleft[0] == sright[1] , "dot: matrix shape mismatch" );
+                               && sleft[0] == sright[1] , "dot-gemm: matrix shape mismatch" );
                 // use column major argument to compatible with most BLAS
                 BLASEngine<xpu>::gemm
-                    ( transposeRight, transposeLeft,
-                      transposeRight ? rhs.shape[1] : rhs.shape[0],
-                      transposeLeft  ? lhs.shape[0] : lhs.shape[1],
-                      transposeRight ? rhs.shape[0] : rhs.shape[1], 
+                    ( transpose_right , transpose_left,
+                      transpose_right ? rhs.shape[1] : rhs.shape[0],
+                      transpose_left  ? lhs.shape[0] : lhs.shape[1],
+                      transpose_right ? rhs.shape[0] : rhs.shape[1], 
                       scale * SV::kAlphaBLAS, 
                       rhs.dptr, rhs.shape.stride_,
                       lhs.dptr, lhs.shape.stride_,
@@ -221,6 +252,32 @@ namespace mshadow{
                       dst.dptr, dst.shape.stride_ );
             }
         };
+        template<typename SV, typename xpu, bool transpose_right>
+        struct DotEngine<SV,xpu,1,1,2,false,transpose_right>{
+            inline static void Eval( Tensor<xpu,1> &dst, const Tensor<xpu,1> &lhs, const Tensor<xpu,2> &rhs, real_t scale ) {
+                Shape<2> sright = GetShape( rhs.shape, transpose_right );
+                utils::Assert( dst.shape[0] == sright[0] && lhs.shape[0] == sright[1], "dot-gemv: matrix shape mismatch");
+                BLASEngine<xpu>::gemv
+                    ( transpose_right, 
+                      rhs.shape[0], rhs.shape[1], scale * SV::kAlphaBLAS,
+                      rhs.dptr, rhs.shape.stride_,
+                      lhs.dptr, 1, SV::kBetaBLAS,
+                      dst.dptr, 1 );
+            }
+        };        
+        template<typename SV, typename xpu>
+        struct DotEngine<SV,xpu,2,1,1,true,false>{
+            inline static void Eval( Tensor<xpu,2> &dst, const Tensor<xpu,1> &lhs, const Tensor<xpu,1> &rhs, real_t scale ) {
+                utils::Assert( dst.shape[1] == lhs.shape[0] && dst.shape[0] == rhs.shape[0], "dot-ger: matrix shape mismatch" );
+                if( SV::kBetaBLAS < 1e-6f ){
+                    BLASEngine<xpu>::ger
+                        ( rhs.shape[0], lhs.shape[0], scale * SV::kAlphaBLAS,
+                          rhs.dptr, 1, lhs.dptr, 1, dst.dptr, dst.shape.stride_ );
+                }else{
+                    DotEngine<SV,xpu,2,2,2,true,false>::Eval( dst, lhs.FlatTo2D(), rhs.FlatTo2D(), scale );
+                }
+            }
+        };        
     }; // namespace expr
     #endif
 

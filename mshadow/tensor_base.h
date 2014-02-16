@@ -15,7 +15,7 @@
 /*! \brief use MKL for BLAS */
 #define MSHADOW_USE_MKL   1
 /*! \breif use single precition float */
-#define MSHADOW_SINGLE_PRECISION 1
+#define MSHADOW_SINGLE_PRECISION 0
 
 #if MSHADOW_USE_CBLAS
   #include <cblas.h>

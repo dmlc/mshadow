@@ -23,19 +23,24 @@ void testmkl( Tensor<cpu,2> mat1, Tensor<cpu,2> mat2, Tensor<cpu,2> mat3 );
 int main( void ){
     TensorContainer<cpu,2> lhs( Shape2(4,3), 0 );
     TensorContainer<cpu,2> rhs( Shape2(4,3), 0 );
-    TensorContainer<cpu,2> dst( Shape2(4,4), 0.1 );
+    TensorContainer<cpu,2> dst( Shape2(4,4), 0.0 );
+    TensorContainer<cpu,2> dst2( Shape2(3,3), 0.0 );
     lhs = 1.0f;
     print(lhs);
     printf("-\n");
     rhs[0] = 2.0f;
     rhs[1] = 0.0f;
     rhs[2] = 3.0f;
-
+    rhs[0][1] = 1.0f;
     print(rhs);
     // A += 0.1*dot(B.T(),C)
     //dst += 0.1 * dot(lhs.T(), rhs);
     dst -= 0.1 *dot( lhs, rhs.T() );
     print(dst);
-
+    
+    dst[0] = dot( lhs[0], rhs.T() );
+    print(dst);
+    dst2 += dot( lhs[0].T(), rhs[0] );
+    print(dst2);
     return 0;
 }
