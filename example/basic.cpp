@@ -7,7 +7,7 @@ using namespace mshadow::expr;
 
 int main( void ){
     // assume we have a float space
-    float data[ 20 ];
+    real_t data[ 20 ];
     // create a 2 x 5 x 2 tensor, from existing space
     Tensor<cpu,3> ts( data, Shape3(2,5,2) );
     // take first subscript of the tensor 
@@ -33,5 +33,6 @@ int main( void ){
         }
         printf("\n");
     }
+
     return 0;
 }

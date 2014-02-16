@@ -35,5 +35,6 @@ int main( void ){
     }
 
     FreeSpace( mat ); FreeSpace( mat2 );
+
     return 0;
 }

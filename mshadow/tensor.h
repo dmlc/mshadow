@@ -285,7 +285,20 @@ namespace mshadow {
 
 // add unroll loops for the shape
 namespace mshadow {
-    // function declarations
+    // function declarations    
+    /*!
+     * \brief initialize tensor engine, used to call intialization functions of dependent libs
+     *        this function should be called before all GPU tensor operations,
+     *        for using tensors in CPU, this call is actually not needed
+     */
+    inline void InitTensorEngine( void );
+    /*!
+     * \brief Shutdown tensor engine, 
+     *        this function should be called after all GPU tensor operations,
+     *        for using tensors in CPU, this call is actually not needed
+     */
+    inline void ShutdownTensorEngine( void );
+    
     /*!
      * \brief CPU/CPU: allocate space for CTensor, according to the shape in the obj
      *        this function is responsible to set the stride_ in each obj.shape
@@ -342,7 +355,7 @@ namespace mshadow {
     inline void MapPlan(Tensor<cpu,dim> dst, const expr::Plan<E> &plan );
     template<typename Saver, typename E, int dim>
     inline void MapPlan(Tensor<gpu,dim> dst, const expr::Plan<E> &plan );
-
+    
     /*!
      * \brief CPU/GPU: map a expression to a tensor, this function calls MapPlan
      * \tparam Saver specify storage method [st]

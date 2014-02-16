@@ -4,15 +4,13 @@
 using namespace mshadow;
 
 // implemented by testcuda.cu
-void testcuda( Tensor<cpu,3> mat1, Tensor<cpu,3> mat2, Tensor<cpu,3> mat3 );
-void testcuda2( Tensor<cpu,3> mat1, Tensor<cpu,3> mat2, Tensor<cpu,3> mat3 );
 
-int main( void ){    
+int main( void ){
     Tensor<cpu,3> mat1 = NewCTensor( Shape3(2,4,10), 10 );
     Tensor<cpu,3> mat2 = NewCTensor( Shape3(2,4,10), 20 );
     Tensor<cpu,3> mat3 = NewCTensor( Shape3(2,4,10), 30 );
     //    testcuda2( mat1, mat2, mat3 );
-    testcuda( mat1, mat2, mat3 );
+    //testcuda( mat1, mat2, mat3 );
     for (unsigned i = 0; i < 2; ++i) {
         for (unsigned j = 0; j < 4; ++j) {
             printf("%.2f ", mat3[i][j][0]);

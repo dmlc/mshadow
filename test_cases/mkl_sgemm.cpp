@@ -21,6 +21,8 @@ void print(const Tensor<cpu,2> &t) {
 void testmkl( Tensor<cpu,2> mat1, Tensor<cpu,2> mat2, Tensor<cpu,2> mat3 );
 
 int main( void ){
+    InitTensorEngine();
+
     TensorContainer<cpu,2> lhs( Shape2(4,3), 0 );
     TensorContainer<cpu,2> rhs( Shape2(4,3), 0 );
     TensorContainer<cpu,2> dst( Shape2(4,4), 0.0 );
@@ -42,5 +44,7 @@ int main( void ){
     print(dst);
     dst2 += dot( lhs[0].T(), rhs[0] );
     print(dst2);
+
+    ShutdownTensorEngine();
     return 0;
 }

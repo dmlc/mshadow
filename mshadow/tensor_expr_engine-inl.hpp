@@ -191,8 +191,8 @@ namespace mshadow{
             }
         };
 
-        #ifdef __CUDACC__
-        // all cublas goes to here
+        #if MSHADOW_USE_CUDA
+        // All CuBLAS goes to here, use legacy API: not threadsafe
         template<>
         struct BLASEngine<gpu>{
             inline static char GetT( bool t ){
@@ -215,10 +215,10 @@ namespace mshadow{
                 cublasDgemv(GetT(trans), m,n,alpha,A,lda,X,incX,beta,Y,incY);
             }
             inline static void ger( int m, int n, float alpha, const float *X, int incX, const float *Y, int incY, float *A, int lda ){
-                cublasSger(CblasColMajor,m,n,alpha,X,incX,Y,incY,A,lda);
+                cublasSger(m,n,alpha,X,incX,Y,incY,A,lda);
             }
             inline static void ger( int m, int n, double alpha, const double *X, int incX, const double *Y, int incY, double *A, int lda ){
-                cublasDger(CblasColMajor,m,n,alpha,X,incX,Y,incY,A,lda);
+                cublasDger(m,n,alpha,X,incX,Y,incY,A,lda);
             }
         };
         #endif

@@ -1,17 +1,29 @@
 #ifndef MSHADOW_TENSOR_GPU_INL_HPP
 #define MSHADOW_TENSOR_GPU_INL_HPP
-#ifdef __CUDACC__
 /*!
- * \file tensor_cpu-inl.hpp
+ * \file tensor_gpu-inl.hpp
  * \brief implementation of GPU host code
  * \author Bing Hsu, Tianqi Chen
  */
-
-// include this file only if the compiler is nvcc
 #include "tensor.h"
-#include "cuda/tensor_gpu-inl.cuh"
 
+#if !(MSHADOW_USE_CUDA)
 namespace mshadow {
+    // do nothing if no GPU operation is involved
+    inline void InitTensorEngine( void ){
+    }
+    inline void ShutdownTensorEngine( void ){
+    }
+};
+#else
+namespace mshadow {
+    inline void InitTensorEngine( void ){
+        cublasInit();
+    }
+    inline void ShutdownTensorEngine( void ){
+        cublasShutdown();
+    }
+
     template<int dim>
     inline void AllocSpace(Tensor<gpu,dim> &obj){
         size_t pitch;
@@ -57,12 +69,20 @@ namespace mshadow {
     inline void Copy(Tensor<gpu,dim> dst, const Tensor<cpu,dim> &src){
         Copy( dst, src, cudaMemcpyHostToDevice );
     }
+}; // namespace mshadow
 
+#ifdef __CUDACC__
+// the following part is included only if compiler is nvcc
+#include "cuda/tensor_gpu-inl.cuh"
+
+namespace mshadow{
     template<typename Saver, typename E, int dim>
     inline void MapPlan(Tensor<gpu,dim> _dst, const expr::Plan<E> &plan){ 
         cuda::MapPlan<Saver>( _dst.FlatTo2D(), plan );
     }
 }; // namespace mshadow
 
-#endif
+#endif // __CUDACC__
+
+#endif // MSHADOW_USE_CUDA
 #endif // TENSOR_GPU_INL_HPP

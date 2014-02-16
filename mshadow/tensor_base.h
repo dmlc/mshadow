@@ -14,8 +14,14 @@
 #define MSHADOW_USE_CBLAS 0
 /*! \brief use MKL for BLAS */
 #define MSHADOW_USE_MKL   1
+/*! \brief use CUDA support, must ensure that the cuda include path is correct, or directly compile using nvcc */
+#ifndef MSHADOW_USE_CUDA
+  #define MSHADOW_USE_CUDA   1
+#endif
 /*! \breif use single precition float */
-#define MSHADOW_SINGLE_PRECISION 0
+#ifndef MSHADOW_SINGLE_PRECISION
+  #define MSHADOW_SINGLE_PRECISION 0
+#endif
 
 #if MSHADOW_USE_CBLAS
   #include <cblas.h>
@@ -24,7 +30,7 @@
   #include <mkl_cblas.h>
 #endif
 
-#ifdef __CUDACC__
+#if MSHADOW_USE_CUDA
   #include <cublas.h>
 #endif
 // --------------------------------
