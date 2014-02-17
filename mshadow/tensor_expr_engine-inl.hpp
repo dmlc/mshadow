@@ -97,7 +97,7 @@ namespace mshadow{
     namespace expr{
         /*!
          * \brief static type check template,
-         *        if a expression E does not match type Device, dim, then kPass = dim
+         *        if a expression E does not match type Device, dim, then kPass = false
          * \tparam Device the type of Device
          * \tparam dim dimension of the tensor
          * \tparam E expression
@@ -106,6 +106,9 @@ namespace mshadow{
         struct TypeCheck{
             const static bool kPass = false;
         };
+
+        template<typename Device, int dim, typename OP, typename TA, typename TB, int etype>
+        struct TypeCheck<Device,dim, BinaryMapExp<OP,TA,TB,etype> >;
 
         template<typename Device, int dim>
         struct TypeCheck<Device,dim,ScalarExp>{
@@ -277,7 +280,7 @@ namespace mshadow{
                     DotEngine<SV,xpu,2,2,2,true,false>::Eval( dst, lhs.FlatTo2D(), rhs.FlatTo2D(), scale );
                 }
             }
-        };        
+        };
     }; // namespace expr
     #endif
 
@@ -286,18 +289,14 @@ namespace mshadow{
         struct ExpEngine<SV, Tensor<Device,dim> >{
             template<typename E>
             inline static void Eval( Tensor<Device,dim>& dst, const Exp<E,type::kMapper> &exp ){
-                // static type check and shape check
-                TypeCheckPass< TypeCheck<Device,dim,E>::kPass >::Error_All_Tensor_in_Exp_Must_Have_Same_Type();
-                utils::Assert( ShapeCheck<dim>::Check( exp.self(), dst.shape ), "shape of Tensors in expression is not consistent with target" );
-                MapPlan<SV>( dst, MakePlan( exp.self() ) );
+                // static type check and shape check               
+                MapExp<SV,dim,E>( dst, exp );
 
             }
             template<typename E>
             inline static void Eval( Tensor<Device,dim>& dst, const Exp<E,type::kContainer> &exp ){
                 // static type check and shape check
-                TypeCheckPass< TypeCheck<Device,dim,E>::kPass >::Error_All_Tensor_in_Exp_Must_Have_Same_Type();
-                utils::Assert( ShapeCheck<dim>::Check( exp.self(), dst.shape ), "shape of Tensors in expression is not consistent with target" );
-                MapPlan<SV>( dst, MakePlan( exp.self() ) );
+                MapExp<SV,dim,E>( dst, exp );
             }
 
             template<int ldim,int rdim,bool ltrans,bool rtrans>
@@ -306,11 +305,5 @@ namespace mshadow{
             }
         };
     }; // namespace expr
-    
-    // implementation of MapExp
-    template<typename Saver, typename Device, int dim, typename E, int etype>
-    inline void MapExp(Tensor<Device,dim> dst, const expr::Exp<E,etype> &exp ){
-        expr::ExpEngine<Saver,Tensor<Device,dim> >::Eval( dst, exp );
-    }
 };
 #endif

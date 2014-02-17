@@ -342,33 +342,21 @@ namespace mshadow {
         template<typename ExpType>
         class Plan;        
     };    
-    /*!
-     * \brief CPU/GPU: map a expression plan to a tensor
-     * \tparam Saver specify storage method [st]
-     * \tparam E specifies the expression type, not need to specify this parameter during usage
-     * \tparam dim dim of the tensor, during usage, there is no need to specify this parameter
-     * \param dst destination
-     * \param plan expression plan of expression
-     * \sa namespace mshadow:sv, mshadow::op, mshadow::expr
-     */
-    template<typename Saver, typename E, int dim>
-    inline void MapPlan(Tensor<cpu,dim> dst, const expr::Plan<E> &plan );
-    template<typename Saver, typename E, int dim>
-    inline void MapPlan(Tensor<gpu,dim> dst, const expr::Plan<E> &plan );
     
     /*!
      * \brief CPU/GPU: map a expression to a tensor, this function calls MapPlan
      * \tparam Saver specify storage method [st]
-     * \tparam Device cpu or gpu
      * \tparam dim dim of the tensor, during usage, there is no need to specify this parameter
      * \tparam E specifies the expression type, not need to specify this parameter during usage
+     * \tparam etype expression type
      * \param dst destination
      * \param exp expression
      * \sa namespace mshadow:sv, mshadow::op, mshadow::expr
      */
-    template<typename Saver, typename Device, int dim, typename E, int etype>
-    inline void MapExp(Tensor<Device,dim> dst, const expr::Exp<E,etype> &exp );
-
+    template<typename Saver, int dim, typename E, int etype>
+    inline void MapExp(Tensor<cpu,dim> dst, const expr::Exp<E,etype> &exp );
+    template<typename Saver, int dim, typename E, int etype>
+    inline void MapExp(Tensor<gpu,dim> dst, const expr::Exp<E,etype> &exp );
 }; // namespace mshadow
 
 namespace mshadow{
@@ -393,8 +381,8 @@ namespace mshadow{
     
 }; // namespace mshadow
 
+#include "tensor_expr_engine-inl.hpp"
 #include "tensor_cpu-inl.hpp"
 #include "tensor_gpu-inl.hpp"
-#include "tensor_expr_engine-inl.hpp"
 
 #endif // TENSOR_H

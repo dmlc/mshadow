@@ -80,6 +80,14 @@ namespace mshadow{
     inline void MapPlan(Tensor<gpu,dim> _dst, const expr::Plan<E> &plan){ 
         cuda::MapPlan<Saver>( _dst.FlatTo2D(), plan );
     }
+
+    template<typename Saver, int dim, typename E, int etype>
+    inline void MapExp(Tensor<gpu,dim> dst, const expr::Exp<E,etype> &exp ){
+        using namespace expr;
+        TypeCheckPass< TypeCheck<gpu,dim,E>::kPass >::Error_All_Tensor_in_Exp_Must_Have_Same_Type();
+        utils::Assert( ShapeCheck<dim>::Check( exp.self(), dst.shape ), "shape of Tensors in expression is not consistent with target" );
+        MapPlan<Saver>( dst, MakePlan( exp.self() ) );
+    }
 }; // namespace mshadow
 
 #endif // __CUDACC__
