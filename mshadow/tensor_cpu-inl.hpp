@@ -5,14 +5,11 @@
  * \brief implementation of CPU host code
  * \author Bing Hsu, Tianqi Chen
  */
-
 #include <cstring>
 #include "tensor_base.h"
 #include "tensor_sse-inl.hpp"
 
 namespace mshadow {
-    // cozy allocation, no alignment so far
-    // TODO: aligned allocation for SSE
     template<int dim>
     inline void AllocSpace(Tensor<cpu,dim> &obj){
         size_t pitch;
@@ -58,9 +55,7 @@ namespace mshadow {
     
     // code to handle SSE optimization
     template<bool pass_check,typename Saver, int dim, typename E, int etype>
-    struct MapExpCPUEngine{
-        inline static void Map(Tensor<cpu,dim> dst, const expr::Exp<E,etype> &exp );
-    };
+    struct MapExpCPUEngine;
     template<typename SV, int dim, typename E, int etype>
     struct MapExpCPUEngine<false,SV,dim,E,etype>{
         inline static void Map(Tensor<cpu,dim> dst, const expr::Exp<E,etype> &exp ){

@@ -289,13 +289,11 @@ namespace mshadow{
         struct ExpEngine<SV, Tensor<Device,dim> >{
             template<typename E>
             inline static void Eval( Tensor<Device,dim>& dst, const Exp<E,type::kMapper> &exp ){
-                // static type check and shape check               
                 MapExp<SV,dim,E>( dst, exp );
 
             }
             template<typename E>
             inline static void Eval( Tensor<Device,dim>& dst, const Exp<E,type::kContainer> &exp ){
-                // static type check and shape check
                 MapExp<SV,dim,E>( dst, exp );
             }
 

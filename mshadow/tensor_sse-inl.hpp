@@ -164,9 +164,7 @@ namespace mshadow{
             }
         };
     };
-};
 
-namespace mshadow{
     namespace sse2{
         /*! \brief sse2 operator type of certain operator */
         template<typename OP>
@@ -319,7 +317,6 @@ namespace mshadow{
             SSEPlan<TA> src_;
         };
 
-        // allow UnaryMap see the plan
         template<typename OP, typename TA, typename TB, int etype>
         inline SSEPlan< BinaryMapExp<OP,TA,TB,etype> > MakeSSEPlan( const BinaryMapExp<OP,TA,TB,etype> &e );
 
@@ -395,7 +392,7 @@ namespace mshadow{
     }; // namespace expr
 
     /*! 
-     * \brief try to use SSEPlan to compute result
+     * \brief use SSEPlan to compute result
      */
     template<typename SV, typename E, int dim>
     inline void MapSSEPlan(Tensor<cpu,dim> _dst, const expr::SSEPlan<E> &plan){        
@@ -407,6 +404,6 @@ namespace mshadow{
             }
         }
     }
-};
+}; // namespace mshadow
 #endif // MSHADOW_USE_SSE
-#endif
+#endif // MSHADOW_TENSOR_SSE_INL_HPP

@@ -334,15 +334,6 @@ namespace mshadow {
     template<int dim>
     inline void Copy(Tensor<gpu,dim> dst, const Tensor<gpu,dim> &src );
     
-    namespace expr{
-        /*!
-         * \brief execution plan hat can be used to carry out calculation for specific expression
-         * \tparam ExpType type of expression
-         */
-        template<typename ExpType>
-        class Plan;        
-    };    
-    
     /*!
      * \brief CPU/GPU: map a expression to a tensor, this function calls MapPlan
      * \tparam Saver specify storage method [st]
