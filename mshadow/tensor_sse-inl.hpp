@@ -397,10 +397,13 @@ namespace mshadow{
     template<typename SV, typename E, int dim>
     inline void MapSSEPlan(Tensor<cpu,dim> _dst, const expr::SSEPlan<E> &plan){        
         Tensor<cpu,2> dst = _dst.FlatTo2D();
-        const index_t xlen = sse2::UpperAlign( dst.shape[0], sizeof(real_t) );            
+        const index_t xlen = sse2::LowerAlign( dst.shape[0], sizeof(real_t) );
         for ( index_t y = 0; y < dst.shape[1]; y ++ ) {
             for( index_t x = 0; x < xlen; x += sse2::FVec<real_t>::kSize ){
                 sse2::Saver<SV,real_t>::Save( &dst[y][x], plan.EvalSSE( y,x ) );
+            }
+            for( index_t x = xlen; x < dst.shape[0]; x ++ ){
+                SV::Save( dst[y][x], plan.Eval(y,x) );
             }
         }
     }
