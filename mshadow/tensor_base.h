@@ -45,7 +45,7 @@
   #include <curand.h>
 #endif
 
-
+#define PI 3.1415926
 // --------------------------------
 // MSHADOW_XINLINE is used for inlining template code for both CUDA and CPU code.
 #ifdef MSHADOW_XINLINE
