@@ -9,7 +9,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-// defintiions 
+// defintiions
 /*! \brief use CBLAS for CBLAS */
 #define MSHADOW_USE_CBLAS 0
 /*! \brief use MKL for BLAS */
@@ -23,7 +23,7 @@
   #define MSHADOW_SINGLE_PRECISION 0
 #endif
 /*! \breif whether use SSE */
-#ifndef MSHADOW_USE_SSE 
+#ifndef MSHADOW_USE_SSE
   #define MSHADOW_USE_SSE 1
 #endif
 
@@ -42,6 +42,7 @@
 
 #if MSHADOW_USE_CUDA
   #include <cublas.h>
+  #include <curand.h>
 #endif
 
 
@@ -60,7 +61,7 @@
 
 /*! \brief namespace for mshadow */
 namespace mshadow {
-#if MSHADOW_SINGLE_PRECISION 
+#if MSHADOW_SINGLE_PRECISION
     /*! \brief type that will be used for content */
     typedef float real_t;
 #else
