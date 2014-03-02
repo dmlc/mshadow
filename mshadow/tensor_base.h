@@ -45,15 +45,6 @@
   #include <curand.h>
 #endif
 
-#ifdef MSHADOW_BUFFER_MAX
-    #error "MSHADOW_BUFFER_MAX must not be defined"
-#endif
-#define MSHADOW_BUFFER_MAX 1000000
-
-#ifdef MSHADOW_PI
-    #error "MSHADOW_PI must not be defined"
-#endif
-#define MSHADOW_PI 3.1415926
 // --------------------------------
 // MSHADOW_XINLINE is used for inlining template code for both CUDA and CPU code.
 #ifdef MSHADOW_XINLINE
@@ -69,6 +60,11 @@
 
 /*! \brief namespace for mshadow */
 namespace mshadow {
+    /*! \brief buffer size for each random number generator */
+    const int kRandBufferSize = 1000000;
+    /*! \brief pi  */
+    const float kPi = 3.1415926f;
+    
 #if MSHADOW_SINGLE_PRECISION
     /*! \brief type that will be used for content */
     typedef float real_t;
