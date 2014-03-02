@@ -45,7 +45,15 @@
   #include <curand.h>
 #endif
 
-#define PI 3.1415926
+#ifdef MSHADOW_BUFFER_MAX
+    #error "MSHADOW_BUFFER_MAX must not be defined"
+#endif
+#define MSHADOW_BUFFER_MAX 1000000
+
+#ifdef MSHADOW_PI
+    #error "MSHADOW_PI must not be defined"
+#endif
+#define MSHADOW_PI 3.1415926
 // --------------------------------
 // MSHADOW_XINLINE is used for inlining template code for both CUDA and CPU code.
 #ifdef MSHADOW_XINLINE
