@@ -160,8 +160,12 @@ namespace mshadow{
     }; // namespace expr
 
     // the matrix OP depends on BLAS
-    #if (MSHADOW_USE_CBLAS||MSHADOW_USE_MKL)
     namespace expr{
+        template<typename SV,typename Device, int ddim, int ldim, int rdim, bool ltrans, bool rtrans>
+        struct DotEngine{
+            inline static void Eval( Tensor<Device,ddim> &dst, const Tensor<Device,ldim> &lhs, const Tensor<Device,rdim> &rhs, real_t scale );
+        };
+        #if (MSHADOW_USE_CBLAS||MSHADOW_USE_MKL)
         // handles the dot
         template<typename Device>
         struct BLASEngine;
@@ -225,10 +229,6 @@ namespace mshadow{
             }
         };
         #endif
-        template<typename SV,typename Device, int ddim, int ldim, int rdim, bool ltrans, bool rtrans>
-        struct DotEngine{
-            inline static void Eval( Tensor<Device,ddim> &dst, const Tensor<Device,ldim> &lhs, const Tensor<Device,rdim> &rhs, real_t scale );
-        };
 
         // helper function to decide which shape we are in 
         inline static Shape<2> GetShape( const Shape<2> &shape, bool transpose ){
@@ -281,8 +281,9 @@ namespace mshadow{
                 }
             }
         };
+        #endif // MSHADOW_USE_CBLAS || MSHADOW_USE_MKL
     }; // namespace expr
-    #endif
+
 
     namespace expr{
         template<typename SV, typename Device, int dim>

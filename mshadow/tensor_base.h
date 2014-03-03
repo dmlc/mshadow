@@ -9,11 +9,26 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-// defintiions
+// macro defintiions
+
+/*!\brief if this macro is define to be 1, mshadow should compile without any of other libs */
+#ifndef MSHADOW_STAND_ALONE
+    #define MSHADOW_STAND_ALONE 0
+#endif
+#if MSHADOW_STAND_ALONE
+   #define MSHADOW_USE_CBLAS 0
+   #define MSHADOW_USE_MKL   0
+   #define MSHADOW_USE_CUDA  0
+#endif
+
 /*! \brief use CBLAS for CBLAS */
-#define MSHADOW_USE_CBLAS 0
+#ifndef MSHADOW_USE_CBLAS
+   #define MSHADOW_USE_CBLAS 0
+#endif
 /*! \brief use MKL for BLAS */
-#define MSHADOW_USE_MKL   1
+#ifndef MSHADOW_USE_MKL
+   #define MSHADOW_USE_MKL   1
+#endif
 /*! \brief use CUDA support, must ensure that the cuda include path is correct, or directly compile using nvcc */
 #ifndef MSHADOW_USE_CUDA
   #define MSHADOW_USE_CUDA   1
