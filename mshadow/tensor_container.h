@@ -6,6 +6,7 @@
  * \author Tianqi Chen
  */
 #include "tensor.h"
+#include "tensor_io.h"
 
 namespace mshadow{
     /*!
@@ -57,6 +58,28 @@ namespace mshadow{
         inline void Resize( const Shape<dimension> &shape, real_t initv ){
             this->Resize( shape );
             (*this) = initv;
+        }
+        /*! 
+         * \brief save by binary format
+         * \param fo output binary stream
+         * \tparam TStream type of stream, need to support Read, Write, one example is utils::IStream.
+         */
+        template<typename TStream>
+        inline void SaveBinary( TStream &fo ) const{
+            SaveBinary( fo, *this );
+        }
+        /*! 
+         * \brief load by binary format, a temp Tensor<cpu,dim> storage will be allocated
+         * \param fi input binary stream
+         * \tparam TStream type of stream, need to support Read, Write, one example is utils::IStream.
+         */
+        template<typename TStream>
+        inline void LoadBinary( TStream &fi ) {
+            Tensor<cpu,dimension> tmp;
+            LoadBinary( fi, tmp, false );
+            this->Resize( tmp.shape );
+            Copy( *this, tmp );
+            FreeSpace( tmp );
         }
     public:
         // functions to fit exp template

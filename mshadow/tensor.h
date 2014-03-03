@@ -30,7 +30,7 @@ namespace mshadow {
         MSHADOW_XINLINE Shape(void) {}
         MSHADOW_XINLINE Shape( const Shape<dimension> &s ){
             #pragma unroll
-            for( int i = 0; i < zMaxShape; i ++ ){
+            for( int i = 0; i < zMaxShape; ++i ){
                 this->shape_[i] = s[i];
             }
             this->stride_ = s.stride_;
@@ -54,7 +54,7 @@ namespace mshadow {
         /*! \return whether two shape equals */
         MSHADOW_XINLINE bool operator==(const Shape<zMaxShape> &s) const {
             #pragma unroll
-            for (int i = 0; i < zMaxShape; i++) {
+            for ( int i = 0; i < zMaxShape; ++i ) {
                 if (s.shape_[i] != this->shape_[i]) return false;
             }
             return true;
