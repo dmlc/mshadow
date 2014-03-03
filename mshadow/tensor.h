@@ -311,7 +311,7 @@ namespace mshadow {
     inline void AllocSpace(Tensor<gpu,dim> &obj);
 
     /*!
-     * \brief CPU/GPU: free the space of tensor
+     * \brief CPU/GPU: free the space of tensor, will set obj.dptr to NULL
      * \tparam dim specify the dim of tensor
      * \param obj the tensor object
      */

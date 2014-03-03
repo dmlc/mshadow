@@ -95,7 +95,8 @@ namespace mshadow{
     template<int dim, typename TStream>
     inline void SaveBinary( TStream &fo, const Tensor<gpu,dim> &src ){
         // copy to CPU, then save
-        Tensor<cpu,dim> tmp = NewCTensor( src.shape );
+        Tensor<cpu,dim> tmp( src.shape ); 
+        AllocSpace( tmp );
         Copy( tmp, src );
         SaveBinary( fo, tmp );
         FreeSpace( tmp );
