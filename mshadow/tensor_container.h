@@ -22,7 +22,7 @@ namespace mshadow{
     public:
         TensorContainer( void ){
             this->dptr = data_.dptr = NULL;
-            this->shape[0] = 0; 
+            this->shape[0] = 0;
             this->shape.stride_ = 0;
         }
         TensorContainer( const Shape<dimension> &shape ){
