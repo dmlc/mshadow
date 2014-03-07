@@ -5,6 +5,7 @@
  * \brief some extension of expressions, used to support something beyond elementwise op
  * \author Tianqi Chen
  */
+#include "tensor_expr_engine-inl.hpp"
 namespace mshadow{
     // Declaration of expressions goes here
     namespace expr{
@@ -15,7 +16,7 @@ namespace mshadow{
          * \tparam Device which device it lies
          */
         template<typename Device>
-        struct RepmatExp: public MakeTensorExp<RepmatExp<Device>,Device,2>{
+        struct RepmatExp: public MakeTensorExp< RepmatExp<Device>,Device,2>{
             /*! \brief source operand */
             const Tensor<Device,1> &src;
             /*! \brief construct a repmat expression from src and nrow */
@@ -96,7 +97,7 @@ namespace mshadow{
     }; // namespace expr
 }; // namespace mshadow
 
-#if MSHADOW_USE_SSE
+#if MSHADOW_USE_SSE 
 // implementations of SSE support, if possible
 #include "tensor_sse-inl.hpp"
 namespace mshadow{

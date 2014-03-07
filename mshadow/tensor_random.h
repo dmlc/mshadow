@@ -135,7 +135,7 @@ namespace mshadow {
         template<int dim>
         inline Tensor<cpu,dim> GetTemp( Shape<dim> shape ){
             shape.stride_ = ((shape[0] + 3) >> 2) << 2;
-            utils::Assert( buffer_.shape[0] > shape.MSize(), "gaussian: random engine buffer do not have enough memory" );
+            utils::Assert( buffer_.shape[0] >= shape.MSize(), "gaussian: random engine buffer do not have enough memory" );
             return Tensor<cpu,dim>( buffer_.dptr, shape );
         }
         /*! \brief get next random number from rand */
@@ -170,6 +170,8 @@ namespace mshadow {
         Tensor<cpu,1> buffer_;
     }; // class Random<cpu>
 
+#ifdef __CUDACC__
+    
     template<>
     class Random<gpu> {
     public:
@@ -178,20 +180,21 @@ namespace mshadow {
          * \param seed random number seed
          */
         Random<gpu>(int seed) {
-            status_ = curandCreateGenerator(gen_, CURAND_RNG_PSEUDO_DEFAULT);
-            utils::Assert(status_ == CURAND_STATUS_SUCCESS, "Can not create CURAND Generator\n");
-            status_ = curandSetPseudoRandomGeneratorSeed(gen_, seed);
-            utils::Assert(status_ == CURAND_STATUS_SUCCESS, "Set CURAND seed failed.\n");
-            buffer_.shape[0] = kRandBufferSize; // Can be much smaller?
+            curandStatus_t status;
+            status = curandCreateGenerator(&gen_, CURAND_RNG_PSEUDO_DEFAULT);
+            utils::Assert(status == CURAND_STATUS_SUCCESS, "Can not create CURAND Generator");
+            status = curandSetPseudoRandomGeneratorSeed(gen_, seed);
+            utils::Assert(status == CURAND_STATUS_SUCCESS, "Set CURAND seed failed.");
+            buffer_.shape[0] = kRandBufferSize;
             mshadow::AllocSpace(buffer_);
         }
 
         ~Random<gpu>() {
-            status_ = curandDestroyGenerator(gen_);
-            utils::Assert(status_ == CURAND_STATUS_SUCCESS, "Destory CURAND Gen failed\n");
+            curandStatus_t status;
+            status = curandDestroyGenerator(gen_);
+            utils::Assert(status == CURAND_STATUS_SUCCESS, "Destory CURAND Gen failed");
             mshadow::FreeSpace(buffer_);
         }
-
         /*!
          * \brief generate data from uniform [a,b)
          * \param dst destination
@@ -201,19 +204,12 @@ namespace mshadow {
          */
         template<int dim>
         inline void SampleUniform(Tensor<gpu, dim> &dst, real_t a=0.0f, real_t b=1.0f) {
-            Tensor<gpu, 2> = dst.FlatTo2D();
-            real_t length = b - a;
-            for (index_t i = 0; i < mat.shape[1]; ++i) {
-                #if MSHADOW_SINGLE_PRECISION
-                status_ = curandGenerateUniform(gen_, mat.shape[i].dptr, mat.shape[0]);
-                #else
-                status_ = curandGenerateUniformDouble(gen_, mat.shape[i].dptr, mat.shape[0]);
-                #endif
-                utils::Assert(status_ == CURAND_STATUS_SUCCESS, "CURAND Gen Uniform failed\n");
-                cuda::TransferUniform(mat.shape[i].dptr, mat.shape[0], a, length);
+            if( a == 0.0f && b == 1.0f ){
+                dst = this->uniform( dst.shape );
+            }else{
+                dst = this->uniform( dst.shape ) *(b-a) + a;
             }
         }
-
         /*!
          * \brief generate data from standard gaussian
          * \param dst destination
@@ -223,15 +219,7 @@ namespace mshadow {
          */
         template<int dim>
         inline void SampleGaussian(Tensor<gpu, dim> &dst, real_t mu = 0.0f, real_t sigma = 1.0f) {
-            Tensor<gpu, 2> mat = dst.FlatTo2D();
-            for (index_t i = 0; i < mat.shape[1]; ++i) {
-                #if MSHADOW_SINGLE_PRECISION
-                status_ = curandGenerateNormal(gen_, mat.shape[i].dptr, mat.shape[0], mu, sigma);
-                #else
-                status_ = curandGenerateNormalDouble(gen_, mat.shape[i].dptr, mat.shape[0], mu, sigma);
-                #endif
-                utils::Assert(status_ == CURAND_STATUS_SUCCESS, "CURAND Gen Gaussin failed\n");
-            }
+            dst = this->gaussian( dst.shape, mu, sigma );
         }
         /*!
          * \brief return a temporal expression storing standard gaussian random variables
@@ -241,12 +229,20 @@ namespace mshadow {
          *           since second call of gaussian(s2) makes gaussian(s1) invalid
          *           A = gaussian(s1)*B+C; is correct; use one gaussian/uniform in each expression
          * \param shape shape of the tensor
+         * \param mu mean
+         * \param sigma variance
          * \tparam dim dimension of tensor
          */
         template<int dim>
-        inline expr::UnaryMapExp<op::identity,Tensor<gpu,dim>,expr::type::kMapper> gaussian(Shape<dim> shape){
+        inline expr::UnaryMapExp<op::identity,Tensor<gpu,dim>,expr::type::kMapper> gaussian( Shape<dim> shape, real_t mu=0.0f, real_t sigma=1.0f){
             Tensor<gpu,dim> temp = this->GetTemp(shape);
-            this->SampleGaussian(temp, 0.0f, 1.0f);
+            curandStatus_t status;            
+            #if MSHADOW_SINGLE_PRECISION
+            status = curandGenerateNormal(gen_, temp.dptr, temp.shape.MSize(), mu, sigma);
+            #else
+            status = curandGenerateNormalDouble(gen_, temp.dptr, temp.shape.MSize(), mu, sigma);
+            #endif
+            utils::Assert(status == CURAND_STATUS_SUCCESS, "CURAND Gen Uniform failed\n");           
             return expr::MakeExp<op::identity>( temp );
         }
         /*!
@@ -262,10 +258,15 @@ namespace mshadow {
         template<int dim>
         inline expr::UnaryMapExp<op::identity,Tensor<gpu,dim>,expr::type::kMapper> uniform(Shape<dim> shape) {
             Tensor<gpu,dim> temp = this->GetTemp(shape);
-            this->SampleUniform(temp, 0.0f, 1.0f);
+            curandStatus_t status;
+            #if MSHADOW_SINGLE_PRECISION
+            status = curandGenerateUniform(gen_, temp.dptr, temp.shape.MSize() );
+            #else
+            status = curandGenerateUniformDouble(gen_, temp.dptr, temp.shape.MSize() );
+            #endif
+            utils::Assert(status == CURAND_STATUS_SUCCESS, "CURAND Gen Uniform failed\n");
             return expr::MakeExp<op::identity>(temp);
         }
-
     private:
         /*!
          * \brief create temp storage from buffer with given shape
@@ -274,19 +275,18 @@ namespace mshadow {
          */
         template<int dim>
         inline Tensor<gpu,dim> GetTemp(Shape<dim> shape) {
-            shape.stride_ = ((shape[0] + 3) >> 2) << 2;
+            shape.stride_ = cuda::GetAlignStride( shape[0] );
+            utils::Assert( buffer_.shape[0] >= shape.MSize(), "gaussian: random engine buffer do not have enough memory" );            
             return Tensor<gpu,dim>(buffer_.dptr, shape);
         }
     private:
+        /*! \brief random numbeer generator */
         curandGenerator_t gen_;
-        curandStatus_t status_;
+        /*! \brief templ buffer */
         Tensor<gpu, 1> buffer_;
-
     }; // class Random<gpu>
-
-
-
-
+    #endif
+    
 }; // namespace mshadow
 
 #endif // MSHADOW_TENSOR_RANDOM_H

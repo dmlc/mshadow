@@ -58,33 +58,6 @@ namespace mshadow{
                 utils::Error("not implemented");
             }
         }
-        /*!
-         * \brief Kernel for transfering a vector of uniform in [0, 1) to [a, b)
-         * \param ptr vector pointer
-         * \param size size of the vector
-         * \param a a
-         * \param length b - a
-         */
-        __global__ void TransferUniformKernel(real_t * ptr, int size, real_t a, real_t length) {
-            const int loc = threadIdx.x + blockIdx.x * blockDim.x;
-            if (loc < size) {
-                ptr[loc] = ptr[loc] * length + a;
-            }
-        }
-        /*!
-         * \brief Transfer a vector of uniform in [0, 1) to [a, b)
-         * \param ptr vector pointer
-         * \param size size of the vector
-         * \param a a
-         * \param length b - a
-         */
-        inline void TransferUniform(real_t * ptr, int size, real_t a, real_t length) {
-            const int num_block = size / kBaseThreadNum + 1;
-            dim3 dimBlock(kBaseThreadNum, 1, 1);
-            dim3 dimGrid(num_block, 1, 1);
-            TransferUniformKernel<<<dimGrid, dimBlock>>>(ptr, size, a, length);
-            cudaThreadSynchronize();
-        }
     }; // namespace cuda
 }; // namespace mshadow
 #endif // TENSOR_GPU_INL_H

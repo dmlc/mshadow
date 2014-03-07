@@ -162,8 +162,8 @@ namespace mshadow{
          */
         template<typename TA,typename TB,bool ltrans,bool rtrans>
         struct DotExp: public Exp< DotExp<TA,TB,ltrans,rtrans>, type::kComplex >{
-            const TA &lhs_;
-            const TB &rhs_;
+            TA lhs_;
+            TB rhs_;
             real_t scale_;
             DotExp( const TA &lhs, const TB &rhs, real_t scale )
                 :lhs_(lhs),rhs_(rhs),scale_(scale){}
@@ -206,8 +206,8 @@ namespace mshadow{
          */
         template<typename OP, typename TA, typename TB, int etype >
         struct BinaryMapExp: public Exp< BinaryMapExp<OP,TA,TB,etype>, etype >{
-            const TA &lhs_;
-            const TB &rhs_;
+            TA lhs_;
+            TB rhs_;
             BinaryMapExp( const TA &lhs, const TB &rhs )
                 :lhs_(lhs), rhs_(rhs){}
         };
@@ -286,7 +286,7 @@ namespace mshadow{
          */
         template<typename OP, typename TA, int etype >
         struct UnaryMapExp: public Exp< UnaryMapExp<OP,TA,etype>, etype >{
-            const TA &src_;
+            TA src_;
             UnaryMapExp( const TA &src )
                 :src_(src){}
         };
