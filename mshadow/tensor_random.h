@@ -98,6 +98,9 @@ namespace mshadow {
          * \brief return a temporal expression storing standard gaussian random variables
          *        the temporal tensor is only valid before next call of gaussian or uniform
          *        can be used as part of expression
+         *  Caution: this means expression such as A = gaussian(s1) * gaussian(s2) will give invalid result, 
+         *           since second call of gaussian(s2) makes gaussian(s1) invalid
+         *           A = gaussian(s1)*B+C; is correct; use one gaussian/uniform in each expression
          * \param shape shape of the tensor
          * \tparam dim dimension of tensor
          */
@@ -111,6 +114,9 @@ namespace mshadow {
          * \brief return a temporal expression storing standard uniform [0,1)
          *        the temporal tensor is only valid before next call of gaussian or uniform
          *        can be used as part of expression
+         *  Caution: this means expression such as A = gaussian(s1) * gaussian(s2) will give invalid result, 
+         *           since second call of gaussian(s2) makes gaussian(s1) invalid
+         *           A = gaussian(s1)*B+C; is correct; use one gaussian/uniform in each expression
          * \param shape shape of the tensor
          * \tparam dim dimension of tensor
          */
