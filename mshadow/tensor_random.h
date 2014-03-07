@@ -1,16 +1,15 @@
 #ifndef MSHADOW_TENSOR_RANDOM_H
 #define MSHADOW_TENSOR_RANDOM_H
-
 /*!
  *  \file tensor_random.h
  *  \brief Random inline functions for tensor.
- *  \author Bing Hsu
+ *  \author Bing Hsu, Tianqi Chen
  *   Based on curand|MKL|stdlib
  */
 #include <cstdlib>
-#include "tensor_base.h"
+#include "tensor.h"
 
-namespace mshadow {
+namespace mshadow {    
     /*! \brief random number generator */
     template<typename device>
     class Random {};
@@ -18,85 +17,151 @@ namespace mshadow {
     template<>
     class Random<cpu> {        
     public:
-        Random<cpu> (int seed) {
-            #ifdef MSHADOW_USE_MKL
-            status_ = vslNewStream(&vStream_, VSL_BRNG_SFMT19937, seed);
-            utils::Assert(status_ == VSL_STATUS_OK, "MKL VSL Random engine failed to be initialized.\n" );
+        /*! 
+         * \constructor of random engine
+         * \param seed random number seed
+         */
+        Random<cpu>( int seed ){
+            #if MSHADOW_USE_MKL
+            int status = vslNewStream(&vStream_, VSL_BRNG_MT19937, seed);
+            utils::Assert( status == VSL_STATUS_OK, "MKL VSL Random engine failed to be initialized.\n" );
             #else
             srand(seed);
             #endif
-            this->RegenerateUniform();
+            buffer_.shape[0] = kRandBufferSize;
+            mshadow::AllocSpace( buffer_ );
         }
-        
+        ~Random<cpu>() {
+            #if MSHADOW_USE_MKL
+            vslDeleteStream(&vStream_);
+            #endif
+            mshadow::FreeSpace( buffer_ );
+        }
+        /*! 
+         * \brief generate data from uniform [a,b)
+         * \param dst destination
+         * \param a lower bound of uniform
+         * \param b upper bound of uniform
+         * \tparam dim dimension of tensor
+         */
         template<int dim>
-        inline void Uniform(Tensor<cpu, dim> &dst_, real_t a, real_t b) {
-            Tensor<cpu, 2> mat = dst_.FlatTo2D();
-            for (index_t i = 0; i < mat.shape[1]; ++i) {
-                for (index_t j = 0; j < mat.shape[0]; ++j) {
-                    mat[i][j] = this->GetNextUniform() * (b - a) + a;
+        inline void SampleUniform( Tensor<cpu, dim> &dst, real_t a=0.0f, real_t b=1.0f ) {
+            Tensor<cpu, 2> mat = dst.FlatTo2D();
+            for ( index_t i = 0; i < mat.shape[1]; ++i ) {
+                #if MSHADOW_USE_MKL
+                #if MSHADOW_SINGLE_PRECISION            
+                int status = vsRngUniform( 0, vStream_, mat.shape[0], mat[i].dptr, a, b );
+                #else
+                int status = vdRngUniform( 0, vStream_, mat.shape[0], mat[i].dptr, a, b );
+                #endif
+                utils::Assert(status == VSL_STATUS_OK, "Failed to generate random number by MKL.\n" );
+                #else
+                // use stdlib
+                for ( index_t j = 0; j < mat.shape[0]; ++j ) {
+                    mat[i][j] = this->RandNext()*(b-a) + a;
                 }
+                #endif
             }
         }
+        /*! 
+         * \brief generate data from standard gaussian
+         * \param dst destination
+         * \param mu mean variable
+         * \param sigma standard deviation
+         * \tparam dim dimension of tensor
+         */
         template<int dim>
-        inline void Gaussian(Tensor<cpu, dim> &dst_, real_t mu, real_t sigma) {
-            real_t g1 = 0.0f, g2 = 0.0f;
-            Tensor<cpu, 2> mat = dst_.FlatTo2D();
+        inline void SampleGaussian( Tensor<cpu, dim> &dst, real_t mu = 0.0f, real_t sigma = 1.0f ) {
+            Tensor<cpu, 2> mat = dst.FlatTo2D();
             for (index_t i = 0; i < mat.shape[1]; ++i) {
+                #if MSHADOW_USE_MKL
+                #if MSHADOW_SINGLE_PRECISION            
+                int status = vsRngGaussian( 0, vStream_, mat.shape[0], mat[i].dptr, mu, sigma );
+                #else
+                int status = vdRngGaussian( 0, vStream_, mat.shape[0], mat[i].dptr, mu, sigma );
+                #endif
+                utils::Assert(status == VSL_STATUS_OK, "Failed to generate random number by MKL.\n" );
+                #else
+                real_t g1 = 0.0f, g2 = 0.0f;
                 for (index_t j = 0; j < mat.shape[0]; ++j) {
-                    if( (j&1) == 0 ){
-                        // use std::sqrt so that it can check if it is double or float
-                        // box muller transformation generate a pair of gaussian rng
-                        const real_t a = this->GetNextUniform();
-                        const real_t b = this->GetNextUniform();
-                        const real_t u1 = std::sqrt(-2.0f * std::log(a));
-                        g1 = std::cos(2.0f * kPi * b);
-                        g2 = std::sin(2.0f * kPi * b);
-
-                        mat[i][j] = mu + sigma * g1;
+                    if( (j & 1) == 0 ){
+                        this->SampleNormal2D( g1, g2 );
+                        mat[i][j] = mu + g1 * sigma;       
                     }else{
-                        mat[i][j] = mu + sigma * g2;
+                        mat[i][j] = mu + g2 * sigma;
                     }
                 }
+                #endif
             }
         }
-        
-        ~Random<cpu>() {
-            #ifdef MSHADOW_USE_MKL
-            vslDeleteStream(&_vStream);
-            #endif
+        /*! 
+         * \brief return a temporal tensor storing standard gaussian random variables
+         *        the temporal tensor is only valid before next call of gaussian or uniform
+         *        can be used as part of expression
+         * \param shape shape of the tensor
+         * \tparam dim dimension of tensor
+         */
+        template<int dim>
+        inline Tensor<cpu,dim> gaussian( Shape<dim> shape ){
+            Tensor<cpu,dim> temp = this->GetTemp( shape );
+            this->SampleGaussian( temp, 0.0f, 1.0f );
+            return temp;
+        }
+        /*! 
+         * \brief return a temporal tensor storing standard uniform [0,1)
+         *        the temporal tensor is only valid before next call of gaussian or uniform
+         *        can be used as part of expression
+         * \param shape shape of the tensor
+         * \tparam dim dimension of tensor
+         */
+        template<int dim>
+        inline Tensor<cpu,dim> uniform( Shape<dim> shape ){
+            Tensor<cpu,dim> temp = this->GetTemp( shape );
+            this->SampleUniform( temp, 0.0f, 1.0f );
+            return temp;
         }
     private:
-        #ifdef MSHADOW_USE_MKL
-        int status_;
+        /*! 
+         * \brief create temp storage from buffer with given shape 
+         * \param shape shape of the tensor
+         * \tparam dim dimension of tensor
+         */
+        template<int dim>
+        inline Tensor<cpu,dim> GetTemp( Shape<dim> shape ){
+            shape.stride_ = ((shape[0] + 3) >> 2) << 2;
+            utils::Assert( buffer_.shape[0] > shape.MSize(), "gaussian: random engine buffer do not have enough memory" );
+            return Tensor<cpu,dim>( buffer_.dptr, shape );
+        }
+        /*! \brief get next random number from rand */
+        inline real_t RandNext( void ){
+            return static_cast<real_t>(rand()) / (static_cast<real_t>(RAND_MAX)+1.0f);
+        }
+        /*! \brief return a real numer uniform in (0,1) */
+        inline real_t RandNext2( void ){
+            return (static_cast<real_t>( rand() ) + 1.0 ) / (static_cast<real_t>(RAND_MAX) + 2.0);
+        }     
+        /*! 
+         * \brief sample iid xx,yy ~N(0,1) 
+         * \param xx first  gaussian output
+         * \param yy second gaussian output
+         */
+        inline void SampleNormal2D( real_t &xx, real_t &yy ){
+            real_t x,y,s;
+            do{
+                x = 2.0f * RandNext2() - 1.0f;
+                y = 2.0f * RandNext2() - 1.0f;
+                s = x*x + y*y;
+            }while( s >= 1.0f || s == 0.0f );
+            real_t t = std::sqrt( -2.0f * std::log( s ) / s ) ;
+            xx = x * t; yy = y * t;
+        }
+    private:
+        #if MSHADOW_USE_MKL
+        /*! \brief stream used by MKL VSL */
         VSLStreamStatePtr vStream_;
         #endif
-        real_t buffer_[ kRandBufferSize ];
-        index_t buf_loc_;
-
-        inline real_t GetNextUniform( void ) {
-            if (buf_loc_ < kRandBufferSize ) {
-                return buffer_[buf_loc_++];
-            } else {
-                this->RegenerateUniform();
-                return buffer_[buf_loc_++];
-            }
-        }
-        
-        inline void RegenerteUnifrom( void ){
-            buf_loc_ = 0;
-            #ifdef MSHADOW_USE_MKL
-            #ifdef MSHADOW_SINGLE_PRECISION
-            status_ = vsRngUniform(VSL_RNG_METHOD_UNIFORM_STD, vStream_, kRandBufferSize, buffer_, 0,1);
-            #else
-            status_ = vdRngUniform(VSL_RNG_METHOD_UNIFORM_STD, vStream_, kRandBufferSize, buffer_, 0,1);
-            #endif
-            utils::Assert(status_ == VSL_STATUS_OK, "Failed to generate random number by MKL.\n" );
-            #else
-            for (index_t i = 0; i < kRandBufferSize; ++ i) { 
-                buffer_[i] = static_cast<real_t>(rand()) / (static_cast<real_t>(RAND_MAX)+1.0f);
-            }
-            #endif
-        }        
+        /*! \brief temporal space used to store random numbers */
+        Tensor<cpu,1> buffer_;
     }; // class Random<cpu>
     
     template<>

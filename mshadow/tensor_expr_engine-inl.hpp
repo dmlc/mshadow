@@ -6,10 +6,29 @@
  * \author Tianqi Chen, Bing Xu
  */
 #include "tensor_expr.h"
+#include "tensor.h"
 
 namespace mshadow{
     namespace expr{
-        // This part of code gives plan that can be used to carry out execution
+        /*! 
+         * \brief a general class that allows extension that makes tensors of some shape
+         * \tparam SubType type of subclass
+         * \tparam Device the device of a tensor
+         * \tparam dim dimension of the expression
+         */
+        template<typename SubType, typename Device, int dim>
+        struct MakeTensorExp: public Exp< MakeTensorExp<SubType,Device,dim>, type::kMapper >{
+            /*! \brief the shape of this expression */
+            Shape<dim> shape;
+            /*! \brief true self of subtype */
+            inline const SubType& real_self( void ) const{
+                return *static_cast<const SubType*>(this);
+            }
+        };
+    };
+    
+    namespace expr{
+        /*! \brief This part of code gives plan that can be used to carry out execution */
         template<typename ExpType>
         class Plan{
         public:
@@ -83,6 +102,11 @@ namespace mshadow{
             return Plan<T>( e.self() );
         }
 
+        template<typename T, typename Device, int dim>
+        inline Plan<T> MakePlan( const MakeTensorExp<T,Device,dim> &e ){
+            return Plan<T>( e.real_self() );
+        }
+
         template<typename OP, typename TA, int etype>
         inline Plan< UnaryMapExp<OP,TA,etype> > MakePlan( const UnaryMapExp<OP,TA,etype> &e ){
             return Plan< UnaryMapExp<OP,TA,etype> >( MakePlan(e.src_) );
@@ -118,6 +142,10 @@ namespace mshadow{
         struct TypeCheck<Device,dim, Tensor<Device,dim> >{
             const static bool kPass = true;
         };
+        template<typename T,typename Device, int dim>
+        struct TypeCheck<Device,dim, MakeTensorExp<T,Device,dim> >{
+            const static bool kPass = true;
+        };
         template<typename Device, int dim, typename OP, typename TA, int etype>
         struct TypeCheck<Device,dim, UnaryMapExp<OP,TA,etype> >{
             const static bool kPass = TypeCheck<Device, dim, TA>::kPass;
@@ -139,22 +167,38 @@ namespace mshadow{
 
     namespace expr{
         // check shape consistency
-        template<int dim>
+        template<int dim,typename E>
         struct ShapeCheck{
+            inline static bool Check( const E &t,  const Shape<dim> &shape );
+        };
+        template<int dim>
+        struct ShapeCheck<dim,ScalarExp>{
             inline static bool Check( const ScalarExp &exp, const Shape<dim> &shape ){
                 return true;
             }
-            template<typename Device>
+        };
+        template<int dim,typename Device>
+        struct ShapeCheck<dim,Tensor<Device,dim> >{
             inline static bool Check( const Tensor<Device,dim> &t, const Shape<dim> &shape ){
                 return t.shape == shape;
             }
-            template<typename OP, typename TA, int etype>
-            inline static bool Check( const UnaryMapExp<OP,TA,etype> &t, const Shape<dim> &shape ){
-                return Check( t.src_, shape );
+        };
+        template<int dim,typename Device,typename T>
+        struct ShapeCheck<dim,MakeTensorExp<T,Device,dim> >{
+            inline static bool Check( const MakeTensorExp<T,Device,dim> &t, const Shape<dim> &shape ){
+                return t.shape == shape;
             }
-            template<typename OP, typename TA, typename TB, int etype>
+        };
+        template<int dim, typename OP, typename TA, int etype>
+        struct ShapeCheck< dim,UnaryMapExp<OP,TA,etype> >{
+            inline static bool Check( const UnaryMapExp<OP,TA,etype> &t, const Shape<dim> &shape ){
+                return ShapeCheck<dim,TA>::Check( t.src_, shape );
+            }
+        };
+        template<int dim, typename OP, typename TA, typename TB, int etype>
+        struct ShapeCheck< dim, BinaryMapExp<OP,TA,TB,etype> >{
             inline static bool Check( const BinaryMapExp<OP,TA,TB,etype> &t, const Shape<dim> &shape ){
-                return Check( t.lhs_, shape ) && Check( t.rhs_, shape );
+                return ShapeCheck<dim,TA>::Check( t.lhs_, shape ) && ShapeCheck<dim,TB>::Check( t.rhs_, shape );
             }
         };
     }; // namespace expr

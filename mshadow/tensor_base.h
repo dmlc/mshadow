@@ -53,6 +53,8 @@
 #elif MSHADOW_USE_MKL
   #include <mkl.h>
   #include <mkl_cblas.h>
+  #include <mkl_vsl.h>
+  #include <mkl_vsl_functions.h>
 #endif
 
 #if MSHADOW_USE_CUDA
@@ -76,7 +78,7 @@
 /*! \brief namespace for mshadow */
 namespace mshadow {
     /*! \brief buffer size for each random number generator */
-    const int kRandBufferSize = 1000000;
+    const unsigned kRandBufferSize = 1000000;
     /*! \brief pi  */
     const float kPi = 3.1415926f;
     

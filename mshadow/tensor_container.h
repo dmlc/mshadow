@@ -79,7 +79,7 @@ namespace mshadow{
             LoadBinary( fi, tmp, false );
             this->Resize( tmp.shape );
             Copy( *this, tmp );
-            FreeSpace( tmp );
+            mshadow::FreeSpace( tmp );
         }
     public:
         // functions to fit exp template
