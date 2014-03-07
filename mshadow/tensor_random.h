@@ -202,6 +202,7 @@ namespace mshadow {
         template<int dim>
         inline void SampleUniform(Tensor<gpu, dim> &dst, real_t a=0.0f, real_t b=1.0f) {
             Tensor<gpu, 2> = dst.FlatTo2D();
+            real_t length = b - a;
             for (index_t i = 0; i < mat.shape[1]; ++i) {
                 #if MSHADOW_SINGLE_PRECISION
                 status_ = curandGenerateUniform(gen_, mat.shape[i].dptr, mat.shape[0]);
@@ -209,7 +210,7 @@ namespace mshadow {
                 status_ = curandGenerateUniformDouble(gen_, mat.shape[i].dptr, mat.shape[0]);
                 #endif
                 utils::Assert(status_ == CURAND_STATUS_SUCCESS, "CURAND Gen Uniform failed\n");
-                // TODO: Test inline Kernel transfer 0~1 to a~b
+                cuda::TransferUniform(mat.shape[i].dptr, mat.shape[0], a, length);
             }
         }
 
