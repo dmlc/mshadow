@@ -9,15 +9,15 @@
 #include <cstdlib>
 #include "tensor.h"
 
-namespace mshadow {    
+namespace mshadow {
     /*! \brief random number generator */
     template<typename device>
     class Random {};
-    
+
     template<>
-    class Random<cpu> {        
+    class Random<cpu> {
     public:
-        /*! 
+        /*!
          * \constructor of random engine
          * \param seed random number seed
          */
@@ -37,7 +37,7 @@ namespace mshadow {
             #endif
             mshadow::FreeSpace( buffer_ );
         }
-        /*! 
+        /*!
          * \brief generate data from uniform [a,b)
          * \param dst destination
          * \param a lower bound of uniform
@@ -49,7 +49,7 @@ namespace mshadow {
             Tensor<cpu, 2> mat = dst.FlatTo2D();
             for ( index_t i = 0; i < mat.shape[1]; ++i ) {
                 #if MSHADOW_USE_MKL
-                #if MSHADOW_SINGLE_PRECISION            
+                #if MSHADOW_SINGLE_PRECISION
                 int status = vsRngUniform( 0, vStream_, mat.shape[0], mat[i].dptr, a, b );
                 #else
                 int status = vdRngUniform( 0, vStream_, mat.shape[0], mat[i].dptr, a, b );
@@ -63,7 +63,7 @@ namespace mshadow {
                 #endif
             }
         }
-        /*! 
+        /*!
          * \brief generate data from standard gaussian
          * \param dst destination
          * \param mu mean variable
@@ -75,7 +75,7 @@ namespace mshadow {
             Tensor<cpu, 2> mat = dst.FlatTo2D();
             for (index_t i = 0; i < mat.shape[1]; ++i) {
                 #if MSHADOW_USE_MKL
-                #if MSHADOW_SINGLE_PRECISION            
+                #if MSHADOW_SINGLE_PRECISION
                 int status = vsRngGaussian( 0, vStream_, mat.shape[0], mat[i].dptr, mu, sigma );
                 #else
                 int status = vdRngGaussian( 0, vStream_, mat.shape[0], mat[i].dptr, mu, sigma );
@@ -86,7 +86,7 @@ namespace mshadow {
                 for (index_t j = 0; j < mat.shape[0]; ++j) {
                     if( (j & 1) == 0 ){
                         this->SampleNormal2D( g1, g2 );
-                        mat[i][j] = mu + g1 * sigma;       
+                        mat[i][j] = mu + g1 * sigma;
                     }else{
                         mat[i][j] = mu + g2 * sigma;
                     }
@@ -94,11 +94,11 @@ namespace mshadow {
                 #endif
             }
         }
-        /*! 
+        /*!
          * \brief return a temporal expression storing standard gaussian random variables
          *        the temporal tensor is only valid before next call of gaussian or uniform
          *        can be used as part of expression
-         *  Caution: this means expression such as A = gaussian(s1) * gaussian(s2) will give invalid result, 
+         *  Caution: this means expression such as A = gaussian(s1) * gaussian(s2) will give invalid result,
          *           since second call of gaussian(s2) makes gaussian(s1) invalid
          *           A = gaussian(s1)*B+C; is correct; use one gaussian/uniform in each expression
          * \param shape shape of the tensor
@@ -110,11 +110,11 @@ namespace mshadow {
             this->SampleGaussian( temp, 0.0f, 1.0f );
             return expr::MakeExp<op::identity>( temp );
         }
-        /*! 
+        /*!
          * \brief return a temporal expression storing standard uniform [0,1)
          *        the temporal tensor is only valid before next call of gaussian or uniform
          *        can be used as part of expression
-         *  Caution: this means expression such as A = gaussian(s1) * gaussian(s2) will give invalid result, 
+         *  Caution: this means expression such as A = gaussian(s1) * gaussian(s2) will give invalid result,
          *           since second call of gaussian(s2) makes gaussian(s1) invalid
          *           A = gaussian(s1)*B+C; is correct; use one gaussian/uniform in each expression
          * \param shape shape of the tensor
@@ -127,8 +127,8 @@ namespace mshadow {
             return expr::MakeExp<op::identity>( temp );
         }
     private:
-        /*! 
-         * \brief create temp storage from buffer with given shape 
+        /*!
+         * \brief create temp storage from buffer with given shape
          * \param shape shape of the tensor
          * \tparam dim dimension of tensor
          */
@@ -145,9 +145,9 @@ namespace mshadow {
         /*! \brief return a real numer uniform in (0,1) */
         inline real_t RandNext2( void ){
             return (static_cast<real_t>( rand() ) + 1.0 ) / (static_cast<real_t>(RAND_MAX) + 2.0);
-        }     
-        /*! 
-         * \brief sample iid xx,yy ~N(0,1) 
+        }
+        /*!
+         * \brief sample iid xx,yy ~N(0,1)
          * \param xx first  gaussian output
          * \param yy second gaussian output
          */
@@ -169,13 +169,124 @@ namespace mshadow {
         /*! \brief temporal space used to store random numbers */
         Tensor<cpu,1> buffer_;
     }; // class Random<cpu>
-    
+
     template<>
     class Random<gpu> {
-        
+    public:
+        /*!
+         * \constructor of random engine
+         * \param seed random number seed
+         */
+        Random<gpu>(int seed) {
+            status_ = curandCreateGenerator(gen_, CURAND_RNG_PSEUDO_DEFAULT);
+            utils::Assert(status_ == CURAND_STATUS_SUCCESS, "Can not create CURAND Generator\n");
+            status_ = curandSetPseudoRandomGeneratorSeed(gen_, seed);
+            utils::Assert(status_ == CURAND_STATUS_SUCCESS, "Set CURAND seed failed.\n");
+            buffer_.shape[0] = kRandBufferSize; // Can be much smaller?
+            mshadow::AllocSpace(buffer_);
+        }
+
+        ~Random<gpu>() {
+            status_ = curandDestroyGenerator(gen_);
+            utils::Assert(status_ == CURAND_STATUS_SUCCESS, "Destory CURAND Gen failed\n");
+            mshadow::FreeSpace(buffer_);
+        }
+
+        /*!
+         * \brief generate data from uniform [a,b)
+         * \param dst destination
+         * \param a lower bound of uniform
+         * \param b upper bound of uniform
+         * \tparam dim dimension of tensor
+         */
+        template<int dim>
+        inline void SampleUniform(Tensor<gpu, dim> &dst, real_t a=0.0f, real_t b=1.0f) {
+            Tensor<gpu, 2> = dst.FlatTo2D();
+            real_t length = b - a;
+            for (index_t i = 0; i < mat.shape[1]; ++i) {
+                #if MSHADOW_SINGLE_PRECISION
+                status_ = curandGenerateUniform(gen_, mat.shape[i].dptr, mat.shape[0]);
+                #else
+                status_ = curandGenerateUniformDouble(gen_, mat.shape[i].dptr, mat.shape[0]);
+                #endif
+                utils::Assert(status_ == CURAND_STATUS_SUCCESS, "CURAND Gen Uniform failed\n");
+                cuda::TransferUniform(mat.shape[i].dptr, mat.shape[0], a, length);
+            }
+        }
+
+        /*!
+         * \brief generate data from standard gaussian
+         * \param dst destination
+         * \param mu mean variable
+         * \param sigma standard deviation
+         * \tparam dim dimension of tensor
+         */
+        template<int dim>
+        inline void SampleGaussian(Tensor<gpu, dim> &dst, real_t mu = 0.0f, real_t sigma = 1.0f) {
+            Tensor<gpu, 2> mat = dst.FlatTo2D();
+            for (index_t i = 0; i < mat.shape[1]; ++i) {
+                #if MSHADOW_SINGLE_PRECISION
+                status_ = curandGenerateNormal(gen_, mat.shape[i].dptr, mat.shape[0], mu, sigma);
+                #else
+                status_ = curandGenerateNormalDouble(gen_, mat.shape[i].dptr, mat.shape[0], mu, sigma);
+                #endif
+                utils::Assert(status_ == CURAND_STATUS_SUCCESS, "CURAND Gen Gaussin failed\n");
+            }
+        }
+        /*!
+         * \brief return a temporal expression storing standard gaussian random variables
+         *        the temporal tensor is only valid before next call of gaussian or uniform
+         *        can be used as part of expression
+         *  Caution: this means expression such as A = gaussian(s1) * gaussian(s2) will give invalid result,
+         *           since second call of gaussian(s2) makes gaussian(s1) invalid
+         *           A = gaussian(s1)*B+C; is correct; use one gaussian/uniform in each expression
+         * \param shape shape of the tensor
+         * \tparam dim dimension of tensor
+         */
+        template<int dim>
+        inline expr::UnaryMapExp<op::identity,Tensor<gpu,dim>,expr::type::kMapper> gaussian(Shape<dim> shape){
+            Tensor<gpu,dim> temp = this->GetTemp(shape);
+            this->SampleGaussian(temp, 0.0f, 1.0f);
+            return expr::MakeExp<op::identity>( temp );
+        }
+        /*!
+         * \brief return a temporal expression storing standard uniform [0,1)
+         *        the temporal tensor is only valid before next call of gaussian or uniform
+         *        can be used as part of expression
+         *  Caution: this means expression such as A = gaussian(s1) * gaussian(s2) will give invalid result,
+         *           since second call of gaussian(s2) makes gaussian(s1) invalid
+         *           A = gaussian(s1)*B+C; is correct; use one gaussian/uniform in each expression
+         * \param shape shape of the tensor
+         * \tparam dim dimension of tensor
+         */
+        template<int dim>
+        inline expr::UnaryMapExp<op::identity,Tensor<gpu,dim>,expr::type::kMapper> uniform(Shape<dim> shape) {
+            Tensor<gpu,dim> temp = this->GetTemp(shape);
+            this->SampleUniform(temp, 0.0f, 1.0f);
+            return expr::MakeExp<op::identity>(temp);
+        }
+
+    private:
+        /*!
+         * \brief create temp storage from buffer with given shape
+         * \param shape shape of the tensor
+         * \tparam dim dimension of tensor
+         */
+        template<int dim>
+        inline Tensor<gpu,dim> GetTemp(Shape<dim> shape) {
+            shape.stride_ = ((shape[0] + 3) >> 2) << 2;
+            return Tensor<gpu,dim>(buffer_.dptr, shape);
+        }
+    private:
+        curandGenerator_t gen_;
+        curandStatus_t status_;
+        Tensor<gpu, 1> buffer_;
+
     }; // class Random<gpu>
-    
-    
+
+
+
+
 }; // namespace mshadow
 
 #endif // MSHADOW_TENSOR_RANDOM_H
