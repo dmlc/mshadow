@@ -95,30 +95,30 @@ namespace mshadow {
             }
         }
         /*! 
-         * \brief return a temporal tensor storing standard gaussian random variables
+         * \brief return a temporal expression storing standard gaussian random variables
          *        the temporal tensor is only valid before next call of gaussian or uniform
          *        can be used as part of expression
          * \param shape shape of the tensor
          * \tparam dim dimension of tensor
          */
         template<int dim>
-        inline Tensor<cpu,dim> gaussian( Shape<dim> shape ){
+        inline expr::UnaryMapExp<op::identity,Tensor<cpu,dim>,expr::type::kMapper> gaussian( Shape<dim> shape ){
             Tensor<cpu,dim> temp = this->GetTemp( shape );
             this->SampleGaussian( temp, 0.0f, 1.0f );
-            return temp;
+            return expr::MakeExp<op::identity>( temp );
         }
         /*! 
-         * \brief return a temporal tensor storing standard uniform [0,1)
+         * \brief return a temporal expression storing standard uniform [0,1)
          *        the temporal tensor is only valid before next call of gaussian or uniform
          *        can be used as part of expression
          * \param shape shape of the tensor
          * \tparam dim dimension of tensor
          */
         template<int dim>
-        inline Tensor<cpu,dim> uniform( Shape<dim> shape ){
+        inline expr::UnaryMapExp<op::identity,Tensor<cpu,dim>,expr::type::kMapper> uniform( Shape<dim> shape ){
             Tensor<cpu,dim> temp = this->GetTemp( shape );
             this->SampleUniform( temp, 0.0f, 1.0f );
-            return temp;
+            return expr::MakeExp<op::identity>( temp );
         }
     private:
         /*! 
