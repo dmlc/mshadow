@@ -169,36 +169,43 @@ namespace mshadow{
         // check shape consistency
         template<int dim,typename E>
         struct ShapeCheck{
-            inline static bool Check( const E &t,  const Shape<dim> &shape );
+            inline static Shape<dim> Check( const E &t );
         };
         template<int dim>
         struct ShapeCheck<dim,ScalarExp>{
-            inline static bool Check( const ScalarExp &exp, const Shape<dim> &shape ){
-                return true;
+            inline static Shape<dim> Check( const ScalarExp &exp ){                
+                // use lowest dimension to mark scalar exp
+                Shape<dim> shape; shape[0] = 0; 
+                return shape;
             }
         };
         template<int dim,typename Device>
         struct ShapeCheck<dim,Tensor<Device,dim> >{
-            inline static bool Check( const Tensor<Device,dim> &t, const Shape<dim> &shape ){
-                return t.shape == shape;
+            inline static Shape<dim> Check( const Tensor<Device,dim> &t ){
+                return t.shape;
             }
         };
         template<int dim,typename Device,typename T>
         struct ShapeCheck<dim,MakeTensorExp<T,Device,dim> >{
-            inline static bool Check( const MakeTensorExp<T,Device,dim> &t, const Shape<dim> &shape ){
-                return t.shape == shape;
+            inline static Shape<dim> Check( const MakeTensorExp<T,Device,dim> &t ){
+                return t.shape;
             }
         };
         template<int dim, typename OP, typename TA, int etype>
         struct ShapeCheck< dim,UnaryMapExp<OP,TA,etype> >{
-            inline static bool Check( const UnaryMapExp<OP,TA,etype> &t, const Shape<dim> &shape ){
-                return ShapeCheck<dim,TA>::Check( t.src_, shape );
+            inline static Shape<dim> Check( const UnaryMapExp<OP,TA,etype> &t ){
+                return ShapeCheck<dim,TA>::Check( t.src_ );
             }
         };
         template<int dim, typename OP, typename TA, typename TB, int etype>
         struct ShapeCheck< dim, BinaryMapExp<OP,TA,TB,etype> >{
-            inline static bool Check( const BinaryMapExp<OP,TA,TB,etype> &t, const Shape<dim> &shape ){
-                return ShapeCheck<dim,TA>::Check( t.lhs_, shape ) && ShapeCheck<dim,TB>::Check( t.rhs_, shape );
+            inline static Shape<dim> Check( const BinaryMapExp<OP,TA,TB,etype> &t ){
+                Shape<dim> shape1 = ShapeCheck<dim,TA>::Check( t.lhs_ );
+                Shape<dim> shape2 = ShapeCheck<dim,TB>::Check( t.rhs_ );
+                if( shape1[0] == 0 ) return shape2;
+                if( shape2[0] == 0 ) return shape1;
+                utils::Assert( shape1 == shape2, "Shapes of tensors in expression is not consistent");
+                return shape1;
             }
         };
     }; // namespace expr

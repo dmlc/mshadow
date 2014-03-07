@@ -9,6 +9,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <algorithm>
 // macro defintiions
 
 /*!\brief if this macro is define to be 1, mshadow should compile without any of other libs */
@@ -196,6 +197,21 @@ namespace mshadow {
             }
         };
     }; // namespace op
+    
+    /*! \brief namespace for potential reducer operations */
+    namespace red {
+        struct sum {
+            MSHADOW_XINLINE static void Reduce( volatile real_t& dst,  volatile real_t src ) {
+                dst += src;
+            }
+        };
+        struct maximum {
+            MSHADOW_XINLINE static void Reduce( volatile real_t& dst,  volatile real_t src ) {
+                using namespace std;
+                dst = max( dst, src );
+            }
+        };
+    };
 
     /*! \brief namespace for helper utils of the project */
     namespace utils{

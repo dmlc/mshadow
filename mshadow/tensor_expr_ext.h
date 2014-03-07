@@ -24,7 +24,28 @@ namespace mshadow{
                 this->shape[1] = nrow;
             }
         };
+
+        /*! 
+         * \brief reduction to 1 dimension tensor
+         * input: Tensor<Device,k>: ishape
+         * output: Tensor<Device,1> shape[0] = ishape[dimkeep];
+         *
+         * \tparam Device which device it lies
+         * \tparam Reducer which reducer to use
+         * \tparam srcdim dimension of source 
+         * \tparam dimkeep which dimension to be kept, 
+         */
+        //template<typename Device, typename Reducer, int srcdim, int dimkeep>
+        //struct ReduceTo1DExp: public Exp< ReduceTo1DExp<Device,Reducer, dimkeep>, type::kComplex >{
+            /*! \brief source operand */
+        //const Tensor<Device,srcdim> &src;
+        /*! \brief construct a repmat expression from src and nrow */
+        //    ReductionExp( const Tensor<Device,srcdim> &src ):src(src){
+        //this->shape[0] = src.shape[ dimkeep ];
+        //}
+        //};        
     }; // namespace expr
+    
     
     // Declaration of all functions go here
     namespace expr{
@@ -39,6 +60,19 @@ namespace mshadow{
         inline RepmatExp<Device> repmat( const Tensor<Device,1> &src, index_t nrow ){
             return RepmatExp<Device>( src, nrow );
         }
+
+        /*! 
+         * \brief a expression that replicate a 1 dimension tensor for nrow times 
+         * \param src Tensor<Device,1>: shape[0]
+         * \param nrow number of rows to replicate
+         * \return a expresion with type Tensor<Device,2> shape[0], shape[1] = nrow
+         * \tparam Device which device it lies
+         */
+        //template<typename Device>
+        //inline ReduceTo1DExp<Device,red::sum,2,0> sum( const Tensor<Device,2> &src ){
+        //return ReduceTo1DExp<Device,red::sum,2,0>( src );
+        //}
+        
     }; // namespace expr
 }; // namespace mshadow
 

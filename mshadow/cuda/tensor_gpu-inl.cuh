@@ -27,13 +27,17 @@ namespace mshadow{
         const int kBaseThreadNum  = 1 << kBaseThreadBits;
         /*! \brief maximum value of grid */
         const int kMaxGridNum     = 65535;
+        
+        /*! \brief get align stride for given size in x dimension */
+        index_t GetAlignStride( index_t xsize ){
+            return ( (xsize  + kMemUnit - 1) >> kMemUnitBits) << kMemUnitBits;
+        }
     };
 
-    namespace cuda {                
+    namespace cuda {
         template<typename Saver, typename Plan, int block_dim_bits>
-        __global__ void MapPlanKernel(Tensor<gpu,2> dst, const Plan exp){
+        __global__ void MapPlanKernel(Tensor<gpu,2> dst, const index_t xstride, const Plan exp){
             const index_t tid = (blockIdx.x << block_dim_bits) + threadIdx.x;
-            const index_t xstride = dst.shape.stride_;
             const int y   = tid / xstride;
             const int x   = tid % xstride;
             if (y < dst.shape[1] && x < dst.shape[0]) {
@@ -42,13 +46,14 @@ namespace mshadow{
         }
         template<typename Saver, typename E>
         inline void MapPlan(Tensor<gpu,2> dst, const expr::Plan<E> &plan ){
-            const int num_block = (dst.shape.MSize() + kBaseThreadNum-1) / kBaseThreadNum;
+            const index_t xstride = GetAlignStride( dst.shape[0] );
+            const int num_block = ( dst.shape[1]*xstride + kBaseThreadNum-1) / kBaseThreadNum;
             dim3 dimBlock(kBaseThreadNum, 1, 1);
             
             if (num_block < kMaxGridNum) {
                 dim3 dimGrid(num_block, 1, 1);
                 MapPlanKernel<Saver, expr::Plan<E>, kBaseThreadBits>   \
-                    <<<dimGrid,dimBlock>>>(dst, plan);
+                    <<<dimGrid,dimBlock>>>(dst, xstride, plan);
             } else {
                 utils::Error("not implemented");                
             }
