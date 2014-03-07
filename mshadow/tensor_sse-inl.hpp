@@ -329,6 +329,11 @@ namespace mshadow{
             return SSEPlan<T>( e.self() );
         }
 
+        template<typename T,int dim>
+        inline SSEPlan<T> MakeSSEPlan( const MakeTensorExp<T,cpu,dim> &e ){
+            return SSEPlan<T>( e.real_self() );
+        }
+
         template<typename OP, typename TA, int etype>
         inline SSEPlan< UnaryMapExp<OP,TA,etype> > MakeSSEPlan( const UnaryMapExp<OP,TA,etype> &e ){
             return SSEPlan< UnaryMapExp<OP,TA,etype> >( MakeSSEPlan(e.src_) );
@@ -372,21 +377,35 @@ namespace mshadow{
     }; // namespace expr
     namespace expr{
         // check if data is aligned and allow sse operation
-        template<int dim>
+        template<int dim,typename E>
         struct SSEAlignCheck{
+            inline static bool Check( const E &exp ){
+                return false;
+            }
+        };
+        template<int dim>
+        struct SSEAlignCheck< dim, ScalarExp >{
             inline static bool Check( const ScalarExp &exp ){
                 return true;
             }
+        };
+        template<int dim>
+        struct SSEAlignCheck< dim,Tensor<cpu,dim> >{
             inline static bool Check( const Tensor<cpu,dim> &t ){
                 return sse2::CheckAlign( t.dptr ) && sse2::CheckAlign( t.shape.stride_ * sizeof( real_t ) );
             }
-            template<typename OP, typename TA, int etype>
+        };
+        template<int dim, typename OP, typename TA, int etype>
+        struct SSEAlignCheck< dim, UnaryMapExp<OP,TA,etype> >{
             inline static bool Check( const UnaryMapExp<OP,TA,etype> &t ){
-                return Check( t.src_);
+                return SSEAlignCheck<dim,TA>::Check( t.src_);
             }
-            template<typename OP, typename TA, typename TB, int etype>
+        };
+        template<int dim, typename OP, typename TA, typename TB, int etype>
+        struct SSEAlignCheck< dim, BinaryMapExp<OP,TA,TB,etype> >{ 
             inline static bool Check( const BinaryMapExp<OP,TA,TB,etype> &t ){
-                return Check( t.lhs_ ) && Check( t.rhs_ );
+                return SSEAlignCheck<dim,TA>::Check( t.lhs_ ) && 
+                    SSEAlignCheck<dim,TB>::Check( t.rhs_ );
             }
         };
     }; // namespace expr

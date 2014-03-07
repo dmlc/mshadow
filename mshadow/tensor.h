@@ -372,10 +372,15 @@ namespace mshadow{
     
 }; // namespace mshadow
 
+// execution implementation of expression evaluations
 #include "tensor_expr_engine-inl.hpp"
-#include "tensor_expr_ext-inl.hpp"
+// cpu implementation of functions
 #include "tensor_cpu-inl.hpp"
+// gpu implementation of functions
 #include "tensor_gpu-inl.hpp"
+// random number generator
 #include "tensor_random.h"
+// extension of expressions
+#include "tensor_expr_ext.h"
 
 #endif // TENSOR_H

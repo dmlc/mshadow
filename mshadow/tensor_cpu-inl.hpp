@@ -68,7 +68,7 @@ namespace mshadow {
     struct MapExpCPUEngine<true,SV,dim,E,etype>{
         inline static void Map(Tensor<cpu,dim> dst, const expr::Exp<E,etype> &exp ){
             using namespace expr;
-            if( SSEAlignCheck<dim>::Check( exp.self() )){
+            if( SSEAlignCheck<dim,E>::Check( exp.self() )){
                 MapSSEPlan<SV>( dst, MakeSSEPlan( exp.self() ) );
             }else{
                 MapPlan<SV>( dst, MakePlan( exp.self() ) );

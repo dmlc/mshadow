@@ -1,13 +1,13 @@
-#ifndef MSHADOW_TENSOR_EXPR_EXT_INL_HPP
-#define MSHADOW_TENSOR_EXPR_EXT_INL_HPP
+#ifndef MSHADOW_TENSOR_EXPR_EXT_H
+#define MSHADOW_TENSOR_EXPR_EXT_H
 /*!
- * \file tensor_expr_ext-inl.hpp
- * \brief some extension of expressionsx
+ * \file tensor_expr_ext.h
+ * \brief some extension of expressions, used to support something beyond elementwise op
  * \author Tianqi Chen
  */
 namespace mshadow{
+    // Declaration of expressions goes here
     namespace expr{
-        // declaration of expressions
         /*! 
          * \brief replicate a 1 dimension tensor for nrow times 
          * input: Tensor<Device,1>: shape[0]
@@ -24,11 +24,12 @@ namespace mshadow{
                 this->shape[1] = nrow;
             }
         };
-    };
+    }; // namespace expr
     
+    // Declaration of all functions go here
     namespace expr{
         /*! 
-         * \brief replicate a 1 dimension tensor for nrow times 
+         * \brief a expression that replicate a 1 dimension tensor for nrow times 
          * \param src Tensor<Device,1>: shape[0]
          * \param nrow number of rows to replicate
          * \return a expresion with type Tensor<Device,2> shape[0], shape[1] = nrow
@@ -38,10 +39,16 @@ namespace mshadow{
         inline RepmatExp<Device> repmat( const Tensor<Device,1> &src, index_t nrow ){
             return RepmatExp<Device>( src, nrow );
         }
-    };
-    
+    }; // namespace expr
+}; // namespace mshadow
+
+// ==================================================
+//  implementations afterwards, 
+//  no need to read if only use the functions
+// --------------------------------------------------
+namespace mshadow{
     namespace expr{
-        // actuall implementation of expression and plan
+        /*! \brief execution plan of repmat */
         template<typename Device>
         struct Plan< RepmatExp<Device> >{
         public:
@@ -52,20 +59,41 @@ namespace mshadow{
         private:
             const real_t *dptr_;          
         };        
-    };
-};
+    }; // namespace expr
+}; // namespace mshadow
 
-#if MSHADOW_USE_SSE    
+#if MSHADOW_USE_SSE
+// implementations of SSE support, if possible
 #include "tensor_sse-inl.hpp"
 namespace mshadow{
     namespace expr{
-        //template<typename Device>
-        //struct SSECheck< RepmatExp<Device> >{
-        //const static bool kPass = true;
-        //};
-        // TODO: add SSPlan, change SSEAlignCheck
+        template<>
+        struct SSECheck< RepmatExp<cpu> >{
+            const static bool kPass = true;
+        };
+        template<>
+        struct SSEAlignCheck<2, RepmatExp<cpu> >{
+            inline static bool Check( const RepmatExp<cpu> &exp ){
+                return sse2::CheckAlign( exp.src.dptr );
+            }
+        };
+        template<>
+        class SSEPlan< RepmatExp<cpu> >{
+        public:
+            SSEPlan( const RepmatExp<cpu> &t )
+                :dptr_(t.src.dptr){}
+            MSHADOW_CINLINE sse2::FVec<real_t> EvalSSE( index_t y, index_t x ) const{
+                return sse2::FVec<real_t>( &dptr_[ x ] );
+            }
+            MSHADOW_CINLINE real_t Eval( index_t y, index_t x ) const{
+                return dptr_[ x ];
+            }
+        private:
+            const real_t  *dptr_;
+        };
     };
 };
 #endif
+
 #endif
 
