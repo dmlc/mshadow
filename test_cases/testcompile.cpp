@@ -11,6 +11,7 @@ int main( void ){
     Tensor<cpu,3> mat3 = NewCTensor( Shape3(2,4,10), 30 );
     //    testcuda2( mat1, mat2, mat3 );
     //testcuda( mat1, mat2, mat3 );
+    mat3[0] += repmat( mat2[0][0], 4 );
     for (unsigned i = 0; i < 2; ++i) {
         for (unsigned j = 0; j < 4; ++j) {
             printf("%.2f ", mat3[i][j][0]);

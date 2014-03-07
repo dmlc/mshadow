@@ -8,7 +8,7 @@ export LDFLAGS= -lm -lcudart -lcublas -lmkl_core -lmkl_intel_lp64 -lmkl_intel_th
 export NVCCFLAGS = -O3 --use_fast_math -ccbin $(CXX)
 
 # specify tensor path
-BIN = test
+BIN = test testc
 OBJ =
 CUOBJ = testcuda.o
 CUBIN =
@@ -17,7 +17,7 @@ CUBIN =
 all: $(BIN) $(OBJ) $(CUBIN) $(CUOBJ)
 
 test: mkl_sgemm.cpp ../mshadow/*.h testcuda.o
-
+testc: testcompile.cpp
 testcuda.o: testcuda.cu ../mshadow/*.h ../mshadow/cuda/*.cuh
 #testmkl.o: testmkl.cpp mshadow/*.h mshadow/cuda/*.cuh
 

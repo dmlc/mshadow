@@ -373,6 +373,7 @@ namespace mshadow{
 }; // namespace mshadow
 
 #include "tensor_expr_engine-inl.hpp"
+#include "tensor_expr_ext-inl.hpp"
 #include "tensor_cpu-inl.hpp"
 #include "tensor_gpu-inl.hpp"
 #include "tensor_random.h"
