@@ -120,41 +120,51 @@ namespace mshadow{
 
     namespace expr{
         /*!
-         * \brief static type check template,
-         *        if a expression E does not match type Device, dim, then kPass = false
+         * \brief static type inference template, 
+         *        used to get the dimension of each expression, 
+         *        if ExpInfo<E>::kDim == -1, this means here are mismatch in expression
          * \tparam Device the type of Device
-         * \tparam dim dimension of the tensor
          * \tparam E expression
          */
-        template<typename Device, int dim, typename E>
-        struct TypeCheck{
-            const static bool kPass = false;
+        template<typename Device, typename E>
+        struct ExpInfo{
+            const static int kDim = -1;
         };
 
-        template<typename Device, int dim, typename OP, typename TA, typename TB, int etype>
-        struct TypeCheck<Device,dim, BinaryMapExp<OP,TA,TB,etype> >;
-
-        template<typename Device, int dim>
-        struct TypeCheck<Device,dim,ScalarExp>{
-            const static bool kPass = true;
+        template<typename Device>
+        struct ExpInfo<Device,ScalarExp>{
+            const static int kDim = 0;
         };
         template<typename Device, int dim>
-        struct TypeCheck<Device,dim, Tensor<Device,dim> >{
-            const static bool kPass = true;
+        struct ExpInfo<Device, Tensor<Device,dim> >{
+            const static int kDim = dim;
         };
         template<typename T,typename Device, int dim>
-        struct TypeCheck<Device,dim, MakeTensorExp<T,Device,dim> >{
-            const static bool kPass = true;
+        struct ExpInfo<Device, MakeTensorExp<T,Device,dim> >{
+            const static int kDim = dim;
         };
-        template<typename Device, int dim, typename OP, typename TA, int etype>
-        struct TypeCheck<Device,dim, UnaryMapExp<OP,TA,etype> >{
-            const static bool kPass = TypeCheck<Device, dim, TA>::kPass;
+        template<typename Device, typename OP, typename TA, int etype>
+        struct ExpInfo<Device, UnaryMapExp<OP,TA,etype> >{
+            const static int kDim = ExpInfo<Device, TA>::kDim;
         };
-        template<typename Device, int dim, typename OP, typename TA, typename TB, int etype>
-        struct TypeCheck<Device,dim, BinaryMapExp<OP,TA,TB,etype> >{
-            const static bool kPass = TypeCheck<Device, dim, TA>::kPass && TypeCheck<Device,dim, TB>::kPass;
+        template<typename Device, typename OP, typename TA, typename TB, int etype>
+        struct ExpInfo<Device,BinaryMapExp<OP,TA,TB,etype> >{
+            const static int kDimLhs = ExpInfo<Device,TA>::kDim;
+            const static int kDimRhs = ExpInfo<Device,TB>::kDim;
+            const static int kDim = (kDimLhs>=0 && kDimRhs >= 0) ? \
+                ( kDimLhs==0 ? kDimRhs : ( (kDimRhs==0||kDimLhs==kDimRhs) ? kDimLhs : -1 ) ):-1;
         };
-        
+
+        /*! \brief template to do type check */
+        template<typename Device, int dim, typename E>
+        struct TypeCheck{
+            const static int kExpDim = ExpInfo<Device,E>::kDim;
+            /*! \brief whether the expression can be mapped to expression of dim */
+            const static bool kMapPass = kExpDim == 0 || kExpDim == dim;
+            /*! \brief whether the expression can be reduced to expression of dim */
+            const static bool kRedPass = kExpDim > dim;
+        };
+
         template<bool kPass>
         struct TypeCheckPass;
         template<>
@@ -162,9 +172,10 @@ namespace mshadow{
         template<>
         struct TypeCheckPass<true>{
             inline static void Error_All_Tensor_in_Exp_Must_Have_Same_Type( void ){}
+            inline static void Error_TypeCheck_Not_Pass_For_Reduce_Exp( void ){}
         };
     }; // namespace expr
-
+    
     namespace expr{
         // check shape consistency
         template<int dim,typename E>

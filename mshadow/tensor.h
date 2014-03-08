@@ -336,7 +336,7 @@ namespace mshadow {
     
     /*!
      * \brief CPU/GPU: map a expression to a tensor, this function calls MapPlan
-     * \tparam Saver specify storage method [st]
+     * \tparam Saver specify storage method
      * \tparam dim dim of the tensor, during usage, there is no need to specify this parameter
      * \tparam E specifies the expression type, not need to specify this parameter during usage
      * \tparam etype expression type
@@ -348,6 +348,22 @@ namespace mshadow {
     inline void MapExp(Tensor<cpu,dim> dst, const expr::Exp<E,etype> &exp );
     template<typename Saver, int dim, typename E, int etype>
     inline void MapExp(Tensor<gpu,dim> dst, const expr::Exp<E,etype> &exp );
+
+    /*!
+     * \brief CPU/GPU: map a expression, do reduction to 1D Tensor
+     * \tparam Saver specify storage method
+     * \tparam Reducer specify a reducer method
+     * \tparam dimkeep the dimension to be kept, dst.shape[0] = exp.shape[dimkeep]
+     * \tparam E specifies the expression type, not need to specify this parameter during usage
+     * \tparam etype expression type
+     * \param dst destination
+     * \param exp expression
+     * \sa namespace mshadow:sv, mshadow::op, mshadow::red, mshadow::expr
+     */
+    template<typename Saver, typename Reducer, int dimkeep, typename E, int etype>
+    inline void MapReduceTo1D(Tensor<cpu,1> dst, const expr::Exp<E,etype> &exp );
+    template<typename Saver, typename Reducer, int dimkeep, typename E, int etype>
+    inline void MapReduceTo1D(Tensor<gpu,1> dst, const expr::Exp<E,etype> &exp );
 }; // namespace mshadow
 
 namespace mshadow{

@@ -84,7 +84,7 @@ namespace mshadow{
     template<typename Saver, int dim, typename E, int etype>
     inline void MapExp(Tensor<gpu,dim> dst, const expr::Exp<E,etype> &exp ){
         using namespace expr;
-        TypeCheckPass< TypeCheck<gpu,dim,E>::kPass >::Error_All_Tensor_in_Exp_Must_Have_Same_Type();
+        TypeCheckPass< TypeCheck<gpu,dim,E>::kMapPass >::Error_All_Tensor_in_Exp_Must_Have_Same_Type();
         Shape<dim> eshape = ShapeCheck<dim,E>::Check( exp.self() );
         utils::Assert( eshape[0] == 0 || eshape == dst.shape, "shape of Tensors in expression is not consistent with target" );
         MapPlan<Saver>( dst, MakePlan( exp.self() ) );
