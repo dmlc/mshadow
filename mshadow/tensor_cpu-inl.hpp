@@ -111,7 +111,7 @@ namespace mshadow {
         }        
     }
 
-    inline void Softmax( Tensor<cpu,1> dst, const Tensor<cpu,1> &energy ){
+    inline void Softmax( Tensor<cpu,1> dst, Tensor<cpu,1> energy ){
         real_t mmax = energy[0];
         for( real_t x = 1; x < dst.shape[0]; ++x )
             if( mmax < energy[x] ) mmax = energy[x];
@@ -124,7 +124,7 @@ namespace mshadow {
             dst[x] /= sum;
         }
     }
-    inline void Softmax( Tensor<cpu,2> &dst, const Tensor<cpu,2> &energy ){
+    inline void Softmax( Tensor<cpu,2> dst, Tensor<cpu,2> energy ){
         utils::Assert( dst.shape == energy.shape, "Softmax: shape mismatch" );
         for( index_t y = 0; y < dst.shape[1]; ++y ){
             Softmax( dst[y], energy[y] );

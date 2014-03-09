@@ -372,8 +372,8 @@ namespace mshadow {
      * \param dst destination
      * \param energy input energy
      */
-    inline void Softmax( Tensor<cpu,2>& dst, const Tensor<cpu,2> energy );
-    inline void Softmax( Tensor<gpu,2>& dst, const Tensor<gpu,2> energy );    
+    inline void Softmax( Tensor<cpu,2> dst, Tensor<cpu,2> energy );
+    inline void Softmax( Tensor<gpu,2> dst, Tensor<gpu,2> energy );    
 };// namespace mshadow
 
 namespace mshadow{
