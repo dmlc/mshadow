@@ -31,20 +31,28 @@ namespace mshadow{
          * input: Tensor<Device,k>: ishape
          * output: Tensor<Device,1> shape[0] = ishape[dimkeep];
          *
-         * \tparam Device which device it lies
+         * \tparam EType type of expression to be reduced
          * \tparam Reducer which reducer to use
          * \tparam srcdim dimension of source 
          * \tparam dimkeep which dimension to be kept, 
          */
-        //template<typename Device, typename Reducer, int srcdim, int dimkeep>
-        //struct ReduceTo1DExp: public Exp< ReduceTo1DExp<Device,Reducer, dimkeep>, type::kComplex >{
+        template<typename EType, typename Reducer,int dimkeep>
+        struct ReduceTo1DExp: public Exp< ReduceTo1DExp<EType,Reducer, dimkeep>, type::kComplex >{
             /*! \brief source operand */
-        //const Tensor<Device,srcdim> &src;
-        /*! \brief construct a repmat expression from src and nrow */
-        //    ReductionExp( const Tensor<Device,srcdim> &src ):src(src){
-        //this->shape[0] = src.shape[ dimkeep ];
-        //}
-        //};        
+            EType src_;
+            /*! \brief source operand, scale of the  */
+            real_t scale_;
+            /*! \brief construct a repmat expression from src and nrow */
+            ReduceTo1DExp( EType src, real_t scale ):src_(src),scale_(scale){}
+        };
+        template<typename E, typename R,int d>
+        inline ReduceTo1DExp<E,R,d> operator*( const ReduceTo1DExp<E,R,d> &e, real_t scale ){
+            return ReduceTo1DExp<E,R,d>( e.src_, e.scale_*scale );
+        }
+        template<typename E, typename R,int d>
+        inline ReduceTo1DExp<E,R,d> operator*( real_t scale, const ReduceTo1DExp<E,R,d> &e ){
+            return ReduceTo1DExp<E,R,d>( e.src_, e.scale_*scale );
+        }
     }; // namespace expr
     
     
@@ -63,17 +71,16 @@ namespace mshadow{
         }
 
         /*! 
-         * \brief a expression that replicate a 1 dimension tensor for nrow times 
-         * \param src Tensor<Device,1>: shape[0]
-         * \param nrow number of rows to replicate
-         * \return a expresion with type Tensor<Device,2> shape[0], shape[1] = nrow
-         * \tparam Device which device it lies
+         * \brief a expression that sum over rows of a matrix
+         * \param exp input expression that must be a matrix Tensor<?,2>
+         * \return a expresion with type Tensor<Device,1> 
+         * \tparam E expression
+         * \tparam etype type of expression
          */
-        //template<typename Device>
-        //inline ReduceTo1DExp<Device,red::sum,2,0> sum( const Tensor<Device,2> &src ){
-        //return ReduceTo1DExp<Device,red::sum,2,0>( src );
-        //}
-        
+        template<typename E, int etype>
+        inline ReduceTo1DExp<E, red::sum, 0 > sum_rows( const Exp<E,etype> &exp ){
+            return ReduceTo1DExp<E,red::sum,0>( exp.self(), 1.0f );
+        }        
     }; // namespace expr
 }; // namespace mshadow
 
@@ -82,6 +89,15 @@ namespace mshadow{
 //  no need to read if only use the functions
 // --------------------------------------------------
 namespace mshadow{
+    namespace expr{
+        template<typename SV, typename Device, typename EType, typename Reducer, int dimkeep>
+        struct ExpComplexEngine< SV, Device, 1, ReduceTo1DExp<EType,Reducer,dimkeep> >{
+            inline static void Eval( Tensor<Device,1> &dst, const ReduceTo1DExp<EType,Reducer,dimkeep> &exp ){
+                MapReduceTo1D<SV,Reducer,dimkeep>( dst, exp.src_, exp.scale_ );
+            }
+        };
+    }; // namespace expr
+
     namespace expr{
         /*! \brief execution plan of repmat */
         template<typename Device>

@@ -36,7 +36,7 @@
 #endif
 /*! \breif use single precition float */
 #ifndef MSHADOW_SINGLE_PRECISION
-  #define MSHADOW_SINGLE_PRECISION 0
+  #define MSHADOW_SINGLE_PRECISION 1
 #endif
 /*! \breif whether use SSE */
 #ifndef MSHADOW_USE_SSE

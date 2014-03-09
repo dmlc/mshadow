@@ -66,7 +66,7 @@ namespace mshadow{
          */
         template<typename TStream>
         inline void SaveBinary( TStream &fo ) const{
-            SaveBinary( fo, *this );
+            mshadow::SaveBinary( fo, *this );
         }
         /*! 
          * \brief load by binary format, a temp Tensor<cpu,dim> storage will be allocated
@@ -76,7 +76,7 @@ namespace mshadow{
         template<typename TStream>
         inline void LoadBinary( TStream &fi ) {
             Tensor<cpu,dimension> tmp;
-            LoadBinary( fi, tmp, false );
+            mshadow::LoadBinary( fi, tmp, false );
             this->Resize( tmp.shape );
             Copy( *this, tmp );
             mshadow::FreeSpace( tmp );

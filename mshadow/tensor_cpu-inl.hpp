@@ -59,7 +59,7 @@ namespace mshadow {
     template<typename SV, int dim, typename E, int etype>
     struct MapExpCPUEngine<false,SV,dim,E,etype>{
         inline static void Map(Tensor<cpu,dim> dst, const expr::Exp<E,etype> &exp ){
-            MapPlan<SV>( dst, MakePlan( exp.self() ) );             
+            MapPlan<SV>( dst, MakePlan( exp.self() ) );
         }        
     };
 
@@ -88,6 +88,40 @@ namespace mshadow {
         #else
         MapExpCPUEngine< false,Saver,dim,E,etype >::Map( dst, exp );        
         #endif
-    }    
+    }
+    
+    // implementation of MapReduce to 1D
+    template<int dimkeep, int dimsrc, typename Saver, typename Reducer, typename E>
+    struct MapRedTo1DEngine{
+        inline static void MapRed( Tensor<cpu,1> dst, const expr::Plan<E> &plan, Shape<dimsrc> eshape, real_t scale );
+    };
+    
+    template<typename Saver, typename Reducer, int dimkeep, typename E, int etype>
+    inline void MapReduceTo1D( Tensor<cpu,1> dst, const expr::Exp<E,etype> &exp, real_t scale ){
+        using namespace expr;
+        TypeCheckPass< TypeCheck<cpu,1,E>::kRedPass >::Error_TypeCheck_Not_Pass_For_Reduce_Exp();        
+        typedef Shape< ExpInfo<cpu,E>::kDim > SrcShape;
+        SrcShape shape = ShapeCheck< ExpInfo<cpu,E>::kDim, E >::Check( exp.self() );
+
+        utils::Assert( shape[dimkeep] == dst.shape[0], "reduction dimension do not match" );
+        MapRedTo1DEngine< dimkeep, ExpInfo<cpu,E>::kDim, Saver, Reducer, E >::MapRed
+            ( dst, MakePlan(exp.self()), shape, scale );
+    }
+    
+    template<int dimsrc, typename Saver, typename Reducer, typename E>
+    struct MapRedTo1DEngine<0,dimsrc,Saver,Reducer,E>{
+        inline static void MapRed( Tensor<cpu,1> dst, const expr::Plan<E> &plan, Shape<dimsrc> eshape_, real_t scale ){
+            Shape<2> eshape = eshape_.FlatTo2D();
+            utils::Assert( eshape[1] != 0, "can not reduce over empty tensor" );                        
+            for( index_t x = 0; x < eshape[0]; ++x ){
+                real_t res = plan.Eval( 0, x );
+                for( index_t y = 1; y < eshape[1]; ++y ){
+                    Reducer::Reduce( res, plan.Eval( y, x ) );
+                }
+                Saver::Save( dst[x], res*scale );
+            }
+        }
+    };
+
 }; // namespace mshadow
 #endif // TENSOR_CPU_INL_HPP

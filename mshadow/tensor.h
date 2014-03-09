@@ -358,12 +358,13 @@ namespace mshadow {
      * \tparam etype expression type
      * \param dst destination
      * \param exp expression
+     * \param scale scale the result before save
      * \sa namespace mshadow:sv, mshadow::op, mshadow::red, mshadow::expr
      */
     template<typename Saver, typename Reducer, int dimkeep, typename E, int etype>
-    inline void MapReduceTo1D(Tensor<cpu,1> dst, const expr::Exp<E,etype> &exp );
+    inline void MapReduceTo1D( Tensor<cpu,1> dst, const expr::Exp<E,etype> &exp, real_t scale = 1.0f );
     template<typename Saver, typename Reducer, int dimkeep, typename E, int etype>
-    inline void MapReduceTo1D(Tensor<gpu,1> dst, const expr::Exp<E,etype> &exp );
+    inline void MapReduceTo1D( Tensor<gpu,1> dst, const expr::Exp<E,etype> &exp, real_t scale = 1.0f );
 }; // namespace mshadow
 
 namespace mshadow{
@@ -390,13 +391,13 @@ namespace mshadow{
 
 // execution implementation of expression evaluations
 #include "tensor_expr_engine-inl.hpp"
+// extension of expressions
+#include "tensor_expr_ext.h"
 // cpu implementation of functions
 #include "tensor_cpu-inl.hpp"
 // gpu implementation of functions
 #include "tensor_gpu-inl.hpp"
 // random number generator
 #include "tensor_random.h"
-// extension of expressions
-#include "tensor_expr_ext.h"
 
 #endif // TENSOR_H

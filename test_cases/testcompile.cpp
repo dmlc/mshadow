@@ -12,6 +12,7 @@ int main( void ){
     //    testcuda2( mat1, mat2, mat3 );
     //testcuda( mat1, mat2, mat3 );
     mat3[0] += repmat( mat2[0][0], 4 );
+    mat3[1][1] += 10 * sum_rows( mat2[0] );
     for (unsigned i = 0; i < 2; ++i) {
         for (unsigned j = 0; j < 4; ++j) {
             printf("%.2f ", mat3[i][j][0]);

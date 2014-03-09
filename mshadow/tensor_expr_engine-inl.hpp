@@ -173,6 +173,7 @@ namespace mshadow{
         struct TypeCheckPass<true>{
             inline static void Error_All_Tensor_in_Exp_Must_Have_Same_Type( void ){}
             inline static void Error_TypeCheck_Not_Pass_For_Reduce_Exp( void ){}
+            inline static void Error_Expression_Does_Not_Meet_Dimension_Req( void ){}
         };
     }; // namespace expr
     
@@ -182,9 +183,10 @@ namespace mshadow{
         struct ShapeCheck{
             inline static Shape<dim> Check( const E &t );
         };
+        
         template<int dim>
         struct ShapeCheck<dim,ScalarExp>{
-            inline static Shape<dim> Check( const ScalarExp &exp ){                
+            inline static Shape<dim> Check( const ScalarExp &exp ){
                 // use lowest dimension to mark scalar exp
                 Shape<dim> shape; shape[0] = 0; 
                 return shape;
@@ -348,19 +350,28 @@ namespace mshadow{
 
 
     namespace expr{
+        /*! \brief some engine that evaluate complex expression */
+        template<typename SV, typename Device, int dim, typename E>
+        struct ExpComplexEngine{
+            inline static void Eval( Tensor<Device,dim>& dst, const E &exp );
+        };
         template<typename SV, typename Device, int dim>
         struct ExpEngine<SV, Tensor<Device,dim> >{
             template<typename E>
             inline static void Eval( Tensor<Device,dim>& dst, const Exp<E,type::kMapper> &exp ){
                 MapExp<SV,dim,E>( dst, exp );
-
             }
             template<typename E>
             inline static void Eval( Tensor<Device,dim>& dst, const Exp<E,type::kContainer> &exp ){
                 MapExp<SV,dim,E>( dst, exp );
             }
-
-            template<int ldim,int rdim,bool ltrans,bool rtrans>
+            template<typename E>
+            inline static void Eval( Tensor<Device,dim>& dst, const Exp<E,type::kComplex> &exp ){
+                ExpComplexEngine<SV,Device,dim,E>::Eval( dst, exp.self() );
+            }
+        };
+        template<typename SV, typename Device, int dim, int ldim,int rdim,bool ltrans,bool rtrans>
+        struct ExpComplexEngine< SV, Device, dim, DotExp< Tensor<Device,ldim>, Tensor<Device,rdim>, ltrans, rtrans > >{
             inline static void Eval( Tensor<Device,dim> &dst, const DotExp< Tensor<Device,ldim>, Tensor<Device,rdim>, ltrans, rtrans > &exp ){
                 DotEngine<SV,Device,dim,ldim,rdim,ltrans,rtrans>::Eval( dst, exp.lhs_, exp.rhs_, exp.scale_ );
             }
