@@ -365,7 +365,16 @@ namespace mshadow {
     inline void MapReduceToLowest( Tensor<cpu,1> dst, const expr::Exp<E,etype> &exp, real_t scale = 1.0f );
     template<typename Saver, typename Reducer, typename E, int etype>
     inline void MapReduceToLowest( Tensor<gpu,1> dst, const expr::Exp<E,etype> &exp, real_t scale = 1.0f );
-}; // namespace mshadow
+
+    
+    /*! 
+     * \brief CPU/GPU: normalize softmax: dst[i][j] = exp( energy[i][j] ) /( sum_j exp( energy[i][j] ) )
+     * \param dst destination
+     * \param energy input energy
+     */
+    inline void Softmax( Tensor<cpu,2>& dst, const Tensor<cpu,2> energy );
+    inline void Softmax( Tensor<gpu,2>& dst, const Tensor<gpu,2> energy );    
+};// namespace mshadow
 
 namespace mshadow{
     // the following function is name dependent, have different name for CPU and GPU

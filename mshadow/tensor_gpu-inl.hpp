@@ -99,7 +99,11 @@ namespace mshadow{
         utils::Assert( eshape[0] == dst.shape[0], "reduction dimension do not match" );
         utils::Assert( eshape[1] != 0, "can not reduce over empty tensor" );
         cuda::MapReduceToLowest<Saver,Reducer>( dst, MakePlan( exp.self() ), scale, eshape );
-    }   
+    }
+
+    inline void Softmax( Tensor<gpu,2> &dst, const Tensor<gpu,2> &src ){
+        cuda::Softmax( dst, src );
+    }
 }; // namespace mshadow
 
 #endif // __CUDACC__

@@ -1,30 +1,30 @@
 #include "mshadow/tensor.h"
 // must include this file to get gpu part implementation
+#include "../mshadow/tensor_container.h"
 
 using namespace mshadow;
 using namespace mshadow::expr;
-extern void testcuda( Tensor<cpu,3> mat1, Tensor<cpu,3> mat2, Tensor<cpu,3> mat3 );
 
-void testcuda( Tensor<cpu,3> mat1, Tensor<cpu,3> mat2, Tensor<cpu,3> mat3 ){
-    Shape<3> s = mat1.shape;
-    Tensor<gpu,3> gmat1(s), gmat2(s), gmat3(s), gmat4;    
-    printf("alloc space\n");
-    AllocSpace(gmat1); 
-    AllocSpace(gmat2); 
-    AllocSpace(gmat3);
-    printf("alloc space finish\n");
-    Copy( gmat1, mat1 );
-    Copy( gmat2, mat2 );
-    // this dot expression is invalid
-    //gmat1[0] = 0.1 * dot( gmat2[0].T(), gmat3[0] );
-    printf("alloc space finish\n");
-    gmat3  = F<op::identity>(gmat1 + gmat2 + 3.0);
-    gmat3 += gmat1;
-    
-    Copy( mat3, gmat3 );    
-    gmat4 = gmat1;
-    printf("%d==1\n", gmat4.dptr == gmat1.dptr);
-    FreeSpace(gmat1);
-    FreeSpace(gmat2);
-    FreeSpace(gmat3);
+inline void print(const Tensor<cpu,2> &t) {
+    index_t row = t.shape[1];
+    index_t col = t.shape[0];
+    printf("%2d X %2d\n", row, col);
+    for (index_t r = 0; r < row; ++r) {
+        for (index_t c = 0; c < col; ++c) {
+            printf("%.2f ", t[r][c]);
+        }
+        printf("\n");
+    }
+}
+// implemented by testcuda.cu
+
+
+void testcuda( void ){
+    TensorContainer<gpu,2> gmat1(Shape2(10,16),1.0f);
+    TensorContainer<gpu,2> gmat2(Shape2(10,16),2.0f);
+    TensorContainer<cpu,2> cmat1(Shape2(10,16),2.0f);
+
+    gmat1[0] = sum_rows( gmat2 );
+    Copy( cmat1, gmat1 );    
+    print( cmat1 );    
 }

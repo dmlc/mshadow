@@ -19,10 +19,11 @@ void print(const Tensor<cpu,2> &t) {
 }
 // implemented by testcuda.cu
 void testmkl( Tensor<cpu,2> mat1, Tensor<cpu,2> mat2, Tensor<cpu,2> mat3 );
+void testcuda();
 
 int main( void ){
     InitTensorEngine();
-
+    testcuda();
     TensorContainer<cpu,2> lhs( Shape2(4,3), 0 );
     TensorContainer<cpu,2> rhs( Shape2(4,3), 0 );
     TensorContainer<cpu,2> dst( Shape2(4,4), 0.0 );
