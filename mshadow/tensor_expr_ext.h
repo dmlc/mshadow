@@ -90,10 +90,10 @@ namespace mshadow{
 // --------------------------------------------------
 namespace mshadow{
     namespace expr{
-        template<typename SV, typename Device, typename EType, typename Reducer, int dimkeep>
-        struct ExpComplexEngine< SV, Device, 1, ReduceTo1DExp<EType,Reducer,dimkeep> >{
-            inline static void Eval( Tensor<Device,1> &dst, const ReduceTo1DExp<EType,Reducer,dimkeep> &exp ){
-                MapReduceTo1D<SV,Reducer,dimkeep>( dst, exp.src_, exp.scale_ );
+        template<typename SV, typename Device, typename EType, typename Reducer>
+        struct ExpComplexEngine< SV, Device, 1, ReduceTo1DExp<EType,Reducer,0> >{
+            inline static void Eval( Tensor<Device,1> &dst, const ReduceTo1DExp<EType,Reducer,0> &exp ){                
+                MapReduceToLowest<SV,Reducer>( dst, exp.src_, exp.scale_ );
             }
         };
     }; // namespace expr

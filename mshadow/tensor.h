@@ -350,10 +350,10 @@ namespace mshadow {
     inline void MapExp(Tensor<gpu,dim> dst, const expr::Exp<E,etype> &exp );
 
     /*!
-     * \brief CPU/GPU: map a expression, do reduction to 1D Tensor
+     * \brief CPU/GPU: map a expression, do reduction to 1D Tensor in lowest dimension (dimension 0)
      * \tparam Saver specify storage method
      * \tparam Reducer specify a reducer method
-     * \tparam dimkeep the dimension to be kept, dst.shape[0] = exp.shape[dimkeep]
+     * \tparam dimkeep the dimension to be kept, dst.shape[0] = exp.shape[0]
      * \tparam E specifies the expression type, not need to specify this parameter during usage
      * \tparam etype expression type
      * \param dst destination
@@ -361,10 +361,10 @@ namespace mshadow {
      * \param scale scale the result before save
      * \sa namespace mshadow:sv, mshadow::op, mshadow::red, mshadow::expr
      */
-    template<typename Saver, typename Reducer, int dimkeep, typename E, int etype>
-    inline void MapReduceTo1D( Tensor<cpu,1> dst, const expr::Exp<E,etype> &exp, real_t scale = 1.0f );
-    template<typename Saver, typename Reducer, int dimkeep, typename E, int etype>
-    inline void MapReduceTo1D( Tensor<gpu,1> dst, const expr::Exp<E,etype> &exp, real_t scale = 1.0f );
+    template<typename Saver, typename Reducer, typename E, int etype>
+    inline void MapReduceToLowest( Tensor<cpu,1> dst, const expr::Exp<E,etype> &exp, real_t scale = 1.0f );
+    template<typename Saver, typename Reducer, typename E, int etype>
+    inline void MapReduceToLowest( Tensor<gpu,1> dst, const expr::Exp<E,etype> &exp, real_t scale = 1.0f );
 }; // namespace mshadow
 
 namespace mshadow{
