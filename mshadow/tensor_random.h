@@ -37,12 +37,19 @@ namespace mshadow {
             #endif
             mshadow::FreeSpace( buffer_ );
         }
-        /*! 
-         * \brief seed random number generator using this seed 
+        /*!
+         * \brief seed random number generator using this seed
          * \param seed seed of prng
          */
         inline void Seed( int seed ){
+            #if MSHADOW_USE_MKL
+            int status = vslDeleteStream(&vStream_);
+            utils::Assert(status == VSL_STATUS_OK);
+            status = vslNewStream(&vStream_, VSL_BRNG_MT19937, seed);
+            utils::Assert(status == VSL_STATUS_OK);
+            #else
             srand( seed );
+            #endif
         }
         /*!
          * \brief generate data from uniform [a,b)
@@ -80,7 +87,7 @@ namespace mshadow {
         template<int dim>
         inline void SampleGaussian( Tensor<cpu, dim> &dst, real_t mu = 0.0f, real_t sigma = 1.0f ) {
             if( sigma <= 0.0f ) {
-                dst = mu; return; 
+                dst = mu; return;
             }
             Tensor<cpu, 2> mat = dst.FlatTo2D();
             for (index_t i = 0; i < mat.shape[1]; ++i) {
@@ -181,7 +188,7 @@ namespace mshadow {
     }; // class Random<cpu>
 
 #ifdef __CUDACC__
-    
+
     template<>
     class Random<gpu> {
     public:
@@ -204,8 +211,8 @@ namespace mshadow {
             utils::Assert(status == CURAND_STATUS_SUCCESS, "Destory CURAND Gen failed");
             mshadow::FreeSpace(buffer_);
         }
-        /*! 
-         * \brief seed random number generator using this seed 
+        /*!
+         * \brief seed random number generator using this seed
          * \param seed seed of prng
          */
         inline void Seed( int seed ){
@@ -254,13 +261,13 @@ namespace mshadow {
         template<int dim>
         inline expr::UnaryMapExp<op::identity,Tensor<gpu,dim>,expr::type::kMapper> gaussian( Shape<dim> shape, real_t mu=0.0f, real_t sigma=1.0f){
             Tensor<gpu,dim> temp = this->GetTemp(shape);
-            curandStatus_t status;            
+            curandStatus_t status;
             #if MSHADOW_SINGLE_PRECISION
             status = curandGenerateNormal(gen_, temp.dptr, temp.shape.MSize(), mu, sigma);
             #else
             status = curandGenerateNormalDouble(gen_, temp.dptr, temp.shape.MSize(), mu, sigma);
             #endif
-            utils::Assert(status == CURAND_STATUS_SUCCESS, "CURAND Gen Uniform failed\n");           
+            utils::Assert(status == CURAND_STATUS_SUCCESS, "CURAND Gen Uniform failed\n");
             return expr::MakeExp<op::identity>( temp );
         }
         /*!
@@ -294,7 +301,7 @@ namespace mshadow {
         template<int dim>
         inline Tensor<gpu,dim> GetTemp(Shape<dim> shape) {
             shape.stride_ = cuda::GetAlignStride( shape[0] );
-            utils::Assert( buffer_.shape[0] >= shape.MSize(), "gaussian: random engine buffer do not have enough memory" );            
+            utils::Assert( buffer_.shape[0] >= shape.MSize(), "gaussian: random engine buffer do not have enough memory" );
             return Tensor<gpu,dim>(buffer_.dptr, shape);
         }
     private:
@@ -304,7 +311,7 @@ namespace mshadow {
         Tensor<gpu, 1> buffer_;
     }; // class Random<gpu>
     #endif
-    
+
 }; // namespace mshadow
 
 #endif // MSHADOW_TENSOR_RANDOM_H
