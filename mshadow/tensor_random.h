@@ -37,6 +37,17 @@ namespace mshadow {
             #endif
             mshadow::FreeSpace( buffer_ );
         }
+        /*! 
+         * \brief seed random number generator using this seed 
+         * \param seed seed of prng
+         */
+        inline void Seed( int seed ){
+            #if MSHADOW_USE_MKL
+            // TODO
+            #else
+            srand(seed);
+            #endif            
+        }
         /*!
          * \brief generate data from uniform [a,b)
          * \param dst destination
@@ -183,8 +194,7 @@ namespace mshadow {
             curandStatus_t status;
             status = curandCreateGenerator(&gen_, CURAND_RNG_PSEUDO_DEFAULT);
             utils::Assert(status == CURAND_STATUS_SUCCESS, "Can not create CURAND Generator");
-            status = curandSetPseudoRandomGeneratorSeed(gen_, seed);
-            utils::Assert(status == CURAND_STATUS_SUCCESS, "Set CURAND seed failed.");
+            this->Seed( seed );
             buffer_.shape[0] = kRandBufferSize;
             mshadow::AllocSpace(buffer_);
         }
@@ -194,6 +204,15 @@ namespace mshadow {
             status = curandDestroyGenerator(gen_);
             utils::Assert(status == CURAND_STATUS_SUCCESS, "Destory CURAND Gen failed");
             mshadow::FreeSpace(buffer_);
+        }
+        /*! 
+         * \brief seed random number generator using this seed 
+         * \param seed seed of prng
+         */
+        inline void Seed( int seed ){
+            curandStatus_t status;
+            status = curandSetPseudoRandomGeneratorSeed(gen_, seed);
+            utils::Assert(status == CURAND_STATUS_SUCCESS, "Set CURAND seed failed.");
         }
         /*!
          * \brief generate data from uniform [a,b)

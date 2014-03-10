@@ -254,6 +254,7 @@ namespace mshadow {
         Shape<1> shape;
     public:
         MSHADOW_XINLINE Tensor(void) {}
+        MSHADOW_XINLINE Tensor(const Shape<1> &shape): shape(shape) {}
         MSHADOW_XINLINE Tensor(real_t *dptr, Shape<1> shape) :dptr(dptr), shape(shape) {}
         MSHADOW_XINLINE Tensor<Device, 2> FlatTo2D(void) const {
             return Tensor<Device, 2>(reinterpret_cast<real_t*> \
