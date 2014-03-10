@@ -108,12 +108,12 @@ namespace mshadow{
     }; // namespace cuda
     
     namespace cuda{
-        template<int x_bits>
+        template<int x_bits>        
         __global__ void SoftmaxKernel( Tensor<gpu,2> dst, Tensor<gpu,2> src ){
-            const unsigned x_size = 1 << x_bits;
+            const unsigned x_size = 1 << x_bits;  
             const int y = blockIdx.x;
             __shared__ real_t s_rec[ x_size ];
-
+            
             // step 1: get max
             if( threadIdx.x < dst.shape[ 0 ] ){
                 s_rec[ threadIdx.x ] = src[ y ][ threadIdx.x ] ; 
@@ -121,14 +121,14 @@ namespace mshadow{
             for( unsigned x = x_size; x < dst.shape[0]; x += x_size ){
                 if( x + threadIdx.x < dst.shape[0] ){
                     real_t a = src[ y ][ x + threadIdx.x ];
-                    if( a > s_rec[ threadIdx.x ] ) s_rec[ threadIdx.x ] = a;
+                    s_rec[ threadIdx.x ] = max( a, s_rec[ threadIdx.x] );
                 }
             }
             __syncthreads();
-            if( threadIdx.x >= dst.shape[ 0 ] ){
-                s_rec[ threadIdx.x ] = s_rec[ 0 ];
+            if( threadIdx.x >= dst.shape[0] ){
+                s_rec[ threadIdx.x ] = s_rec[0];
             }
-            __syncthreads();            
+            __syncthreads();
             Reduce1D<red::maximum,x_bits>( s_rec );
             __syncthreads();
             real_t smax = s_rec[0];            
@@ -157,10 +157,10 @@ namespace mshadow{
                 }
             }
         }
-        
+    
         inline void Softmax( Tensor<gpu,2> &dst, const Tensor<gpu,2> &src ){
             dim3 dimBlock( kBaseThreadNum );
-            dim3 dimGrid ( dst.shape[0] );
+            dim3 dimGrid ( dst.shape[1] );
             utils::Assert( dst.shape == src.shape, "Softmax: shape mismatch" );
             CheckLaunchParam( dimGrid, dimBlock, "Softmax" );
             SoftmaxKernel<kBaseThreadBits><<<dimGrid,dimBlock>>>( dst, src );
