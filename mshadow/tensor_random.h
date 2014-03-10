@@ -42,11 +42,7 @@ namespace mshadow {
          * \param seed seed of prng
          */
         inline void Seed( int seed ){
-            #if MSHADOW_USE_MKL
-            // TODO
-            #else
-            srand(seed);
-            #endif            
+            srand( seed );
         }
         /*!
          * \brief generate data from uniform [a,b)
@@ -83,6 +79,9 @@ namespace mshadow {
          */
         template<int dim>
         inline void SampleGaussian( Tensor<cpu, dim> &dst, real_t mu = 0.0f, real_t sigma = 1.0f ) {
+            if( sigma <= 0.0f ) {
+                dst = mu; return; 
+            }
             Tensor<cpu, 2> mat = dst.FlatTo2D();
             for (index_t i = 0; i < mat.shape[1]; ++i) {
                 #if MSHADOW_USE_MKL
