@@ -24,6 +24,8 @@ namespace mshadow{
             this->dptr = data_.dptr = NULL;
             this->shape[0] = 0;
             this->shape.stride_ = 0;
+            this->data_.shape.stride_ = 0;
+            this->data_.shape[1] = 0;
         }
         TensorContainer( const Shape<dimension> &shape ){
             data_.dptr = NULL;
