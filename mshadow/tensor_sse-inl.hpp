@@ -306,7 +306,7 @@ namespace mshadow{
         template<typename OP, typename TA, int etype>
         class SSEPlan< UnaryMapExp<OP,TA,etype> >{
         public:
-            SSEPlan( const Plan<TA> &src ):src_(src){}
+            SSEPlan( const SSEPlan<TA> &src ):src_(src){}
             MSHADOW_CINLINE sse2::FVec<real_t> EvalSSE( index_t y, index_t x ) const{
                 return sse2::SSEOp<OP>::Map( src_.EvalSSE( y, x ) );
             }

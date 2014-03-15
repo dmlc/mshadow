@@ -50,7 +50,9 @@
 #endif
 
 #if MSHADOW_USE_CBLAS
-  #include <cblas.h>
+extern "C"{
+    #include <cblas.h>
+}
 #elif MSHADOW_USE_MKL
   #include <mkl.h>
   #include <mkl_cblas.h>
