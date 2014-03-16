@@ -120,7 +120,7 @@ namespace mshadow {
     };    
     // useful construction functions to generate shape    
     /*! 
-     * \brief construct a one dimension shape 
+     * \brief construct a one dimension shape, stride will equal s0
      * \param s0 size of dimension 0
      * \return the shape construction
      */
@@ -129,7 +129,7 @@ namespace mshadow {
         return s;
     }
     /*! 
-     * \brief construct a two dimension shape 
+     * \brief construct a two dimension shape, stride will equal s0
      * \param s1 size of dimension 1
      * \param s0 size of dimension 0
      * \return the shape construction
@@ -139,7 +139,7 @@ namespace mshadow {
         return s;
     }
     /*! 
-     * \brief construct a three dimension shape 
+     * \brief construct a three dimension shape, stride will equal s0 
      * \param s2 size of dimension 2
      * \param s1 size of dimension 1
      * \param s0 size of dimension 0
@@ -151,7 +151,7 @@ namespace mshadow {
         return s;
     }
     /*! 
-     * \brief construct a four dimension shape 
+     * \brief construct a four dimension shape, stride will equal s0
      * \param s3 size of dimension 3
      * \param s2 size of dimension 2
      * \param s1 size of dimension 1
@@ -302,14 +302,18 @@ namespace mshadow {
     
     /*!
      * \brief CPU/CPU: allocate space for CTensor, according to the shape in the obj
-     *        this function is responsible to set the stride_ in each obj.shape
+     *        this function is responsible to set the stride_ in each obj.shape     
      * \tparam dim specify the dim of tensor
      * \param obj the tensor object, with shape specified
+     * \param pad whether padding dimension 0, to make last dimension aligned, 
+     *            padding may help improve efficiency of matrix multiplications
+     *            if true, will allocate space with stride_ that may not equals shape[0]
+     *            if false, will allocate continuous space
      */
     template<int dim>
-    inline void AllocSpace(Tensor<cpu,dim> &obj);
+    inline void AllocSpace(Tensor<cpu,dim> &obj, bool pad = MSHADOW_ALLOC_PAD);
     template<int dim>
-    inline void AllocSpace(Tensor<gpu,dim> &obj);
+    inline void AllocSpace(Tensor<gpu,dim> &obj, bool pad = MSHADOW_ALLOC_PAD);
 
     /*!
      * \brief CPU/GPU: free the space of tensor, will set obj.dptr to NULL
@@ -320,6 +324,18 @@ namespace mshadow {
     inline void FreeSpace(Tensor<cpu,dim> &obj);
     template<int dim>
     inline void FreeSpace(Tensor<gpu,dim> &obj);
+
+    /*!
+     * \brief CPU/GPU: short cut to allocate and initialize a Tensor
+     * \tparam Device device of tensor
+     * \tparam dim dimention of tensor
+     * \param shape: shape of tensor
+     * \param initv: initialization value
+     * \param pad : padding option
+     * \sa AllocSpace
+     */
+    template<typename Device, int dim>
+    inline Tensor<Device,dim> NewTensor(const Shape<dim> &shape, real_t initv, bool pad = MSHADOW_ALLOC_PAD);
 
     /*!
      * \brief copy data from one tensor to another, with same shape
@@ -376,28 +392,6 @@ namespace mshadow {
     inline void Softmax( Tensor<cpu,2> dst, Tensor<cpu,2> energy );
     inline void Softmax( Tensor<gpu,2> dst, Tensor<gpu,2> energy );    
 };// namespace mshadow
-
-namespace mshadow{
-    // the following function is name dependent, have different name for CPU and GPU
-    /*!
-     * \brief CPU: short cut to allocate and initialize a CTensor
-     * \tparam dim specify the dim of tensor
-     * \param shape shape of the tensor
-     * \return the allocated tensor
-     */
-    template<int dim>
-    inline Tensor<cpu,dim> NewCTensor(const Shape<dim> &shape, real_t initv);
-
-    /*!
-     * \brief GPU: short cut to allocate and initialize a GTensor
-     * \tparam dim specify the dim of tensor
-     * \param shape shape of the tensor
-     * \return the allocated tensor
-     */
-    template<int dim>
-    inline Tensor<gpu,dim> NewGTensor(const Shape<dim> &shape, real_t initv);
-    
-}; // namespace mshadow
 
 // execution implementation of expression evaluations
 #include "tensor_expr_engine-inl.hpp"

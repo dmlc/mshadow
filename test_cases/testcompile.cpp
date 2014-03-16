@@ -6,9 +6,9 @@ using namespace mshadow;
 // implemented by testcuda.cu
 
 int main( void ){
-    Tensor<cpu,3> mat1 = NewCTensor( Shape3(2,4,10), 10 );
-    Tensor<cpu,3> mat2 = NewCTensor( Shape3(2,4,10), 20 );
-    Tensor<cpu,3> mat3 = NewCTensor( Shape3(2,4,10), 30 );
+    Tensor<cpu,3> mat1 = NewTensor<cpu>( Shape3(2,4,10), 10 );
+    Tensor<cpu,3> mat2 = NewTensor<cpu>( Shape3(2,4,10), 20 );
+    Tensor<cpu,3> mat3 = NewTensor<cpu>( Shape3(2,4,10), 30 );
     //    testcuda2( mat1, mat2, mat3 );
     //testcuda( mat1, mat2, mat3 );
     mat3[0] += repmat( mat2[0][0], 4 );

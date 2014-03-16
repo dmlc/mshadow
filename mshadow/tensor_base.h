@@ -21,7 +21,10 @@
    #define MSHADOW_USE_MKL   0
    #define MSHADOW_USE_CUDA  0
 #endif
-
+/*! \brief whether do padding during allocation */
+#ifndef MSHADOW_ALLOC_PAD
+    #define MSHADOW_ALLOC_PAD true
+#endif
 /*! \brief use CBLAS for CBLAS */
 #ifndef MSHADOW_USE_CBLAS
    #define MSHADOW_USE_CBLAS 0

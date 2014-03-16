@@ -25,20 +25,19 @@ namespace mshadow {
     }
 
     template<int dim>
-    inline void AllocSpace(Tensor<gpu,dim> &obj){
+    inline void AllocSpace(Tensor<gpu,dim> &obj, bool pad){
         size_t pitch;
-        cudaError_t err = cudaMallocPitch( (void**)&obj.dptr, &pitch, \
-                                           obj.shape[0] * sizeof(real_t), obj.FlatTo2D().shape[1] );        
-        utils::Assert( err == cudaSuccess, cudaGetErrorString(err) );
-        obj.shape.stride_ = static_cast<index_t>( pitch / sizeof(real_t) );
-    }
-
-    template<int dim>
-    inline Tensor<gpu,dim> NewGTensor(const Shape<dim> &shape, real_t initv){
-        Tensor<gpu, dim> obj( shape );
-        AllocSpace( obj );
-        MapExp<sv::saveto>( obj, expr::ScalarExp( initv ) );
-        return obj;
+        if( pad ){
+            cudaError_t err = cudaMallocPitch( (void**)&obj.dptr, &pitch, \
+                                               obj.shape[0] * sizeof(real_t), obj.FlatTo2D().shape[1] );        
+            utils::Assert( err == cudaSuccess, cudaGetErrorString(err) );
+            obj.shape.stride_ = static_cast<index_t>( pitch / sizeof(real_t) );
+        }else{
+            obj.shape.stride_ = obj.shape[0];
+            cudaError_t err = cudaMallocPitch( (void**)&obj.dptr, &pitch, \
+                                               obj.shape.Size() * sizeof(real_t), 1 );        
+            utils::Assert( err == cudaSuccess, cudaGetErrorString(err) );
+        }
     }
 
     template<int dim>

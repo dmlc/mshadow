@@ -22,8 +22,9 @@ struct maxoftwo{
 
 int main( void ){
     // take first subscript of the tensor 
-    Tensor<cpu,2> mat = NewCTensor( Shape2(2,3), 0.0f );
-    Tensor<cpu,2> mat2 = NewCTensor( Shape2(2,3), 0.0f );
+    Tensor<cpu,2> mat = NewTensor<cpu>( Shape2(2,3), 0.0f ); 
+    Tensor<cpu,2> mat2= NewTensor<cpu>( Shape2(2,3), 0.0f );
+
     mat[0][0] = -2.0f;
     mat = F<maxoftwo>( F<addone>( mat ) + 1.0f, mat2 );
     

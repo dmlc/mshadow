@@ -11,17 +11,24 @@
 
 namespace mshadow {
     template<int dim>
-    inline void AllocSpace(Tensor<cpu,dim> &obj){
+    inline void AllocSpace(Tensor<cpu,dim> &obj, bool pad ){
         size_t pitch;
-        obj.dptr = (real_t*)sse2::AlignedMallocPitch
-            ( pitch, obj.shape[0] * sizeof(real_t), obj.FlatTo2D().shape[1] ); 
-        obj.shape.stride_ = static_cast<index_t>( pitch / sizeof(real_t) );
+        if( pad ){
+            obj.dptr = (real_t*)sse2::AlignedMallocPitch
+                ( pitch, obj.shape[0] * sizeof(real_t), obj.FlatTo2D().shape[1] ); 
+            obj.shape.stride_ = static_cast<index_t>( pitch / sizeof(real_t) );
+        }else{
+            obj.shape.stride_ = obj.shape[0];
+            obj.dptr = (real_t*)sse2::AlignedMallocPitch
+                ( pitch, obj.shape.Size() * sizeof(real_t), 1 );
+        }
     }
 
-    template<int dim>
-    inline Tensor<cpu,dim> NewCTensor(const Shape<dim> &shape, real_t initv){
-        Tensor<cpu, dim> obj( shape );
-        AllocSpace( obj );
+
+    template<typename Device, int dim>
+    inline Tensor<Device,dim> NewTensor(const Shape<dim> &shape, real_t initv, bool pad ){
+        Tensor<Device, dim> obj( shape );
+        AllocSpace( obj, pad );
         MapExp<sv::saveto>( obj, expr::ScalarExp( initv ) );
         return obj;
     }
