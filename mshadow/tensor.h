@@ -77,7 +77,7 @@ namespace mshadow {
             return s;
         }
         /*! \return number of valid elements */
-        MSHADOW_XINLINE size_t Size(void) {
+        MSHADOW_XINLINE size_t Size(void) const{
             size_t memsz = this->shape_[ 0 ];
             #pragma unroll
             for (int i = 1; i < zMaxShape; ++i) {

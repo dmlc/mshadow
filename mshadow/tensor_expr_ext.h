@@ -18,11 +18,30 @@ namespace mshadow{
         template<typename Device>
         struct RepmatExp: public MakeTensorExp< RepmatExp<Device>,Device,2>{
             /*! \brief source operand */
-            const Tensor<Device,1> &src;
+            const Tensor<Device,1> &src_;
             /*! \brief construct a repmat expression from src and nrow */
-            RepmatExp( const Tensor<Device,1> &src, index_t nrow ):src(src){
-                this->shape[0] = src.shape[0];
-                this->shape[1] = nrow;
+            RepmatExp( const Tensor<Device,1> &src, index_t nrow ):src_(src){
+                this->shape_[0] = src.shape[0];
+                this->shape_[1] = nrow;
+            }
+        };
+
+        /*! 
+         * \brief reshape the content to another shape
+         * input: Tensor<Device,dimsrc>: ishape
+         * output: Tensor<Device,dimdst> ishape.Size() == oshape.Size()
+         *
+         * \tparam Device where the data lies
+         * \tparam dimdst target dimension
+         * \tparam dimsrc source dimension
+         */
+        template<typename Device, int dimdst, int dimsrc>
+        struct ReshapeExp: public MakeTensorExp< ReshapeExp<Device,dimdst,dimsrc>, Device, dimdst>{
+            /*! \brief source expression */
+            Tensor<Device,dimsrc> src_;
+            ReshapeExp( const Tensor<Device,dimsrc> &src, Shape<dimdst> shape ):src_(src){
+                utils::Assert( shape.Size() == src.shape.Size(), "reshape size must match" );
+                this->shape_ = shape;
             }
         };
 
@@ -52,7 +71,7 @@ namespace mshadow{
         template<typename E, typename R,int d>
         inline ReduceTo1DExp<E,R,d> operator*( real_t scale, const ReduceTo1DExp<E,R,d> &e ){
             return ReduceTo1DExp<E,R,d>( e.src_, e.scale_*scale );
-        }
+        }       
     }; // namespace expr
     
     
@@ -68,6 +87,20 @@ namespace mshadow{
         template<typename Device>
         inline RepmatExp<Device> repmat( const Tensor<Device,1> &src, index_t nrow ){
             return RepmatExp<Device>( src, nrow );
+        }
+
+        /*! 
+         * \brief a expression that reshapes a tensor to another shape
+         * \param src Tensor<Device,dimsrc>: 
+         * \param oshape target shape
+         * \return a expresion with type Tensor<Device,dimdst> 
+         * \tparam Device which device it lies
+         * \tparam dimdst target dimension
+         * \tparam dimsrc source dimension         
+         */
+        template<typename Device, int dimdst, int dimsrc>
+        inline ReshapeExp<Device,dimdst,dimsrc> reshape( const Tensor<Device,dimsrc> &src, Shape<dimdst> oshape ){
+            return ReshapeExp<Device,dimdst,dimsrc>( src, oshape );
         }
 
         /*! 
@@ -103,12 +136,32 @@ namespace mshadow{
         template<typename Device>
         struct Plan< RepmatExp<Device> >{
         public:
-            Plan( const RepmatExp<Device> &e ): dptr_( e.src.dptr ){}
+            Plan( const RepmatExp<Device> &e ): dptr_( e.src_.dptr ){}
             MSHADOW_XINLINE real_t Eval( index_t y, index_t x ) const{
                 return dptr_[ x ];
             }
         private:
             const real_t *dptr_;          
+        };        
+    }; // namespace expr
+
+    namespace expr{
+        /*! \brief execution plan of repmat */
+        template<typename Device, int dimsrc, int dimdst>
+        struct Plan< ReshapeExp<Device,dimsrc,dimdst> >{
+        public:
+            Plan( const ReshapeExp<Device,dimsrc,dimdst> &e ): dptr_( e.src_.dptr ){
+                oshape0_ = e.shape_[0];
+                ishape0_ = e.src_.shape[0];
+                istride_ = e.src_.shape.stride_;
+            }
+            MSHADOW_XINLINE real_t Eval( index_t y, index_t x ) const{
+                const index_t idx = y * oshape0_ + x;
+                return dptr_[ ( idx / ishape0_ ) * istride_ + ( idx % ishape0_ ) ]; 
+            }
+        private:
+            const real_t *dptr_;
+            index_t oshape0_, ishape0_, istride_;
         };        
     }; // namespace expr
 }; // namespace mshadow
@@ -125,14 +178,14 @@ namespace mshadow{
         template<>
         struct SSEAlignCheck<2, RepmatExp<cpu> >{
             inline static bool Check( const RepmatExp<cpu> &exp ){
-                return sse2::CheckAlign( exp.src.dptr );
+                return sse2::CheckAlign( exp.src_.dptr );
             }
         };
         template<>
         class SSEPlan< RepmatExp<cpu> >{
         public:
             SSEPlan( const RepmatExp<cpu> &t )
-                :dptr_(t.src.dptr){}
+                :dptr_(t.src_.dptr){}
             MSHADOW_CINLINE sse2::FVec<real_t> EvalSSE( index_t y, index_t x ) const{
                 return sse2::FVec<real_t>( &dptr_[ x ] );
             }

@@ -19,7 +19,7 @@ namespace mshadow{
         template<typename SubType, typename Device, int dim>
         struct MakeTensorExp: public Exp< MakeTensorExp<SubType,Device,dim>, type::kMapper >{
             /*! \brief the shape of this expression */
-            Shape<dim> shape;
+            Shape<dim> shape_;
             /*! \brief true self of subtype */
             inline const SubType& real_self( void ) const{
                 return *static_cast<const SubType*>(this);
@@ -201,7 +201,7 @@ namespace mshadow{
         template<int dim,typename Device,typename T>
         struct ShapeCheck<dim,MakeTensorExp<T,Device,dim> >{
             inline static Shape<dim> Check( const MakeTensorExp<T,Device,dim> &t ){
-                return t.shape;
+                return t.shape_;
             }
         };
         template<int dim, typename OP, typename TA, int etype>
