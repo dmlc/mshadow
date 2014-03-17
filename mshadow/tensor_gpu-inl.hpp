@@ -100,7 +100,7 @@ namespace mshadow{
         cuda::MapReduceToLowest<Saver,Reducer>( dst, MakePlan( exp.self() ), scale, eshape );
     }
 
-    inline void Softmax( Tensor<gpu,2> dst, Tensor<gpu,2> src ){
+    inline void Softmax( Tensor<gpu,2> dst, const Tensor<gpu,2>& src ){
         cuda::Softmax( dst, src );
     }
 }; // namespace mshadow

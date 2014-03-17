@@ -389,8 +389,38 @@ namespace mshadow {
      * \param dst destination
      * \param energy input energy
      */
-    inline void Softmax( Tensor<cpu,2> dst, Tensor<cpu,2> energy );
-    inline void Softmax( Tensor<gpu,2> dst, Tensor<gpu,2> energy );    
+    inline void Softmax( Tensor<cpu,2> dst, const Tensor<cpu,2> &energy );
+    inline void Softmax( Tensor<gpu,2> dst, const Tensor<gpu,2> &energy );
+
+    /*!
+     * \brief CPU/GPU: unpack local (overlap) patches of image to column of mat, can be used to implement convolution
+     *  after getting unpacked mat, we can use: output = dot( weight, mat ) to get covolved results, the relations:
+     *
+     *  weight; shape[1]: out_channel, shape[0]: ichannel*psize*psize
+     *  output; shape[1]: out_channel, shape[0]: out_height*out_width
+     *  out_height = ( in_height - psize ) / pstride + 1, this means we pad inperfect patch with 0
+     *  out_width  = ( in_height - psize ) / pstride + 1
+     *
+     * \param mat target matrix; shape[1]: in_channel*psize*psize  shape[0]: out_height*out_width
+     * \param img source image; shape[2]:  in_channels, shape[1]: in_height, shape[0]: in_width
+     * \param psize height and width of each patch
+     * \param pstride stride of each patch
+     */
+    inline void UnpackPatchToCol( Tensor<cpu,2> mat, const Tensor<cpu,3> &img, index_t psize, index_t pstride );
+    inline void UnpackPatchToCol( Tensor<gpu,2> mat, const Tensor<gpu,3> &img, index_t psize, index_t pstride );
+
+    /*!
+     * \brief CPU/GPU: pack column of mat into img, the overlappin values are summed
+     * 
+     * \param img target image; shape[2]:  in_channels, shape[1]: in_height, shape[0]: in_width
+     * \param mat source matrix; shape[1]: in_channel*psize*psize  shape[0]: out_height*out_width
+     * \param psize height and width of each patch
+     * \param pstride stride of each patch
+     * \sa UnpackPatchToCol
+     */
+    inline void PackPatchFromCol( Tensor<cpu,3> img, const Tensor<cpu,3> &mat, index_t psize, index_t pstride );
+    inline void PackPatchFromCol( Tensor<gpu,3> img, const Tensor<gpu,3> &mat, index_t psize, index_t pstride );
+
 };// namespace mshadow
 
 // execution implementation of expression evaluations
