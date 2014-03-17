@@ -399,7 +399,7 @@ namespace mshadow {
      *  weight; shape[1]: out_channel, shape[0]: ichannel*psize*psize
      *  output; shape[1]: out_channel, shape[0]: out_height*out_width
      *  out_height = ( in_height - psize ) / pstride + 1, this means we pad inperfect patch with 0
-     *  out_width  = ( in_height - psize ) / pstride + 1
+     *  out_width  = ( in_width - psize ) / pstride + 1
      *
      * \param mat target matrix; shape[1]: in_channel*psize*psize  shape[0]: out_height*out_width
      * \param img source image; shape[2]:  in_channels, shape[1]: in_height, shape[0]: in_width
@@ -418,8 +418,8 @@ namespace mshadow {
      * \param pstride stride of each patch
      * \sa UnpackPatchToCol
      */
-    inline void PackPatchFromCol( Tensor<cpu,3> img, const Tensor<cpu,3> &mat, index_t psize, index_t pstride );
-    inline void PackPatchFromCol( Tensor<gpu,3> img, const Tensor<gpu,3> &mat, index_t psize, index_t pstride );
+    inline void PackPatchFromCol( Tensor<cpu,3> img, const Tensor<cpu,2> &mat, index_t psize, index_t pstride );
+    inline void PackPatchFromCol( Tensor<gpu,3> img, const Tensor<gpu,2> &mat, index_t psize, index_t pstride );
 
 };// namespace mshadow
 

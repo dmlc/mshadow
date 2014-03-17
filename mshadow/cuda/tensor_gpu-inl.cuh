@@ -165,6 +165,49 @@ namespace mshadow{
             CheckLaunchParam( dimGrid, dimBlock, "Softmax" );
             SoftmaxKernel<kBaseThreadBits><<<dimGrid,dimBlock>>>( dst, src );
         }
+    }; // namespace cuda
+
+    namespace cuda{
+        template<typename Saver, int block_dim_bits>        
+        __global__ void UnpackPatchToColKernel( Tensor<gpu,2> mat, const Tensor<gpu,3> img, 
+                                                const index_t mat_xstride,
+                                                index_t psize, index_t pstride, index_t o_width ){
+            const index_t tid = (blockIdx.x << block_dim_bits) + threadIdx.x;            
+            const index_t i = tid / mat_xstride;
+            const index_t j = tid % mat_xstride;
+            // index caculations
+            const index_t x_offset = i % psize; 
+            const index_t idivp    = i / psize;
+            const index_t y_offset = idivp % psize;
+            const index_t channel  = idivp / psize;
+            const index_t y = (j / o_width) * pstride + y_offset;  
+            const index_t x = (j % o_width) * pstride + x_offset;
+            // will be continuous write, but not continuous read
+            if( x < img.shape[0] && y < img.shape[1] ){
+                Saver::Save( mat[i][j], img[channel][y][x] );
+            }else{
+                Saver::Save( mat[i][j], 0.0f );
+            }
+        }
+
+        inline void UnpackPatchToCol( Tensor<gpu,2> mat, const Tensor<gpu,3> &img, index_t psize, index_t pstride ){
+            utils::Assert( img.shape[0] >= psize && img.shape[1] >= psize, "UnpackPatchToCol:image shape smaller than patch size");
+            const index_t o_height = ( img.shape[1]  - psize ) / pstride + 1;
+            const index_t o_width  = ( img.shape[0]  - psize ) / pstride + 1;
+            utils::Assert( o_height*o_width == mat.shape[0], "UnpackPatchToCol: mat.shape[0] mismatch" );
+            utils::Assert( psize*psize*img.shape[2] == mat.shape[1], "UnpackPatchToCol: mat.shape[1] mismatch" );
+            const index_t xstride = GetAlignStride( mat.shape[0] );
+            const int num_block = ( mat.shape[1]*xstride + kBaseThreadNum-1) / kBaseThreadNum;
+            dim3 dimBlock(kBaseThreadNum, 1, 1);
+
+            if (num_block < kMaxGridNum) {
+                dim3 dimGrid(num_block, 1, 1);
+                UnpackPatchToColKernel<sv::saveto, kBaseThreadBits>     \
+                    <<<dimGrid,dimBlock>>>(mat, img, xstride, psize, pstride, o_width );
+            } else {
+                utils::Error("not implemented");
+            }            
+        }
     };
 }; // namespace mshadow
 #endif // TENSOR_GPU_INL_H

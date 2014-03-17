@@ -103,6 +103,10 @@ namespace mshadow{
     inline void Softmax( Tensor<gpu,2> dst, const Tensor<gpu,2>& src ){
         cuda::Softmax( dst, src );
     }
+
+    inline void UnpackPatchToCol( Tensor<gpu,2> mat, const Tensor<gpu,3> &img, index_t psize, index_t pstride ){
+        cuda::UnpackPatchToCol( mat, img, psize, pstride );
+    }
 }; // namespace mshadow
 
 #endif // __CUDACC__
