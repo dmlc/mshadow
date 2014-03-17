@@ -20,7 +20,8 @@ namespace mshadow{
     template<typename Device, int dimension>
     class TensorContainer: public Tensor<Device,dimension>{
     public:
-        TensorContainer( void ){
+        TensorContainer( bool pad = MSHADOW_ALLOC_PAD ){
+            this->pad_ = pad;
             this->dptr = data_.dptr = NULL;
             this->shape[0] = 0;
             this->shape.stride_ = 0;
@@ -28,10 +29,12 @@ namespace mshadow{
             this->data_.shape[1] = 0;
         }
         TensorContainer( const Shape<dimension> &shape ){
+            this->pad_ = MSHADOW_ALLOC_PAD;
             data_.dptr = NULL;
             this->AllocByShape( shape );
         }
         TensorContainer( const Shape<dimension> &shape, real_t initv ){
+            this->pad_ = MSHADOW_ALLOC_PAD;
             data_.dptr = NULL;
             this->AllocByShape( shape );
             (*this) = initv;
@@ -47,9 +50,13 @@ namespace mshadow{
             Shape<2> s2 = shape.FlatTo2D();
             if( s2.shape_[0] > data_.shape.stride_ || s2.shape_[1] > data_.shape[1] ){
                 this->AllocByShape( shape );
-            }{
+            }else{
                 this->shape = shape;
-                this->shape.stride_ = data_.shape.stride_;
+                if( this->pad_ ){
+                    this->shape.stride_ = data_.shape.stride_;
+                }else{
+                    this->shape.stride_ = this->shape[ 0 ];
+                }
             }
         }
         /*! 
@@ -60,6 +67,10 @@ namespace mshadow{
         inline void Resize( const Shape<dimension> &shape, real_t initv ){
             this->Resize( shape );
             (*this) = initv;
+        }
+        /*! \brief set whether padding is allowed in tensor */
+        inline void set_pad( bool pad ){
+            this->pad_ = pad;
         }
         /*! 
          * \brief save by binary format
@@ -97,6 +108,8 @@ namespace mshadow{
             return this->__assign( exp );
         }
     private:
+        /*! \brief whether we do padding in the space */
+        bool pad_;
         /*! \brief the shape of data_ is actually current data space */
         Tensor<Device, 2> data_;
     private:
@@ -111,10 +124,14 @@ namespace mshadow{
                 this->FreeSpace();
             }
             data_.shape = shape.FlatTo2D();
-            mshadow::AllocSpace( data_ );
+            mshadow::AllocSpace( data_, pad_ );
             this->dptr  = data_.dptr;
             this->shape = shape;
-            this->shape.stride_ = data_.shape.stride_;
+            if( this->pad_ ){
+                this->shape.stride_ = data_.shape.stride_;
+            }else{
+                this->shape.stride_ = shape[0];
+            }
         }
     };
 };// namespace mshadow
