@@ -13,11 +13,11 @@ namespace mshadow{
         /*! 
          * \brief a general class that allows extension that makes tensors of some shape
          * \tparam SubType type of subclass
-         * \tparam Device the device of a tensor
+         * \tparam SrcExp source expression of the MakeTensorExp, the source of operation
          * \tparam dim dimension of the expression
          */
-        template<typename SubType, typename Device, int dim>
-        struct MakeTensorExp: public Exp< MakeTensorExp<SubType,Device,dim>, type::kMapper >{
+        template<typename SubType, typename SrcExp, int dim>
+        struct MakeTensorExp: public Exp< MakeTensorExp<SubType,SrcExp,dim>, type::kMapper >{
             /*! \brief the shape of this expression */
             Shape<dim> shape_;
             /*! \brief true self of subtype */
@@ -102,8 +102,8 @@ namespace mshadow{
             return Plan<T>( e.self() );
         }
 
-        template<typename T, typename Device, int dim>
-        inline Plan<T> MakePlan( const MakeTensorExp<T,Device,dim> &e ){
+        template<typename T, typename SrcExp, int dim>
+        inline Plan<T> MakePlan( const MakeTensorExp<T,SrcExp,dim> &e ){
             return Plan<T>( e.real_self() );
         }
 
@@ -139,9 +139,10 @@ namespace mshadow{
         struct ExpInfo<Device, Tensor<Device,dim> >{
             const static int kDim = dim;
         };
-        template<typename T,typename Device, int dim>
-        struct ExpInfo<Device, MakeTensorExp<T,Device,dim> >{
-            const static int kDim = dim;
+        template<typename T,typename Device, typename SrcExp, int dim>
+        struct ExpInfo<Device, MakeTensorExp<T,SrcExp,dim> >{
+            const static int kDimSrc = ExpInfo<Device,SrcExp>::kDim;
+            const static int kDim = kDimSrc >= 0 ? dim : -1;
         };
         template<typename Device, typename OP, typename TA, int etype>
         struct ExpInfo<Device, UnaryMapExp<OP,TA,etype> >{
@@ -198,9 +199,9 @@ namespace mshadow{
                 return t.shape;
             }
         };
-        template<int dim,typename Device,typename T>
-        struct ShapeCheck<dim,MakeTensorExp<T,Device,dim> >{
-            inline static Shape<dim> Check( const MakeTensorExp<T,Device,dim> &t ){
+        template<int dim,typename SrcExp,typename T>
+        struct ShapeCheck<dim,MakeTensorExp<T,SrcExp,dim> >{
+            inline static Shape<dim> Check( const MakeTensorExp<T,SrcExp,dim> &t ){
                 return t.shape_;
             }
         };

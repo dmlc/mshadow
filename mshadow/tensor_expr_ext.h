@@ -16,13 +16,31 @@ namespace mshadow{
          * \tparam Device which device it lies
          */
         template<typename Device>
-        struct RepmatExp: public MakeTensorExp< RepmatExp<Device>,Device,2>{
+        struct RepmatExp: public MakeTensorExp< RepmatExp<Device>,Tensor<Device,1>,2>{
             /*! \brief source operand */
             const Tensor<Device,1> &src_;
             /*! \brief construct a repmat expression from src and nrow */
             RepmatExp( const Tensor<Device,1> &src, index_t nrow ):src_(src){
                 this->shape_[0] = src.shape[0];
                 this->shape_[1] = nrow;
+            }
+        };
+
+        /*! 
+         * \brief broadcast Tensor1D into a higher dimension Tensor
+         * input: Tensor<Device,1>: ishape[0]
+         * output: Tensor<Device,dimdst> : oshape[dimcast] = ishape[0]
+         * \tparam Device which device it lies
+         * \tparam dimdst  target tensor dimension
+         * \tparam dimcast the dimension where the 1D tensor fills in by index
+         */
+        template<typename Device, int dimdst, int dimcast>
+        struct Broadcast1DExp: public MakeTensorExp< RepmatExp<Device>,Tensor<Device,1>,dimdst>{
+            /*! \brief source operand */
+            const Tensor<Device,1> &src_;
+            /*! \brief construct a repmat expression from src and nrow */
+            Broadcast1DExp( const Tensor<Device,1> &src, Shape<dimdst> shape ):src_(src){
+                this->shape_[0] = shape;
             }
         };
 
@@ -36,7 +54,7 @@ namespace mshadow{
          * \tparam dimsrc source dimension
          */
         template<typename Device, int dimdst, int dimsrc>
-        struct ReshapeExp: public MakeTensorExp< ReshapeExp<Device,dimdst,dimsrc>, Device, dimdst>{
+        struct ReshapeExp: public MakeTensorExp< ReshapeExp<Device,dimdst,dimsrc>, Tensor<Device,dimsrc>, dimdst>{
             /*! \brief source expression */
             Tensor<Device,dimsrc> src_;
             ReshapeExp( const Tensor<Device,dimsrc> &src, Shape<dimdst> shape ):src_(src){
