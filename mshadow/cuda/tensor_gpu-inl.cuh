@@ -227,7 +227,7 @@ namespace mshadow{
                 const index_t y_max = min( psize, y + 1 ); 
                 const index_t x_max = min( psize, x + 1 );
                 // need ensure (y - y_min) / pstride  < o_height
-                const index_t y_min = (max( y/pstride, o_height-1 )+1-o_height-1) * pstride + ( y % pstride ); 
+                const index_t y_min = (max( y/pstride, o_height-1 )+1-o_height ) * pstride + ( y % pstride ); 
                 const index_t x_min = (max( x/pstride, o_width-1 ) +1-o_width  ) * pstride  + ( x % pstride );                     
                 
                 real_t res = 0.0f;
