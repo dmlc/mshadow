@@ -23,14 +23,14 @@ namespace mshadow {
     struct Shape {
     public:
         /*! \brief maximum dimension of tensor */
-        const static int zMaxShape = dimension;
-        const static int zSubShape = dimension - 1;
+        const static int kMaxShape = dimension;
+        const static int kSubShape = dimension - 1;
     public:
         /*! \brief default constructor, do nothing */
         MSHADOW_XINLINE Shape(void) {}
         MSHADOW_XINLINE Shape( const Shape<dimension> &s ){
             #pragma unroll
-            for( int i = 0; i < zMaxShape; ++i ){
+            for( int i = 0; i < kMaxShape; ++i ){
                 this->shape_[i] = s[i];
             }
             this->stride_ = s.stride_;
@@ -52,9 +52,9 @@ namespace mshadow {
             return shape_[ idx ];
         }
         /*! \return whether two shape equals */
-        MSHADOW_XINLINE bool operator==(const Shape<zMaxShape> &s) const {
+        MSHADOW_XINLINE bool operator==(const Shape<kMaxShape> &s) const {
             #pragma unroll
-            for ( int i = 0; i < zMaxShape; ++i ) {
+            for ( int i = 0; i < kMaxShape; ++i ) {
                 if (s.shape_[i] != this->shape_[i]) return false;
             }
             return true;
@@ -70,7 +70,7 @@ namespace mshadow {
             index_t ymax = 1;
 
             #pragma unroll
-            for (int i = 1; i < zMaxShape; ++i) {
+            for (int i = 1; i < kMaxShape; ++i) {
                 ymax *= this->shape_[ i ];
             }
             s.shape_[1] = ymax;
@@ -80,7 +80,7 @@ namespace mshadow {
         MSHADOW_XINLINE size_t Size(void) const{
             size_t memsz = this->shape_[ 0 ];
             #pragma unroll
-            for (int i = 1; i < zMaxShape; ++i) {
+            for (int i = 1; i < kMaxShape; ++i) {
                 memsz *= this->shape_[ i ];
             }
             return memsz;
@@ -89,7 +89,7 @@ namespace mshadow {
         MSHADOW_XINLINE size_t MSize(void) const {
             size_t memsz = this->stride_;
             #pragma unroll
-            for (int i = 1; i < zMaxShape; ++i) {
+            for (int i = 1; i < kMaxShape; ++i) {
                 memsz *= this->shape_[ i ];
             }
             return memsz;
@@ -98,12 +98,12 @@ namespace mshadow {
          * \brief get subshape
          * \return subshape
          */
-        MSHADOW_XINLINE Shape<zSubShape> SubShape(void) const {
-            Shape<zSubShape> s;
+        MSHADOW_XINLINE Shape<kSubShape> SubShape(void) const {
+            Shape<kSubShape> s;
             s.stride_ = this->stride_;
             // for cuda
             #pragma unroll
-            for (int i = 0; i < zSubShape; ++i) {
+            for (int i = 0; i < kSubShape; ++i) {
                 s.shape_[ i ] = this->shape_[ i ];
             }
             return s;
@@ -111,7 +111,7 @@ namespace mshadow {
 
     public:
         /*! \brief storing the dimension information */
-        index_t shape_[ zMaxShape ];
+        index_t shape_[ kMaxShape ];
         /*!
          * \brief storing the stride information in x dimension
          *    this is used to deal with pitch allocation in gpu or sse(align x dimension to 64bit) for efficiency

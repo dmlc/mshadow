@@ -21,12 +21,33 @@ namespace mshadow{
         struct Broadcast1DExp: public MakeTensorExp< Broadcast1DExp<Device,dimdst,dimcast>,Tensor<Device,1>,dimdst>{
             /*! \brief source operand */
             const Tensor<Device,1> &src_;
-            /*! \brief construct a repmat expression from src and nrow */
             Broadcast1DExp( const Tensor<Device,1> &src, Shape<dimdst> shape ):src_(src){
                 this->shape_ = shape;
             }
         };
 
+        /*!
+         * \brief unpack local (overlap) patches of image to column of mat, can be used to implement convolution
+         *  after getting unpacked mat, we can use: output = dot( weight, mat ) to get covolved results, the relations:
+         * \tparam Device which device it lies
+         */
+        template<typename Device>
+        struct UnpackPatchToColExp: public MakeTensorExp< UnpackPatchToColExp<Device>, Tensor<Device,3>, 2>{
+            /*! \brief source operand */
+            const Tensor<Device,3> &img_;
+            /*! \brief patch size */
+            index_t psize_;
+            /*! \brief patch stride */
+            index_t pstride_;
+            UnpackPatchToColExp( const Tensor<Device,3> &img, index_t psize, index_t pstride )
+                :img_(img), psize_(psize), pstride_(pstride){
+                const index_t o_height = ( img.shape[1]  - psize ) / pstride + 1;
+                const index_t o_width  = ( img.shape[0]  - psize ) / pstride + 1;
+                this->shape[0] = o_height * o_width;
+                this->shape[1] = psize * psize * img.shape[2];
+            }
+        };
+        
         /*! 
          * \brief reshape the content to another shape
          * input: Tensor<Device,dimsrc>: ishape
@@ -94,6 +115,24 @@ namespace mshadow{
             return Broadcast1DExp<Device,dimdst,dimcast>( src, shape );
         }
            
+        /*!
+         * \brief  unpack local (overlap) patches of image to column of mat, can be used to implement convolution
+         *  after getting unpacked mat, we can use: output = dot( weight, mat ) to get covolved results, the relations:
+         *
+         *  weight; shape[1]: out_channel, shape[0]: ichannel*psize*psize
+         *  output; shape[1]: out_channel, shape[0]: out_height*out_width
+         *  out_height = ( in_height - psize ) / pstride + 1, this means we pad inperfect patch with 0
+         *  out_width  = ( in_width - psize ) / pstride + 1
+         *
+         * \return mat target matrix; shape[1]: in_channel*psize*psize  shape[0]: out_height*out_width
+         * \param img source image; shape[2]:  in_channels, shape[1]: in_height, shape[0]: in_width
+         * \param psize height and width of each patch
+         * \param pstride stride of each patch
+         */        
+        template<typename Device>
+        inline UnpackPatchToColExp<Device> unpack_patch2col( const Tensor<Device,3> &img, index_t psize, index_t pstride ){
+            return UnpackPatchToColExp<Device>( img, psize, pstride );
+        }
         /*! 
          * \brief a expression that reshapes a tensor to another shape
          * \param src Tensor<Device,dimsrc>: 
@@ -117,7 +156,7 @@ namespace mshadow{
          * \tparam etype type of expression
          */
         template<int dimkeep,  typename E, int etype>
-        inline ReduceTo1DExp<E, red::sum, 0 > sumall_except_dim( const Exp<E,etype> &exp ){
+        inline ReduceTo1DExp<E, red::sum, dimkeep > sumall_except_dim( const Exp<E,etype> &exp ){
             return ReduceTo1DExp<E,red::sum,dimkeep>( exp.self(), 1.0f );
         }
 
@@ -153,6 +192,14 @@ namespace mshadow{
 // --------------------------------------------------
 namespace mshadow{
     namespace expr{
+        template<typename SV, typename Device, typename EType, typename Reducer, int dimkeep>
+        struct ExpComplexEngine< SV, Device, 1, ReduceTo1DExp<EType,Reducer,dimkeep> >{
+            inline static void Eval( Tensor<Device,1> &dst, const ReduceTo1DExp<EType,Reducer,dimkeep> &exp ){
+                TypeCheckPass< dimkeep!=0 >::Error_Expression_Does_Not_Meet_Dimension_Req();
+                MapReduceKeepHighDim<SV,Reducer,dimkeep>( dst, exp.src_, exp.scale_ );
+            }
+        };
+
         template<typename SV, typename Device, typename EType, typename Reducer>
         struct ExpComplexEngine< SV, Device, 1, ReduceTo1DExp<EType,Reducer,0> >{
             inline static void Eval( Tensor<Device,1> &dst, const ReduceTo1DExp<EType,Reducer,0> &exp ){                
@@ -195,7 +242,32 @@ namespace mshadow{
             const real_t *dptr_;
         };
     }; // namespace expr
-
+    
+    namespace expr{
+        template<typename Device>
+        struct Plan< UnpackPatchToColExp<Device> >{
+        public:
+            Plan( const UnpackPatchToColExp<Device> &e )
+                :img_(e.img_),psize_(e.psize_), pstride_(e.pstride_){
+                o_width_  = ( img_.shape[0]  - psize_ ) / pstride_ + 1;
+            }
+            MSHADOW_XINLINE real_t Eval( index_t i, index_t j ) const{
+                const index_t x_offset = i % psize_; 
+                const index_t idivp    = i / psize_;
+                const index_t y_offset = idivp % psize_;
+                const index_t channel  = idivp / psize_;
+                const index_t y = (j / o_width_) * pstride_ + y_offset;  
+                const index_t x = (j % o_width_) * pstride_ + x_offset;
+                if( x < img_.shape[0] && y < img_.shape[1] ){
+                    return img_[channel][y][x];
+                }
+            }
+        private:
+            Tensor<Device,3> img_;
+            index_t psize_, pstride_, o_width_;            
+        };        
+    };
+    
     namespace expr{
         /*! \brief execution plan of repmat */
         template<typename Device, int dimsrc, int dimdst>

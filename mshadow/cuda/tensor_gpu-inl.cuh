@@ -115,7 +115,7 @@ namespace mshadow{
             const int c = blockIdx.x;            
             const index_t tot = pshape[0]*pshape[1]*pshape[3];
 
-            real_t res = Reducer::InitV;
+            real_t res = Reducer::kInitV;
             for( index_t i_offset = 0; i_offset < tot; i_offset += block_size ){
                 index_t i = i_offset + threadIdx.x;
                 const index_t x = i % pshape[0];
@@ -134,7 +134,7 @@ namespace mshadow{
         }
 
         template<typename Saver, typename Reducer, typename Plan>
-        inline void MapReduceKeepDim2( Tensor<gpu,1> dst, const Plan &plan, Shape<4> pshape, real_t scale ){  
+        inline void MapReduceKeepDim2( Tensor<gpu,1> dst, const Plan &plan, real_t scale, Shape<4> pshape ){  
             dim3 dimBlock( kBaseThreadNum );
             dim3 dimGrid ( dst.shape[0] );            
             CheckLaunchParam( dimGrid, dimBlock, "MapReduceKeepDim2" );

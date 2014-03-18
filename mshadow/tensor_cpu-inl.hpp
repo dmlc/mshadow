@@ -133,7 +133,7 @@ namespace mshadow {
         expr::Plan<E> plan = MakePlan( exp.self() );
         
         for( index_t c = 0; c < pshape[2]; ++c ){
-            real_t res = Reducer::InitV;
+            real_t res = Reducer::kInitV;
             for( index_t n = 0; n < pshape[3]; ++n ){
                 for( index_t y = 0; y < pshape[1]; ++y ){
                     for( index_t x = 0; x < pshape[0]; ++x ){
