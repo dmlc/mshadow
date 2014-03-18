@@ -183,10 +183,12 @@ namespace mshadow{
             const index_t y = (j / o_width) * pstride + y_offset;  
             const index_t x = (j % o_width) * pstride + x_offset;
             // will be continuous write, but not continuous read
-            if( x < img.shape[0] && y < img.shape[1] ){
-                Saver::Save( mat[i][j], img[channel][y][x] );
-            }else{
-                Saver::Save( mat[i][j], 0.0f );
+            if( i < mat.shape[1] && j < mat.shape[0] ){
+                if( x < img.shape[0] && y < img.shape[1] ){
+                    Saver::Save( mat[i][j], img[channel][y][x] );
+                }else{
+                    Saver::Save( mat[i][j], 0.0f );
+                }
             }
         }
 
@@ -209,5 +211,54 @@ namespace mshadow{
             }            
         }
     };
+
+    namespace cuda{
+        template<typename Saver, int block_dim_bits>        
+        __global__ void PackPatchFromColKernel( Tensor<gpu,3> img, const Tensor<gpu,2> mat, 
+                                                index_t psize, index_t pstride, index_t o_height, index_t o_width ){
+            index_t tid = (blockIdx.x << block_dim_bits) + threadIdx.x;
+            const index_t x = tid % img.shape[0];
+            tid /= img.shape[0];
+            const index_t y = tid % img.shape[1];
+            const index_t c = tid / img.shape[1];
+
+            if( c < img.shape[2] ){
+                // need ensure y - y_max >= 0    
+                const index_t y_max = min( psize, y + 1 ); 
+                const index_t x_max = min( psize, x + 1 );
+                // need ensure (y - y_min) / pstride  < o_height
+                const index_t y_min = (max( y/pstride, o_height-1 )+1-o_height-1) * pstride + ( y % pstride ); 
+                const index_t x_min = (max( x/pstride, o_width-1 ) +1-o_width  ) * pstride  + ( x % pstride );                     
+                
+                real_t res = 0.0f;
+                for( index_t y_offset = y_min; y_offset < y_max; y_offset += pstride ){
+                    for( index_t x_offset = x_min; x_offset < x_max; x_offset += pstride ){
+                        const index_t y_start = y - y_offset;
+                        const index_t x_start = x - x_offset;
+                        res += mat[ (c * psize + y_offset) * psize + x_offset ][ (y_start/pstride)*o_width+(x_start/pstride) ]; 
+                    }
+                }
+                Saver::Save( img[c][y][x], res );
+            }
+        }
+    
+        inline void PackPatchFromCol( Tensor<gpu,3> img, const Tensor<gpu,2> &mat, index_t psize, index_t pstride ){
+            utils::Assert( img.shape[0] >= psize && img.shape[1] >= psize, "PackPatchFromCol:image shape smaller than patch size");
+            const index_t o_height = ( img.shape[1]  - psize ) / pstride + 1;
+            const index_t o_width  = ( img.shape[0]  - psize ) / pstride + 1;
+            utils::Assert( o_height*o_width == mat.shape[0], "PackPatchFromCol: mat.shape[0] mismatch" );
+            utils::Assert( psize*psize*img.shape[2] == mat.shape[1], "PackPatchFromCol: mat.shape[1] mismatch" );
+            
+            const int num_block = ( img.shape.Size() + kBaseThreadNum-1) / kBaseThreadNum;
+            dim3 dimBlock(kBaseThreadNum, 1, 1);
+            if (num_block < kMaxGridNum) {
+                dim3 dimGrid(num_block, 1, 1);
+                PackPatchFromColKernel<sv::saveto, kBaseThreadBits>     \
+                    <<<dimGrid,dimBlock>>>(img, mat, psize, pstride, o_height, o_width );
+            } else {
+                utils::Error("not implemented");
+            }            
+        }
+    };    
 }; // namespace mshadow
 #endif // TENSOR_GPU_INL_H

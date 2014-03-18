@@ -107,6 +107,10 @@ namespace mshadow{
     inline void UnpackPatchToCol( Tensor<gpu,2> mat, const Tensor<gpu,3> &img, index_t psize, index_t pstride ){
         cuda::UnpackPatchToCol( mat, img, psize, pstride );
     }
+
+    inline void PackPatchFromCol( Tensor<gpu,3> img, const Tensor<gpu,2> &mat, index_t psize, index_t pstride ){
+        cuda::PackPatchFromCol( img, mat, psize, pstride );
+    }
 }; // namespace mshadow
 
 #endif // __CUDACC__
