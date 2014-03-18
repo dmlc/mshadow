@@ -43,8 +43,8 @@ namespace mshadow{
                 :img_(img), psize_(psize), pstride_(pstride){
                 const index_t o_height = ( img.shape[1]  - psize ) / pstride + 1;
                 const index_t o_width  = ( img.shape[0]  - psize ) / pstride + 1;
-                this->shape[0] = o_height * o_width;
-                this->shape[1] = psize * psize * img.shape[2];
+                this->shape_[0] = o_height * o_width;
+                this->shape_[1] = psize * psize * img.shape[2];
             }
         };
         
@@ -131,6 +131,7 @@ namespace mshadow{
          */        
         template<typename Device>
         inline UnpackPatchToColExp<Device> unpack_patch2col( const Tensor<Device,3> &img, index_t psize, index_t pstride ){
+            utils::Assert( img.shape[0] >= psize && img.shape[1] >= psize, "UnpackPatchToCol:image shape smaller than patch size");
             return UnpackPatchToColExp<Device>( img, psize, pstride );
         }
         /*! 
@@ -260,6 +261,8 @@ namespace mshadow{
                 const index_t x = (j % o_width_) * pstride_ + x_offset;
                 if( x < img_.shape[0] && y < img_.shape[1] ){
                     return img_[channel][y][x];
+                }else{
+                    return 0.0f;
                 }
             }
         private:
