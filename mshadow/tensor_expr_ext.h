@@ -10,23 +10,6 @@ namespace mshadow{
     // Declaration of expressions goes here
     namespace expr{
         /*! 
-         * \brief replicate a 1 dimension tensor for nrow times 
-         * input: Tensor<Device,1>: shape[0]
-         * output: Tensor<Device,2> shape[0], shape[1] = nrow
-         * \tparam Device which device it lies
-         */
-        template<typename Device>
-        struct RepmatExp: public MakeTensorExp< RepmatExp<Device>,Tensor<Device,1>,2>{
-            /*! \brief source operand */
-            const Tensor<Device,1> &src_;
-            /*! \brief construct a repmat expression from src and nrow */
-            RepmatExp( const Tensor<Device,1> &src, index_t nrow ):src_(src){
-                this->shape_[0] = src.shape[0];
-                this->shape_[1] = nrow;
-            }
-        };
-
-        /*! 
          * \brief broadcast Tensor1D into a higher dimension Tensor
          * input: Tensor<Device,1>: ishape[0]
          * output: Tensor<Device,dimdst> : oshape[dimcast] = ishape[0]
@@ -35,12 +18,12 @@ namespace mshadow{
          * \tparam dimcast the dimension where the 1D tensor fills in by index
          */
         template<typename Device, int dimdst, int dimcast>
-        struct Broadcast1DExp: public MakeTensorExp< RepmatExp<Device>,Tensor<Device,1>,dimdst>{
+        struct Broadcast1DExp: public MakeTensorExp< Broadcast1DExp<Device,dimdst,dimcast>,Tensor<Device,1>,dimdst>{
             /*! \brief source operand */
             const Tensor<Device,1> &src_;
             /*! \brief construct a repmat expression from src and nrow */
             Broadcast1DExp( const Tensor<Device,1> &src, Shape<dimdst> shape ):src_(src){
-                this->shape_[0] = shape;
+                this->shape_ = shape;
             }
         };
 
@@ -96,6 +79,22 @@ namespace mshadow{
     // Declaration of all functions go here
     namespace expr{
         /*! 
+         * \brief a expression that replicate a 1 dimension tensor in dimension dimcast
+         * \param src Tensor<Device,1>: shape[0]
+         * \param shape shape of output
+         * \return a expresion with type Tensor<Device,dimdst>
+         * \tparam dimcast target dimension where the 1D tensor will be broadcasted
+         * \tparam Device which device it lies
+         * \tparam dimdst dimension of destination tensor
+         */
+        template<int dimcast,typename Device,int dimdst>
+        inline Broadcast1DExp<Device,dimdst,dimcast> broadcast( const Tensor<Device,1> &src, Shape<dimdst> shape ){
+            TypeCheckPass< dimcast<dimdst >::Error_Expression_Does_Not_Meet_Dimension_Req();
+            utils::Assert( src.shape[0] == shape[dimcast], "broadcast, shape mismatch" );    
+            return Broadcast1DExp<Device,dimdst,dimcast>( src, shape );
+        }
+            
+        /*! 
          * \brief a expression that replicate a 1 dimension tensor for nrow times 
          * \param src Tensor<Device,1>: shape[0]
          * \param nrow number of rows to replicate
@@ -103,8 +102,8 @@ namespace mshadow{
          * \tparam Device which device it lies
          */
         template<typename Device>
-        inline RepmatExp<Device> repmat( const Tensor<Device,1> &src, index_t nrow ){
-            return RepmatExp<Device>( src, nrow );
+        inline Broadcast1DExp<Device,2,0> repmat( const Tensor<Device,1> &src, index_t nrow ){
+            return broadcast<0>( src, Shape2( nrow, src.shape[0] ) );
         }
 
         /*! 
@@ -150,17 +149,38 @@ namespace mshadow{
     }; // namespace expr
 
     namespace expr{
-        /*! \brief execution plan of repmat */
-        template<typename Device>
-        struct Plan< RepmatExp<Device> >{
+        /*! \brief execution plan of Broadcast1DExp */
+        template<typename Device, int dimdst, int dimcast>
+        struct Plan< Broadcast1DExp<Device,dimdst,dimcast> >{
         public:
-            Plan( const RepmatExp<Device> &e ): dptr_( e.src_.dptr ){}
+            Plan( const Broadcast1DExp<Device,dimdst,dimcast> &e ): dptr_( e.src_.dptr ){
+                TypeCheckPass< dimcast!=0 >::Error_Expression_Does_Not_Meet_Dimension_Req();
+
+                ystride_ = 1;                
+                for( index_t i = 1; i < dimcast; ++ i ){
+                    ystride_ *= e.shape_[i];
+                }
+                length_ = e.shape_[ dimcast ];
+            }
+            MSHADOW_XINLINE real_t Eval( index_t y, index_t x ) const{                
+                return dptr_[ (y / ystride_) % length_ ];
+            }
+        private:
+            const real_t  *dptr_;
+            index_t  ystride_, length_;
+        };
+
+        /*! \brief execution plan of Broadcast1DExp */
+        template<typename Device, int dimdst>
+        struct Plan< Broadcast1DExp<Device,dimdst,0> >{
+        public:
+            Plan( const Broadcast1DExp<Device,dimdst,0> &e ): dptr_( e.src_.dptr ){}
             MSHADOW_XINLINE real_t Eval( index_t y, index_t x ) const{
                 return dptr_[ x ];
             }
         private:
-            const real_t *dptr_;          
-        };        
+            const real_t *dptr_;
+        };
     }; // namespace expr
 
     namespace expr{
@@ -189,20 +209,20 @@ namespace mshadow{
 #include "tensor_sse-inl.hpp"
 namespace mshadow{
     namespace expr{
-        template<>
-        struct SSECheck< RepmatExp<cpu> >{
+        template<int dimdst>
+        struct SSECheck< Broadcast1DExp<cpu,dimdst,0> >{
             const static bool kPass = true;
         };
-        template<>
-        struct SSEAlignCheck<2, RepmatExp<cpu> >{
-            inline static bool Check( const RepmatExp<cpu> &exp ){
+        template<int dimdst>
+        struct SSEAlignCheck<2, Broadcast1DExp<cpu,dimdst,0> >{
+            inline static bool Check( const Broadcast1DExp<cpu,dimdst,0> &exp ){
                 return sse2::CheckAlign( exp.src_.dptr );
             }
         };
-        template<>
-        class SSEPlan< RepmatExp<cpu> >{
+        template<int dimdst>
+        class SSEPlan< Broadcast1DExp<cpu,dimdst,0> >{
         public:
-            SSEPlan( const RepmatExp<cpu> &t )
+            SSEPlan( const Broadcast1DExp<cpu,dimdst,0> &t )
                 :dptr_(t.src_.dptr){}
             MSHADOW_CINLINE sse2::FVec<real_t> EvalSSE( index_t y, index_t x ) const{
                 return sse2::FVec<real_t>( &dptr_[ x ] );
