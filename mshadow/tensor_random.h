@@ -8,6 +8,7 @@
  */
 #include <cstdlib>
 #include "tensor.h"
+#include "tensor_container.h"
 
 namespace mshadow {
     /*! \brief random number generator */
@@ -28,14 +29,12 @@ namespace mshadow {
             #else
             srand(seed);
             #endif
-            buffer_.shape[0] = kRandBufferSize;
-            mshadow::AllocSpace( buffer_ );
+            buffer_.Resize( Shape1( kRandBufferSize ) );
         }
         ~Random<cpu>() {
             #if MSHADOW_USE_MKL
             vslDeleteStream(&vStream_);
             #endif
-            mshadow::FreeSpace( buffer_ );
         }
         /*!
          * \brief seed random number generator using this seed
@@ -152,7 +151,7 @@ namespace mshadow {
         template<int dim>
         inline Tensor<cpu,dim> GetTemp( Shape<dim> shape ){
             shape.stride_ = ((shape[0] + 3) >> 2) << 2;
-            utils::Assert( buffer_.shape[0] >= shape.MSize(), "gaussian: random engine buffer do not have enough memory" );
+            buffer_.Resize( Shape1( shape.MSize() ) );
             return Tensor<cpu,dim>( buffer_.dptr, shape );
         }
         /*! \brief get next random number from rand */
@@ -184,7 +183,7 @@ namespace mshadow {
         VSLStreamStatePtr vStream_;
         #endif
         /*! \brief temporal space used to store random numbers */
-        Tensor<cpu,1> buffer_;
+        TensorContainer<cpu,1> buffer_;
     }; // class Random<cpu>
 
 #ifdef __CUDACC__
@@ -201,15 +200,13 @@ namespace mshadow {
             status = curandCreateGenerator(&gen_, CURAND_RNG_PSEUDO_DEFAULT);
             utils::Assert(status == CURAND_STATUS_SUCCESS, "Can not create CURAND Generator");
             this->Seed( seed );
-            buffer_.shape[0] = kRandBufferSize;
-            mshadow::AllocSpace(buffer_);
+            buffer_.Resize( Shape1(kRandBufferSize) );
         }
 
         ~Random<gpu>() {
             curandStatus_t status;
             status = curandDestroyGenerator(gen_);
             utils::Assert(status == CURAND_STATUS_SUCCESS, "Destory CURAND Gen failed");
-            mshadow::FreeSpace(buffer_);
         }
         /*!
          * \brief seed random number generator using this seed
@@ -301,14 +298,14 @@ namespace mshadow {
         template<int dim>
         inline Tensor<gpu,dim> GetTemp(Shape<dim> shape) {
             shape.stride_ = cuda::GetAlignStride( shape[0] );
-            utils::Assert( buffer_.shape[0] >= shape.MSize(), "gaussian: random engine buffer do not have enough memory" );
+            buffer_.Resize( Shape1(shape.MSize()) );
             return Tensor<gpu,dim>(buffer_.dptr, shape);
         }
     private:
         /*! \brief random numbeer generator */
         curandGenerator_t gen_;
         /*! \brief templ buffer */
-        Tensor<gpu, 1> buffer_;
+        TensorContainer<gpu, 1> buffer_;
     }; // class Random<gpu>
     #endif
 
