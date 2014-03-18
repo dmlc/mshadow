@@ -90,14 +90,14 @@ namespace mshadow{
     }
 
     template<typename Saver, typename Reducer, typename E, int etype>
-    inline void MapReduceToLowest( Tensor<gpu,1> dst, const expr::Exp<E,etype> &exp, real_t scale ){
+    inline void MapReduceKeepLowest( Tensor<gpu,1> dst, const expr::Exp<E,etype> &exp, real_t scale ){
         using namespace expr;
         TypeCheckPass< TypeCheck<gpu,1,E>::kRedPass >::Error_TypeCheck_Not_Pass_For_Reduce_Exp();
         Shape<2> eshape = ShapeCheck< ExpInfo<gpu,E>::kDim, E >::Check( exp.self() ).FlatTo2D();
         
         utils::Assert( eshape[0] == dst.shape[0], "reduction dimension do not match" );
         utils::Assert( eshape[1] != 0, "can not reduce over empty tensor" );
-        cuda::MapReduceToLowest<Saver,Reducer>( dst, MakePlan( exp.self() ), scale, eshape );
+        cuda::MapReduceKeepLowest<Saver,Reducer>( dst, MakePlan( exp.self() ), scale, eshape );
     }
 
     inline void Softmax( Tensor<gpu,2> dst, const Tensor<gpu,2>& src ){

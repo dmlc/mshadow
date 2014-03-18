@@ -8,7 +8,8 @@
  */
 #include <cmath>
 #include <cstdio>
-#include <cstdlib>
+#include <cfloat>
+#include <climits>
 #include <algorithm>
 // macro defintiions
 
@@ -209,12 +210,20 @@ namespace mshadow {
             MSHADOW_XINLINE static void Reduce( volatile real_t& dst,  volatile real_t src ) {
                 dst += src;
             }
+            /*! \brief an intial value of reducer */
+            const static real_t kInitV = 0.0f;
         };
         struct maximum {
             MSHADOW_XINLINE static void Reduce( volatile real_t& dst,  volatile real_t src ) {
                 using namespace std;
                 dst = max( dst, src );
             }
+            /*! \brief an intial value of reducer */
+#if MSHADOW_SINGLE_PRECISION
+            const static real_t kInitV = -FLT_MAX;
+#else
+            const static real_t kInitV = -DBL_MAX;
+#endif
         };
     };
 

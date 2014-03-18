@@ -70,7 +70,7 @@ namespace mshadow{
     
     namespace cuda{
         template<typename Saver,typename Reducer, int warp_bits, typename Plan>
-        __global__ void MapRedToLowestKernel( Tensor<gpu,1> dst, Plan plan, real_t scale, Shape<2> eshape ){
+        __global__ void MapRedKeepLowestKernel( Tensor<gpu,1> dst, Plan plan, real_t scale, Shape<2> eshape ){
             const unsigned warp_size = 1 << warp_bits;
             const unsigned x = (blockIdx.x<<warp_bits) + threadIdx.x;
             // to avoid bank conflict
@@ -99,11 +99,11 @@ namespace mshadow{
         }        
         
         template<typename Saver, typename Reducer, typename E>
-        inline void MapReduceToLowest( Tensor<gpu,1> dst, const expr::Plan<E> &plan, real_t scale, Shape<2> eshape ){
+        inline void MapReduceKeepLowest( Tensor<gpu,1> dst, const expr::Plan<E> &plan, real_t scale, Shape<2> eshape ){
             dim3 dimBlock( kMemUnit, kMemUnit );
             dim3 dimGrid ( (eshape[0]+kMemUnit-1) >> kMemUnitBits );
-            CheckLaunchParam( dimGrid, dimBlock, "MapRedToLowestKernel" );
-            MapRedToLowestKernel<Saver,Reducer,kMemUnitBits><<<dimGrid,dimBlock>>>( dst, plan, scale, eshape );
+            CheckLaunchParam( dimGrid, dimBlock, "MapRedKeepLowestKernel" );
+            MapRedKeepLowestKernel<Saver,Reducer,kMemUnitBits><<<dimGrid,dimBlock>>>( dst, plan, scale, eshape );
         } 
     }; // namespace cuda
     

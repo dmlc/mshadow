@@ -96,11 +96,9 @@ namespace mshadow {
         MapExpCPUEngine< false,Saver,dim,E,etype >::Map( dst, exp );        
         #endif
     }
-    
-
-    
+     
     template<typename Saver, typename Reducer, typename E, int etype>
-    inline void MapReduceToLowest( Tensor<cpu,1> dst, const expr::Exp<E,etype> &exp, real_t scale ){
+    inline void MapReduceKeepLowest( Tensor<cpu,1> dst, const expr::Exp<E,etype> &exp, real_t scale ){
         using namespace expr;
         TypeCheckPass< TypeCheck<cpu,1,E>::kRedPass >::Error_TypeCheck_Not_Pass_For_Reduce_Exp();
         Shape<2> eshape = ShapeCheck< ExpInfo<cpu,E>::kDim, E >::Check( exp.self() ).FlatTo2D();
@@ -115,6 +113,38 @@ namespace mshadow {
                 Reducer::Reduce( res, plan.Eval( y, x ) );
             }
             Saver::Save( dst[x], res*scale );
+        }        
+    }
+
+    template<typename Saver, typename Reducer, int dimkeep, typename E, int etype>
+    inline void MapReduceKeepHighDim( Tensor<cpu,1> dst, const expr::Exp<E,etype> &exp, real_t scale ){
+        using namespace expr;
+        TypeCheckPass< TypeCheck<cpu,dimkeep,E>::kRedPass >::Error_TypeCheck_Not_Pass_For_Reduce_Exp();
+        typedef Shape< ExpInfo<cpu,E>::kDim > EShape;
+        EShape eshape = ShapeCheck< ExpInfo<cpu,E>::kDim, E >::Check( exp.self() );
+        utils::Assert( eshape[dimkeep] == dst.shape[0], "reduction dimension do not match" );
+        
+        // use equvalent form 
+        Shape<4> pshape = Shape4( 1, eshape[dimkeep], 1, eshape[0] );
+        #pragma unroll        
+        for( int i = 1; i < dimkeep; ++ i ) pshape[1] *= eshape[i];
+        #pragma unroll
+        for( int i = dimkeep+1; i < EShape::kMaxShape; ++ i ) pshape[3] *= eshape[i];
+
+        // execution
+        expr::Plan<E> plan = MakePlan( exp.self() );
+        
+        for( index_t c = 0; c < pshape[2]; ++c ){
+            real_t res = Reducer::InitV;
+
+            for( index_t n = 0; n < pshape[3]; ++n ){
+                for( index_t y = 0; y < pshape[1]; ++y ){
+                    for( index_t x = 0; x < pshape[0]; ++x ){
+                        Reducer::Reduce( res, plan.Eval( (n * pshape[2] + c) * pshape[1] + y, x ) );
+                    }
+                }
+            }
+            Saver::Save( dst[c], res*scale );
         }        
     }
 

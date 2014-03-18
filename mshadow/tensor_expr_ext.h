@@ -143,7 +143,7 @@ namespace mshadow{
         template<typename SV, typename Device, typename EType, typename Reducer>
         struct ExpComplexEngine< SV, Device, 1, ReduceTo1DExp<EType,Reducer,0> >{
             inline static void Eval( Tensor<Device,1> &dst, const ReduceTo1DExp<EType,Reducer,0> &exp ){                
-                MapReduceToLowest<SV,Reducer>( dst, exp.src_, exp.scale_ );
+                MapReduceKeepLowest<SV,Reducer>( dst, exp.src_, exp.scale_ );
             }
         };
     }; // namespace expr
@@ -155,9 +155,9 @@ namespace mshadow{
         public:
             Plan( const Broadcast1DExp<Device,dimdst,dimcast> &e ): dptr_( e.src_.dptr ){
                 TypeCheckPass< dimcast!=0 >::Error_Expression_Does_Not_Meet_Dimension_Req();
-
                 ystride_ = 1;                
-                for( index_t i = 1; i < dimcast; ++ i ){
+                #pragma unroll
+                for( int i = 1; i < dimcast; ++ i ){
                     ystride_ *= e.shape_[i];
                 }
                 length_ = e.shape_[ dimcast ];
