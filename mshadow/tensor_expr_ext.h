@@ -93,19 +93,7 @@ namespace mshadow{
             utils::Assert( src.shape[0] == shape[dimcast], "broadcast, shape mismatch" );    
             return Broadcast1DExp<Device,dimdst,dimcast>( src, shape );
         }
-            
-        /*! 
-         * \brief a expression that replicate a 1 dimension tensor for nrow times 
-         * \param src Tensor<Device,1>: shape[0]
-         * \param nrow number of rows to replicate
-         * \return a expresion with type Tensor<Device,2> shape[0], shape[1] = nrow
-         * \tparam Device which device it lies
-         */
-        template<typename Device>
-        inline Broadcast1DExp<Device,2,0> repmat( const Tensor<Device,1> &src, index_t nrow ){
-            return broadcast<0>( src, Shape2( nrow, src.shape[0] ) );
-        }
-
+           
         /*! 
          * \brief a expression that reshapes a tensor to another shape
          * \param src Tensor<Device,dimsrc>: 
@@ -121,6 +109,31 @@ namespace mshadow{
         }
 
         /*! 
+         * \brief a sum over all dimensions, except dimkeep
+         * \param exp input expression that must be a matrix Tensor<?,2>
+         * \return a expresion with type Tensor<Device,1> 
+         * \tparam dimkeep the dimension that will be kept
+         * \tparam E expression
+         * \tparam etype type of expression
+         */
+        template<int dimkeep,  typename E, int etype>
+        inline ReduceTo1DExp<E, red::sum, 0 > sumall_except_dim( const Exp<E,etype> &exp ){
+            return ReduceTo1DExp<E,red::sum,dimkeep>( exp.self(), 1.0f );
+        }
+
+        // short cut functions 
+        /*! 
+         * \brief a expression that replicate a 1 dimension tensor for nrow times 
+         * \param src Tensor<Device,1>: shape[0]
+         * \param nrow number of rows to replicate
+         * \return a expresion with type Tensor<Device,2> shape[0], shape[1] = nrow
+         * \tparam Device which device it lies
+         */
+        template<typename Device>
+        inline Broadcast1DExp<Device,2,0> repmat( const Tensor<Device,1> &src, index_t nrow ){
+            return broadcast<0>( src, Shape2( nrow, src.shape[0] ) );
+        }
+        /*! 
          * \brief a expression that sum over rows of a matrix
          * \param exp input expression that must be a matrix Tensor<?,2>
          * \return a expresion with type Tensor<Device,1> 
@@ -129,8 +142,8 @@ namespace mshadow{
          */
         template<typename E, int etype>
         inline ReduceTo1DExp<E, red::sum, 0 > sum_rows( const Exp<E,etype> &exp ){
-            return ReduceTo1DExp<E,red::sum,0>( exp.self(), 1.0f );
-        }        
+            return sumall_except_dim<0>( exp );
+        }
     }; // namespace expr
 }; // namespace mshadow
 

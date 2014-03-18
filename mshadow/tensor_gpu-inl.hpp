@@ -100,6 +100,23 @@ namespace mshadow{
         cuda::MapReduceKeepLowest<Saver,Reducer>( dst, MakePlan( exp.self() ), scale, eshape );
     }
 
+    template<typename Saver, typename Reducer, int dimkeep, typename E, int etype>
+    inline void MapReduceKeepHighDim( Tensor<gpu,1> dst, const expr::Exp<E,etype> &exp, real_t scale ){
+        using namespace expr;
+        TypeCheckPass< TypeCheck<gpu,dimkeep,E>::kRedPass >::Error_TypeCheck_Not_Pass_For_Reduce_Exp();
+        typedef Shape< ExpInfo<gpu,E>::kDim > EShape;
+        EShape eshape = ShapeCheck< ExpInfo<gpu,E>::kDim, E >::Check( exp.self() );
+        utils::Assert( eshape[dimkeep] == dst.shape[0], "reduction dimension do not match" );            
+        // use equvalent form 
+        Shape<4> pshape = Shape4( 1, eshape[dimkeep], 1, eshape[0] );
+        #pragma unroll        
+        for( int i = 1; i < dimkeep; ++ i ) pshape[1] *= eshape[i];
+        #pragma unroll
+        for( int i = dimkeep+1; i < EShape::kMaxShape; ++i ) pshape[3] *= eshape[i];
+        // call equavalent map red dim 2
+        cuda::MapReduceKeepDim2<Saver,Reducer>( dst, MakePlan( exp.self() ), scale, pshape );
+    }
+
     inline void Softmax( Tensor<gpu,2> dst, const Tensor<gpu,2>& src ){
         cuda::Softmax( dst, src );
     }

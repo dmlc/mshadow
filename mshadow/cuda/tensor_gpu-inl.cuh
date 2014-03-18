@@ -108,6 +108,42 @@ namespace mshadow{
     }; // namespace cuda
     
     namespace cuda{
+        template<typename Saver,typename Reducer, int block_dim_bits, typename Plan>
+        __global__ void MapReduceKeepDim2Kernel( Tensor<gpu,1> dst, Plan plan, real_t scale, Shape<4> pshape ){
+            const int block_size = 1 << block_dim_bits;
+            __shared__ real_t s_rec[ block_size ];
+            const int c = blockIdx.x;            
+            const index_t tot = pshape[0]*pshape[1]*pshape[3];
+
+            real_t res = Reducer::InitV;
+            for( index_t i_offset = 0; i_offset < tot; i_offset += block_size ){
+                index_t i = i_offset + threadIdx.x;
+                const index_t x = i % pshape[0];
+                i /= pshape[0]; 
+                const index_t y = i % pshape[1];
+                const index_t n = i / pshape[1];
+                Reducer::Reduce( res, plan.Eval( (n*pshape[2] + c) * pshape[1] + y, x ) );
+            }
+            
+            s_rec[ threadIdx.x ] = res;
+            __syncthreads();
+            Reduce1D<Reducer,block_dim_bits>( s_rec );
+            if( threadIdx.x == 0 ){
+                Saver::Save( dst[c], s_rec[0]*scale );
+            }
+        }
+
+        template<typename Saver, typename Reducer, typename Plan>
+        inline void MapReduceKeepDim2( Tensor<gpu,1> dst, const Plan &plan, Shape<4> pshape, real_t scale ){  
+            dim3 dimBlock( kBaseThreadNum );
+            dim3 dimGrid ( dst.shape[0] );            
+            CheckLaunchParam( dimGrid, dimBlock, "MapReduceKeepDim2" );
+            MapReduceKeepDim2Kernel<Saver,Reducer,kBaseThreadBits>
+                <<<dimGrid,dimBlock>>>( dst, plan, scale, pshape );
+        }
+    };
+    
+    namespace cuda{
         template<int x_bits>        
         __global__ void SoftmaxKernel( Tensor<gpu,2> dst, Tensor<gpu,2> src ){
             const unsigned x_size = 1 << x_bits;  
@@ -208,7 +244,7 @@ namespace mshadow{
                     <<<dimGrid,dimBlock>>>(mat, img, xstride, psize, pstride, o_width );
             } else {
                 utils::Error("not implemented");
-            }            
+            }         
         }
     };
 
@@ -228,7 +264,7 @@ namespace mshadow{
                 const index_t x_max = min( psize, x + 1 );
                 // need ensure (y - y_min) / pstride  < o_height
                 const index_t y_min = (max( y/pstride, o_height-1 )+1-o_height ) * pstride + ( y % pstride ); 
-                const index_t x_min = (max( x/pstride, o_width-1 ) +1-o_width  ) * pstride  + ( x % pstride );                     
+                const index_t x_min = (max( x/pstride, o_width-1 ) +1-o_width  ) * pstride  + ( x % pstride );
                 
                 real_t res = 0.0f;
                 for( index_t y_offset = y_min; y_offset < y_max; y_offset += pstride ){
@@ -259,6 +295,6 @@ namespace mshadow{
                 utils::Error("not implemented");
             }            
         }
-    };    
+    };
 }; // namespace mshadow
 #endif // TENSOR_GPU_INL_H

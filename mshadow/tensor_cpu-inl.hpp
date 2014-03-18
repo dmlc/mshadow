@@ -24,7 +24,6 @@ namespace mshadow {
         }
     }
 
-
     template<typename Device, int dim>
     inline Tensor<Device,dim> NewTensor(const Shape<dim> &shape, real_t initv, bool pad ){
         Tensor<Device, dim> obj( shape );
@@ -122,30 +121,28 @@ namespace mshadow {
         TypeCheckPass< TypeCheck<cpu,dimkeep,E>::kRedPass >::Error_TypeCheck_Not_Pass_For_Reduce_Exp();
         typedef Shape< ExpInfo<cpu,E>::kDim > EShape;
         EShape eshape = ShapeCheck< ExpInfo<cpu,E>::kDim, E >::Check( exp.self() );
-        utils::Assert( eshape[dimkeep] == dst.shape[0], "reduction dimension do not match" );
-        
+        utils::Assert( eshape[dimkeep] == dst.shape[0], "reduction dimension do not match" );        
         // use equvalent form 
         Shape<4> pshape = Shape4( 1, eshape[dimkeep], 1, eshape[0] );
         #pragma unroll        
         for( int i = 1; i < dimkeep; ++ i ) pshape[1] *= eshape[i];
         #pragma unroll
-        for( int i = dimkeep+1; i < EShape::kMaxShape; ++ i ) pshape[3] *= eshape[i];
+        for( int i = dimkeep+1; i < EShape::kMaxShape; ++i ) pshape[3] *= eshape[i];
 
         // execution
         expr::Plan<E> plan = MakePlan( exp.self() );
         
         for( index_t c = 0; c < pshape[2]; ++c ){
             real_t res = Reducer::InitV;
-
             for( index_t n = 0; n < pshape[3]; ++n ){
                 for( index_t y = 0; y < pshape[1]; ++y ){
                     for( index_t x = 0; x < pshape[0]; ++x ){
-                        Reducer::Reduce( res, plan.Eval( (n * pshape[2] + c) * pshape[1] + y, x ) );
+                        Reducer::Reduce( res, plan.Eval( (n*pshape[2] + c) * pshape[1] + y, x ) );
                     }
                 }
             }
             Saver::Save( dst[c], res*scale );
-        }        
+        }
     }
 
     inline void Softmax( Tensor<cpu,1> dst, const Tensor<cpu,1>& energy ){
@@ -239,8 +236,8 @@ namespace mshadow {
                     // const int x_min = max( (x-pstride*o_width +pstride) /pstride, 0 ) * pstride + ( x % pstride );
                     // equvalent form: since we can not have negative value in unsign
                     const index_t y_min = (max( y/pstride, o_height-1 )+1-o_height) * pstride + ( y % pstride ); 
-                    const index_t x_min = (max( x/pstride, o_width-1 ) +1-o_width ) * pstride + ( x % pstride );                     
-                    
+                    const index_t x_min = (max( x/pstride, o_width-1 ) +1-o_width ) * pstride + ( x % pstride );
+
                     real_t res = 0.0f;
                     for( index_t y_offset = y_min; y_offset < y_max; y_offset += pstride ){
                         for( index_t x_offset = x_min; x_offset < x_max; x_offset += pstride ){
