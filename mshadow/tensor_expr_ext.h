@@ -335,26 +335,26 @@ namespace mshadow {
                 :img_(e.img_), ksize_(e.ksize_), kstride_(e.kstride_) {
             }
             MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
-                int val = 0;
-                // const index_t x
-                // const index_t y
-                // const index_t c
-                // const index_t x_start
-                // const index_t x_end
-                // const index_t y_start
-                // const index_t y_end
-                // for (index_t h = y_start; h < y_end; ++h) {
-                //     for (index_t w = x_start; w < x_end; ++w) {
-                //          if (img_[c][h][w] > val) val = img_[c][h][w];
-                //     }
-                // }
+                real_t val = 0;
+                const index_t new_height = (img_.shape[1] - ksize_) / kstride_ + 1;
+                const index_t x = j;
+                const index_t y = i % new_height; // ?
+                const index_t c = i / new_height; // ?
+                const index_t x_start = x * kstride_;
+                const index_t x_end = std::min(x_start + ksize_, img_.shape[0]);
+                const index_t y_start = y * kstride_;
+                const index_t y_end = std::min(y_start + ksize_, img_.shape[1]);
+                for (index_t h = y_start; h < y_end; ++h) {
+                    for (index_t w = x_start; w < x_end; ++w) {
+                        if (img_[c][h][w] > val) val = img_[c][h][w];
+                    }
+                }
                 return val;
             }
         private:
             Tensor<Device, 3> img_;
             index_t ksize_, kstride_;
         };
-
 
     }; //namespace expr
 };
