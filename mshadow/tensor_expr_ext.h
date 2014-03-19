@@ -9,7 +9,7 @@
 namespace mshadow{
     // Declaration of expressions goes here
     namespace expr{
-        /*! 
+        /*!
          * \brief broadcast Tensor1D into a higher dimension Tensor
          * input: Tensor<Device,1>: ishape[0]
          * output: Tensor<Device,dimdst> : oshape[dimcast] = ishape[0]
@@ -47,8 +47,8 @@ namespace mshadow{
                 this->shape_[1] = psize * psize * img.shape[2];
             }
         };
-        
-        /*! 
+
+        /*!
          * \brief reshape the content to another shape
          * input: Tensor<Device,dimsrc>: ishape
          * output: Tensor<Device,dimdst> ishape.Size() == oshape.Size()
@@ -67,15 +67,15 @@ namespace mshadow{
             }
         };
 
-        /*! 
+        /*!
          * \brief reduction to 1 dimension tensor
          * input: Tensor<Device,k>: ishape
          * output: Tensor<Device,1> shape[0] = ishape[dimkeep];
          *
          * \tparam EType type of expression to be reduced
          * \tparam Reducer which reducer to use
-         * \tparam srcdim dimension of source 
-         * \tparam dimkeep which dimension to be kept, 
+         * \tparam srcdim dimension of source
+         * \tparam dimkeep which dimension to be kept,
          */
         template<typename EType, typename Reducer,int dimkeep>
         struct ReduceTo1DExp: public Exp< ReduceTo1DExp<EType,Reducer, dimkeep>, type::kComplex >{
@@ -93,13 +93,13 @@ namespace mshadow{
         template<typename E, typename R,int d>
         inline ReduceTo1DExp<E,R,d> operator*( real_t scale, const ReduceTo1DExp<E,R,d> &e ){
             return ReduceTo1DExp<E,R,d>( e.src_, e.scale_*scale );
-        }       
+        }
     }; // namespace expr
-    
-    
+
+
     // Declaration of all functions go here
     namespace expr{
-        /*! 
+        /*!
          * \brief a expression that replicate a 1 dimension tensor in dimension dimcast
          * \param src Tensor<Device,1>: shape[0]
          * \param shape shape of output
@@ -111,10 +111,10 @@ namespace mshadow{
         template<int dimcast,typename Device,int dimdst>
         inline Broadcast1DExp<Device,dimdst,dimcast> broadcast( const Tensor<Device,1> &src, Shape<dimdst> shape ){
             TypeCheckPass< dimcast<dimdst >::Error_Expression_Does_Not_Meet_Dimension_Req();
-            utils::Assert( src.shape[0] == shape[dimcast], "broadcast, shape mismatch" );    
+            utils::Assert( src.shape[0] == shape[dimcast], "broadcast, shape mismatch" );
             return Broadcast1DExp<Device,dimdst,dimcast>( src, shape );
         }
-           
+
         /*!
          * \brief  unpack local (overlap) patches of image to column of mat, can be used to implement convolution
          *  after getting unpacked mat, we can use: output = dot( weight, mat ) to get covolved results, the relations:
@@ -128,30 +128,30 @@ namespace mshadow{
          * \param img source image; shape[2]:  in_channels, shape[1]: in_height, shape[0]: in_width
          * \param psize height and width of each patch
          * \param pstride stride of each patch
-         */        
+         */
         template<typename Device>
         inline UnpackPatchToColExp<Device> unpack_patch2col( const Tensor<Device,3> &img, index_t psize, index_t pstride ){
             utils::Assert( img.shape[0] >= psize && img.shape[1] >= psize, "UnpackPatchToCol:image shape smaller than patch size");
             return UnpackPatchToColExp<Device>( img, psize, pstride );
         }
-        /*! 
+        /*!
          * \brief a expression that reshapes a tensor to another shape
-         * \param src Tensor<Device,dimsrc>: 
+         * \param src Tensor<Device,dimsrc>:
          * \param oshape target shape
-         * \return a expresion with type Tensor<Device,dimdst> 
+         * \return a expresion with type Tensor<Device,dimdst>
          * \tparam Device which device it lies
          * \tparam dimdst target dimension
-         * \tparam dimsrc source dimension         
+         * \tparam dimsrc source dimension
          */
         template<typename Device, int dimdst, int dimsrc>
         inline ReshapeExp<Device,dimdst,dimsrc> reshape( const Tensor<Device,dimsrc> &src, Shape<dimdst> oshape ){
             return ReshapeExp<Device,dimdst,dimsrc>( src, oshape );
         }
 
-        /*! 
+        /*!
          * \brief a sum over all dimensions, except dimkeep
          * \param exp input expression that must be a matrix Tensor<?,2>
-         * \return a expresion with type Tensor<Device,1> 
+         * \return a expresion with type Tensor<Device,1>
          * \tparam dimkeep the dimension that will be kept
          * \tparam E expression
          * \tparam etype type of expression
@@ -161,9 +161,9 @@ namespace mshadow{
             return ReduceTo1DExp<E,red::sum,dimkeep>( exp.self(), 1.0f );
         }
 
-        // short cut functions 
-        /*! 
-         * \brief a expression that replicate a 1 dimension tensor for nrow times 
+        // short cut functions
+        /*!
+         * \brief a expression that replicate a 1 dimension tensor for nrow times
          * \param src Tensor<Device,1>: shape[0]
          * \param nrow number of rows to replicate
          * \return a expresion with type Tensor<Device,2> shape[0], shape[1] = nrow
@@ -173,10 +173,10 @@ namespace mshadow{
         inline Broadcast1DExp<Device,2,0> repmat( const Tensor<Device,1> &src, index_t nrow ){
             return broadcast<0>( src, Shape2( nrow, src.shape[0] ) );
         }
-        /*! 
+        /*!
          * \brief a expression that sum over rows of a matrix
          * \param exp input expression that must be a matrix Tensor<?,2>
-         * \return a expresion with type Tensor<Device,1> 
+         * \return a expresion with type Tensor<Device,1>
          * \tparam E expression
          * \tparam etype type of expression
          */
@@ -188,7 +188,7 @@ namespace mshadow{
 }; // namespace mshadow
 
 // ==================================================
-//  implementations afterwards, 
+//  implementations afterwards,
 //  no need to read if only use the functions
 // --------------------------------------------------
 namespace mshadow{
@@ -203,7 +203,7 @@ namespace mshadow{
 
         template<typename SV, typename Device, typename EType, typename Reducer>
         struct ExpComplexEngine< SV, Device, 1, ReduceTo1DExp<EType,Reducer,0> >{
-            inline static void Eval( Tensor<Device,1> &dst, const ReduceTo1DExp<EType,Reducer,0> &exp ){                
+            inline static void Eval( Tensor<Device,1> &dst, const ReduceTo1DExp<EType,Reducer,0> &exp ){
                 MapReduceKeepLowest<SV,Reducer>( dst, exp.src_, exp.scale_ );
             }
         };
@@ -216,14 +216,14 @@ namespace mshadow{
         public:
             Plan( const Broadcast1DExp<Device,dimdst,dimcast> &e ): dptr_( e.src_.dptr ){
                 TypeCheckPass< dimcast!=0 >::Error_Expression_Does_Not_Meet_Dimension_Req();
-                ystride_ = 1;                
+                ystride_ = 1;
                 #pragma unroll
                 for( int i = 1; i < dimcast; ++ i ){
                     ystride_ *= e.shape_[i];
                 }
                 length_ = e.shape_[ dimcast ];
             }
-            MSHADOW_XINLINE real_t Eval( index_t y, index_t x ) const{                
+            MSHADOW_XINLINE real_t Eval( index_t y, index_t x ) const{
                 return dptr_[ (y / ystride_) % length_ ];
             }
         private:
@@ -243,7 +243,7 @@ namespace mshadow{
             const real_t *dptr_;
         };
     }; // namespace expr
-    
+
     namespace expr{
         template<typename Device>
         struct Plan< UnpackPatchToColExp<Device> >{
@@ -253,11 +253,11 @@ namespace mshadow{
                 o_width_  = ( img_.shape[0]  - psize_ ) / pstride_ + 1;
             }
             MSHADOW_XINLINE real_t Eval( index_t i, index_t j ) const{
-                const index_t x_offset = i % psize_; 
+                const index_t x_offset = i % psize_;
                 const index_t idivp    = i / psize_;
                 const index_t y_offset = idivp % psize_;
                 const index_t channel  = idivp / psize_;
-                const index_t y = (j / o_width_) * pstride_ + y_offset;  
+                const index_t y = (j / o_width_) * pstride_ + y_offset;
                 const index_t x = (j % o_width_) * pstride_ + x_offset;
                 if( x < img_.shape[0] && y < img_.shape[1] ){
                     return img_[channel][y][x];
@@ -267,10 +267,10 @@ namespace mshadow{
             }
         private:
             Tensor<Device,3> img_;
-            index_t psize_, pstride_, o_width_;            
-        };        
+            index_t psize_, pstride_, o_width_;
+        };
     };
-    
+
     namespace expr{
         /*! \brief execution plan of repmat */
         template<typename Device, int dimsrc, int dimdst>
@@ -283,16 +283,82 @@ namespace mshadow{
             }
             MSHADOW_XINLINE real_t Eval( index_t y, index_t x ) const{
                 const index_t idx = y * oshape0_ + x;
-                return dptr_[ ( idx / ishape0_ ) * istride_ + ( idx % ishape0_ ) ]; 
+                return dptr_[ ( idx / ishape0_ ) * istride_ + ( idx % ishape0_ ) ];
             }
         private:
             const real_t *dptr_;
             index_t oshape0_, ishape0_, istride_;
-        };        
+        };
     }; // namespace expr
 }; // namespace mshadow
 
-#if MSHADOW_USE_SSE 
+namespace mshadow {
+    namespace expr {
+        /*!
+         * \brief max pooling expr.
+         * \tparam Device which device it lies
+         */
+        template<typename Device>
+        struct MaxPoolingExp: public MakeTensorExp<MaxPoolingExp<Device>, Tensor<Device, 3>, 3> {
+            /*! \brief source operand */
+            const Tensor<Device, 3> &img_;
+            /*! \brief kernel size */
+            index_t ksize_;
+            /*! \brief kernel stride */
+            index_t kstride_;
+            MaxPoolingExp(const Tensor<Device, 3> &img, index_t ksize, index_t kstride)
+                : img_(img), ksize_(ksize), kstride_(kstride) {
+                  const index_t p_height = (img.shape[1] - ksize) / kstride + 1;
+                  const index_t p_width = (img.shape[0] - ksize) / kstride + 1;
+                  this->shape_[0] = p_width;
+                  this->shape_[1] = p_height;
+                  this->shape_[2] = img.shape[2];
+            }
+        };
+
+        /*!
+         * \brief maxpooling for 3D tensor
+         * \return mat pooling result, shape[2]: channel shape[1]: height shape[0]:weight
+         * \param img source image, shape[2]: channel shape[1]: height shape[0]:weight
+         * \param ksize kernel size
+         * \param kstride stride for each kernel
+         */
+        template<typename Device>
+        inline MaxPoolingExp<Device> maxpooling(const Tensor<Device, 3> &img, index_t ksize, index_t kstride) {
+            return MaxPoolingExp<Device>(img, ksize, kstride);
+        }
+
+        template<typename Device>
+        struct Plan<MaxPoolingExp<Device> > {
+        public:
+            Plan(const MaxPoolingExp<Device> &e)
+                :img_(e.img_), ksize_(e.ksize_), kstride_(e.kstride_) {
+            }
+            MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
+                int val = 0;
+                // const index_t x
+                // const index_t y
+                // const index_t c
+                // const index_t x_start
+                // const index_t x_end
+                // const index_t y_start
+                // const index_t y_end
+                // for (index_t h = y_start; h < y_end; ++h) {
+                //     for (index_t w = x_start; w < x_end; ++w) {
+                //          if (img_[c][h][w] > val) val = img_[c][h][w];
+                //     }
+                // }
+                return val;
+            }
+        private:
+            Tensor<Device, 3> img_;
+            index_t ksize_, kstride_;
+        };
+
+
+    }; //namespace expr
+};
+#if MSHADOW_USE_SSE
 // implementations of SSE support, if possible
 #include "tensor_sse-inl.hpp"
 namespace mshadow{
