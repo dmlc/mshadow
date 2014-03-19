@@ -88,7 +88,13 @@ namespace mshadow {
     const unsigned kRandBufferSize = 1000000;
     /*! \brief pi  */
     const float kPi = 3.1415926f;
-    
+    /*! \brief pooling type */
+    const int kMaxPooling = 1;
+    /*! \brief pooling type */
+    const int kSumPooling = 2;
+    /*! \brief pooling type */
+    const int kAvgPooling = 3;
+
 #if MSHADOW_SINGLE_PRECISION
     /*! \brief type that will be used for content */
     typedef float real_t;
@@ -203,7 +209,7 @@ namespace mshadow {
             }
         };
     }; // namespace op
-    
+
     /*! \brief namespace for potential reducer operations */
     namespace red {
         struct sum {

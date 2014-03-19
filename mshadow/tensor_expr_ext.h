@@ -299,15 +299,17 @@ namespace mshadow {
          * \tparam Device which device it lies
          */
         template<typename Device>
-        struct MaxPoolingExp: public MakeTensorExp<MaxPoolingExp<Device>, Tensor<Device, 3>, 3> {
+        struct PoolingExp: public MakeTensorExp<PoolingExp<Device>, Tensor<Device, 3>, 3> {
             /*! \brief source operand */
             const Tensor<Device, 3> &img_;
             /*! \brief kernel size */
             index_t ksize_;
             /*! \brief kernel stride */
             index_t kstride_;
-            MaxPoolingExp(const Tensor<Device, 3> &img, index_t ksize, index_t kstride)
-                : img_(img), ksize_(ksize), kstride_(kstride) {
+            /*! \brief pooling type */
+            int type_;
+            PoolingExp(const Tensor<Device, 3> &img, index_t ksize, index_t kstride, int type)
+                : img_(img), ksize_(ksize), kstride_(kstride), type_(type) {
                   const index_t p_height = (img.shape[1] - ksize) / kstride + 1;
                   const index_t p_width = (img.shape[0] - ksize) / kstride + 1;
                   this->shape_[0] = p_width;
@@ -317,25 +319,26 @@ namespace mshadow {
         };
 
         /*!
-         * \brief maxpooling for 3D tensor
+         * \brief pooling for 3D tensor
          * \return mat pooling result, shape[2]: channel shape[1]: height shape[0]:weight
          * \param img source image, shape[2]: channel shape[1]: height shape[0]:weight
          * \param ksize kernel size
          * \param kstride stride for each kernel
          */
         template<typename Device>
-        inline MaxPoolingExp<Device> maxpooling(const Tensor<Device, 3> &img, index_t ksize, index_t kstride) {
-            return MaxPoolingExp<Device>(img, ksize, kstride);
+        inline PoolingExp<Device> pooling(const Tensor<Device, 3> &img, index_t ksize, index_t kstride, int type) {
+            return PoolingExp<Device>(img, ksize, kstride, type);
         }
 
         template<typename Device>
-        struct Plan<MaxPoolingExp<Device> > {
+        struct Plan<PoolingExp<Device> > {
         public:
-            Plan(const MaxPoolingExp<Device> &e)
-                :img_(e.img_), ksize_(e.ksize_), kstride_(e.kstride_) {
+            Plan(const PoolingExp<Device> &e)
+                :img_(e.img_), ksize_(e.ksize_), kstride_(e.kstride_), type_(e.type_) {
             }
             MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
                 real_t val = 0;
+                real_t max_val = 0;
                 const index_t new_height = (img_.shape[1] - ksize_) / kstride_ + 1;
                 const index_t x = j;
                 const index_t y = i % new_height; // ?
@@ -346,14 +349,22 @@ namespace mshadow {
                 const index_t y_end = std::min(y_start + ksize_, img_.shape[1]);
                 for (index_t h = y_start; h < y_end; ++h) {
                     for (index_t w = x_start; w < x_end; ++w) {
-                        if (img_[c][h][w] > val) val = img_[c][h][w];
+                        val += img_[c][h][w];
+                        if (img_[c][h][w] > max_val) max_val = img_[c][h][w];
                     }
                 }
-                return val;
+                switch(type_) {
+                    case kMaxPooling: return max_val;
+                    case kSumPooling: return val;
+                    case kAvgPooling: return val / ksize_ / ksize_;
+                    default: utils::Error("Unknown Pooling type");
+                }
+                return 0;
             }
         private:
             Tensor<Device, 3> img_;
             index_t ksize_, kstride_;
+            int type_;
         };
 
     }; //namespace expr
