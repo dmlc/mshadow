@@ -308,6 +308,8 @@ namespace mshadow {
             index_t kstride_;
             /*! \brief pooling type */
             int type_;
+            /*! \brief new heigh */
+            index_t new_height_;
             PoolingExp(const Tensor<Device, 3> &img, index_t ksize, index_t kstride, int type)
                 : img_(img), ksize_(ksize), kstride_(kstride), type_(type) {
                   const index_t p_height = (img.shape[1] - ksize) / kstride + 1;
@@ -315,6 +317,7 @@ namespace mshadow {
                   this->shape_[0] = p_width;
                   this->shape_[1] = p_height;
                   this->shape_[2] = img.shape[2];
+                  new_height_ = p_height;
             }
         };
 
@@ -334,29 +337,34 @@ namespace mshadow {
         struct Plan<PoolingExp<Device> > {
         public:
             Plan(const PoolingExp<Device> &e)
-                :img_(e.img_), ksize_(e.ksize_), kstride_(e.kstride_), type_(e.type_) {
+                :img_(e.img_), ksize_(e.ksize_), kstride_(e.kstride_), type_(e.type_), new_height_(e.new_height_) {
             }
             MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
                 real_t val = 0;
-                real_t max_val = 0;
-                const index_t new_height = (img_.shape[1] - ksize_) / kstride_ + 1;
                 const index_t x = j;
-                const index_t y = i % new_height; // ?
-                const index_t c = i / new_height; // ?
+                const index_t y = i % new_height_;
+                const index_t c = i / new_height_;
                 const index_t x_start = x * kstride_;
-                const index_t x_end = std::min(x_start + ksize_, img_.shape[0]);
+                const index_t x_end = x_start + ksize_< img_.shape[0] ? x_start + ksize_ : img_.shape[0];
                 const index_t y_start = y * kstride_;
-                const index_t y_end = std::min(y_start + ksize_, img_.shape[1]);
-                for (index_t h = y_start; h < y_end; ++h) {
-                    for (index_t w = x_start; w < x_end; ++w) {
-                        val += img_[c][h][w];
-                        if (img_[c][h][w] > max_val) max_val = img_[c][h][w];
-                    }
-                }
+                const index_t y_end = y_start + ksize_< img_.shape[1] ? y_start + ksize_ : img_.shape[1];
+                // TODO: Better reduction
                 switch(type_) {
-                    case kMaxPooling: return max_val;
-                    case kSumPooling: return val;
-                    case kAvgPooling: return val / ksize_ / ksize_;
+                    case kMaxPooling:
+                        for (index_t h = y_start; h < y_end; ++h) {
+                            for (index_t w = x_start; w < x_end; ++w) {
+                                if (img_[c][h][w] > val) val = img_[c][h][w];
+                            }
+                        }
+                        return val;
+                    case kSumPooling:
+                        for (index_t h = y_start; h < y_end; ++h) {
+                            for (index_t w = x_start; w < x_end; ++w) {
+                                val += img_[c][h][w];
+                            }
+                        }
+                        return val;
+                    //case kAvgPooling: return val / ksize_ / ksize_;
                     default: utils::Error("Unknown Pooling type");
                 }
                 return 0;
@@ -365,6 +373,7 @@ namespace mshadow {
             Tensor<Device, 3> img_;
             index_t ksize_, kstride_;
             int type_;
+            index_t new_height_;
         };
 
     }; //namespace expr

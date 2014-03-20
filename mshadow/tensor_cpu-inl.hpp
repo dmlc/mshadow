@@ -253,32 +253,4 @@ namespace mshadow {
     }
 }; // namespace mshadow
 
-namespace mshadow {
-    inline void MaxPooling(Tensor<cpu, 3> &pooled, Tensor<cpu, 3> &img, index_t ksize, index_t kstride) {
-        utils::Assert(img.shape[0] >= ksize && img.shape[1] >= ksize, "Pooling: image shape smaller than kernel size");
-        utils::Assert(pooled.shape[2] == img.shape[2], "Pooling: img and pooling target has different channel");
-        utils::Assert(pooled.shape[1] == (img.shape[1] - ksize) / kstride + 1, "Pooling: image height error");
-        utils::Assert(pooled.shape[0] == (img.shape[0] - ksize) / kstride + 1, "Pooling: image width error");
-
-        for (index_t c = 0; c < pooled.shape[2]; ++c) {
-            for (index_t ph = 0; ph < pooled.shape[1]; ++ph) {
-                for (index_t pw = 0; pw < pooled.shape[0]; ++pw) {
-                    index_t h_start = ph * kstride;
-                    index_t h_end = std::min(h_start + ksize, img.shape[1]);
-                    index_t w_start = pw * kstride;
-                    index_t w_end = std::min(w_start + ksize, img.shape[0]);
-                    for (index_t ih = h_start; ih < h_end; ++ih) {
-                        for (index_t iw = w_start; iw < w_end; ++iw) {
-                            pooled[c][ph][pw] = std::max(pooled[c][ph][pw], img[c][ih][iw]);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-
-}; // namespace mshadow
-
-
 #endif // TENSOR_CPU_INL_HPP
