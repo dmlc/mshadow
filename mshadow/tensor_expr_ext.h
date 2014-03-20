@@ -86,6 +86,59 @@ namespace mshadow{
             /*! \brief construct a repmat expression from src and nrow */
             ReduceTo1DExp( EType src, real_t scale ):src_(src),scale_(scale){}
         };
+
+        /*!
+         * \brief pooling expr.
+         * \tparam Device which device it lies
+         */
+        template<typename Device>
+        struct PoolingExp: public MakeTensorExp<PoolingExp<Device>, Tensor<Device, 3>, 3> {
+            /*! \brief source operand */
+            const Tensor<Device, 3> &img_;
+            /*! \brief kernel size */
+            index_t ksize_;
+            /*! \brief kernel stride */
+            index_t kstride_;
+            /*! \brief pooling type */
+            int type_;
+            /*! \brief new heigh */
+            index_t new_height_;
+            PoolingExp(const Tensor<Device, 3> &img, index_t ksize, index_t kstride, int type)
+                : img_(img), ksize_(ksize), kstride_(kstride), type_(type) {
+                  const index_t p_height = (img.shape[1] - ksize) / kstride + 1;
+                  const index_t p_width = (img.shape[0] - ksize) / kstride + 1;
+                  this->shape_[0] = p_width;
+                  this->shape_[1] = p_height;
+                  this->shape_[2] = img.shape[2];
+                  new_height_ = p_height;
+            }
+        };
+
+
+
+        /*! \brief unpooling expr
+         * \tparam Device which device it lies
+         */
+        template<typename Device>
+        struct UnPoolingExp: public MakeTensorExp<UnPoolingExp<Device>, Tensor<Device,3>, 3> {
+            /*! \brief source operand */
+            const Tensor<Device, 3> &img_;
+            /*! \brief source pooled operand */
+            const Tensor<Device, 3> &pooled_;
+            /*! \brief kernel stride */
+            index_t kstride_;
+            /*! \brief pooling type */
+            int type_;
+            UnPoolingExp(const Tensor<Device,3> &img, const Tensor<Device,3> &pooled, index_t kstride, int type) : img_(img), pooled_(pooled), kstride_(kstride), type_(type) {
+                this->shape_ = img_.shape;
+            }
+        };
+
+    }; // namespace expr
+
+
+    // Declaration of all functions go here
+    namespace expr{
         template<typename E, typename R,int d>
         inline ReduceTo1DExp<E,R,d> operator*( const ReduceTo1DExp<E,R,d> &e, real_t scale ){
             return ReduceTo1DExp<E,R,d>( e.src_, e.scale_*scale );
@@ -94,11 +147,7 @@ namespace mshadow{
         inline ReduceTo1DExp<E,R,d> operator*( real_t scale, const ReduceTo1DExp<E,R,d> &e ){
             return ReduceTo1DExp<E,R,d>( e.src_, e.scale_*scale );
         }
-    }; // namespace expr
 
-
-    // Declaration of all functions go here
-    namespace expr{
         /*!
          * \brief a expression that replicate a 1 dimension tensor in dimension dimcast
          * \param src Tensor<Device,1>: shape[0]
@@ -184,6 +233,34 @@ namespace mshadow{
         inline ReduceTo1DExp<E, red::sum, 0 > sum_rows( const Exp<E,etype> &exp ){
             return sumall_except_dim<0>( exp );
         }
+
+        /*!
+         * \brief pooling for 3D tensor
+         * \return mat pooling result, shape[2]: channel shape[1]: height shape[0]:weight
+         * \param img source image, shape[2]: channel shape[1]: height shape[0]:weight
+         * \param ksize kernel size
+         * \param kstride stride for each kernel
+         */
+        template<typename Device>
+        inline PoolingExp<Device> pooling(const Tensor<Device, 3> &img, index_t ksize, index_t kstride, int type) {
+            return PoolingExp<Device>(img, ksize, kstride, type);
+        }
+
+        /*!
+         * \brief unpooling gradient for 3D
+         * \return unpooling 3D Tensor, shape[2]: channel, shape[1]:height, shape[0]: weight
+         * \param pooled 3D Tensor Pooled
+         * \param img original image
+         * \param kstride stride for each kernel
+         * \param type pooling type
+         */
+         template<typename Device>
+         inline UnPoolingExp<Device> unpooling(const Tensor<Device, 3>&img, const Tensor<Device, 3> pooled, index_t kstride, int type) {
+            return UnPoolingExp<Device>(img, pooled, kstride, type);
+         }
+
+
+
     }; // namespace expr
 }; // namespace mshadow
 
@@ -289,74 +366,39 @@ namespace mshadow{
             const real_t *dptr_;
             index_t oshape0_, ishape0_, istride_;
         };
-    }; // namespace expr
-}; // namespace mshadow
-
-namespace mshadow {
-    namespace expr {
-        /*!
-         * \brief max pooling expr.
-         * \tparam Device which device it lies
-         */
-        template<typename Device>
-        struct PoolingExp: public MakeTensorExp<PoolingExp<Device>, Tensor<Device, 3>, 3> {
-            /*! \brief source operand */
-            const Tensor<Device, 3> &img_;
-            /*! \brief kernel size */
-            index_t ksize_;
-            /*! \brief kernel stride */
-            index_t kstride_;
-            /*! \brief pooling type */
-            int type_;
-            PoolingExp(const Tensor<Device, 3> &img, index_t ksize, index_t kstride, int type)
-                : img_(img), ksize_(ksize), kstride_(kstride), type_(type) {
-                  const index_t p_height = (img.shape[1] - ksize) / kstride + 1;
-                  const index_t p_width = (img.shape[0] - ksize) / kstride + 1;
-                  this->shape_[0] = p_width;
-                  this->shape_[1] = p_height;
-                  this->shape_[2] = img.shape[2];
-            }
-        };
-
-        /*!
-         * \brief pooling for 3D tensor
-         * \return mat pooling result, shape[2]: channel shape[1]: height shape[0]:weight
-         * \param img source image, shape[2]: channel shape[1]: height shape[0]:weight
-         * \param ksize kernel size
-         * \param kstride stride for each kernel
-         */
-        template<typename Device>
-        inline PoolingExp<Device> pooling(const Tensor<Device, 3> &img, index_t ksize, index_t kstride, int type) {
-            return PoolingExp<Device>(img, ksize, kstride, type);
-        }
 
         template<typename Device>
         struct Plan<PoolingExp<Device> > {
         public:
             Plan(const PoolingExp<Device> &e)
-                :img_(e.img_), ksize_(e.ksize_), kstride_(e.kstride_), type_(e.type_) {
+                :img_(e.img_), ksize_(e.ksize_), kstride_(e.kstride_), type_(e.type_), new_height_(e.new_height_) {
             }
             MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
-                real_t val = 0;
-                real_t max_val = 0;
-                const index_t new_height = (img_.shape[1] - ksize_) / kstride_ + 1;
+                real_t val = -FLT_MAX;
                 const index_t x = j;
-                const index_t y = i % new_height; // ?
-                const index_t c = i / new_height; // ?
+                const index_t y = i % new_height_;
+                const index_t c = i / new_height_;
                 const index_t x_start = x * kstride_;
-                const index_t x_end = std::min(x_start + ksize_, img_.shape[0]);
+                const index_t x_end = x_start + ksize_< img_.shape[0] ? x_start + ksize_ : img_.shape[0];
                 const index_t y_start = y * kstride_;
-                const index_t y_end = std::min(y_start + ksize_, img_.shape[1]);
-                for (index_t h = y_start; h < y_end; ++h) {
-                    for (index_t w = x_start; w < x_end; ++w) {
-                        val += img_[c][h][w];
-                        if (img_[c][h][w] > max_val) max_val = img_[c][h][w];
-                    }
-                }
+                const index_t y_end = y_start + ksize_< img_.shape[1] ? y_start + ksize_ : img_.shape[1];
+                // TODO: Better reduction
                 switch(type_) {
-                    case kMaxPooling: return max_val;
-                    case kSumPooling: return val;
-                    case kAvgPooling: return val / ksize_ / ksize_;
+                    case kMaxPooling:
+                        for (index_t h = y_start; h < y_end; ++h) {
+                            for (index_t w = x_start; w < x_end; ++w) {
+                                if (img_[c][h][w] > val) val = img_[c][h][w];
+                            }
+                        }
+                        return val;
+                    case kSumPooling:
+                        for (index_t h = y_start; h < y_end; ++h) {
+                            for (index_t w = x_start; w < x_end; ++w) {
+                                val += img_[c][h][w];
+                            }
+                        }
+                        return val;
+                    //case kAvgPooling: return val / ksize_ / ksize_;
                     default: utils::Error("Unknown Pooling type");
                 }
                 return 0;
@@ -365,10 +407,37 @@ namespace mshadow {
             Tensor<Device, 3> img_;
             index_t ksize_, kstride_;
             int type_;
+            index_t new_height_;
         };
 
-    }; //namespace expr
-};
+        template<typename Device>
+        struct Plan<UnPoolingExp<Device> > {
+        public:
+            Plan(const UnPoolingExp<Device> &e)
+                : img_(e.img_), pooled_(e.pooled_), kstride_(e.kstride_), type_(e.type_) {}
+           MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
+               const index_t x = j;
+               const index_t y = i % img_.shape[1];
+               const index_t c = i / img_.shape[1];
+               const index_t x_pooled = x / kstride_;
+               const index_t y_pooled = y / kstride_;
+               if (type_ == kMaxPooling) {
+                   return pooled_[c][y_pooled][x_pooled] == img_[c][y][x] ? 1.0f : 0.0f;
+               } else {
+                   utils::Error("Not implement");
+                   return 0; // Just reduce a warning
+               }
+           }
+        private:
+            Tensor<Device, 3> img_, pooled_;
+            index_t kstride_;
+            int type_;
+        };
+
+    }; // namespace expr
+}; // namespace mshadow
+
+
 #if MSHADOW_USE_SSE
 // implementations of SSE support, if possible
 #include "tensor_sse-inl.hpp"
