@@ -165,57 +165,6 @@ namespace mshadow {
         }
     }
 
-    inline void UnpackPatchToCol( Tensor<cpu,2> mat, const Tensor<cpu,3> &img, index_t psize, index_t pstride ){
-        utils::Assert( img.shape[0] >= psize && img.shape[1] >= psize, "UnpackPatchToCol:image shape smaller than patch size");
-        const index_t o_height = ( img.shape[1]  - psize ) / pstride + 1;
-        const index_t o_width  = ( img.shape[0]  - psize ) / pstride + 1;
-        utils::Assert( o_height*o_width == mat.shape[0], "UnpackPatchToCol: mat.shape[0] mismatch" );
-        utils::Assert( psize*psize*img.shape[2] == mat.shape[1], "UnpackPatchToCol: mat.shape[1] mismatch" );
-
-        for( index_t i = 0; i < mat.shape[1]; ++i ){
-            const index_t x_offset = i % psize;
-            const index_t y_offset = (i / psize) % psize;
-            const index_t channel = i / (psize*psize);
-            for( index_t j = 0; j < mat.shape[0]; ++j ){
-                const index_t x = (j % o_width) * pstride + x_offset;
-                const index_t y = (j / o_width) * pstride + y_offset;
-                if( x < img.shape[0] && y < img.shape[1] ){
-                    mat[i][j] = img[channel][y][x];
-                }else{
-                    mat[i][j] = 0.0f;
-                }
-            }
-        }
-    }
-
-    // checked version, used for double check correctness
-    inline void PackPatchFromColCHK( Tensor<cpu,3> &img, const Tensor<cpu,2> &mat, index_t psize, index_t pstride ){
-        utils::Assert( img.shape[0] >= psize && img.shape[1] >= psize, "PackPatchFromCol:image shape smaller than patch size");
-        const index_t o_height = ( img.shape[1]  - psize ) / pstride + 1;
-        const index_t o_width  = ( img.shape[0]  - psize ) / pstride + 1;
-        utils::Assert( o_height*o_width == mat.shape[0], "PackPatchFromCol: mat.shape[0] mismatch" );
-        utils::Assert( psize*psize*img.shape[2] == mat.shape[1], "PackPatchFromCol: mat.shape[1] mismatch" );
-        for( index_t c = 0; c < img.shape[2]; ++c ){
-            for( index_t y = 0; y < img.shape[1]; ++y ){
-                for( index_t x = 0; x < img.shape[0]; ++x ){
-                    const index_t x_base = x % pstride;
-                    const index_t y_base = y % pstride;
-                    real_t res = 0.0f;
-                    for( index_t y_offset = y_base; y_offset < psize; y_offset += pstride ){
-                        for( index_t x_offset = x_base; x_offset < psize; x_offset += pstride ){
-                            const int y_start = (int)y - (int)y_offset;
-                            const int x_start = (int)x - (int)x_offset;
-                            if( y_start >= 0 && x_start >= 0 && (y_start/pstride) < o_height && (x_start/pstride) < o_width ){
-                                res += mat[ (c * psize + y_offset) * psize + x_offset ][ (y_start/pstride)*o_width + (x_start/pstride) ];
-                            }
-                        }
-                    }
-                    img[c][y][x] = res;
-                }
-            }
-        }
-    }
-
     inline void PackPatchFromCol( Tensor<cpu,3> img, const Tensor<cpu,2> &mat, index_t psize, index_t pstride ){
         using namespace std;
         utils::Assert( img.shape[0] >= psize && img.shape[1] >= psize, "PackPatchFromCol:image shape smaller than patch size");
