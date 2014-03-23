@@ -125,12 +125,14 @@ namespace mshadow{
             const Tensor<Device, 3> &img_;
             /*! \brief source pooled operand */
             const Tensor<Device, 3> &pooled_;
+            /*! \brief kernel size */
+            index_t ksize_;
             /*! \brief kernel stride */
             index_t kstride_;
             /*! \brief pooling type */
             int type_;
-            UnPoolingExp(const Tensor<Device,3> &img, const Tensor<Device,3> &pooled, index_t kstride, int type) : img_(img), pooled_(pooled), kstride_(kstride), type_(type) {
-                this->shape_ = pooled_.shape;
+            UnPoolingExp(const Tensor<Device,3> &img, const Tensor<Device,3> &pooled, index_t ksize, index_t kstride, int type) : img_(img), pooled_(pooled), ksize_(ksize), kstride_(kstride), type_(type) {
+                this->shape_ = img_.shape;
             }
         };
 
@@ -255,8 +257,8 @@ namespace mshadow{
          * \param type pooling type
          */
          template<typename Device>
-         inline UnPoolingExp<Device> unpooling(const Tensor<Device, 3>&img, const Tensor<Device, 3> pooled, index_t kstride, int type) {
-            return UnPoolingExp<Device>(img, pooled, kstride, type);
+         inline UnPoolingExp<Device> unpooling(const Tensor<Device, 3>&img, const Tensor<Device, 3> pooled, index_t ksize, index_t kstride, int type) {
+            return UnPoolingExp<Device>(img, pooled, ksize, kstride, type);
          }
 
 
@@ -414,21 +416,21 @@ namespace mshadow{
         struct Plan<UnPoolingExp<Device> > {
         public:
             Plan(const UnPoolingExp<Device> &e)
-                : img_(e.img_), pooled_(e.pooled_), kstride_(e.kstride_), type_(e.type_) {}
+                : img_(e.img_), pooled_(e.pooled_), ksize_(e.ksize_), kstride_(e.kstride_), type_(e.type_) {}
             MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
                 // Not pairtest yet
                 real_t val = 0;
                 const index_t x = j;
                 const index_t y = i % img_.shape[1];
                 const index_t c = i / img_.shape[1];
-                const index_t x_start = x * kstride_;
+                const index_t x_start = x / kstride_;
                 const index_t x_end = x_start + ksize_< img_.shape[0] ? x_start + ksize_ : img_.shape[0];
-                const index_t y_start = y * kstride_;
+                const index_t y_start = y / kstride_;
                 const index_t y_end = y_start + ksize_< img_.shape[1] ? y_start + ksize_ : img_.shape[1];
                 if (type_ == kMaxPooling) {
-                    for (int h = y_start; h < y_end; ++h) {
-                        for (int w = x_start; w < x_end; ++w) {
-                            if (img_[c][h][w] == pooled_[c][y][x]) val++;
+                    for (index_t h = y_start; h < y_end; ++h) {
+                        for (index_t w = x_start; w < x_end; ++w) {
+                            if (img_[c][x][y] == pooled_[c][h][w]) val++;
                        }
                    }
                 } else {
@@ -438,6 +440,7 @@ namespace mshadow{
             }
         private:
             Tensor<Device, 3> img_, pooled_;
+            index_t ksize_;
             index_t kstride_;
             int type_;
         };
