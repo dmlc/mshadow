@@ -130,7 +130,7 @@ namespace mshadow{
             /*! \brief pooling type */
             int type_;
             UnPoolingExp(const Tensor<Device,3> &img, const Tensor<Device,3> &pooled, index_t kstride, int type) : img_(img), pooled_(pooled), kstride_(kstride), type_(type) {
-                this->shape_ = img_.shape;
+                this->shape_ = pooled_.shape;
             }
         };
 
@@ -415,19 +415,27 @@ namespace mshadow{
         public:
             Plan(const UnPoolingExp<Device> &e)
                 : img_(e.img_), pooled_(e.pooled_), kstride_(e.kstride_), type_(e.type_) {}
-           MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
-               const index_t x = j;
-               const index_t y = i % img_.shape[1];
-               const index_t c = i / img_.shape[1];
-               const index_t x_pooled = x / kstride_;
-               const index_t y_pooled = y / kstride_;
-               if (type_ == kMaxPooling) {
-                   return pooled_[c][y_pooled][x_pooled] == img_[c][y][x] ? 1.0f : 0.0f;
-               } else {
-                   utils::Error("Not implement");
-                   return 0; // Just reduce a warning
-               }
-           }
+            MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
+                // Not pairtest yet
+                real_t val = 0;
+                const index_t x = j;
+                const index_t y = i % img_.shape[1];
+                const index_t c = i / img_.shape[1];
+                const index_t x_start = x * kstride_;
+                const index_t x_end = x_start + ksize_< img_.shape[0] ? x_start + ksize_ : img_.shape[0];
+                const index_t y_start = y * kstride_;
+                const index_t y_end = y_start + ksize_< img_.shape[1] ? y_start + ksize_ : img_.shape[1];
+                if (type_ == kMaxPooling) {
+                    for (int h = y_start; h < y_end; ++h) {
+                        for (int w = x_start; w < x_end; ++w) {
+                            if (img_[c][h][w] == pooled_[c][y][x]) val++;
+                       }
+                   }
+                } else {
+                    utils::Error("Not implement");
+                }
+                return val;
+            }
         private:
             Tensor<Device, 3> img_, pooled_;
             index_t kstride_;
