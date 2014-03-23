@@ -419,7 +419,7 @@ namespace mshadow{
                 : img_(e.img_), pooled_(e.pooled_), ksize_(e.ksize_), kstride_(e.kstride_), type_(e.type_) {}
             MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
                 // Not pairtest yet
-                real_t val = 0;
+                real_t val = 0.0f;
                 const index_t x = j;
                 const index_t y = i % img_.shape[1];
                 const index_t c = i / img_.shape[1];
@@ -430,9 +430,9 @@ namespace mshadow{
                 if (type_ == kMaxPooling) {
                     for (index_t h = y_start; h < y_end; ++h) {
                         for (index_t w = x_start; w < x_end; ++w) {
-                            if (img_[c][x][y] == pooled_[c][h][w]) val++;
-                       }
-                   }
+                            if (img_[c][y][x] == pooled_[c][h][w]) val++;
+                        }
+                    }
                 } else {
                     utils::Error("Not implement");
                 }
