@@ -3,7 +3,7 @@
 /*!
  * \file tensor_expr_ext.h
  * \brief some extension of expressions, used to support something beyond elementwise op
- * \author Tianqi Chen
+ * \author Tianqi Chen, Bing Xu
  */
 #include "tensor_expr_engine-inl.hpp"
 namespace mshadow{
@@ -136,6 +136,51 @@ namespace mshadow{
             }
         };
 
+
+        /*! \brief padding expr
+         *  \tparam Device which device it lies
+         */
+        template<typename Device>
+        struct PaddingExp : public MakeTensorExp<PaddingExp<Device>, Tensor<Device, 3>, 3> {
+            /*! \brief source operand */
+            const Tensor<Device, 3> &img_;
+            /*! \brief pad size */
+            index_t pad_;
+            /*! \brief new height */
+            index_t new_height_;
+
+            PaddingExp(const Tensor<Device,3> &img, index_t pad)
+                : img_(img), pad_(pad) {
+                utils::Assert(pad > 0, "PaddingExp: Incorrect padding size");
+                this->shape_[0] = img.shape[0] + pad * 2; // width
+                this->shape_[1] = img.shape[1] + pad * 2; // height
+                this->shape_[2] = img.shape[2]; // channel
+                new_height_ = img.shape[1] + pad * 2;
+            }
+        };
+
+        /*! \brief unpadding expr
+         *  \tparam Device which device it lies
+         */
+        template<typename Device>
+        struct UnPaddingExp : public MakeTensorExp<UnPaddingExp<Device>, Tensor<Device, 3>, 3> {
+            /*! \brief source operand */
+            const Tensor<Device, 3> &padded_img_;
+            /*! \brief pad size */
+            index_t pad_;
+            /*! \brief new height */
+            index_t new_height_;
+            UnPaddingExp(const Tensor<Device,3> &padded_img, index_t pad)
+                : padded_img_(padded_img), pad_(pad) {
+                utils::Assert(pad > 0, "PaddingExp: Incorrect padding size");
+                utils::Assert(padded_img.shape[0] > 2 * pad, "PaddingExp: padding size should be smaller than img width");
+                utils::Assert(padded_img.shape[1] > 2 * pad, "PaddingExp: padding size should be smaller than img height");
+                this->shape_[0] = padded_img.shape[0] - 2 * pad; // width
+                this->shape_[1] = padded_img.shape[1] - 2 * pad; // height
+                this->shape_[2] = padded_img.shape[2]; // channel
+                new_height_ = padded_img.shape[1] - 2 * pad;
+            }
+        }; // struct UnPaddingExp
     }; // namespace expr
 
 
@@ -261,7 +306,27 @@ namespace mshadow{
             return UnPoolingExp<Device>(img, pooled, ksize, kstride, type);
          }
 
+        /*!
+         * \brief padding for 3D tensor
+         * \return padded 3D tensor
+         * \param img original image
+         * \param pad padding size
+         */
+         template<typename Device>
+         inline PaddingExp<Device> padding(const Tensor<Device, 3>&img, index_t pad) {
+             return PaddingExp<Device>(img, pad);
+         }
 
+         /*!
+          * \brief unpadding for 3d tensor
+          * \return unpadding 3d tensor
+          * \param padded_img padded img
+          * \param pad
+          */
+         template<typename Device>
+         inline UnPaddingExp<Device> unpadding(const Tensor<Device, 3> &padded_img, index_t pad) {
+             return UnPaddingExp<Device>(padded_img, pad);
+         }
 
     }; // namespace expr
 }; // namespace mshadow
@@ -418,7 +483,7 @@ namespace mshadow{
             Plan(const UnPoolingExp<Device> &e)
                 : img_(e.img_), pooled_(e.pooled_), ksize_(e.ksize_), kstride_(e.kstride_), type_(e.type_) {}
             MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
-                // Not pairtest yet
+                // Not pairtest yet, bug found
                 real_t val = 0.0f;
                 const index_t x = j;
                 const index_t y = i % img_.shape[1];
@@ -443,6 +508,48 @@ namespace mshadow{
             index_t ksize_;
             index_t kstride_;
             int type_;
+        };
+
+        template<typename Device>
+        struct Plan<PaddingExp<Device> > {
+        public:
+            Plan(const PaddingExp<Device> &e)
+                : img_(e.img_), pad_(e.pad_), new_height_(e.new_height_) {}
+            MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
+                const index_t x = j;
+                const index_t y = i % new_height_;
+                const index_t c = i / new_height_;
+                const index_t h = y - pad_;
+                const index_t w = x - pad_;
+                if (h < 0 || w < 0 || h >= img_.shape[1] || w >= img_.shape[0]) {
+                    return 0;
+                } else {
+                    return img_[c][h][w];
+                }
+            }
+        private:
+            Tensor<Device, 3> img_;
+            index_t pad_;
+            index_t new_height_;
+        };
+
+        template<typename Device>
+        struct Plan<UnPaddingExp<Device> > {
+        public:
+            Plan(const UnPaddingExp<Device> &e)
+                : padded_img_(e.padded_img_), pad_(e.pad_), new_height_(e.new_height_) {}
+            MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
+                const index_t x = j;
+                const index_t y = i % new_height_;
+                const index_t c = i / new_height_;
+                const index_t h = y + pad_;
+                const index_t w = x + pad_;
+                return padded_img_[c][h][w];
+            }
+        private:
+            Tensor<Device, 3> padded_img_;
+            index_t pad_;
+            index_t new_height_;
         };
 
     }; // namespace expr
