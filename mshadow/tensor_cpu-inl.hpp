@@ -166,42 +166,6 @@ namespace mshadow {
             Softmax( dst[y], energy[y] );
         }
     }
-
-    inline void PackPatchFromCol( Tensor<cpu,3> img, const Tensor<cpu,2> &mat, index_t psize, index_t pstride ){
-        using namespace std;
-        utils::Assert( img.shape[0] >= psize && img.shape[1] >= psize, "PackPatchFromCol:image shape smaller than patch size");
-        const index_t o_height = ( img.shape[1]  - psize ) / pstride + 1;
-        const index_t o_width  = ( img.shape[0]  - psize ) / pstride + 1;
-        utils::Assert( o_height*o_width == mat.shape[0], "PackPatchFromCol: mat.shape[0] mismatch" );
-        utils::Assert( psize*psize*img.shape[2] == mat.shape[1], "PackPatchFromCol: mat.shape[1] mismatch" );
-
-        for( index_t c = 0; c < img.shape[2]; ++c ){
-            for( index_t y = 0; y < img.shape[1]; ++y ){
-                for( index_t x = 0; x < img.shape[0]; ++x ){
-                    // need ensure y - y_max >= 0
-                    const index_t y_max = min( psize, y + 1 );
-                    const index_t x_max = min( psize, x + 1 );
-                    // need ensure (y - y_min) / pstride  < o_height
-                    // equals y_min >= y - pstride * o_height + 1
-                    // const int y_min = max( (y-pstride*o_height+pstride) /pstride, 0 ) * pstride + ( y % pstride );
-                    // const int x_min = max( (x-pstride*o_width +pstride) /pstride, 0 ) * pstride + ( x % pstride );
-                    // equvalent form: since we can not have negative value in unsign
-                    const index_t y_min = (max( y/pstride, o_height-1 )+1-o_height) * pstride + ( y % pstride );
-                    const index_t x_min = (max( x/pstride, o_width-1 ) +1-o_width ) * pstride + ( x % pstride );
-
-                    real_t res = 0.0f;
-                    for( index_t y_offset = y_min; y_offset < y_max; y_offset += pstride ){
-                        for( index_t x_offset = x_min; x_offset < x_max; x_offset += pstride ){
-                            const index_t y_start = y - y_offset;
-                            const index_t x_start = x - x_offset;
-                            res += mat[ (c * psize + y_offset) * psize + x_offset ][ (y_start/pstride)*o_width+(x_start/pstride) ];
-                        }
-                    }
-                    img[c][y][x] = res;
-                }
-            }
-        }
-    }
 }; // namespace mshadow
 
 #endif // TENSOR_CPU_INL_HPP
