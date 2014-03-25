@@ -49,6 +49,29 @@ namespace mshadow{
         };
 
         /*!
+         * \brief reverse operation of 
+         *  after getting unpacked mat, we can use: output = dot( weight, mat ) to get covolved results, the relations:
+         * \tparam Device which device it lies
+         */
+        template<typename Device>
+        struct PackColToPatchExp: public MakeTensorExp< PackColToPatchExp<Device>, Tensor<Device,2>, 3>{
+            /*! \brief source operand */
+            const Tensor<Device,2> &mat_;
+            /*! \brief patch size */
+            index_t psize_;
+            /*! \brief patch stride */
+            index_t pstride_;
+            PackColToPatchExp( const Tensor<Device,2> &mat, Shape<3> imshape, index_t psize, index_t pstride )
+                :mat_(mat), psize_(psize), pstride_(pstride){
+                this->shape = imshape;
+                const index_t o_height = ( imshape[1]  - psize ) / pstride + 1;
+                const index_t o_width  = ( imshape[0]  - psize ) / pstride + 1;
+                utils::Assert( mat.shape[0] == o_height * o_width, "PackColToPatchExp: mat.shape[0] mismatch" );
+                utils::Assert( mat.shape[1] == psize * psize * imshape[2], "PackColToPatchExp: mat.shape[1] mismatch" ); 
+            }
+        };
+
+        /*!
          * \brief reshape the content to another shape
          * input: Tensor<Device,dimsrc>: ishape
          * output: Tensor<Device,dimdst> ishape.Size() == oshape.Size()
@@ -229,6 +252,20 @@ namespace mshadow{
         inline UnpackPatchToColExp<Device> unpack_patch2col( const Tensor<Device,3> &img, index_t psize, index_t pstride ){
             utils::Assert( img.shape[0] >= psize && img.shape[1] >= psize, "UnpackPatchToCol:image shape smaller than patch size");
             return UnpackPatchToColExp<Device>( img, psize, pstride );
+        }
+
+        /*!
+         * \brief reverse operation of pack_col2patch
+         * \return packed img expression
+         * \param mat, source matrix 
+         * \param imshape, shape of target img
+         * \param psize height and width of each patch
+         * \param pstride stride of each patch
+         */
+        template<typename Device>
+        inline PackColToPatchExp<Device> pack_col2patch( const Tensor<Device,2> &mat, Shape<3> imshape, index_t psize, index_t pstride ){
+            utils::Assert( imshape[0] >= psize && imshape[1] >= psize, "PackColToPatch:image shape smaller than patch size");
+            return PackColToPatchExp<Device>( mat, imshape, psize, pstride );
         }
         /*!
          * \brief a expression that reshapes a tensor to another shape
@@ -413,10 +450,40 @@ namespace mshadow{
             Tensor<Device,3> img_;
             index_t psize_, pstride_, o_width_;
         };
-    };
+
+        template<typename Device>
+        struct Plan< PackColToPatchExp<Device> >{
+        public:
+            Plan( const PackColToPatchExp<Device> &e )
+                :mat_(e.mat_), psize_(e.psize_), pstride_(e.pstride_){
+                i_height_  = e.imshape_[1]; 
+                o_width_   = ( e.imshape_[0]  - psize_ ) / pstride_ + 1;
+                o_height_  = ( e.imshape_[1]  - psize_ ) / pstride_ + 1;
+            }
+            MSHADOW_XINLINE real_t Eval( index_t i, index_t j ) const{
+                using namespace std;
+                const index_t c = i / i_height_;
+                const index_t y = i % i_height_;
+                const index_t x = j;
+                const index_t py_min = y < psize_ ? 0 : (y-psize_+pstride_)/pstride_;
+                const index_t px_min = x < psize_ ? 0 : (x-psize_+pstride_)/pstride_;
+                const index_t py_max = min( (y+pstride_)/pstride_, o_height_);
+                const index_t px_max = min( (x+pstride_)/pstride_, o_width_ );
+                real_t res = 0.0f;
+                for( index_t py = py_min; py < py_max; ++py ){
+                    for( index_t px = px_min; px < px_max; ++px ){
+                        res += mat_[ (c * psize_ + y - py*pstride_) * psize_ + x - px*pstride_ ][ py*o_width_+px ];
+                    }
+                }
+                return res;
+            }   
+        private:
+            Tensor<Device,2> mat_;
+            index_t psize_, pstride_, i_height_, o_width_, o_height_;
+        };
+    }; 
 
     namespace expr{
-        /*! \brief execution plan of repmat */
         template<typename Device, int dimsrc, int dimdst>
         struct Plan< ReshapeExp<Device,dimsrc,dimdst> >{
         public:
