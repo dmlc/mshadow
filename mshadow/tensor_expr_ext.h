@@ -63,7 +63,7 @@ namespace mshadow{
             index_t pstride_;
             PackColToPatchExp( const Tensor<Device,2> &mat, Shape<3> imshape, index_t psize, index_t pstride )
                 :mat_(mat), psize_(psize), pstride_(pstride){
-                this->shape = imshape;
+                this->shape_ = imshape;
                 const index_t o_height = ( imshape[1]  - psize ) / pstride + 1;
                 const index_t o_width  = ( imshape[0]  - psize ) / pstride + 1;
                 utils::Assert( mat.shape[0] == o_height * o_width, "PackColToPatchExp: mat.shape[0] mismatch" );
@@ -456,9 +456,9 @@ namespace mshadow{
         public:
             Plan( const PackColToPatchExp<Device> &e )
                 :mat_(e.mat_), psize_(e.psize_), pstride_(e.pstride_){
-                i_height_  = e.imshape_[1]; 
-                o_width_   = ( e.imshape_[0]  - psize_ ) / pstride_ + 1;
-                o_height_  = ( e.imshape_[1]  - psize_ ) / pstride_ + 1;
+                i_height_  = e.shape_[1]; 
+                o_width_   = ( e.shape_[0]  - psize_ ) / pstride_ + 1;
+                o_height_  = ( e.shape_[1]  - psize_ ) / pstride_ + 1;
             }
             MSHADOW_XINLINE real_t Eval( index_t i, index_t j ) const{
                 using namespace std;
