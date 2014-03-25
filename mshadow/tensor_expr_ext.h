@@ -511,7 +511,7 @@ namespace mshadow{
         };
 
         template<typename Device>
-        struct Plan<PaddingExp<Device> > {
+        struct Plan< PaddingExp<Device> > {
         public:
             Plan(const PaddingExp<Device> &e)
                 : img_(e.img_), pad_(e.pad_), new_height_(e.new_height_) {}
