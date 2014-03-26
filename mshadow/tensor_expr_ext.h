@@ -178,30 +178,30 @@ namespace mshadow{
                 src_height_ = this->shape_[1];
                 this->shape_[0] += pad * 2; // width
                 this->shape_[1] += pad * 2; // height
-                // this->shape_[2] = img.shape[2]; // channel
             }
         };
 
         /*! \brief unpadding expr
          *  \tparam Device which device it lies
          */
-        template<typename Device>
-        struct UnPaddingExp : public MakeTensorExp<UnPaddingExp<Device>, Tensor<Device, 3>, 3> {
+        template<typename SrcExp, int srcdim>
+        struct UnPaddingExp : public MakeTensorExp<UnPaddingExp<SrcExp, srcdim>, SrcExp, srcdim> {
             /*! \brief source operand */
-            const Tensor<Device, 3> &padded_img_;
+            const SrcExp src_;
             /*! \brief pad size */
             index_t pad_;
-            /*! \brief new height */
-            index_t new_height_;
-            UnPaddingExp(const Tensor<Device,3> &padded_img, index_t pad)
-                : padded_img_(padded_img), pad_(pad) {
+            /*! \brief src height */
+            index_t src_height_;
+            UnPaddingExp(const SrcExp &src, index_t pad)
+                : src_(src), pad_(pad) {
+                this->shape_ = ShapeCheck<srcdim,SrcExp>::Check( src_ );
+
                 utils::Assert(pad > 0, "PaddingExp: Incorrect padding size");
-                utils::Assert(padded_img.shape[0] > 2 * pad, "PaddingExp: padding size should be smaller than img width");
-                utils::Assert(padded_img.shape[1] > 2 * pad, "PaddingExp: padding size should be smaller than img height");
-                this->shape_[0] = padded_img.shape[0] - 2 * pad; // width
-                this->shape_[1] = padded_img.shape[1] - 2 * pad; // height
-                this->shape_[2] = padded_img.shape[2]; // channel
-                new_height_ = padded_img.shape[1] - 2 * pad;
+                utils::Assert(this->shape_[0] > 2 * pad, "PaddingExp: padding size should be smaller than img width");
+                utils::Assert(this->shape_[1] > 2 * pad, "PaddingExp: padding size should be smaller than img height");
+                src_height_ = this->shape_[1];
+                this->shape_[0] -= 2 * pad; // width
+                this->shape_[1] -= 2 * pad; // height
             }
         }; // struct UnPaddingExp
     }; // namespace expr
@@ -363,9 +363,10 @@ namespace mshadow{
           * \param padded_img padded img
           * \param pad
           */
-         template<typename Device>
-         inline UnPaddingExp<Device> unpadding(const Tensor<Device, 3> &padded_img, index_t pad) {
-             return UnPaddingExp<Device>(padded_img, pad);
+         template<typename SrcExp, int etype>
+         inline UnPaddingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim> unpadding(const Exp<SrcExp, etype> &src, index_t pad) {
+             TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
+             return UnPaddingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim>(src.self(), pad);
          }
 
     }; // namespace expr
@@ -591,23 +592,24 @@ namespace mshadow{
             index_t src_height_;
         };
 
-        template<typename Device>
-        struct Plan<UnPaddingExp<Device> > {
+        template<typename SrcExp, int srcdim>
+        struct Plan<UnPaddingExp<SrcExp, srcdim> > {
         public:
-            Plan(const UnPaddingExp<Device> &e)
-                : padded_img_(e.padded_img_), pad_(e.pad_), new_height_(e.new_height_) {}
+            Plan(const UnPaddingExp<SrcExp, srcdim> &e)
+                : src_(MakePlan(e.src_)), pad_(e.pad_), new_height_(e.shape_[1]), src_height_(e.src_height_) {}
             MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
                 const index_t x = j;
                 const index_t y = i % new_height_;
                 const index_t c = i / new_height_;
                 const index_t h = y + pad_;
                 const index_t w = x + pad_;
-                return padded_img_[c][h][w];
+                return src_.Eval(c * src_height_ + h, w);
             }
         private:
-            Tensor<Device, 3> padded_img_;
+            Plan<SrcExp> src_;
             index_t pad_;
             index_t new_height_;
+            index_t src_height_;
         };
 
     }; // namespace expr
