@@ -160,22 +160,25 @@ namespace mshadow{
         /*! \brief padding expr
          *  \tparam Device which device it lies
          */
-        template<typename Device>
-        struct PaddingExp : public MakeTensorExp<PaddingExp<Device>, Tensor<Device, 3>, 3> {
+        template<typename SrcExp, int srcdim>
+        struct PaddingExp : public MakeTensorExp<PaddingExp<SrcExp, srcdim>, SrcExp, srcdim> {
             /*! \brief source operand */
-            const Tensor<Device, 3> &img_;
+            const SrcExp src_;
             /*! \brief pad size */
             index_t pad_;
-            /*! \brief new height */
-            index_t new_height_;
-
-            PaddingExp(const Tensor<Device,3> &img, index_t pad)
-                : img_(img), pad_(pad) {
+            /*! \brief source tensor width */
+            index_t src_width_;
+            /*! \brief source tensor height */
+            index_t src_height_;
+            PaddingExp(const SrcExp &src, index_t pad)
+                : src_(src), pad_(pad) {
+                this->shape_ = ShapeCheck<srcdim,SrcExp>::Check( src_ );
                 utils::Assert(pad > 0, "PaddingExp: Incorrect padding size");
-                this->shape_[0] = img.shape[0] + pad * 2; // width
-                this->shape_[1] = img.shape[1] + pad * 2; // height
-                this->shape_[2] = img.shape[2]; // channel
-                new_height_ = img.shape[1] + pad * 2;
+                src_width_ = this->shape_[0];
+                src_height_ = this->shape_[1];
+                this->shape_[0] += pad * 2; // width
+                this->shape_[1] += pad * 2; // height
+                // this->shape_[2] = img.shape[2]; // channel
             }
         };
 
@@ -348,9 +351,10 @@ namespace mshadow{
          * \param img original image
          * \param pad padding size
          */
-         template<typename Device>
-         inline PaddingExp<Device> padding(const Tensor<Device, 3>&img, index_t pad) {
-             return PaddingExp<Device>(img, pad);
+         template<typename SrcExp, int etype>
+         inline PaddingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim> padding(const Exp<SrcExp, etype> &src, index_t pad) {
+             TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
+             return PaddingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim>(src.self(), pad);
          }
 
          /*!
@@ -561,11 +565,11 @@ namespace mshadow{
             int type_;
         };
 
-        template<typename Device>
-        struct Plan< PaddingExp<Device> > {
+        template<typename SrcExp, int srcdim>
+        struct Plan< PaddingExp<SrcExp, srcdim> > {
         public:
-            Plan(const PaddingExp<Device> &e)
-                : img_(e.img_), pad_(e.pad_), new_height_(e.new_height_) {}
+            Plan(const PaddingExp<SrcExp, srcdim> &e)
+                : src_(MakePlan(e.src_)), pad_(e.pad_), new_height_(e.shape_[1]), src_width_(e.src_width_), src_height_(e.src_height_) {}
             MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
                 const index_t x = j;
                 const index_t y = i % new_height_;
@@ -573,16 +577,18 @@ namespace mshadow{
                 if (y < pad_ || x < pad_) return 0.0f;
                 const index_t h = y - pad_;
                 const index_t w = x - pad_;
-                if (h >= img_.shape[1] || w >= img_.shape[0]) {
+                if (h >= src_height_ || w >= src_width_) {
                     return 0;
                 } else {
-                    return img_[c][h][w];
+                    return src_.Eval(c * src_height_ + h, w);
                 }
             }
         private:
-            Tensor<Device, 3> img_;
+            Plan<SrcExp> src_;
             index_t pad_;
             index_t new_height_;
+            index_t src_width_;
+            index_t src_height_;
         };
 
         template<typename Device>
