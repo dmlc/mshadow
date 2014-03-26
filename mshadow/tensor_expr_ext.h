@@ -115,8 +115,8 @@ namespace mshadow{
          * \tparam Reducer reduction method during pooling
          * \tparam SrcExp source expression to be pooled from
          */
-        template<typename Reducer, typename SrcExp>
-        struct PoolingExp: public MakeTensorExp< PoolingExp<Reducer, SrcExp>, SrcExp, 4> {
+        template<typename Reducer, typename SrcExp, int srcdim>
+        struct PoolingExp: public MakeTensorExp< PoolingExp<Reducer, SrcExp,srcdim>, SrcExp, srcdim> {
             /*! \brief source operand */
             const SrcExp src_;
             /*! \brief kernel size */
@@ -128,14 +128,13 @@ namespace mshadow{
             /*! \brief source width shape[0] */
             index_t src_width_;
             PoolingExp( const SrcExp &src, index_t ksize, index_t kstride )
-                : src_(src), ksize_(ksize), kstride_(kstride) {
-                Shape<4> srcshape = ShapeCheck<4,SrcExp>::Check( src_ );
-                utils::Assert( srcshape[1] >= ksize && srcshape[0] >= ksize, "PoolingExp: source smaller than kernel" );
-                this->src_height_ = srcshape[1];
-                this->src_width_  = srcshape[0];
-                const index_t p_height = (src_height_ - ksize) / kstride + 1;
-                const index_t p_width  = (src_width_  - ksize) / kstride + 1;
-                this->shape_ = Shape4( srcshape[3], srcshape[2], p_height, p_width );
+                : src_(src), ksize_(ksize), kstride_(kstride) {                    
+                this->shape_ = ShapeCheck<srcdim,SrcExp>::Check( src_ );
+                utils::Assert( this->shape_[1] >= ksize && this->shape_[0] >= ksize, "PoolingExp: source smaller than kernel" );
+                this->src_height_ = this->shape_[1];
+                this->src_width_  = this->shape_[0];
+                this->shape_[1] = (src_height_ - ksize) / kstride + 1;
+                this->shape_[0] = (src_width_ - ksize) / kstride + 1;
             }
         };
 
@@ -303,9 +302,9 @@ namespace mshadow{
          * \return expression of pooled result
          */
         template<typename Reducer, typename SrcExp, int etype>
-        inline PoolingExp<Reducer,SrcExp> pooling( const Exp<SrcExp,etype> &src, index_t ksize, index_t kstride ) {
-            TypeCheckPass< ExpInfo<cpu,SrcExp>::kDim == 4|| ExpInfo<gpu,SrcExp>::kDim == 4 >::Error_Expression_Does_Not_Meet_Dimension_Req();
-            return PoolingExp<Reducer,SrcExp>(src.self(), ksize, kstride);
+        inline PoolingExp<Reducer,SrcExp, ExpInfoXPU<SrcExp>::kDim > pooling( const Exp<SrcExp,etype> &src, index_t ksize, index_t kstride ) {
+            TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
+            return PoolingExp<Reducer,SrcExp, ExpInfoXPU<SrcExp>::kDim >(src.self(), ksize, kstride);
         }
 
         // short cut functions
@@ -503,10 +502,10 @@ namespace mshadow{
             index_t oshape0_, ishape0_, istride_;
         };
 
-        template<typename Reducer, typename SrcExp>
-        struct Plan< PoolingExp<Reducer, SrcExp> > {
+        template<typename Reducer, typename SrcExp, int srcdim>
+        struct Plan< PoolingExp<Reducer, SrcExp, srcdim> > {
         public:
-            Plan( const PoolingExp<Reducer, SrcExp> &e )
+            Plan( const PoolingExp<Reducer, SrcExp, srcdim> &e )
                 : src_( MakePlan( e.src_ ) ), ksize_(e.ksize_), kstride_(e.kstride_), 
                   src_height_(e.src_height_),src_width_(e.src_width_), new_height_(e.shape_[1]) {
             }

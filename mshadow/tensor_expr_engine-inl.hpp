@@ -156,6 +156,14 @@ namespace mshadow{
                 ( kDimLhs==0 ? kDimRhs : ( (kDimRhs==0||kDimLhs==kDimRhs) ? kDimLhs : -1 ) ):-1;
         };
 
+        /*! \brief dimension information that is invariant of device */
+        template<typename E>
+        struct ExpInfoXPU{
+            const static int kDimCPU = ExpInfo<cpu,E>::kDim;
+            const static int kDimGPU = ExpInfo<gpu,E>::kDim;
+            const static int kDim = kDimCPU >= 0 ? kDimCPU : kDimGPU;
+        };
+
         /*! \brief template to do type check */
         template<typename Device, int dim, typename E>
         struct TypeCheck{
