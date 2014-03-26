@@ -111,28 +111,33 @@ namespace mshadow{
         };
 
         /*!
-         * \brief pooling expr.
-         * \tparam Device which device it lies
+         * \brief pooling expression, do reduction over local patches of a image
+         * \tparam Reducer reduction method during pooling
+         * \tparam SrcExp source expression to be pooled from
          */
-        template<typename Op, typename Device>
-        struct PoolingExp: public MakeTensorExp<PoolingExp<Op, Device>, Tensor<Device, 3>, 3> {
+        template<typename Reducer, typename SrcExp>
+        struct PoolingExp: public MakeTensorExp< PoolingExp<Reducer, SrcExp>, SrcExp, 4> {
             /*! \brief source operand */
-            const Tensor<Device, 3> &img_;
+            const SrcExp src_;
             /*! \brief kernel size */
             index_t ksize_;
             /*! \brief kernel stride */
             index_t kstride_;
-            PoolingExp(const Tensor<Device, 3> &img, index_t ksize, index_t kstride)
-                : img_(img), ksize_(ksize), kstride_(kstride) {
-                  const index_t p_height = (img.shape[1] - ksize) / kstride + 1;
-                  const index_t p_width = (img.shape[0] - ksize) / kstride + 1;
-                  this->shape_[0] = p_width;
-                  this->shape_[1] = p_height;
-                  this->shape_[2] = img.shape[2];
+            /*! \brief source height shape[1] */
+            index_t src_height_;
+            /*! \brief source width shape[0] */
+            index_t src_width_;
+            PoolingExp( const SrcExp &src, index_t ksize, index_t kstride )
+                : src_(src), ksize_(ksize), kstride_(kstride) {
+                Shape<4> srcshape = ShapeCheck<4,SrcExp>::Check( src_ );
+                utils::Assert( srcshape[1] >= ksize && srcshape[0] >= ksize, "PoolingExp: source smaller than kernel" );
+                this->src_height_ = srcshape[1];
+                this->src_width_  = srcshape[0];
+                const index_t p_height = (src_height_ - ksize) / kstride + 1;
+                const index_t p_width  = (src_width_  - ksize) / kstride + 1;
+                this->shape_ = Shape4( srcshape[3], srcshape[2], p_height, p_width );
             }
         };
-
-
 
         /*! \brief unpooling expr
          * \tparam Device which device it lies
@@ -289,6 +294,20 @@ namespace mshadow{
             return ReduceTo1DExp<E,red::sum,dimkeep>( exp.self(), 1.0f );
         }
 
+
+        /*!
+         * \brief pooling for 4D tensor
+         * \param src source image, shape[3]: batch, shape[2]: channel shape[1]: height shape[0]:width
+         * \param ksize kernel size
+         * \param kstride stride for each kernel
+         * \return expression of pooled result
+         */
+        template<typename Reducer, typename SrcExp, int etype>
+        inline PoolingExp<Reducer,SrcExp> pooling( const Exp<SrcExp,etype> &src, index_t ksize, index_t kstride ) {
+            TypeCheckPass< ExpInfo<cpu,SrcExp>::kDim == 4|| ExpInfo<gpu,SrcExp>::kDim == 4 >::Error_Expression_Does_Not_Meet_Dimension_Req();
+            return PoolingExp<Reducer,SrcExp>(src.self(), ksize, kstride);
+        }
+
         // short cut functions
         /*!
          * \brief a expression that replicate a 1 dimension tensor for nrow times
@@ -311,18 +330,6 @@ namespace mshadow{
         template<typename E, int etype>
         inline ReduceTo1DExp<E, red::sum, 0 > sum_rows( const Exp<E,etype> &exp ){
             return sumall_except_dim<0>( exp );
-        }
-
-        /*!
-         * \brief pooling for 3D tensor
-         * \return mat pooling result, shape[2]: channel shape[1]: height shape[0]:weight
-         * \param img source image, shape[2]: channel shape[1]: height shape[0]:weight
-         * \param ksize kernel size
-         * \param kstride stride for each kernel
-         */
-        template<typename Op, typename Device>
-        inline PoolingExp<Op, Device> pooling(const Tensor<Device, 3> &img, index_t ksize, index_t kstride) {
-            return PoolingExp<Op, Device>(img, ksize, kstride);
         }
 
         /*!
@@ -496,31 +503,36 @@ namespace mshadow{
             index_t oshape0_, ishape0_, istride_;
         };
 
-        template<typename Op, typename Device>
-        struct Plan<PoolingExp<Op, Device> > {
+        template<typename Reducer, typename SrcExp>
+        struct Plan< PoolingExp<Reducer, SrcExp> > {
         public:
-            Plan(const PoolingExp<Op, Device> &e)
-                :img_(e.img_), ksize_(e.ksize_), kstride_(e.kstride_), new_height_(e.shape_[1]) {
+            Plan( const PoolingExp<Reducer, SrcExp> &e )
+                : ksize_(e.ksize_), kstride_(e.kstride_), 
+                  src_height_(e.src_height_),src_width_(e.src_width_), new_height_(e.shape_[1]) {
+                src_ = MakePlan( e.src_ );
             }
             MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
-                real_t val = 0;
-                const index_t x = j;
-                const index_t y = i % new_height_;
+                using namespace std;
+                const index_t py = i % new_height_;
+                const index_t y_start = py * kstride_;
+                const index_t y_end = min( y_start + ksize_, src_height_ );
+                const index_t px = j;
+                const index_t x_start = px * kstride_;
+                const index_t x_end = min( x_start + ksize_, src_width_ );
                 const index_t c = i / new_height_;
-                const index_t x_start = x * kstride_;
-                const index_t x_end = x_start + ksize_< img_.shape[0] ? x_start + ksize_ : img_.shape[0];
-                const index_t y_start = y * kstride_;
-                const index_t y_end = y_start + ksize_< img_.shape[1] ? y_start + ksize_ : img_.shape[1];
-                for (index_t h = y_start; h < y_end; ++h) {
-                    for (index_t w = x_start; w < x_end; ++w) {
-                        Op::Reduce(val, img_[c][h][w]);
+
+                real_t res = Reducer::InitV;
+                for (index_t y = y_start; y < y_end; ++y) {
+                    for (index_t x = x_start; x < x_end; ++x) {
+                        Reducer::Reduce( res, src_.Eval( c*src_height_+y, x ) );
                     }
                 }
-                return val;
+                return res;
             }
         private:
-            Tensor<Device, 3> img_;
+            Plan<SrcExp> src_;
             index_t ksize_, kstride_;
+            index_t src_height_, src_width_;
             index_t new_height_;
         };
 
