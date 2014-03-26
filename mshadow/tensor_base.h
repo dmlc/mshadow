@@ -216,6 +216,10 @@ namespace mshadow {
             MSHADOW_XINLINE static void Reduce( volatile real_t& dst,  volatile real_t src ) {
                 dst += src;
             }
+            /*! \brief calculate gradient of redres with respect to redsrc,  redres: reduced result, redsrc: one of reduction element */
+            MSHADOW_XINLINE static real_t PartialGrad( real_t redres, real_t redsrc ) {
+                return 1.0f;
+            }
             /*! \brief an intial value of reducer */
             const static real_t kInitV = 0.0f;
         };
@@ -223,6 +227,10 @@ namespace mshadow {
             MSHADOW_XINLINE static void Reduce( volatile real_t& dst,  volatile real_t src ) {
                 using namespace std;
                 dst = max( dst, src );
+            }
+            /*! \brief calculate gradient of redres with respect to redsrc,  redres: reduced result, redsrc: one of reduction element */
+            MSHADOW_XINLINE static real_t PartialGrad( real_t redres, real_t redsrc ) {
+                return redres == redsrc ? 1.0f: 0.0f;
             }
             /*! \brief an intial value of reducer */
 #if MSHADOW_SINGLE_PRECISION
