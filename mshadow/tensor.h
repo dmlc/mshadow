@@ -351,6 +351,22 @@ namespace mshadow {
     template<int dim>
     inline void Copy(Tensor<gpu,dim> dst, const Tensor<gpu,dim> &src );
     
+       
+    /*! 
+     * \brief CPU/GPU: normalize softmax: dst[i][j] = exp( energy[i][j] ) /( sum_j exp( energy[i][j] ) )
+     * \param dst destination
+     * \param energy input energy
+     */
+    inline void Softmax( Tensor<cpu,2> dst, const Tensor<cpu,2> &energy );
+    inline void Softmax( Tensor<gpu,2> dst, const Tensor<gpu,2> &energy );
+    
+}; // namespace mshadow 
+
+
+namespace mshadow{
+    // function declarations to support expression, no need to understand them
+    // these functions do not need to be directly used 
+    
     /*!
      * \brief CPU/GPU: map a expression to a tensor, this function calls MapPlan
      * \tparam Saver specify storage method
@@ -400,27 +416,6 @@ namespace mshadow {
     inline void MapReduceKeepHighDim( Tensor<cpu,1> dst, const expr::Exp<E,etype> &exp, real_t scale = 1.0f );
     template<typename Saver, typename Reducer, typename E, int etype>
     inline void MapReduceKeepHighDim( Tensor<gpu,1> dst, const expr::Exp<E,etype> &exp, real_t scale = 1.0f );
-
-    
-    /*! 
-     * \brief CPU/GPU: normalize softmax: dst[i][j] = exp( energy[i][j] ) /( sum_j exp( energy[i][j] ) )
-     * \param dst destination
-     * \param energy input energy
-     */
-    inline void Softmax( Tensor<cpu,2> dst, const Tensor<cpu,2> &energy );
-    inline void Softmax( Tensor<gpu,2> dst, const Tensor<gpu,2> &energy );
-
-    /*!
-     * \brief CPU/GPU: pack column of mat into img, the overlappin values are summed
-     * 
-     * \param img target image; shape[2]:  in_channels, shape[1]: in_height, shape[0]: in_width
-     * \param mat source matrix; shape[1]: in_channel*psize*psize  shape[0]: out_height*out_width
-     * \param psize height and width of each patch
-     * \param pstride stride of each patch
-     * \sa UnpackPatchToCol
-     */
-    inline void PackPatchFromCol( Tensor<cpu,3> img, const Tensor<cpu,2> &mat, index_t psize, index_t pstride );
-    inline void PackPatchFromCol( Tensor<gpu,3> img, const Tensor<gpu,2> &mat, index_t psize, index_t pstride );
 
 };// namespace mshadow
 
