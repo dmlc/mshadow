@@ -507,9 +507,8 @@ namespace mshadow{
         struct Plan< PoolingExp<Reducer, SrcExp> > {
         public:
             Plan( const PoolingExp<Reducer, SrcExp> &e )
-                : ksize_(e.ksize_), kstride_(e.kstride_), 
+                : src_( MakePlan( e.src_ ) ), ksize_(e.ksize_), kstride_(e.kstride_), 
                   src_height_(e.src_height_),src_width_(e.src_width_), new_height_(e.shape_[1]) {
-                src_ = MakePlan( e.src_ );
             }
             MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
                 using namespace std;
@@ -521,7 +520,7 @@ namespace mshadow{
                 const index_t x_end = min( x_start + ksize_, src_width_ );
                 const index_t c = i / new_height_;
 
-                real_t res = Reducer::InitV;
+                real_t res = Reducer::kInitV;
                 for (index_t y = y_start; y < y_end; ++y) {
                     for (index_t x = x_start; x < x_end; ++x) {
                         Reducer::Reduce( res, src_.Eval( c*src_height_+y, x ) );
