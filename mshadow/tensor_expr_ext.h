@@ -49,7 +49,7 @@ namespace mshadow{
         };
 
         /*!
-         * \brief reverse operation of 
+         * \brief reverse operation of
          *  after getting unpacked mat, we can use: output = dot( weight, mat ) to get covolved results, the relations:
          * \tparam Device which device it lies
          */
@@ -67,7 +67,7 @@ namespace mshadow{
                 const index_t o_height = ( imshape[1]  - psize ) / pstride + 1;
                 const index_t o_width  = ( imshape[0]  - psize ) / pstride + 1;
                 utils::Assert( mat.shape[0] == o_height * o_width, "PackColToPatchExp: mat.shape[0] mismatch" );
-                utils::Assert( mat.shape[1] == psize * psize * imshape[2], "PackColToPatchExp: mat.shape[1] mismatch" ); 
+                utils::Assert( mat.shape[1] == psize * psize * imshape[2], "PackColToPatchExp: mat.shape[1] mismatch" );
             }
         };
 
@@ -114,26 +114,21 @@ namespace mshadow{
          * \brief pooling expr.
          * \tparam Device which device it lies
          */
-        template<typename Device>
-        struct PoolingExp: public MakeTensorExp<PoolingExp<Device>, Tensor<Device, 3>, 3> {
+        template<typename Op, typename Device>
+        struct PoolingExp: public MakeTensorExp<PoolingExp<Op, Device>, Tensor<Device, 3>, 3> {
             /*! \brief source operand */
             const Tensor<Device, 3> &img_;
             /*! \brief kernel size */
             index_t ksize_;
             /*! \brief kernel stride */
             index_t kstride_;
-            /*! \brief pooling type */
-            int type_;
-            /*! \brief new heigh */
-            index_t new_height_;
-            PoolingExp(const Tensor<Device, 3> &img, index_t ksize, index_t kstride, int type)
-                : img_(img), ksize_(ksize), kstride_(kstride), type_(type) {
+            PoolingExp(const Tensor<Device, 3> &img, index_t ksize, index_t kstride)
+                : img_(img), ksize_(ksize), kstride_(kstride) {
                   const index_t p_height = (img.shape[1] - ksize) / kstride + 1;
                   const index_t p_width = (img.shape[0] - ksize) / kstride + 1;
                   this->shape_[0] = p_width;
                   this->shape_[1] = p_height;
                   this->shape_[2] = img.shape[2];
-                  new_height_ = p_height;
             }
         };
 
@@ -257,7 +252,7 @@ namespace mshadow{
         /*!
          * \brief reverse operation of pack_col2patch
          * \return packed img expression
-         * \param mat, source matrix 
+         * \param mat, source matrix
          * \param imshape, shape of target img
          * \param psize height and width of each patch
          * \param pstride stride of each patch
@@ -325,9 +320,9 @@ namespace mshadow{
          * \param ksize kernel size
          * \param kstride stride for each kernel
          */
-        template<typename Device>
-        inline PoolingExp<Device> pooling(const Tensor<Device, 3> &img, index_t ksize, index_t kstride, int type) {
-            return PoolingExp<Device>(img, ksize, kstride, type);
+        template<typename Op, typename Device>
+        inline PoolingExp<Op, Device> pooling(const Tensor<Device, 3> &img, index_t ksize, index_t kstride) {
+            return PoolingExp<Op, Device>(img, ksize, kstride);
         }
 
         /*!
@@ -456,7 +451,7 @@ namespace mshadow{
         public:
             Plan( const PackColToPatchExp<Device> &e )
                 :mat_(e.mat_), psize_(e.psize_), pstride_(e.pstride_){
-                i_height_  = e.shape_[1]; 
+                i_height_  = e.shape_[1];
                 o_width_   = ( e.shape_[0]  - psize_ ) / pstride_ + 1;
                 o_height_  = ( e.shape_[1]  - psize_ ) / pstride_ + 1;
             }
@@ -476,12 +471,12 @@ namespace mshadow{
                     }
                 }
                 return res;
-            }   
+            }
         private:
             Tensor<Device,2> mat_;
             index_t psize_, pstride_, i_height_, o_width_, o_height_;
         };
-    }; 
+    };
 
     namespace expr{
         template<typename Device, int dimsrc, int dimdst>
@@ -501,14 +496,14 @@ namespace mshadow{
             index_t oshape0_, ishape0_, istride_;
         };
 
-        template<typename Device>
-        struct Plan<PoolingExp<Device> > {
+        template<typename Op, typename Device>
+        struct Plan<PoolingExp<Op, Device> > {
         public:
-            Plan(const PoolingExp<Device> &e)
-                :img_(e.img_), ksize_(e.ksize_), kstride_(e.kstride_), type_(e.type_), new_height_(e.new_height_) {
+            Plan(const PoolingExp<Op, Device> &e)
+                :img_(e.img_), ksize_(e.ksize_), kstride_(e.kstride_), new_height_(e.shape_[1]) {
             }
             MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
-                real_t val = -FLT_MAX;
+                real_t val = 0;
                 const index_t x = j;
                 const index_t y = i % new_height_;
                 const index_t c = i / new_height_;
@@ -516,31 +511,16 @@ namespace mshadow{
                 const index_t x_end = x_start + ksize_< img_.shape[0] ? x_start + ksize_ : img_.shape[0];
                 const index_t y_start = y * kstride_;
                 const index_t y_end = y_start + ksize_< img_.shape[1] ? y_start + ksize_ : img_.shape[1];
-                // TODO: Better reduction
-                switch(type_) {
-                    case kMaxPooling:
-                        for (index_t h = y_start; h < y_end; ++h) {
-                            for (index_t w = x_start; w < x_end; ++w) {
-                                if (img_[c][h][w] > val) val = img_[c][h][w];
-                            }
-                        }
-                        return val;
-                    case kSumPooling:
-                        for (index_t h = y_start; h < y_end; ++h) {
-                            for (index_t w = x_start; w < x_end; ++w) {
-                                val += img_[c][h][w];
-                            }
-                        }
-                        return val;
-                    //case kAvgPooling: return val / ksize_ / ksize_;
-                    default: utils::Error("Unknown Pooling type");
+                for (index_t h = y_start; h < y_end; ++h) {
+                    for (index_t w = x_start; w < x_end; ++w) {
+                        Op::Reduce(val, img_[c][h][w]);
+                    }
                 }
-                return 0;
+                return val;
             }
         private:
             Tensor<Device, 3> img_;
             index_t ksize_, kstride_;
-            int type_;
             index_t new_height_;
         };
 
@@ -550,15 +530,14 @@ namespace mshadow{
             Plan(const UnPoolingExp<Device> &e)
                 : img_(e.img_), pooled_(e.pooled_), ksize_(e.ksize_), kstride_(e.kstride_), type_(e.type_) {}
             MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
-                // Not pairtest yet, bug found
                 real_t val = 0.0f;
                 const index_t x = j;
                 const index_t y = i % img_.shape[1];
                 const index_t c = i / img_.shape[1];
-                const index_t x_start = x / kstride_;
-                const index_t x_end = x_start + ksize_< img_.shape[0] ? x_start + ksize_ : img_.shape[0];
-                const index_t y_start = y / kstride_;
-                const index_t y_end = y_start + ksize_< img_.shape[1] ? y_start + ksize_ : img_.shape[1];
+                const index_t x_start = (x - ksize_) / kstride_ + 1;
+                const index_t x_end = x / kstride_ + 1;
+                const index_t y_start = (y -ksize_) / kstride_ + 1;
+                const index_t y_end = y / kstride_ + 1;
                 if (type_ == kMaxPooling) {
                     for (index_t h = y_start; h < y_end; ++h) {
                         for (index_t w = x_start; w < x_end; ++w) {
@@ -586,9 +565,10 @@ namespace mshadow{
                 const index_t x = j;
                 const index_t y = i % new_height_;
                 const index_t c = i / new_height_;
+                if (y < pad_ || x < pad_) return 0.0f;
                 const index_t h = y - pad_;
                 const index_t w = x - pad_;
-                if (h < 0 || w < 0 || h >= img_.shape[1] || w >= img_.shape[0]) {
+                if (h >= img_.shape[1] || w >= img_.shape[0]) {
                     return 0;
                 } else {
                     return img_[c][h][w];
