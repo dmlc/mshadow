@@ -35,7 +35,7 @@ namespace mshadow{
         template<typename Device>
         struct UnpackPatchToColExp: public MakeTensorExp< UnpackPatchToColExp<Device>, Tensor<Device,3>, 2>{
             /*! \brief source operand */
-            const Tensor<Device,3> &img_;
+            Tensor<Device,3> img_;
             /*! \brief patch size */
             index_t psize_;
             /*! \brief patch stride */
@@ -51,14 +51,13 @@ namespace mshadow{
         };
 
         /*!
-         * \brief reverse operation of
-         *  after getting unpacked mat, we can use: output = dot( weight, mat ) to get covolved results, the relations:
+         * \brief reverse operation of UnpackPatchToCol, used to backprop gradient back 
          * \tparam Device which device it lies
          */
         template<typename Device>
         struct PackColToPatchExp: public MakeTensorExp< PackColToPatchExp<Device>, Tensor<Device,2>, 3>{
             /*! \brief source operand */
-            const Tensor<Device,2> &mat_;
+            Tensor<Device,2> mat_;
             /*! \brief patch size */
             index_t psize_;
             /*! \brief patch stride */
@@ -118,6 +117,7 @@ namespace mshadow{
          * \brief pooling expression, do reduction over local patches of a image
          * \tparam Reducer reduction method during pooling
          * \tparam SrcExp source expression to be pooled from
+         * \tparam srcdim dimension of src
          */
         template<typename Reducer, typename SrcExp, int srcdim>
         struct PoolingExp: public MakeTensorExp< PoolingExp<Reducer, SrcExp,srcdim>, SrcExp, srcdim> {
@@ -143,58 +143,73 @@ namespace mshadow{
             }
         };
 
-        /*! \brief unpooling expr
+        /*!
+         * \brief unpooling expr reverse operation of pooling, used to pass gradient back
+         * \tparam Reducer specifies reduction operation during pooling
          * \tparam Device which device it lies
          */
         template<typename Reducer, typename Device>
-        struct UnPoolingExp: public MakeTensorExp<UnPoolingExp<Reducer, Device>, Tensor<Device,4>, 4> {
-            /*! \brief source operand */
-            const Tensor<Device, 4> &img_;
-            /*! \brief source pooled operand */
-            const Tensor<Device, 4> &pooled_;
+        struct UnPoolingExp: public MakeTensorExp< UnPoolingExp<Reducer, Device>, Tensor<Device,4>, 4> {
+            /*! \brief source input, corresponds to src in pooling */
+            Tensor<Device, 4> data_src_;
+            /*! \brief result of pooled data, corresponds to result of pooling */
+            Tensor<Device, 4> data_pooled_;
+            /*! \brief gradient data of pooled part, to be propgate down */
+            Tensor<Device, 4> grad_pooled_;
             /*! \brief kernel size */
             index_t ksize_;
             /*! \brief kernel stride */
             index_t kstride_;
             /*! \brief constructor */
-            UnPoolingExp(const Tensor<Device,4> &img, const Tensor<Device,4> &pooled, index_t ksize, index_t kstride) : img_(img), pooled_(pooled), ksize_(ksize), kstride_(kstride) {
-                this->shape_ = img_.shape;
+            UnPoolingExp( const Tensor<Device,4> &data_src,  const Tensor<Device,4> &data_pooled,
+                          const Tensor<Device,4> &grad_pooled, index_t ksize, index_t kstride )
+                : data_src_(data_src), data_pooled_(data_pooled), grad_pooled_(grad_pooled),
+                  ksize_(ksize), kstride_(kstride) {
+                utils::Assert( grad_pooled.shape == data_pooled.shape, "UnPoolingExp: pooled shape mismatch" );
+                utils::Assert( grad_pooled.shape[0] == (data_src.shape[0]-ksize) / kstride + 1, "UnPoolingExp: pool and src shape mismatch" );
+                utils::Assert( grad_pooled.shape[1] == (data_src.shape[1]-ksize) / kstride + 1, "UnPoolingExp: pool and src shape mismatch" );
+                utils::Assert( grad_pooled.shape[2] == data_src.shape[2], "UnPoolingExp: pool and src shape mismatch" );
+                utils::Assert( grad_pooled.shape[3] == data_src.shape[3], "UnPoolingExp: pool and src shape mismatch" );
+                this->shape_ = data_src_.shape;
             }
         };
 
-
-        /*! \brief padding expr
-         *  \tparam Device which device it lies
+        /*! 
+         * \brief padding expression, pad a image with zeros
+         * \tparam SrcExp source expression to be pooled from
+         * \tparam srcdim dimension of src
          */
         template<typename SrcExp, int srcdim>
         struct PaddingExp : public MakeTensorExp<PaddingExp<SrcExp, srcdim>, SrcExp, srcdim> {
             /*! \brief source operand */
-            const SrcExp src_;
+            SrcExp src_;
             /*! \brief pad size */
             index_t pad_;
-            /*! \brief source tensor width */
-            index_t src_width_;
             /*! \brief source tensor height */
             index_t src_height_;
+            /*! \brief source tensor width */
+            index_t src_width_;
             /*! \brief constructor */
-            PaddingExp(const SrcExp &src, index_t pad)
+            PaddingExp( const SrcExp &src, index_t pad )
                 : src_(src), pad_(pad) {
                 this->shape_ = ShapeCheck<srcdim,SrcExp>::Check( src_ );
                 utils::Assert(pad > 0, "PaddingExp: Incorrect padding size");
-                src_width_ = this->shape_[0];
                 src_height_ = this->shape_[1];
-                this->shape_[0] += pad * 2; // width
+                src_width_  = this->shape_[0];
                 this->shape_[1] += pad * 2; // height
+                this->shape_[0] += pad * 2; // width
             }
         };
 
-        /*! \brief unpadding expr
-         *  \tparam Device which device it lies
+        /*! 
+         * \brief unpadding expression, cut off the boundary region, reverse operation of padding
+         * \tparam SrcExp source expression to be pooled from
+         * \tparam srcdim dimension of src
          */
         template<typename SrcExp, int srcdim>
-        struct UnPaddingExp : public MakeTensorExp<UnPaddingExp<SrcExp, srcdim>, SrcExp, srcdim> {
+        struct UnPaddingExp : public MakeTensorExp< UnPaddingExp<SrcExp, srcdim>, SrcExp, srcdim> {
             /*! \brief source operand */
-            const SrcExp src_;
+            SrcExp src_;
             /*! \brief pad size */
             index_t pad_;
             /*! \brief src height */
@@ -203,10 +218,9 @@ namespace mshadow{
             UnPaddingExp(const SrcExp &src, index_t pad)
                 : src_(src), pad_(pad) {
                 this->shape_ = ShapeCheck<srcdim,SrcExp>::Check( src_ );
-
-                utils::Assert(pad > 0, "PaddingExp: Incorrect padding size");
-                utils::Assert(this->shape_[0] > 2 * pad, "PaddingExp: padding size should be smaller than img width");
-                utils::Assert(this->shape_[1] > 2 * pad, "PaddingExp: padding size should be smaller than img height");
+                utils::Assert(pad > 0, "UnPaddingExp: Incorrect padding size");
+                utils::Assert(this->shape_[0] > 2 * pad, "UnPaddingExp: padding size should be smaller than img width");
+                utils::Assert(this->shape_[1] > 2 * pad, "UnPaddingExp: padding size should be smaller than img height");
                 src_height_ = this->shape_[1];
                 this->shape_[0] -= 2 * pad; // width
                 this->shape_[1] -= 2 * pad; // height
@@ -265,7 +279,7 @@ namespace mshadow{
         }
 
         /*!
-         * \brief reverse operation of pack_col2patch
+         * \brief reverse operation of pack_col2patch, can be used to implement deconvolution
          * \return packed img expression
          * \param mat source matrix
          * \param imshape shape of target img
@@ -304,19 +318,65 @@ namespace mshadow{
             return ReduceTo1DExp<E,red::sum,dimkeep>( exp.self(), 1.0f );
         }
 
-
         /*!
-         * \brief pooling for 4D tensor
+         * \brief pooling subregion results together
          * \param src source image, shape[3]: batch, shape[2]: channel shape[1]: height shape[0]:width
          * \param ksize kernel size
          * \param kstride stride for each kernel
          * \return expression of pooled result
+         * \tparam Reducer reducer type
+         * \tparam SrcExp source expression
+         * \tparam etype type of expression
          */
         template<typename Reducer, typename SrcExp, int etype>
         inline PoolingExp<Reducer,SrcExp, ExpInfoXPU<SrcExp>::kDim > pooling( const Exp<SrcExp,etype> &src, index_t ksize, index_t kstride ) {
             TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
             return PoolingExp<Reducer,SrcExp, ExpInfoXPU<SrcExp>::kDim >(src.self(), ksize, kstride);
         }
+        /*!
+         * \brief unpooling gradient for 4D, backprop gradient value back, revserse operation of pooling
+         * \param data_src  source input, corresponds to src in pooling
+         * \param data_pooled result of pooled data, corresponds to result of pooling 
+         * \param grad_pooled gradient data of pooled part, to be propgate down
+         * \param ksize kernel size
+         * \param kstride stride for each kernel
+         * \return expression corresponding to unpooled 4D Tensor, storing backproped gradient
+         * \tparam Reducer reducer type
+         * \tparam Device device where data lies
+         */
+         template<typename Reducer, typename Device>
+         inline UnPoolingExp<Reducer, Device> unpooling( const Tensor<Device,4>&data_src, const Tensor<Device,4> &data_pooled, 
+                                                         const Tensor<Device,4> &grad_pooled, index_t ksize, index_t kstride ) {             
+             return UnPoolingExp<Reducer, Device>(data_src, data_pooled, grad_pooled,ksize, kstride);
+         }
+
+        /*!
+         * \brief padding expression, pad a image with zeros on boundaries, padding affects shape[0], and shape[1]
+         * \param src original image batches
+         * \param pad padding size
+         * \return expression corresponding to padded result
+         * \tparam SrcExp source expression
+         * \tparam etype type of expression
+         */
+         template<typename SrcExp, int etype>
+         inline PaddingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim> padding(const Exp<SrcExp, etype> &src, index_t pad) {
+             TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
+             return PaddingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim>(src.self(), pad);
+         }
+
+        /*!
+         * \brief revserse operationg of padding, cut off boundaries, padding affects shape[0], and shape[1]
+         * \param src original image batches
+         * \param pad padding size to be cut off
+         * \return expression corresponding to padded result
+         * \tparam SrcExp source expression
+         * \tparam etype type of expression
+         */
+         template<typename SrcExp, int etype>
+         inline UnPaddingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim> unpadding(const Exp<SrcExp, etype> &src, index_t pad) {
+             TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
+             return UnPaddingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim>(src.self(), pad);
+         }
 
         // short cut functions
         /*!
@@ -341,45 +401,6 @@ namespace mshadow{
         inline ReduceTo1DExp<E, red::sum, 0 > sum_rows( const Exp<E,etype> &exp ){
             return sumall_except_dim<0>( exp );
         }
-
-        /*!
-         * \brief unpooling gradient for 3D
-         * \return unpooling 3D Tensor, shape[2]: channel, shape[1]:height, shape[0]: weight
-         * \param pooled 3D Tensor Pooled
-         * \param img original image
-         * \param ksize kernel size
-         * \param kstride stride for each kernel
-         * \tparam Reducer reducer type
-         * \tparam Device device where data lies
-         */
-         template<typename Reducer, typename Device>
-         inline UnPoolingExp<Reducer, Device> unpooling(const Tensor<Device, 4>&img, const Tensor<Device, 4> pooled, index_t ksize, index_t kstride) {
-            return UnPoolingExp<Reducer, Device>(img, pooled, ksize, kstride);
-         }
-
-        /*!
-         * \brief padding for 3D tensor
-         * \return padded 3D tensor
-         * \param src original image
-         * \param pad padding size
-         */
-         template<typename SrcExp, int etype>
-         inline PaddingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim> padding(const Exp<SrcExp, etype> &src, index_t pad) {
-             TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
-             return PaddingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim>(src.self(), pad);
-         }
-
-        /*!
-          * \brief unpadding for 3d tensor
-          * \return unpadding 3d tensor
-          * \param src padded img
-          * \param pad
-          */
-         template<typename SrcExp, int etype>
-         inline UnPaddingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim> unpadding(const Exp<SrcExp, etype> &src, index_t pad) {
-             TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
-             return UnPaddingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim>(src.self(), pad);
-         }
 
     }; // namespace expr
 }; // namespace mshadow
@@ -516,9 +537,11 @@ namespace mshadow{
             const real_t *dptr_;
             index_t oshape0_, ishape0_, istride_;
         };
+    };
 
+    namespace expr{
         template<typename Reducer, typename SrcExp, int srcdim>
-        struct Plan< PoolingExp<Reducer, SrcExp, srcdim> > {
+        struct Plan< PoolingExp< Reducer, SrcExp, srcdim> > {
         public:
             Plan( const PoolingExp<Reducer, SrcExp, srcdim> &e )
                 : src_( MakePlan( e.src_ ) ), ksize_(e.ksize_), kstride_(e.kstride_),
@@ -553,36 +576,42 @@ namespace mshadow{
         struct Plan<UnPoolingExp<Reducer, Device> > {
         public:
             Plan(const UnPoolingExp<Reducer, Device> &e)
-                : img_(e.img_), pooled_(e.pooled_), ksize_(e.ksize_), kstride_(e.kstride_) {}
+                : data_src_(e.data_src_), data_pooled_(e.data_pooled_), grad_pooled_(e.grad_pooled_),
+                  ksize_(e.ksize_), kstride_(e.kstride_) {}
             MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
+                using namespace std;
                 const index_t x = j;
-                const index_t y = i % img_.shape[1];
-                const index_t c = i / img_.shape[1];
-                const index_t x_start = (x - ksize_) / kstride_ + 1;
-                const index_t x_end = x / kstride_ + 1;
-                const index_t y_start = (y -ksize_) / kstride_ + 1;
-                const index_t y_end = y / kstride_ + 1;
+                const index_t y = i % data_src_.shape[1];
+                const index_t c = i / data_src_.shape[1];
+                const real_t vsrc = data_src_[0][c][y][x];
+
+                const index_t py_min = y < ksize_ ? 0 : (y-ksize_+kstride_)/kstride_;
+                const index_t px_min = x < ksize_ ? 0 : (x-ksize_+kstride_)/kstride_;
+                const index_t py_max = min( (y+kstride_)/kstride_, data_pooled_.shape[1]);
+                const index_t px_max = min( (x+kstride_)/kstride_, data_pooled_.shape[0]);
 
                 real_t val = 0;
-                for (index_t h = y_start; h < y_end; ++h) {
-                    for (index_t w = x_start; w < x_end; ++w) {
-                        val += Reducer::PartialGrad(img_[0][c][y][x], pooled_[0][c][h][w]);
+                for( index_t py = py_min; py < py_max; ++py ){
+                    for( index_t px = px_min; px < px_max; ++px ){
+                        val += Reducer::PartialGrad(vsrc, data_pooled_[0][c][py][px]) * grad_pooled_[0][c][py][px];
                     }
                 }
                 return val;
             }
         private:
-            Tensor<Device, 4> img_, pooled_;
+            Tensor<Device, 4> data_src_, data_pooled_, grad_pooled_;
             index_t ksize_;
             index_t kstride_;
-            int type_;
         };
+    }; // namespace expr
 
+    namespace expr{
         template<typename SrcExp, int srcdim>
         struct Plan< PaddingExp<SrcExp, srcdim> > {
         public:
             Plan(const PaddingExp<SrcExp, srcdim> &e)
-                : src_(MakePlan(e.src_)), pad_(e.pad_), new_height_(e.shape_[1]), src_width_(e.src_width_), src_height_(e.src_height_) {}
+                : src_(MakePlan(e.src_)), pad_(e.pad_), new_height_(e.shape_[1]), 
+                  src_height_(e.src_height_), src_width_(e.src_width_) {}
             MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
                 const index_t x = j;
                 const index_t y = i % new_height_;
@@ -590,18 +619,18 @@ namespace mshadow{
                 if (y < pad_ || x < pad_) return 0.0f;
                 const index_t h = y - pad_;
                 const index_t w = x - pad_;
-                if (h >= src_height_ || w >= src_width_) {
-                    return 0;
-                } else {
+                if (h < src_height_ || w < src_width_) {
                     return src_.Eval(c * src_height_ + h, w);
+                } else {
+                    return 0.0f;
                 }
             }
         private:
             Plan<SrcExp> src_;
             index_t pad_;
             index_t new_height_;
-            index_t src_width_;
             index_t src_height_;
+            index_t src_width_;
         };
 
         template<typename SrcExp, int srcdim>
@@ -623,10 +652,8 @@ namespace mshadow{
             index_t new_height_;
             index_t src_height_;
         };
-
     }; // namespace expr
 }; // namespace mshadow
-
 
 #if MSHADOW_USE_SSE
 // implementations of SSE support, if possible
