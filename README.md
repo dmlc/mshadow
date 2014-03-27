@@ -6,7 +6,7 @@ Lightweight CPU/GPU Matrix/Tensor Template Library in C++/CUDA
 Creater: Bing Hsu and Tianqi Chen
 
 
-Tutorial: https://github.com/tqchen/mshadow/wiki/Tutorial
+Documentation and Tutorial: https://github.com/tqchen/mshadow/wiki
 
 Description
 =====
