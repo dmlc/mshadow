@@ -238,7 +238,7 @@ namespace mshadow{
         }
 
         /*! 
-         * \brief short hand for MakeExp, usage F<op>(lhs, rhs)
+         * \brief short hand for MakeExp, usage F<op>(lhs, rhs). create a binary operation expression 
          * \param lhs left operand
          * \param rhs right operand
          * \tparam binary operator 
@@ -340,7 +340,7 @@ namespace mshadow{
         }
 
         /*! 
-         * \brief short hand for MakeExp, usage F<op>(src)
+         * \brief short hand for MakeExp, usage F<op>(src), create a unary operation expression 
          * \param src source expression
          * \tparam operator 
          * \tparam TA source expression
