@@ -88,6 +88,18 @@ namespace mshadow{
             Plan<TA> src_;
         };
 
+
+        template<typename SubType, typename SrcExp, int dim>
+        struct Plan< MakeTensorExp<SubType,SrcExp,dim> >{
+        public:
+            Plan( const Plan<SubType> &src ):src_(src){}
+            MSHADOW_XINLINE real_t Eval( index_t y, index_t x ) const{
+                return src_.Eval( y, x );
+            }
+        private:
+            Plan<SubType> src_;  
+        };
+
         // allow UnaryMap see the plan
         template<typename OP, typename TA, typename TB, int etype>
         inline Plan< BinaryMapExp<OP,TA,TB,etype> > MakePlan( const BinaryMapExp<OP,TA,TB,etype> &e );
@@ -103,7 +115,7 @@ namespace mshadow{
         }
 
         template<typename T, typename SrcExp, int dim>
-        inline Plan<T> MakePlan( const MakeTensorExp<T,SrcExp,dim> &e ){
+        inline Plan< T > MakePlan( const MakeTensorExp<T,SrcExp,dim> &e ){
             return Plan<T>( e.real_self() );
         }
 
