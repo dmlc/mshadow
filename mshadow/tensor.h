@@ -247,12 +247,11 @@ namespace mshadow {
         }
     };
 
-    /*!
-     * \brief respecialized class Tensor1D,thei is due to different implementation in operator[]
-     * \tparam Device device type
+    /*
+     *  respecialized class Tensor1D,thei is due to different implementation in operator[]
      */
     template<typename Device>
-    struct Tensor<Device, 1>: public expr::ContainerExp< Tensor<Device,1> >{
+    struct Tensor<Device,1>: public expr::ContainerExp< Tensor<Device,1> >{
     public:
         real_t *dptr;
         Shape<1> shape;
@@ -260,6 +259,7 @@ namespace mshadow {
         MSHADOW_XINLINE Tensor(void) {}
         MSHADOW_XINLINE Tensor(const Shape<1> &shape): shape(shape) {}
         MSHADOW_XINLINE Tensor(real_t *dptr, Shape<1> shape) :dptr(dptr), shape(shape) {}
+        
         MSHADOW_XINLINE Tensor<Device, 2> FlatTo2D(void) const {
             return Tensor<Device, 2>(reinterpret_cast<real_t*> \
                                      (dptr), shape.FlatTo2D());

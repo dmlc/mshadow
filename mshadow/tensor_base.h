@@ -38,11 +38,11 @@
 #ifndef MSHADOW_USE_CUDA
   #define MSHADOW_USE_CUDA   1
 #endif
-/*! \breif use single precition float */
+/*! \brief use single precition float */
 #ifndef MSHADOW_SINGLE_PRECISION
   #define MSHADOW_SINGLE_PRECISION 1
 #endif
-/*! \breif whether use SSE */
+/*! \brief whether use SSE */
 #ifndef MSHADOW_USE_SSE
   #define MSHADOW_USE_SSE 1
 #endif
@@ -79,7 +79,7 @@ extern "C"{
 #else
   #define MSHADOW_XINLINE inline __attribute__((always_inline))
 #endif
-// cpu force inline
+/*! \brief cpu force inline */
 #define MSHADOW_CINLINE inline __attribute__((always_inline))
 
 /*! \brief namespace for mshadow */
