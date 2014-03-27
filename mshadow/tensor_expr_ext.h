@@ -30,23 +30,31 @@ namespace mshadow{
         /*!
          * \brief unpack local (overlap) patches of image to column of mat, can be used to implement convolution
          *  after getting unpacked mat, we can use: output = dot( weight, mat ) to get covolved results, the relations:
-         * \tparam Device which device it lies
+         * \tparam SrcExp source expression
          */
-        template<typename Device>
-        struct UnpackPatchToColExp: public MakeTensorExp< UnpackPatchToColExp<Device>, Tensor<Device,3>, 2>{
+        template<typename SrcExp>
+        struct UnpackPatchToColExp: public MakeTensorExp< UnpackPatchToColExp<SrcExp>, SrcExp, 2>{
             /*! \brief source operand */
-            Tensor<Device,3> img_;
+            SrcExp img_;
             /*! \brief patch size */
             index_t psize_;
             /*! \brief patch stride */
             index_t pstride_;
+            /*! \brief height of img */
+            index_t i_height_;
+            /*! \brief width of img */
+            index_t i_width_;
             /*! \brief constructor */
-            UnpackPatchToColExp( const Tensor<Device,3> &img, index_t psize, index_t pstride )
+            UnpackPatchToColExp( const SrcExp &img, index_t psize, index_t pstride )
                 :img_(img), psize_(psize), pstride_(pstride){
-                const index_t o_height = ( img.shape[1]  - psize ) / pstride + 1;
-                const index_t o_width  = ( img.shape[0]  - psize ) / pstride + 1;
+                Shape<3> imshape = ShapeCheck<3,SrcExp>::Check( img_ );
+                utils::Assert( imshape[0] >= psize && imshape[1] >= psize, "UnpackPatchToCol:image shape smaller than patch size");
+                this->i_height_ = imshape[1];
+                this->i_width_  = imshape[0];
+                const index_t o_height = ( i_height_ - psize ) / pstride + 1;
+                const index_t o_width  = ( i_width_  - psize ) / pstride + 1;
                 this->shape_[0] = o_height * o_width;
-                this->shape_[1] = psize * psize * img.shape[2];
+                this->shape_[1] = psize * psize * imshape[2];
             }
         };
 
@@ -271,11 +279,13 @@ namespace mshadow{
          * \param img source image; shape[2]:  in_channels, shape[1]: in_height, shape[0]: in_width
          * \param psize height and width of each patch
          * \param pstride stride of each patch
+         * \tparam SrcExp source expression
+         * \tparam etype type of expression         
          */
-        template<typename Device>
-        inline UnpackPatchToColExp<Device> unpack_patch2col( const Tensor<Device,3> &img, index_t psize, index_t pstride ){
-            utils::Assert( img.shape[0] >= psize && img.shape[1] >= psize, "UnpackPatchToCol:image shape smaller than patch size");
-            return UnpackPatchToColExp<Device>( img, psize, pstride );
+        template<typename SrcExp, int etype>
+        inline UnpackPatchToColExp<SrcExp> unpack_patch2col( const Exp<SrcExp,etype> &img, index_t psize, index_t pstride ){
+            TypeCheckPass< ExpInfoXPU<SrcExp>::kDim == 3 >::Error_Expression_Does_Not_Meet_Dimension_Req();            
+            return UnpackPatchToColExp<SrcExp>( img.self(), psize, pstride );
         }
 
         /*!
@@ -463,12 +473,13 @@ namespace mshadow{
     }; // namespace expr
 
     namespace expr{
-        template<typename Device>
-        struct Plan< UnpackPatchToColExp<Device> >{
+        template<typename SrcExp>
+        struct Plan< UnpackPatchToColExp<SrcExp> >{
         public:
-            Plan( const UnpackPatchToColExp<Device> &e )
-                :img_(e.img_),psize_(e.psize_), pstride_(e.pstride_){
-                o_width_  = ( img_.shape[0]  - psize_ ) / pstride_ + 1;
+            Plan( const UnpackPatchToColExp<SrcExp> &e )
+                :src_(MakePlan(e.img_)),psize_(e.psize_), pstride_(e.pstride_),
+                 i_height_(e.i_height_), i_width_(e.i_width_){
+                o_width_  = ( i_width_  - psize_ ) / pstride_ + 1;
             }
             MSHADOW_XINLINE real_t Eval( index_t i, index_t j ) const{
                 const index_t x_offset = i % psize_;
@@ -477,15 +488,15 @@ namespace mshadow{
                 const index_t channel  = idivp / psize_;
                 const index_t y = (j / o_width_) * pstride_ + y_offset;
                 const index_t x = (j % o_width_) * pstride_ + x_offset;
-                if( x < img_.shape[0] && y < img_.shape[1] ){
-                    return img_[channel][y][x];
+                if( x < i_width_ && y < i_height_ ){
+                    return src_.Eval( channel * i_height_ + y, x );
                 }else{
                     return 0.0f;
                 }
             }
         private:
-            Tensor<Device,3> img_;
-            index_t psize_, pstride_, o_width_;
+            Plan<SrcExp> src_;
+            index_t psize_, pstride_, i_height_, i_width_, o_width_;
         };
 
         template<typename Device>
