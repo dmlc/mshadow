@@ -185,27 +185,27 @@ namespace mshadow{
         inline DotExp<TA,TB,false,false> dot( const ContainerExp<TA> &lhs, const ContainerExp<TB> &rhs ){
             return DotExp<TA,TB,false,false>( lhs.self(), rhs.self(), 1.0f );
         }
-        /*! \brief dot operator def *//
+        /*! \brief dot operator def */
         template<typename TA, typename TB>
         inline DotExp<TA,TB,true,false> dot( const TransposeExp<TA> &lhs, const ContainerExp<TB> &rhs ){
             return DotExp<TA,TB,true,false>( lhs.exp, rhs.self(), 1.0f );
         }
-        /*! \brief dot operator def *//
+        /*! \brief dot operator def */
         template<typename TA, typename TB>
         inline DotExp<TA,TB,false,true> dot( const ContainerExp<TA> &lhs, const TransposeExp<TB> &rhs ){
             return DotExp<TA,TB,false,true>( lhs.self(), rhs.exp, 1.0f );
         }
-        /*! \brief dot operator def *//
+        /*! \brief dot operator def */
         template<typename TA, typename TB>
         inline DotExp<TA,TB,true,true> dot( const TransposeExp<TA> &lhs, const TransposeExp<TB> &rhs ){
             return DotExp<TA,TB,true,true>( lhs.exp, rhs.exp, 1.0f );
         }
-        /*! \brief dot operator def *//
+        /*! \brief dot operator def */
         template<typename TA, typename TB, bool ltrans, bool rtrans >
         inline DotExp<TA,TB,ltrans,rtrans> operator*( const DotExp<TA,TB,ltrans,rtrans> &lhs, real_t rhs ){
             return DotExp<TA,TB,ltrans,rtrans>( lhs.lhs_, lhs.rhs_, lhs.scale_ * rhs );
         }
-        /*! \brief scale of dot operation *//
+        /*! \brief scale of dot operation */
         template<typename TA, typename TB, bool ltrans, bool rtrans >
         inline DotExp<TA,TB,ltrans,rtrans> operator*( real_t lhs, const DotExp<TA,TB,ltrans,rtrans> &rhs ){
             return DotExp<TA,TB,ltrans,rtrans>( rhs.lhs_, rhs.rhs_, rhs.scale_ * lhs );
@@ -254,64 +254,64 @@ namespace mshadow{
         }
 
         // operator rules
-        /*! \brief operator overload *//
+        /*! \brief operator overload */
         template<typename TA, typename TB, int ta, int tb>
         inline BinaryMapExp<op::plus,TA,TB, (ta|tb|type::kMapper) > operator+( const Exp<TA,ta> &lhs, const Exp<TB,tb> &rhs ){
             return MakeExp<op::plus>( lhs, rhs );
         }
-        /*! \brief operator overload *//
+        /*! \brief operator overload */
         template<typename TA, typename TB, int ta, int tb>
         inline BinaryMapExp<op::minus,TA,TB, (ta|tb|type::kMapper) > operator-( const Exp<TA,ta> &lhs, const Exp<TB,tb> &rhs ){
             return MakeExp<op::minus>( lhs, rhs );
         }
-        /*! \brief operator overload *//
+        /*! \brief operator overload */
         template<typename TA, typename TB, int ta, int tb>
         inline BinaryMapExp<op::mul,TA,TB, (ta|tb|type::kMapper) > operator*( const Exp<TA,ta> &lhs, const Exp<TB,tb> &rhs ){
             return MakeExp<op::mul>( lhs, rhs );
         }
-        /*! \brief operator overload *//
+        /*! \brief operator overload */
         template<typename TA, typename TB, int ta, int tb>
         inline BinaryMapExp<op::div,TA,TB, (ta|tb|type::kMapper) > operator/( const Exp<TA,ta> &lhs, const Exp<TB,tb> &rhs ){
             return MakeExp<op::div>( lhs, rhs );
         }
         // constant operators
-        /*! \brief operator overload *//
+        /*! \brief operator overload */
         template<typename TA, int ta>
         inline BinaryMapExp<op::plus, TA, ScalarExp, (ta|type::kMapper) > operator+( const Exp<TA,ta>& lhs,  real_t rhs ){
             return MakeExp<op::plus>( lhs, ScalarExp(rhs) );
         }
-        /*! \brief operator overload *//
+        /*! \brief operator overload */
         template<typename TA, int ta>
         inline BinaryMapExp<op::plus, TA, ScalarExp, (ta|type::kMapper) > operator-( const Exp<TA,ta>& lhs,  real_t rhs ){
             return MakeExp<op::plus>( lhs, ScalarExp(-rhs) );
         }
-        /*! \brief operator overload *//
+        /*! \brief operator overload */
         template<typename TA, int ta>
         inline BinaryMapExp<op::mul, TA, ScalarExp, (ta|type::kMapper) > operator*( const Exp<TA,ta>& lhs,  real_t rhs ){
             return MakeExp<op::mul>( lhs, ScalarExp(rhs) );
         }
-        /*! \brief operator overload *//
+        /*! \brief operator overload */
         template<typename TA, int ta>
         inline BinaryMapExp<op::div, TA, ScalarExp, (ta|type::kMapper) > operator/( const Exp<TA,ta>& lhs,  real_t rhs ){
             return MakeExp<op::div>( lhs, ScalarExp(rhs) );
         }
         // constant operators 2
-        /*! \brief operator overload *//
+        /*! \brief operator overload */
         template<typename TB, int tb>
         inline BinaryMapExp<op::plus, ScalarExp, TB, (tb|type::kMapper) > operator+( real_t lhs, const Exp<TB,tb>& rhs ){
             return MakeExp<op::plus>( ScalarExp(lhs), rhs );
         }
-        /*! \brief operator overload *//
+        /*! \brief operator overload */
         template<typename TB, int tb>
         inline BinaryMapExp<op::minus, ScalarExp, TB, (tb|type::kMapper) > operator-( real_t lhs, const Exp<TB,tb>& rhs ){
             return MakeExp<op::minus>( ScalarExp(lhs), rhs );
         }
-        /*! \brief operator overload *//
+        /*! \brief operator overload */
         template<typename TB, int tb>
         inline BinaryMapExp<op::mul, ScalarExp, TB, (tb|type::kMapper) > operator*( real_t lhs, const Exp<TB,tb>& rhs ){
             return MakeExp<op::mul>( ScalarExp(lhs), rhs );
         }
-        /*! \brief operator overload *//
+        /*! \brief operator overload */
         template<typename TB, int tb>
         inline BinaryMapExp<op::div, ScalarExp, TB, (tb|type::kMapper) > operator/( real_t lhs, const Exp<TB,tb>& rhs ){
             return MakeExp<op::div>( ScalarExp(lhs), rhs );
