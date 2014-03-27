@@ -20,6 +20,10 @@ namespace mshadow{
     template<typename Device, int dimension>
     class TensorContainer: public Tensor<Device,dimension>{
     public:
+        /*! 
+         * \brief constructor 
+         * \param pad whether use padding alignment in space allocation
+         */
         TensorContainer( bool pad = MSHADOW_ALLOC_PAD ){
             this->pad_ = pad;
             this->dptr = data_.dptr = NULL;
@@ -28,11 +32,20 @@ namespace mshadow{
             this->data_.shape.stride_ = 0;
             this->data_.shape[1] = 0;
         }
+        /*! 
+         * \brief constructor 
+         * \param shape intial shape
+         */
         TensorContainer( const Shape<dimension> &shape ){
             this->pad_ = MSHADOW_ALLOC_PAD;
             data_.dptr = NULL;
             this->AllocByShape( shape );
         }
+        /*! 
+         * \brief constructor 
+         * \param shape intial shape
+         * \param initv intial value
+         */
         TensorContainer( const Shape<dimension> &shape, real_t initv ){
             this->pad_ = MSHADOW_ALLOC_PAD;
             data_.dptr = NULL;

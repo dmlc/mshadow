@@ -48,12 +48,11 @@ namespace mshadow{
         template<typename SubType, int exp_type>
         struct Exp{
         public:
-            typedef SubType EType;
-            const static int kType = exp_type;
-        public:
+            /*! \return  subtype instance of current class */
             inline const SubType& self( void ) const{
                 return *static_cast<const SubType*>(this);
             }
+            /*! \return reference of subtype instance of current class */
             inline SubType& refself( void ){
                 return *static_cast<SubType*>(this);
             }
@@ -61,7 +60,9 @@ namespace mshadow{
 
         /*! \brief scalar expression */
         struct ScalarExp: public Exp<ScalarExp, type::kMapper>{
+            /*! \brief scalar value */
             real_t scalar_;
+            /*! \brief constructor */
             ScalarExp( real_t scalar ):scalar_(scalar){}
         };
 
@@ -93,22 +94,27 @@ namespace mshadow{
                 return TransposeExp<Container>( this->self() );
             }
         public:
+            /*! \brief operator overload */
             inline Container &operator+=( real_t s ){
                 ExpEngine<sv::plusto,Container>::Eval( this->refself(), ScalarExp(s) );
                 return this->refself();
             }
+            /*! \brief operator overload */
             inline Container &operator-=( real_t s ){
                 ExpEngine<sv::minusto,Container>::Eval( this->refself(), ScalarExp(s) );
                 return this->refself();
             }
+            /*! \brief operator overload */
             inline Container &operator*=( real_t s ){
                 ExpEngine<sv::multo,Container>::Eval( this->refself(), ScalarExp(s) );
                 return this->refself();
             }
+            /*! \brief operator overload */
             inline Container &operator/=( real_t s ){
                 ExpEngine<sv::divto,Container>::Eval( this->refself(), ScalarExp(s) );
                 return this->refself();
             }
+            /*! \brief operator overload */
             inline Container &__assign( real_t s ){
                 ExpEngine<sv::saveto,Container>::Eval( this->refself(), ScalarExp(s) );
                 return this->refself();
@@ -120,6 +126,7 @@ namespace mshadow{
                 ExpEngine<sv::saveto,Container>::Eval( this->refself(), exp.self() );
                 return this->refself();
             }
+            /*! \brief implementation of operator=, note that we can not define container = container */
             template<typename E>
             inline Container &__assign( const Exp<E,type::kComplex> &exp ){
                 ExpEngine<sv::saveto,Container>::Eval( this->refself(), exp.self() );
@@ -162,34 +169,43 @@ namespace mshadow{
          */
         template<typename TA,typename TB,bool ltrans,bool rtrans>
         struct DotExp: public Exp< DotExp<TA,TB,ltrans,rtrans>, type::kComplex >{
+            /*! \brief left operand */
             TA lhs_;
+            /*! \brief right operand */
             TB rhs_;
+            /*! \brief scale over result */
             real_t scale_;
+            /*! \brief constructor */
             DotExp( const TA &lhs, const TB &rhs, real_t scale )
                 :lhs_(lhs),rhs_(rhs),scale_(scale){}
         };
 
+        /*! \brief dot operator def */
         template<typename TA, typename TB>
         inline DotExp<TA,TB,false,false> dot( const ContainerExp<TA> &lhs, const ContainerExp<TB> &rhs ){
             return DotExp<TA,TB,false,false>( lhs.self(), rhs.self(), 1.0f );
         }
+        /*! \brief dot operator def *//
         template<typename TA, typename TB>
         inline DotExp<TA,TB,true,false> dot( const TransposeExp<TA> &lhs, const ContainerExp<TB> &rhs ){
             return DotExp<TA,TB,true,false>( lhs.exp, rhs.self(), 1.0f );
         }
+        /*! \brief dot operator def *//
         template<typename TA, typename TB>
         inline DotExp<TA,TB,false,true> dot( const ContainerExp<TA> &lhs, const TransposeExp<TB> &rhs ){
             return DotExp<TA,TB,false,true>( lhs.self(), rhs.exp, 1.0f );
         }
+        /*! \brief dot operator def *//
         template<typename TA, typename TB>
         inline DotExp<TA,TB,true,true> dot( const TransposeExp<TA> &lhs, const TransposeExp<TB> &rhs ){
             return DotExp<TA,TB,true,true>( lhs.exp, rhs.exp, 1.0f );
         }
-
+        /*! \brief dot operator def *//
         template<typename TA, typename TB, bool ltrans, bool rtrans >
         inline DotExp<TA,TB,ltrans,rtrans> operator*( const DotExp<TA,TB,ltrans,rtrans> &lhs, real_t rhs ){
             return DotExp<TA,TB,ltrans,rtrans>( lhs.lhs_, lhs.rhs_, lhs.scale_ * rhs );
         }
+        /*! \brief scale of dot operation *//
         template<typename TA, typename TB, bool ltrans, bool rtrans >
         inline DotExp<TA,TB,ltrans,rtrans> operator*( real_t lhs, const DotExp<TA,TB,ltrans,rtrans> &rhs ){
             return DotExp<TA,TB,ltrans,rtrans>( rhs.lhs_, rhs.rhs_, rhs.scale_ * lhs );
@@ -206,71 +222,96 @@ namespace mshadow{
          */
         template<typename OP, typename TA, typename TB, int etype >
         struct BinaryMapExp: public Exp< BinaryMapExp<OP,TA,TB,etype>, etype >{
+            /*! \brief left operand */
             TA lhs_;
+            /*! \brief right operand */
             TB rhs_;
+            /*! \brief constructor */
             BinaryMapExp( const TA &lhs, const TB &rhs )
                 :lhs_(lhs), rhs_(rhs){}
         };
 
-        // make expression
+        /*! \brief make expression */
         template<typename OP,typename TA, typename TB, int ta, int tb>
         inline BinaryMapExp<OP,TA,TB, (ta|tb|type::kMapper) > MakeExp( const Exp<TA,ta> &lhs, const Exp<TB,tb> &rhs ){
             return BinaryMapExp<OP,TA,TB, (ta|tb|type::kMapper) >( lhs.self(), rhs.self() );
         }
 
-        // short hand for MakeExp, F stands for function
+        /*! 
+         * \brief short hand for MakeExp, usage F<op>(lhs, rhs)
+         * \param lhs left operand
+         * \param rhs right operand
+         * \tparam binary operator 
+         * \tparam TA lhs expression
+         * \tparam ta lhs expression type
+         * \tparam TB rhs expression
+         * \tparam tb rhs expression type
+         * \sa mshadow::op
+         */
         template<typename OP,typename TA, typename TB, int ta, int tb>
         inline BinaryMapExp<OP,TA,TB, (ta|tb|type::kMapper) > F( const Exp<TA,ta> &lhs, const Exp<TB,tb> &rhs ){
             return MakeExp<OP>( lhs, rhs );
         }
 
         // operator rules
+        /*! \brief operator overload *//
         template<typename TA, typename TB, int ta, int tb>
         inline BinaryMapExp<op::plus,TA,TB, (ta|tb|type::kMapper) > operator+( const Exp<TA,ta> &lhs, const Exp<TB,tb> &rhs ){
             return MakeExp<op::plus>( lhs, rhs );
         }
+        /*! \brief operator overload *//
         template<typename TA, typename TB, int ta, int tb>
         inline BinaryMapExp<op::minus,TA,TB, (ta|tb|type::kMapper) > operator-( const Exp<TA,ta> &lhs, const Exp<TB,tb> &rhs ){
             return MakeExp<op::minus>( lhs, rhs );
         }
+        /*! \brief operator overload *//
         template<typename TA, typename TB, int ta, int tb>
         inline BinaryMapExp<op::mul,TA,TB, (ta|tb|type::kMapper) > operator*( const Exp<TA,ta> &lhs, const Exp<TB,tb> &rhs ){
             return MakeExp<op::mul>( lhs, rhs );
         }
+        /*! \brief operator overload *//
         template<typename TA, typename TB, int ta, int tb>
         inline BinaryMapExp<op::div,TA,TB, (ta|tb|type::kMapper) > operator/( const Exp<TA,ta> &lhs, const Exp<TB,tb> &rhs ){
             return MakeExp<op::div>( lhs, rhs );
         }
         // constant operators
+        /*! \brief operator overload *//
         template<typename TA, int ta>
         inline BinaryMapExp<op::plus, TA, ScalarExp, (ta|type::kMapper) > operator+( const Exp<TA,ta>& lhs,  real_t rhs ){
             return MakeExp<op::plus>( lhs, ScalarExp(rhs) );
         }
+        /*! \brief operator overload *//
         template<typename TA, int ta>
         inline BinaryMapExp<op::plus, TA, ScalarExp, (ta|type::kMapper) > operator-( const Exp<TA,ta>& lhs,  real_t rhs ){
             return MakeExp<op::plus>( lhs, ScalarExp(-rhs) );
         }
+        /*! \brief operator overload *//
         template<typename TA, int ta>
         inline BinaryMapExp<op::mul, TA, ScalarExp, (ta|type::kMapper) > operator*( const Exp<TA,ta>& lhs,  real_t rhs ){
             return MakeExp<op::mul>( lhs, ScalarExp(rhs) );
         }
+        /*! \brief operator overload *//
         template<typename TA, int ta>
         inline BinaryMapExp<op::div, TA, ScalarExp, (ta|type::kMapper) > operator/( const Exp<TA,ta>& lhs,  real_t rhs ){
             return MakeExp<op::div>( lhs, ScalarExp(rhs) );
         }
         // constant operators 2
+        /*! \brief operator overload *//
         template<typename TB, int tb>
         inline BinaryMapExp<op::plus, ScalarExp, TB, (tb|type::kMapper) > operator+( real_t lhs, const Exp<TB,tb>& rhs ){
             return MakeExp<op::plus>( ScalarExp(lhs), rhs );
         }
+        /*! \brief operator overload *//
         template<typename TB, int tb>
         inline BinaryMapExp<op::minus, ScalarExp, TB, (tb|type::kMapper) > operator-( real_t lhs, const Exp<TB,tb>& rhs ){
             return MakeExp<op::minus>( ScalarExp(lhs), rhs );
         }
+        /*! \brief operator overload *//
         template<typename TB, int tb>
         inline BinaryMapExp<op::mul, ScalarExp, TB, (tb|type::kMapper) > operator*( real_t lhs, const Exp<TB,tb>& rhs ){
             return MakeExp<op::mul>( ScalarExp(lhs), rhs );
         }
+        /*! \brief operator overload *//
         template<typename TB, int tb>
         inline BinaryMapExp<op::div, ScalarExp, TB, (tb|type::kMapper) > operator/( real_t lhs, const Exp<TB,tb>& rhs ){
             return MakeExp<op::div>( ScalarExp(lhs), rhs );
@@ -286,18 +327,26 @@ namespace mshadow{
          */
         template<typename OP, typename TA, int etype >
         struct UnaryMapExp: public Exp< UnaryMapExp<OP,TA,etype>, etype >{
+            /*! \brief source expression */
             TA src_;
-            UnaryMapExp( const TA &src )
-                :src_(src){}
+            /*! \brief constructor */
+            UnaryMapExp( const TA &src ):src_(src){}
         };
 
-        // make expression
+        /*! \brief make expression */
         template<typename OP,typename TA, int ta>
         inline UnaryMapExp<OP,TA,(ta|type::kMapper) > MakeExp( const Exp<TA,ta> &src ){
             return UnaryMapExp<OP,TA, (ta|type::kMapper) >( src.self() );
         }
 
-        // short hand for MakeExp
+        /*! 
+         * \brief short hand for MakeExp, usage F<op>(src)
+         * \param src source expression
+         * \tparam operator 
+         * \tparam TA source expression
+         * \tparam ta source expression type
+         * \sa mshadow::op
+         */
         template<typename OP,typename TA, int ta>
         inline UnaryMapExp<OP,TA,(ta|type::kMapper) > F( const Exp<TA,ta> &src ){
             return MakeExp<OP>(src);

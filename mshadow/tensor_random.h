@@ -15,11 +15,12 @@ namespace mshadow {
     template<typename device>
     class Random {};
 
+    /*! \brief CPU random number generator */
     template<>
     class Random<cpu> {
     public:
         /*!
-         * \constructor of random engine
+         * \brief constructor of random engine
          * \param seed random number seed
          */
         Random<cpu>( int seed ){
@@ -188,11 +189,12 @@ namespace mshadow {
 
 #ifdef __CUDACC__
 
+    /*! \brief GPU random number generator */
     template<>
     class Random<gpu> {
     public:
         /*!
-         * \constructor of random engine
+         * \brief constructor of random engine
          * \param seed random number seed
          */
         Random<gpu>(int seed) {

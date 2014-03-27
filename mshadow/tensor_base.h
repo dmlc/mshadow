@@ -108,33 +108,38 @@ namespace mshadow {
 namespace mshadow {
     /*! \brief namespace for operators */
     namespace op {
-        // binary operator
+        // binary operator        
         /*! \brief mul operator */
         struct mul{
+            /*! \brief map a, b to result using defined operation */
             MSHADOW_XINLINE static real_t Map(real_t a, real_t b) {
                 return a * b;
             }
         };
         /*! \brief plus operator */
         struct plus {
+            /*! \brief map a, b to result using defined operation */
             MSHADOW_XINLINE static real_t Map(real_t a, real_t b) {
                 return a + b;
             }
         };
         /*! \brief minus operator */
         struct minus {
+            /*! \brief map a, b to result using defined operation */
             MSHADOW_XINLINE static real_t Map(real_t a, real_t b) {
                 return a - b;
             }
         };
         /*! \brief divide operator */
         struct div {
+            /*! \brief map a, b to result using defined operation */
             MSHADOW_XINLINE static real_t Map(real_t a, real_t b) {
                 return a / b;
             }
         };
         /*! \brief get rhs */
         struct right {
+            /*! \brief map a, b to result using defined operation */
             MSHADOW_XINLINE static real_t Map(real_t a, real_t b) {
                 return b;
             }
@@ -145,6 +150,7 @@ namespace mshadow {
     namespace sv {
         /*! \brief save to saver: = */
         struct saveto {
+            /*! \brief save b to a using save method */
             MSHADOW_XINLINE static void Save(real_t& a, real_t b) {
                 a  = b;
             }
@@ -157,6 +163,7 @@ namespace mshadow {
         };
         /*! \brief save to saver: += */
         struct plusto {
+            /*! \brief save b to a using save method */
             MSHADOW_XINLINE static void Save(real_t& a, real_t b) {
                 a += b;
             }
@@ -169,6 +176,7 @@ namespace mshadow {
         };
         /*! \brief minus to saver: -= */
         struct minusto {
+            /*! \brief save b to a using save method */
             MSHADOW_XINLINE static void Save(real_t& a, real_t b) {
                 a -= b;
             }
@@ -181,6 +189,7 @@ namespace mshadow {
         };
         /*! \brief multiply to saver: *= */
         struct multo {
+            /*! \brief save b to a using save method */
             MSHADOW_XINLINE static void Save(real_t& a, real_t b) {
                 a *= b;
             }
@@ -189,6 +198,7 @@ namespace mshadow {
         };
         /*! \brief divide to saver: /= */
         struct divto {
+            /*! \brief save b to a using save method */
             MSHADOW_XINLINE static void Save(real_t& a, real_t b) {
                 a /= b;
             }
@@ -204,6 +214,7 @@ namespace mshadow {
         // to use, simply write F<op::identity>( src )
         /*! \brief identity function that maps a real number to it self */
         struct identity{
+            /*! \brief map a to result using defined operation */
             MSHADOW_XINLINE static real_t Map(real_t a) {
                 return a;
             }
@@ -212,7 +223,9 @@ namespace mshadow {
 
     /*! \brief namespace for potential reducer operations */
     namespace red {
+        /*! \brief sum reducer */
         struct sum {
+            /*! \brief do reduction into dst */
             MSHADOW_XINLINE static void Reduce( volatile real_t& dst,  volatile real_t src ) {
                 dst += src;
             }
@@ -223,7 +236,9 @@ namespace mshadow {
             /*! \brief an intial value of reducer */
             const static real_t kInitV = 0.0f;
         };
+        /*! \brief maximum reducer */
         struct maximum {
+            /*! \brief do reduction into dst */
             MSHADOW_XINLINE static void Reduce( volatile real_t& dst,  volatile real_t src ) {
                 using namespace std;
                 dst = max( dst, src );
@@ -243,19 +258,20 @@ namespace mshadow {
 
     /*! \brief namespace for helper utils of the project */
     namespace utils{
+        /*! \brief send error message then exit */
         inline void Error( const char *msg ){
             fprintf( stderr, "Error:%s\n",msg );
             exit( -1 );
         }
-
+        /*! \brief assert a expression is true */
         inline void Assert( bool exp ){
             if( !exp ) Error( "AssertError" );
         }
-
+        /*! \brief assert a expression is true */
         inline void Assert( bool exp, const char *msg ){
             if( !exp ) Error( msg );
         }
-
+        /*! \brief warning */
         inline void Warning( const char *msg ){
             fprintf( stderr, "warning:%s\n",msg );
         }

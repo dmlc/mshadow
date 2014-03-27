@@ -44,6 +44,7 @@ namespace mshadow{
      */
     template<int dim,typename TStream>
     inline void SaveBinary( TStream &fo, const Tensor<cpu,dim> &src );
+    /*! \brief refer to comment of cpu ver \sa SaveBinary */
     template<int dim,typename TStream>
     inline void SaveBinary( TStream &fo, const Tensor<gpu,dim> &src );
 
@@ -59,13 +60,15 @@ namespace mshadow{
      */
     template<int dim,typename TStream>
     inline void LoadBinary( TStream &fi, Tensor<cpu,dim> &dst, bool pre_alloc );
+    /*! \brief refer to comment of cpu ver \sa LoadBinary */
     template<int dim,typename TStream>
     inline void LoadBinary( TStream &fi, Tensor<gpu,dim> &dst, bool pre_alloc );
     
     namespace utils{
         /*! \brief implementation of file i/o stream */
         class FileStream: public IStream{
-        public:        
+        public:
+            /*! \brief constructor */
             FileStream( FILE *fp ):fp_(fp){}
             virtual size_t Read( void *ptr, size_t size ){
                 return fread( ptr, size, 1, fp_ );
@@ -73,6 +76,7 @@ namespace mshadow{
             virtual void Write( const void *ptr, size_t size ){
                 fwrite( ptr, size, 1, fp_ );
             }
+            /*! \brief close file */
             inline void Close( void ){
                 fclose( fp_ );
             }

@@ -24,10 +24,12 @@ namespace mshadow {
     public:
         /*! \brief maximum dimension of tensor */
         const static int kMaxShape = dimension;
+        /*! \brief maximum dimension minus 1 */
         const static int kSubShape = dimension - 1;
     public:
         /*! \brief default constructor, do nothing */
         MSHADOW_XINLINE Shape(void) {}
+        /*! \brief constuctor */
         MSHADOW_XINLINE Shape( const Shape<dimension> &s ){
             #pragma unroll
             for( int i = 0; i < kMaxShape; ++i ){
@@ -229,14 +231,16 @@ namespace mshadow {
                                              (dptr) + s.SubShape().MSize() * begin, s);
         }
     public:
-        // functions to fit expression template
-        inline Tensor<Device,dimension>& operator=( double s ){
+        /*!\brief functions to fit expression template */
+        inline Tensor<Device,dimension>& operator=( real_t s ){
             return this->__assign( s );
         }
+        /*!\brief functions to fit expression template */
         template<typename E>
         inline Tensor<Device,dimension>& operator=( const expr::Exp<E,expr::type::kMapper> &exp ){
             return this->__assign( exp );
         }
+        /*!\brief functions to fit expression template */
         template<typename E>
         inline Tensor<Device,dimension>& operator=( const expr::Exp<E,expr::type::kComplex> &exp ){
             return this->__assign( exp );
@@ -312,6 +316,7 @@ namespace mshadow {
      */
     template<int dim>
     inline void AllocSpace(Tensor<cpu,dim> &obj, bool pad = MSHADOW_ALLOC_PAD);
+    /*! \brief refer to comment of cpu ver \sa AllocSpace */
     template<int dim>
     inline void AllocSpace(Tensor<gpu,dim> &obj, bool pad = MSHADOW_ALLOC_PAD);
 
@@ -322,6 +327,7 @@ namespace mshadow {
      */
     template<int dim>
     inline void FreeSpace(Tensor<cpu,dim> &obj);
+    /*! \brief refer to comment of cpu ver \sa FreeSpace */
     template<int dim>
     inline void FreeSpace(Tensor<gpu,dim> &obj);
 
@@ -340,14 +346,18 @@ namespace mshadow {
     /*!
      * \brief copy data from one tensor to another, with same shape
      * \tparam dim specify the dim of tensor
-     * \param obj the tensor object, with shape specified
+     * \param dst target tensor
+     * \param src source tensor
      */
     template<int dim>
     inline void Copy(Tensor<cpu,dim> dst, const Tensor<cpu,dim> &src );
+    /*! \brief refer to comment of cpu ver \sa Copy */
     template<int dim>
     inline void Copy(Tensor<cpu,dim> dst, const Tensor<gpu,dim> &src );
+    /*! \brief refer to comment of cpu ver \sa Copy */
     template<int dim>
     inline void Copy(Tensor<gpu,dim> dst, const Tensor<cpu,dim> &src );
+    /*! \brief refer to comment of cpu ver \sa Copy */
     template<int dim>
     inline void Copy(Tensor<gpu,dim> dst, const Tensor<gpu,dim> &src );
     
@@ -358,6 +368,7 @@ namespace mshadow {
      * \param energy input energy
      */
     inline void Softmax( Tensor<cpu,2> dst, const Tensor<cpu,2> &energy );
+    /*! \brief refer to comment of cpu ver \sa Softmax */
     inline void Softmax( Tensor<gpu,2> dst, const Tensor<gpu,2> &energy );
     
 }; // namespace mshadow 
@@ -379,6 +390,7 @@ namespace mshadow{
      */
     template<typename Saver, int dim, typename E, int etype>
     inline void MapExp(Tensor<cpu,dim> dst, const expr::Exp<E,etype> &exp );
+    /*! \brief refer to comment of cpu ver \sa MapExp */
     template<typename Saver, int dim, typename E, int etype>
     inline void MapExp(Tensor<gpu,dim> dst, const expr::Exp<E,etype> &exp );
 
@@ -395,6 +407,7 @@ namespace mshadow{
      */
     template<typename Saver, typename Reducer, typename E, int etype>
     inline void MapReduceKeepLowest( Tensor<cpu,1> dst, const expr::Exp<E,etype> &exp, real_t scale = 1.0f );
+    /*! \brief refer to comment of cpu ver \sa MapReduceKeepLowest */
     template<typename Saver, typename Reducer, typename E, int etype>
     inline void MapReduceKeepLowest( Tensor<gpu,1> dst, const expr::Exp<E,etype> &exp, real_t scale = 1.0f );
 
@@ -408,12 +421,12 @@ namespace mshadow{
      * \tparam etype expression type
      * \param dst destination
      * \param exp expression
-     * \param src_shape shape of source expression
      * \param scale scale the result before save
      * \sa namespace mshadow:sv, mshadow::op, mshadow::red, mshadow::expr
      */
     template<typename Saver, typename Reducer, int dimkeep, typename E, int etype>
     inline void MapReduceKeepHighDim( Tensor<cpu,1> dst, const expr::Exp<E,etype> &exp, real_t scale = 1.0f );
+    /*! \brief refer to comment of cpu ver \sa MapReduceKeepHighDim */
     template<typename Saver, typename Reducer, typename E, int etype>
     inline void MapReduceKeepHighDim( Tensor<gpu,1> dst, const expr::Exp<E,etype> &exp, real_t scale = 1.0f );
 

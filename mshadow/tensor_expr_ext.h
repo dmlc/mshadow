@@ -21,6 +21,7 @@ namespace mshadow{
         struct Broadcast1DExp: public MakeTensorExp< Broadcast1DExp<Device,dimdst,dimcast>,Tensor<Device,1>,dimdst>{
             /*! \brief source operand */
             const Tensor<Device,1> &src_;
+            /*! \brief constructor */
             Broadcast1DExp( const Tensor<Device,1> &src, Shape<dimdst> shape ):src_(src){
                 this->shape_ = shape;
             }
@@ -39,6 +40,7 @@ namespace mshadow{
             index_t psize_;
             /*! \brief patch stride */
             index_t pstride_;
+            /*! \brief constructor */
             UnpackPatchToColExp( const Tensor<Device,3> &img, index_t psize, index_t pstride )
                 :img_(img), psize_(psize), pstride_(pstride){
                 const index_t o_height = ( img.shape[1]  - psize ) / pstride + 1;
@@ -61,6 +63,7 @@ namespace mshadow{
             index_t psize_;
             /*! \brief patch stride */
             index_t pstride_;
+            /*! \brief constructor */
             PackColToPatchExp( const Tensor<Device,2> &mat, Shape<3> imshape, index_t psize, index_t pstride )
                 :mat_(mat), psize_(psize), pstride_(pstride){
                 this->shape_ = imshape;
@@ -84,6 +87,7 @@ namespace mshadow{
         struct ReshapeExp: public MakeTensorExp< ReshapeExp<Device,dimdst,dimsrc>, Tensor<Device,dimsrc>, dimdst>{
             /*! \brief source expression */
             Tensor<Device,dimsrc> src_;
+            /*! \brief constructor */
             ReshapeExp( const Tensor<Device,dimsrc> &src, Shape<dimdst> shape ):src_(src){
                 utils::Assert( shape.Size() == src.shape.Size(), "reshape size must match" );
                 this->shape_ = shape;
@@ -127,6 +131,7 @@ namespace mshadow{
             index_t src_height_;
             /*! \brief source width shape[0] */
             index_t src_width_;
+            /*! \brief constructor */
             PoolingExp( const SrcExp &src, index_t ksize, index_t kstride )
                 : src_(src), ksize_(ksize), kstride_(kstride) {
                 this->shape_ = ShapeCheck<srcdim,SrcExp>::Check( src_ );
@@ -151,6 +156,7 @@ namespace mshadow{
             index_t ksize_;
             /*! \brief kernel stride */
             index_t kstride_;
+            /*! \brief constructor */
             UnPoolingExp(const Tensor<Device,4> &img, const Tensor<Device,4> &pooled, index_t ksize, index_t kstride) : img_(img), pooled_(pooled), ksize_(ksize), kstride_(kstride) {
                 this->shape_ = img_.shape;
             }
@@ -170,6 +176,7 @@ namespace mshadow{
             index_t src_width_;
             /*! \brief source tensor height */
             index_t src_height_;
+            /*! \brief constructor */
             PaddingExp(const SrcExp &src, index_t pad)
                 : src_(src), pad_(pad) {
                 this->shape_ = ShapeCheck<srcdim,SrcExp>::Check( src_ );
@@ -192,6 +199,7 @@ namespace mshadow{
             index_t pad_;
             /*! \brief src height */
             index_t src_height_;
+            /*! \brief constructor */
             UnPaddingExp(const SrcExp &src, index_t pad)
                 : src_(src), pad_(pad) {
                 this->shape_ = ShapeCheck<srcdim,SrcExp>::Check( src_ );
@@ -209,10 +217,12 @@ namespace mshadow{
 
     // Declaration of all functions go here
     namespace expr{
+        /*! \brief operator overload */
         template<typename E, typename R,int d>
         inline ReduceTo1DExp<E,R,d> operator*( const ReduceTo1DExp<E,R,d> &e, real_t scale ){
             return ReduceTo1DExp<E,R,d>( e.src_, e.scale_*scale );
         }
+        /*! \brief operator overload */
         template<typename E, typename R,int d>
         inline ReduceTo1DExp<E,R,d> operator*( real_t scale, const ReduceTo1DExp<E,R,d> &e ){
             return ReduceTo1DExp<E,R,d>( e.src_, e.scale_*scale );
@@ -257,8 +267,8 @@ namespace mshadow{
         /*!
          * \brief reverse operation of pack_col2patch
          * \return packed img expression
-         * \param mat, source matrix
-         * \param imshape, shape of target img
+         * \param mat source matrix
+         * \param imshape shape of target img
          * \param psize height and width of each patch
          * \param pstride stride of each patch
          */
@@ -337,8 +347,10 @@ namespace mshadow{
          * \return unpooling 3D Tensor, shape[2]: channel, shape[1]:height, shape[0]: weight
          * \param pooled 3D Tensor Pooled
          * \param img original image
+         * \param ksize kernel size
          * \param kstride stride for each kernel
-         * \param type pooling type
+         * \tparam Reducer reducer type
+         * \tparam Device device where data lies
          */
          template<typename Reducer, typename Device>
          inline UnPoolingExp<Reducer, Device> unpooling(const Tensor<Device, 4>&img, const Tensor<Device, 4> pooled, index_t ksize, index_t kstride) {
@@ -348,7 +360,7 @@ namespace mshadow{
         /*!
          * \brief padding for 3D tensor
          * \return padded 3D tensor
-         * \param img original image
+         * \param src original image
          * \param pad padding size
          */
          template<typename SrcExp, int etype>
@@ -357,10 +369,10 @@ namespace mshadow{
              return PaddingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim>(src.self(), pad);
          }
 
-         /*!
+        /*!
           * \brief unpadding for 3d tensor
           * \return unpadding 3d tensor
-          * \param padded_img padded img
+          * \param src padded img
           * \param pad
           */
          template<typename SrcExp, int etype>
