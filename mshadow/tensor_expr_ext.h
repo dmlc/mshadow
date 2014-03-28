@@ -59,7 +59,7 @@ namespace mshadow{
         };
 
         /*!
-         * \brief reverse operation of UnpackPatchToCol, used to backprop gradient back 
+         * \brief reverse operation of UnpackPatchToCol, used to backprop gradient back
          * \tparam Device which device it lies
          */
         template<typename Device>
@@ -182,7 +182,7 @@ namespace mshadow{
             }
         };
 
-        /*! 
+        /*!
          * \brief padding expression, pad a image with zeros
          * \tparam SrcExp source expression to be pooled from
          * \tparam srcdim dimension of src
@@ -209,7 +209,7 @@ namespace mshadow{
             }
         };
 
-        /*! 
+        /*!
          * \brief unpadding expression, cut off the boundary region, reverse operation of padding
          * \tparam SrcExp source expression to be pooled from
          * \tparam srcdim dimension of src
@@ -280,11 +280,11 @@ namespace mshadow{
          * \param psize height and width of each patch
          * \param pstride stride of each patch
          * \tparam SrcExp source expression
-         * \tparam etype type of expression         
+         * \tparam etype type of expression
          */
         template<typename SrcExp, int etype>
         inline UnpackPatchToColExp<SrcExp> unpack_patch2col( const Exp<SrcExp,etype> &img, index_t psize, index_t pstride ){
-            TypeCheckPass< ExpInfoXPU<SrcExp>::kDim == 3 >::Error_Expression_Does_Not_Meet_Dimension_Req();            
+            TypeCheckPass< ExpInfoXPU<SrcExp>::kDim == 3 >::Error_Expression_Does_Not_Meet_Dimension_Req();
             return UnpackPatchToColExp<SrcExp>( img.self(), psize, pstride );
         }
 
@@ -346,7 +346,7 @@ namespace mshadow{
         /*!
          * \brief unpooling gradient for 4D, backprop gradient value back, revserse operation of pooling
          * \param data_src  source input, corresponds to src in pooling
-         * \param data_pooled result of pooled data, corresponds to result of pooling 
+         * \param data_pooled result of pooled data, corresponds to result of pooling
          * \param grad_pooled gradient data of pooled part, to be propgate down
          * \param ksize kernel size
          * \param kstride stride for each kernel
@@ -355,8 +355,8 @@ namespace mshadow{
          * \tparam Device device where data lies
          */
          template<typename Reducer, typename Device>
-         inline UnPoolingExp<Reducer, Device> unpooling( const Tensor<Device,4>&data_src, const Tensor<Device,4> &data_pooled, 
-                                                         const Tensor<Device,4> &grad_pooled, index_t ksize, index_t kstride ) {             
+         inline UnPoolingExp<Reducer, Device> unpooling( const Tensor<Device,4>&data_src, const Tensor<Device,4> &data_pooled,
+                                                         const Tensor<Device,4> &grad_pooled, index_t ksize, index_t kstride ) {
              return UnPoolingExp<Reducer, Device>(data_src, data_pooled, grad_pooled,ksize, kstride);
          }
 
@@ -621,7 +621,7 @@ namespace mshadow{
         struct Plan< PaddingExp<SrcExp, srcdim> > {
         public:
             Plan(const PaddingExp<SrcExp, srcdim> &e)
-                : src_(MakePlan(e.src_)), pad_(e.pad_), new_height_(e.shape_[1]), 
+                : src_(MakePlan(e.src_)), pad_(e.pad_), new_height_(e.shape_[1]),
                   src_height_(e.src_height_), src_width_(e.src_width_) {}
             MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
                 const index_t x = j;
@@ -630,7 +630,7 @@ namespace mshadow{
                 if (y < pad_ || x < pad_) return 0.0f;
                 const index_t h = y - pad_;
                 const index_t w = x - pad_;
-                if (h < src_height_ || w < src_width_) {
+                if (h < src_height_ && w < src_width_) {
                     return src_.Eval(c * src_height_ + h, w);
                 } else {
                     return 0.0f;
