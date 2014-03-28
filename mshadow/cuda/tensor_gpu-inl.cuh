@@ -136,7 +136,7 @@ namespace mshadow{
         template<typename Saver, typename Reducer, typename Plan>
         inline void MapReduceKeepDim2( Tensor<gpu,1> dst, const Plan &plan, real_t scale, Shape<4> pshape ){  
             dim3 dimBlock( kBaseThreadNum );
-            dim3 dimGrid ( dst.shape[0] );            
+            dim3 dimGrid ( dst.shape[0] );
             CheckLaunchParam( dimGrid, dimBlock, "MapReduceKeepDim2" );
             MapReduceKeepDim2Kernel<Saver,Reducer,kBaseThreadBits>
                 <<<dimGrid,dimBlock>>>( dst, plan, scale, pshape );
