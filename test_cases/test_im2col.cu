@@ -66,12 +66,12 @@ inline void Check( Tensor<xpu,dim>& xmat, Tensor<cpu,dim>& cmat ){
     }
 }
 
-const int pad = 1;
+const int spad = 1;
 
 template<typename xpu>
 inline void test( int channels, int height, int width, int ksize, int stride ){
-    int height_col = (height + 2* pad- ksize) / stride + 1;
-    int width_col = (width +2*pad- ksize) / stride + 1;
+    int height_col = (height + 2* spad- ksize) / stride + 1;
+    int width_col = (width +2*spad- ksize) / stride + 1;
     TensorContainer<cpu,3> cimg(false); cimg.Resize( Shape3( channels, height, width));
     TensorContainer<cpu,2> cmat(false); cmat.Resize( Shape2( channels * ksize*ksize, height_col*width_col ) );
     TensorContainer<xpu,3> ximg(false); ximg.Resize( cimg.shape );
@@ -80,15 +80,15 @@ inline void test( int channels, int height, int width, int ksize, int stride ){
         cimg.dptr[i] = i;
     } 
     Copy( ximg, cimg );
-    im2col_cpu( cimg.dptr, channels, height, width, ksize, pad, stride, cmat.dptr );
+    im2col_cpu( cimg.dptr, channels, height, width, ksize, spad, stride, cmat.dptr );
+    //ximg = chpool<red::sum>( ximg, 2);
 
-
-    xmat = unpack_patch2col( padding(ximg,pad) , ksize, stride );
+    xmat = unpack_patch2col( pad(ximg,spad) , ksize, stride );
     //xmat = unpack_patch2col( ximg, ksize, stride ) * 1.0f ;
     Check( xmat, cmat );
-    col2im_cpu( cmat.dptr, channels, height, width, ksize, pad, stride, cimg.dptr ) ;
-    Shape<3> pshape= ximg.shape; pshape[1]+=2*pad; pshape[0]+=2*pad;
-    ximg = unpadding( pack_col2patch( xmat, pshape, ksize, stride ), pad );
+    col2im_cpu( cmat.dptr, channels, height, width, ksize, spad, stride, cimg.dptr ) ;
+    Shape<3> pshape= ximg.shape; pshape[1]+=2*spad; pshape[0]+=2*spad;
+    ximg = unpad( pack_col2patch( xmat, pshape, ksize, stride ), spad );
     //ximg = F<op::identity>( pack_col2patch( xmat, ximg.shape, ksize, stride ));
     Check( ximg, cimg );
 }

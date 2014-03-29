@@ -232,6 +232,24 @@ namespace mshadow{
                 this->shape_[1] -= 2 * pad; // height
             }
         }; // struct UnPaddingExp
+
+        /*!
+         * \brief channel pooling expression, do reduction over (local nearby) channels, used to implement local response normalization
+         * \tparam Reducer reduction method during pooling
+         * \tparam SrcExp source expression to be pooled from
+         * \tparam srcdim dimension of src
+         */
+        template<typename Reducer, typename SrcExp, int srcdim>
+        struct ChannelPoolingExp: public MakeTensorExp< PoolingExp<Reducer, SrcExp,srcdim>, SrcExp, srcdim> {
+            /*! \brief source operand */
+            const SrcExp& src_;
+            /*! \brief neighbor size */
+            index_t nsize_;            
+            /*! \brief constructor */
+            ChannelPoolingExp( const SrcExp &src, index_t nsize ): src_(src), nsize_(nsize){
+                this->shape_ = ShapeCheck<srcdim,SrcExp>::Check( src_ );
+            }
+        };
     }; // namespace expr
 
 
@@ -337,7 +355,7 @@ namespace mshadow{
          * \tparam etype type of expression
          */
         template<typename Reducer, typename SrcExp, int etype>
-        inline PoolingExp<Reducer,SrcExp, ExpInfoXPU<SrcExp>::kDim > pooling( const Exp<SrcExp,etype> &src, index_t ksize, index_t kstride ) {
+        inline PoolingExp<Reducer,SrcExp, ExpInfoXPU<SrcExp>::kDim > pool( const Exp<SrcExp,etype> &src, index_t ksize, index_t kstride ) {
             TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
             return PoolingExp<Reducer,SrcExp, ExpInfoXPU<SrcExp>::kDim >(src.self(), ksize, kstride);
         }
@@ -353,8 +371,8 @@ namespace mshadow{
          * \tparam Device device where data lies
          */
          template<typename Reducer, typename Device>
-         inline UnPoolingExp<Reducer, Device> unpooling( const Tensor<Device,4>&data_src, const Tensor<Device,4> &data_pooled,
-                                                         const Tensor<Device,4> &grad_pooled, index_t ksize, index_t kstride ) {
+         inline UnPoolingExp<Reducer, Device> unpool( const Tensor<Device,4>&data_src, const Tensor<Device,4> &data_pooled,
+                                                      const Tensor<Device,4> &grad_pooled, index_t ksize, index_t kstride ) {
              return UnPoolingExp<Reducer, Device>(data_src, data_pooled, grad_pooled,ksize, kstride);
          }
 
@@ -367,7 +385,7 @@ namespace mshadow{
          * \tparam etype type of expression
          */
          template<typename SrcExp, int etype>
-         inline PaddingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim> padding(const Exp<SrcExp, etype> &src, index_t pad) {
+         inline PaddingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim> pad(const Exp<SrcExp, etype> &src, index_t pad) {
              TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
              return PaddingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim>(src.self(), pad);
          }
@@ -381,11 +399,25 @@ namespace mshadow{
          * \tparam etype type of expression
          */
          template<typename SrcExp, int etype>
-         inline UnPaddingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim> unpadding(const Exp<SrcExp, etype> &src, index_t pad) {
+         inline UnPaddingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim> unpad(const Exp<SrcExp, etype> &src, index_t pad) {
              TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
              return UnPaddingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim>(src.self(), pad);
          }
 
+        /*!
+         * \brief  channel pooling, do reduction over (local nearby) channels, used to implement local response normalization
+         * \param src source data 
+         * \param nsize neighbor size 
+         * \return expression of pooled result
+         * \tparam Reducer reducer type
+         * \tparam SrcExp source expression
+         * \tparam etype type of expression
+         */
+        template<typename Reducer, typename SrcExp, int etype>
+        inline ChannelPoolingExp<Reducer,SrcExp, ExpInfoXPU<SrcExp>::kDim > chpool( const Exp<SrcExp,etype> &src, index_t nsize ) {
+            TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 3 >::Error_Expression_Does_Not_Meet_Dimension_Req();
+            return ChannelPoolingExp<Reducer,SrcExp, ExpInfoXPU<SrcExp>::kDim >(src.self(),nsize);
+        }
         // short cut functions
         /*!
          * \brief a expression that replicate a 1 dimension tensor for nrow times
@@ -676,6 +708,37 @@ namespace mshadow{
             index_t src_height_;
         };
     }; // namespace expr
+
+    namespace expr{
+        template<typename Reducer, typename SrcExp, int srcdim>
+        struct Plan< ChannelPoolingExp< Reducer, SrcExp, srcdim> > {
+        public:
+            Plan( const ChannelPoolingExp<Reducer, SrcExp, srcdim> &e )
+                : src_( MakePlan( e.src_ ) ), channel_(e.shape_[2]),
+                  height_(e.shape_[1]),width_(e.shape_[0]), nsize_(e.nsize_){
+            }
+            MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
+                using namespace std;
+                const index_t y = i % height_;
+                i /= height_;
+                const index_t c = i % channel_;
+                const index_t n = i / channel_;
+                const index_t x = j;
+                const index_t cstart = c < nsize_ ? 0  : c - nsize_;
+                const index_t cend   = min( c + nsize_ + 1, channel_ );
+
+                real_t res = Reducer::kInitV;
+                for( index_t cc = cstart; cc < cend; ++ cc ){
+                    Reducer::Reduce( res, src_.Eval( (n*channel_+cc)*height_ + y, x ) );
+
+                }
+                return res;
+            }
+        private:
+            Plan<SrcExp> src_;
+            index_t channel_, height_, width_, nsize_;
+        };
+    };
 }; // namespace mshadow
 
 #if MSHADOW_USE_SSE
