@@ -118,13 +118,14 @@ namespace mshadow{
             real_t res = Reducer::kInitV;
             for( index_t i_offset = 0; i_offset < tot; i_offset += block_size ){
                 index_t i = i_offset + threadIdx.x;
-                const index_t x = i % pshape[0];
-                i /= pshape[0]; 
-                const index_t y = i % pshape[1];
-                const index_t n = i / pshape[1];
-                Reducer::Reduce( res, plan.Eval( (n*pshape[2] + c) * pshape[1] + y, x ) );
-            }
-            
+                if( i< tot ){
+                    const index_t x = i % pshape[0];
+                    i /= pshape[0]; 
+                    const index_t y = i % pshape[1];
+                    const index_t n = i / pshape[1];
+                    Reducer::Reduce( res, plan.Eval( (n*pshape[2] + c) * pshape[1] + y, x ) );
+                }
+            }                
             s_rec[ threadIdx.x ] = res;
             __syncthreads();
             Reduce1D<Reducer,block_dim_bits>( s_rec );
