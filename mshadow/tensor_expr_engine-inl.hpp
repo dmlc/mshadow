@@ -88,7 +88,7 @@ namespace mshadow{
             Plan<TA> src_;
         };
 
-
+        
         template<typename SubType, typename SrcExp, int dim>
         struct Plan< MakeTensorExp<SubType,SrcExp,dim> >{
         public:
@@ -116,7 +116,7 @@ namespace mshadow{
 
         template<typename T, typename SrcExp, int dim>
         inline Plan< T > MakePlan( const MakeTensorExp<T,SrcExp,dim> &e ){
-            return Plan<T>( e.real_self() );
+            return Plan< T >( e.real_self() );
         }
 
         template<typename OP, typename TA, int etype>
@@ -126,7 +126,7 @@ namespace mshadow{
 
         template<typename OP, typename TA, typename TB, int etype>
         inline Plan< BinaryMapExp<OP,TA,TB,etype> > MakePlan( const BinaryMapExp<OP,TA,TB,etype> &e ){
-                return Plan< BinaryMapExp<OP,TA,TB,etype> >( MakePlan(e.lhs_), MakePlan(e.rhs_) );
+            return Plan< BinaryMapExp<OP,TA,TB,etype> >( MakePlan(e.lhs_), MakePlan(e.rhs_) );
         }
     }; // namespace expr
 

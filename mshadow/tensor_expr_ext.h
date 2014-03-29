@@ -20,7 +20,7 @@ namespace mshadow{
         template<typename Device, int dimdst, int dimcast>
         struct Broadcast1DExp: public MakeTensorExp< Broadcast1DExp<Device,dimdst,dimcast>,Tensor<Device,1>,dimdst>{
             /*! \brief source operand */
-            const Tensor<Device,1> &src_;
+            const Tensor<Device,1> src_;
             /*! \brief constructor */
             Broadcast1DExp( const Tensor<Device,1> &src, Shape<dimdst> shape ):src_(src){
                 this->shape_ = shape;
@@ -35,7 +35,7 @@ namespace mshadow{
         template<typename SrcExp>
         struct UnpackPatchToColExp: public MakeTensorExp< UnpackPatchToColExp<SrcExp>, SrcExp, 2>{
             /*! \brief source operand */
-            SrcExp img_;
+            const SrcExp& img_;
             /*! \brief patch size */
             index_t psize_;
             /*! \brief patch stride */
@@ -65,7 +65,7 @@ namespace mshadow{
         template<typename Device>
         struct PackColToPatchExp: public MakeTensorExp< PackColToPatchExp<Device>, Tensor<Device,2>, 3>{
             /*! \brief source operand */
-            Tensor<Device,2> mat_;
+            const Tensor<Device,2>& mat_;
             /*! \brief patch size */
             index_t psize_;
             /*! \brief patch stride */
@@ -93,7 +93,7 @@ namespace mshadow{
         template<typename Device, int dimdst, int dimsrc>
         struct ReshapeExp: public MakeTensorExp< ReshapeExp<Device,dimdst,dimsrc>, Tensor<Device,dimsrc>, dimdst>{
             /*! \brief source expression */
-            Tensor<Device,dimsrc> src_;
+            const Tensor<Device,dimsrc>& src_;
             /*! \brief constructor */
             ReshapeExp( const Tensor<Device,dimsrc> &src, Shape<dimdst> shape ):src_(src){
                 utils::Assert( shape.Size() == src.shape.Size(), "reshape size must match" );
@@ -114,11 +114,11 @@ namespace mshadow{
         template<typename EType, typename Reducer,int dimkeep>
         struct ReduceTo1DExp: public Exp< ReduceTo1DExp<EType,Reducer, dimkeep>, type::kComplex >{
             /*! \brief source operand */
-            EType src_;
+            const EType& src_;
             /*! \brief source operand, scale of the  */
             real_t scale_;
             /*! \brief construct a repmat expression from src and nrow */
-            ReduceTo1DExp( EType src, real_t scale ):src_(src),scale_(scale){}
+            ReduceTo1DExp( const EType& src, real_t scale ):src_(src),scale_(scale){}
         };
 
         /*!
@@ -130,7 +130,7 @@ namespace mshadow{
         template<typename Reducer, typename SrcExp, int srcdim>
         struct PoolingExp: public MakeTensorExp< PoolingExp<Reducer, SrcExp,srcdim>, SrcExp, srcdim> {
             /*! \brief source operand */
-            const SrcExp src_;
+            const SrcExp& src_;
             /*! \brief kernel size */
             index_t ksize_;
             /*! \brief kernel stride */
@@ -159,11 +159,11 @@ namespace mshadow{
         template<typename Reducer, typename Device>
         struct UnPoolingExp: public MakeTensorExp< UnPoolingExp<Reducer, Device>, Tensor<Device,4>, 4> {
             /*! \brief source input, corresponds to src in pooling */
-            Tensor<Device, 4> data_src_;
+            const Tensor<Device, 4>& data_src_;
             /*! \brief result of pooled data, corresponds to result of pooling */
-            Tensor<Device, 4> data_pooled_;
+            const Tensor<Device, 4>& data_pooled_;
             /*! \brief gradient data of pooled part, to be propgate down */
-            Tensor<Device, 4> grad_pooled_;
+            const Tensor<Device, 4>& grad_pooled_;
             /*! \brief kernel size */
             index_t ksize_;
             /*! \brief kernel stride */
@@ -190,7 +190,7 @@ namespace mshadow{
         template<typename SrcExp, int srcdim>
         struct PaddingExp : public MakeTensorExp<PaddingExp<SrcExp, srcdim>, SrcExp, srcdim> {
             /*! \brief source operand */
-            SrcExp src_;
+            const SrcExp& src_;
             /*! \brief pad size */
             index_t pad_;
             /*! \brief source tensor height */
@@ -201,7 +201,6 @@ namespace mshadow{
             PaddingExp( const SrcExp &src, index_t pad )
                 : src_(src), pad_(pad) {
                 this->shape_ = ShapeCheck<srcdim,SrcExp>::Check( src_ );
-                utils::Assert(pad > 0, "PaddingExp: Incorrect padding size");
                 src_height_ = this->shape_[1];
                 src_width_  = this->shape_[0];
                 this->shape_[1] += pad * 2; // height
@@ -217,7 +216,7 @@ namespace mshadow{
         template<typename SrcExp, int srcdim>
         struct UnPaddingExp : public MakeTensorExp< UnPaddingExp<SrcExp, srcdim>, SrcExp, srcdim> {
             /*! \brief source operand */
-            SrcExp src_;
+            const SrcExp& src_;
             /*! \brief pad size */
             index_t pad_;
             /*! \brief src height */
@@ -226,7 +225,6 @@ namespace mshadow{
             UnPaddingExp(const SrcExp &src, index_t pad)
                 : src_(src), pad_(pad) {
                 this->shape_ = ShapeCheck<srcdim,SrcExp>::Check( src_ );
-                utils::Assert(pad > 0, "UnPaddingExp: Incorrect padding size");
                 utils::Assert(this->shape_[0] > 2 * pad, "UnPaddingExp: padding size should be smaller than img width");
                 utils::Assert(this->shape_[1] > 2 * pad, "UnPaddingExp: padding size should be smaller than img height");
                 src_height_ = this->shape_[1];

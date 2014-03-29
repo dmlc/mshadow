@@ -170,9 +170,9 @@ namespace mshadow{
         template<typename TA,typename TB,bool ltrans,bool rtrans>
         struct DotExp: public Exp< DotExp<TA,TB,ltrans,rtrans>, type::kComplex >{
             /*! \brief left operand */
-            TA lhs_;
+            const TA& lhs_;
             /*! \brief right operand */
-            TB rhs_;
+            const TB& rhs_;
             /*! \brief scale over result */
             real_t scale_;
             /*! \brief constructor */
@@ -223,9 +223,9 @@ namespace mshadow{
         template<typename OP, typename TA, typename TB, int etype >
         struct BinaryMapExp: public Exp< BinaryMapExp<OP,TA,TB,etype>, etype >{
             /*! \brief left operand */
-            TA lhs_;
+            const TA& lhs_;
             /*! \brief right operand */
-            TB rhs_;
+            const TB& rhs_;
             /*! \brief constructor */
             BinaryMapExp( const TA &lhs, const TB &rhs )
                 :lhs_(lhs), rhs_(rhs){}
@@ -328,7 +328,7 @@ namespace mshadow{
         template<typename OP, typename TA, int etype >
         struct UnaryMapExp: public Exp< UnaryMapExp<OP,TA,etype>, etype >{
             /*! \brief source expression */
-            TA src_;
+            const TA& src_;
             /*! \brief constructor */
             UnaryMapExp( const TA &src ):src_(src){}
         };
