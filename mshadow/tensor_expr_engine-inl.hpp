@@ -43,6 +43,7 @@ namespace mshadow{
         class Plan< Tensor<Device,dim> >{
         public:
             Plan( const Tensor<Device,dim> &t )
+
                 :dptr_(t.dptr),stride_(t.shape.stride_){}
             MSHADOW_XINLINE real_t Eval( index_t y, index_t x ) const{
                 return dptr_[ y * stride_ + x ];
@@ -228,7 +229,8 @@ namespace mshadow{
         template<int dim, typename OP, typename TA, int etype>
         struct ShapeCheck< dim,UnaryMapExp<OP,TA,etype> >{
             inline static Shape<dim> Check( const UnaryMapExp<OP,TA,etype> &t ){
-                return ShapeCheck<dim,TA>::Check( t.src_ );
+                Shape<dim> s = ShapeCheck<dim,TA>::Check( t.src_ );
+                return s;
             }
         };
         template<int dim, typename OP, typename TA, typename TB, int etype>

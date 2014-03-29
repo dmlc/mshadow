@@ -122,10 +122,10 @@ namespace mshadow {
          * \tparam dim dimension of tensor
          */
         template<int dim>
-        inline expr::UnaryMapExp<op::identity,Tensor<cpu,dim>,expr::type::kMapper> gaussian( Shape<dim> shape ){
-            Tensor<cpu,dim> temp = this->GetTemp( shape );
-            this->SampleGaussian( temp, 0.0f, 1.0f );
-            return expr::MakeExp<op::identity>( temp );
+        inline expr::ReshapeExp<cpu,dim,1> gaussian( Shape<dim> shape ){
+            buffer_.Resize( Shape1( shape.Size() ) );
+            this->SampleGaussian( buffer_, 0.0f, 1.0f );
+            return expr::reshape( buffer_, shape );
         }
         /*!
          * \brief return a temporal expression storing standard uniform [0,1)
@@ -138,23 +138,12 @@ namespace mshadow {
          * \tparam dim dimension of tensor
          */
         template<int dim>
-        inline expr::UnaryMapExp<op::identity,Tensor<cpu,dim>,expr::type::kMapper> uniform( Shape<dim> shape ){
-            Tensor<cpu,dim> temp = this->GetTemp( shape );
-            this->SampleUniform( temp, 0.0f, 1.0f );
-            return expr::MakeExp<op::identity>( temp );
+        inline expr::ReshapeExp<cpu,dim,1> uniform( Shape<dim> shape ){
+            buffer_.Resize( Shape1( shape.Size() ) );
+            this->SampleUniform( buffer_, 0.0f, 1.0f );
+            return expr::reshape( buffer_, shape );
         }
     private:
-        /*!
-         * \brief create temp storage from buffer with given shape
-         * \param shape shape of the tensor
-         * \tparam dim dimension of tensor
-         */
-        template<int dim>
-        inline Tensor<cpu,dim> GetTemp( Shape<dim> shape ){
-            shape.stride_ = ((shape[0] + 3) >> 2) << 2;
-            buffer_.Resize( Shape1( shape.MSize() ) );
-            return Tensor<cpu,dim>( buffer_.dptr, shape );
-        }
         /*! \brief get next random number from rand */
         inline real_t RandNext( void ){
             return static_cast<real_t>(rand()) / (static_cast<real_t>(RAND_MAX)+1.0f);
@@ -258,16 +247,16 @@ namespace mshadow {
          * \tparam dim dimension of tensor
          */
         template<int dim>
-        inline expr::UnaryMapExp<op::identity,Tensor<gpu,dim>,expr::type::kMapper> gaussian( Shape<dim> shape, real_t mu=0.0f, real_t sigma=1.0f){
-            Tensor<gpu,dim> temp = this->GetTemp(shape);
+        inline expr::ReshapeExp<gpu,dim,1> gaussian( Shape<dim> shape, real_t mu=0.0f, real_t sigma=1.0f){
+            buffer_.Resize( Shape1( shape.Size() ) );
             curandStatus_t status;
             #if MSHADOW_SINGLE_PRECISION
-            status = curandGenerateNormal(gen_, temp.dptr, temp.shape.MSize(), mu, sigma);
+            status = curandGenerateNormal(gen_, buffer_.dptr, buffer_.shape[0], mu, sigma);
             #else
-            status = curandGenerateNormalDouble(gen_, temp.dptr, temp.shape.MSize(), mu, sigma);
+            status = curandGenerateNormalDouble(gen_, buffer_.dptr, buffer_.shape[0], mu, sigma);
             #endif
             utils::Assert(status == CURAND_STATUS_SUCCESS, "CURAND Gen Uniform failed\n");
-            return expr::MakeExp<op::identity>( temp );
+            return expr::reshape( buffer_, shape );
         }
         /*!
          * \brief return a temporal expression storing standard uniform [0,1)
@@ -280,28 +269,16 @@ namespace mshadow {
          * \tparam dim dimension of tensor
          */
         template<int dim>
-        inline expr::UnaryMapExp<op::identity,Tensor<gpu,dim>,expr::type::kMapper> uniform(Shape<dim> shape) {
-            Tensor<gpu,dim> temp = this->GetTemp(shape);
+        inline expr::ReshapeExp<gpu,dim,1> uniform(Shape<dim> shape) {
+            buffer_.Resize( Shape1( shape.Size() ) );
             curandStatus_t status;
             #if MSHADOW_SINGLE_PRECISION
-            status = curandGenerateUniform(gen_, temp.dptr, temp.shape.MSize() );
+            status = curandGenerateUniform(gen_, buffer_.dptr, buffer_.shape[0] );
             #else
-            status = curandGenerateUniformDouble(gen_, temp.dptr, temp.shape.MSize() );
+            status = curandGenerateUniformDouble(gen_, buffer_.dptr, buffer_.shape[0] );
             #endif
             utils::Assert(status == CURAND_STATUS_SUCCESS, "CURAND Gen Uniform failed\n");
-            return expr::MakeExp<op::identity>(temp);
-        }
-    private:
-        /*!
-         * \brief create temp storage from buffer with given shape
-         * \param shape shape of the tensor
-         * \tparam dim dimension of tensor
-         */
-        template<int dim>
-        inline Tensor<gpu,dim> GetTemp(Shape<dim> shape) {
-            shape.stride_ = cuda::GetAlignStride( shape[0] );
-            buffer_.Resize( Shape1(shape.MSize()) );
-            return Tensor<gpu,dim>(buffer_.dptr, shape);
+            return expr::reshape( buffer_, shape );
         }
     private:
         /*! \brief random numbeer generator */

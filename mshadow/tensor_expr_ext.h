@@ -530,10 +530,10 @@ namespace mshadow{
     };
 
     namespace expr{
-        template<typename Device, int dimsrc, int dimdst>
-        struct Plan< ReshapeExp<Device,dimsrc,dimdst> >{
+        template<typename Device, int dimdst, int dimsrc>
+        struct Plan< ReshapeExp<Device,dimdst,dimsrc> >{
         public:
-            Plan( const ReshapeExp<Device,dimsrc,dimdst> &e ): dptr_( e.src_.dptr ){
+            Plan( const ReshapeExp<Device,dimdst,dimsrc> &e ): dptr_( e.src_.dptr ){
                 oshape0_ = e.shape_[0];
                 ishape0_ = e.src_.shape[0];
                 istride_ = e.src_.shape.stride_;
@@ -545,6 +545,20 @@ namespace mshadow{
         private:
             const real_t *dptr_;
             index_t oshape0_, ishape0_, istride_;
+        };
+
+        template<typename Device,int dimdst>
+        struct Plan< ReshapeExp<Device,dimdst,1> >{
+        public:
+            Plan( const ReshapeExp<Device,dimdst,1> &e ): dptr_( e.src_.dptr ){
+                oshape0_ = e.shape_[0];
+            }
+            MSHADOW_XINLINE real_t Eval( index_t y, index_t x ) const{
+                    return dptr_[ y * oshape0_ + x ];
+            }
+        private:
+            const real_t *dptr_;
+            index_t oshape0_;
         };
     };
 
