@@ -247,6 +247,7 @@ namespace mshadow{
             index_t nsize_;            
             /*! \brief constructor */
             ChannelPoolingExp( const SrcExp &src, index_t nsize ): src_(src), nsize_(nsize){
+                utils::Assert( nsize % 2 == 1, "ChannelPoolingExp: local size must be odd, to make it symmetric" );
                 this->shape_ = ShapeCheck<srcdim,SrcExp>::Check( src_ );
             }
         };
@@ -715,7 +716,7 @@ namespace mshadow{
         public:
             Plan( const ChannelPoolingExp<Reducer, SrcExp, srcdim> &e )
                 : src_( MakePlan( e.src_ ) ), channel_(e.shape_[2]),
-                  height_(e.shape_[1]),width_(e.shape_[0]), nsize_(e.nsize_){
+                  height_(e.shape_[1]),width_(e.shape_[0]), hnsize_(e.nsize_/2){
             }
             MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
                 using namespace std;
@@ -724,8 +725,8 @@ namespace mshadow{
                 const index_t c = i % channel_;
                 const index_t n = i / channel_;
                 const index_t x = j;
-                const index_t cstart = c < nsize_ ? 0  : c - nsize_;
-                const index_t cend   = min( c + nsize_ + 1, channel_ );
+                const index_t cstart = c < hnsize_ ? 0  : c - hnsize_;
+                const index_t cend   = min( c + hnsize_ + 1, channel_ );
 
                 real_t res = Reducer::kInitV;
                 for( index_t cc = cstart; cc < cend; ++ cc ){
@@ -736,7 +737,7 @@ namespace mshadow{
             }
         private:
             Plan<SrcExp> src_;
-            index_t channel_, height_, width_, nsize_;
+            index_t channel_, height_, width_, hnsize_;
         };
     };
 }; // namespace mshadow
