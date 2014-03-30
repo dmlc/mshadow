@@ -253,6 +253,16 @@ namespace mshadow{
         inline BinaryMapExp<OP,TA,TB, (ta|tb|type::kMapper) > F( const Exp<TA,ta> &lhs, const Exp<TB,tb> &rhs ){
             return MakeExp<OP>( lhs, rhs );
         }
+        /*! \brief operator overload for const */
+        template<typename OP,typename TA, int ta>
+        inline BinaryMapExp<OP,TA,ScalarExp, (ta|type::kMapper) > F( const Exp<TA,ta> &lhs, const ScalarExp &rhs ){
+            return MakeExp<OP>( lhs, rhs );
+        }
+        /*! \brief operator overload for const */
+        template<typename OP,typename TB, int tb>
+        inline BinaryMapExp<OP,ScalarExp,TB, (tb|type::kMapper) > F( const ScalarExp &lhs, const Exp<TB,tb>& rhs ){
+            return MakeExp<OP>( lhs, rhs );
+        }
 
         // operator rules
         /*! \brief operator overload */
