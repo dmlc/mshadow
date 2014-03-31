@@ -28,6 +28,8 @@ namespace mshadow{
         const int kBaseThreadNum  = 1 << kBaseThreadBits;
         /*! \brief maximum value of grid */
         const int kMaxGridNum     = 65535;
+        /*! \brief suggested grid number for mapping kernel */
+        const int kBaseGridNum    = 1024;
         
         /*! \brief get align stride for given size in x dimension */
         index_t GetAlignStride( index_t xsize ){
@@ -44,14 +46,25 @@ namespace mshadow{
 
     namespace cuda {
         template<typename Saver, typename Plan, int block_dim_bits>
-        __global__ void MapPlanKernel( Tensor<gpu,2> dst, const index_t xstride, const Plan exp ){
-            const index_t tid = (blockIdx.x << block_dim_bits) + threadIdx.x;
+        __device__ void MapPlanProc( Tensor<gpu,2> dst, const index_t xstride, const Plan exp, int block_idx ){
+            const index_t tid = (block_idx << block_dim_bits) + threadIdx.x;
             const int y   = tid / xstride;
             const int x   = tid % xstride;
             if (y < dst.shape[1] && x < dst.shape[0]) {
                 Saver::Save(dst[y][x], exp.Eval(y,x));
             }
         }
+        template<typename Saver, typename Plan, int block_dim_bits>
+        __global__ void MapPlanKernel( Tensor<gpu,2> dst, const index_t xstride, const Plan exp ){
+            MapPlanProc<Saver, Plan,block_dim_bits>( dst, xstride, exp, blockIdx.x );
+        }
+        template<typename Saver, typename Plan, int block_dim_bits, int grid_size>
+        __global__ void MapPlanLargeKernel( Tensor<gpu,2> dst, const index_t xstride, const Plan exp, int repeat ){
+            for( int i = 0; i < repeat; ++i ){
+                MapPlanProc<Saver, Plan,block_dim_bits>( dst, xstride, exp, blockIdx.x + i*grid_size );
+            }
+        }        
+        
         template<typename Saver, typename E>
         inline void MapPlan( Tensor<gpu,2> dst, const expr::Plan<E> &plan ){
             const index_t xstride = GetAlignStride( dst.shape[0] );
@@ -63,7 +76,10 @@ namespace mshadow{
                 MapPlanKernel<Saver, expr::Plan<E>, kBaseThreadBits>   \
                     <<<dimGrid,dimBlock>>>(dst, xstride, plan);
             } else {
-                utils::Error("not implemented");
+                int repeat = (num_block + kBaseGridNum-1) / kBaseGridNum;
+                dim3 dimGrid( kBaseGridNum, 1 , 1 );
+                MapPlanLargeKernel<Saver,expr::Plan<E>, kBaseThreadBits, kBaseGridNum> \
+                    <<<dimGrid,dimBlock>>>(dst, xstride, plan, repeat );
             }
         }        
     }; // namespace cuda
