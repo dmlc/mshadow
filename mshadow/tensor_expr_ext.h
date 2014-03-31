@@ -240,7 +240,7 @@ namespace mshadow{
          * \tparam srcdim dimension of src
          */
         template<typename Reducer, typename SrcExp, int srcdim>
-        struct ChannelPoolingExp: public MakeTensorExp< PoolingExp<Reducer, SrcExp,srcdim>, SrcExp, srcdim> {
+        struct ChannelPoolingExp: public MakeTensorExp< ChannelPoolingExp<Reducer, SrcExp,srcdim>, SrcExp, srcdim> {
             /*! \brief source operand */
             const SrcExp& src_;
             /*! \brief neighbor size */
@@ -249,6 +249,7 @@ namespace mshadow{
             ChannelPoolingExp( const SrcExp &src, index_t nsize ): src_(src), nsize_(nsize){
                 utils::Assert( nsize % 2 == 1, "ChannelPoolingExp: local size must be odd, to make it symmetric" );
                 this->shape_ = ShapeCheck<srcdim,SrcExp>::Check( src_ );
+                utils::Assert( this->shape_[2] >= nsize_, "ChannelPoolingExp: local size need to be smaller than number of channels" );
             }
         };
     }; // namespace expr
@@ -727,11 +728,9 @@ namespace mshadow{
                 const index_t x = j;
                 const index_t cstart = c < hnsize_ ? 0  : c - hnsize_;
                 const index_t cend   = min( c + hnsize_ + 1, channel_ );
-
                 real_t res = Reducer::kInitV;
                 for( index_t cc = cstart; cc < cend; ++ cc ){
                     Reducer::Reduce( res, src_.Eval( (n*channel_+cc)*height_ + y, x ) );
-
                 }
                 return res;
             }
