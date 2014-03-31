@@ -142,13 +142,25 @@ namespace mshadow{
             /*! \brief constructor */
             PoolingExp( const SrcExp &src, index_t ksize, index_t kstride )
                 : src_(src), ksize_(ksize), kstride_(kstride) {
-                this->shape_ = ShapeCheck<srcdim,SrcExp>::Check( src_ );
-                utils::Assert( this->shape_[1] >= ksize && this->shape_[0] >= ksize, "PoolingExp: source smaller than kernel" );
-                this->src_height_ = this->shape_[1];
-                this->src_width_  = this->shape_[0];
-                this->shape_[1] = (src_height_ - ksize) / kstride + 1;
-                this->shape_[0] = (src_width_ - ksize) / kstride + 1;
+                Shape< srcdim > sshape = ShapeCheck< srcdim,SrcExp>::Check( src_ );
+                utils::Assert( sshape[0] >= ksize && sshape[1] >= ksize, "pool: kernel must be smaller than image" );
+                this->src_height_ = sshape[1];
+                this->src_width_  = sshape[0];
+                this->shape_ = sshape;
+                this->shape_[1] =  (src_height_ - ksize) / kstride + 1;                
+                this->shape_[0] =  (src_width_  - ksize) / kstride + 1;
             }
+            /*! \brief constructor, specify shape */
+            PoolingExp( const SrcExp &src, Shape<2> pshape, index_t ksize, index_t kstride )
+                : src_(src), ksize_(ksize), kstride_(kstride) {
+                Shape< srcdim > sshape = ShapeCheck< srcdim,SrcExp>::Check( src_ );
+                utils::Assert( sshape[0] >= ksize && sshape[1] >= ksize, "pool: kernel must be smaller than image" );
+                this->src_height_ = sshape[1];
+                this->src_width_  = sshape[0];
+                this->shape_    = sshape;
+                this->shape_[1] = pshape[1];
+                this->shape_[0] = pshape[0];
+            } 
         };
 
         /*!
@@ -174,8 +186,6 @@ namespace mshadow{
                 : data_src_(data_src), data_pooled_(data_pooled), grad_pooled_(grad_pooled),
                   ksize_(ksize), kstride_(kstride) {
                 utils::Assert( grad_pooled.shape == data_pooled.shape, "UnPoolingExp: pooled shape mismatch" );
-                utils::Assert( grad_pooled.shape[0] == (data_src.shape[0]-ksize) / kstride + 1, "UnPoolingExp: pool and src shape mismatch" );
-                utils::Assert( grad_pooled.shape[1] == (data_src.shape[1]-ksize) / kstride + 1, "UnPoolingExp: pool and src shape mismatch" );
                 utils::Assert( grad_pooled.shape[2] == data_src.shape[2], "UnPoolingExp: pool and src shape mismatch" );
                 utils::Assert( grad_pooled.shape[3] == data_src.shape[3], "UnPoolingExp: pool and src shape mismatch" );
                 this->shape_ = data_src_.shape;
@@ -360,6 +370,12 @@ namespace mshadow{
         inline PoolingExp<Reducer,SrcExp, ExpInfoXPU<SrcExp>::kDim > pool( const Exp<SrcExp,etype> &src, index_t ksize, index_t kstride ) {
             TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
             return PoolingExp<Reducer,SrcExp, ExpInfoXPU<SrcExp>::kDim >(src.self(), ksize, kstride);
+        }
+        /*! \brief same as pool, except the output shape is specified by pshape */
+        template<typename Reducer, typename SrcExp, int etype>
+        inline PoolingExp<Reducer,SrcExp, ExpInfoXPU<SrcExp>::kDim > pool( const Exp<SrcExp,etype> &src, Shape<2> pshape, index_t ksize, index_t kstride ) {
+            TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
+            return PoolingExp<Reducer,SrcExp, ExpInfoXPU<SrcExp>::kDim >(src.self(), pshape, ksize, kstride);
         }
         /*!
          * \brief unpooling gradient for 4D, backprop gradient value back, revserse operation of pooling
