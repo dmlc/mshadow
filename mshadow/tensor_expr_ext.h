@@ -219,29 +219,32 @@ namespace mshadow{
         };
 
         /*!
-         * \brief unpadding expression, cut off the boundary region, reverse operation of padding
+         * \brief crop expression, cut off the boundary region, reverse operation of padding
          * \tparam SrcExp source expression to be pooled from
          * \tparam srcdim dimension of src
          */
         template<typename SrcExp, int srcdim>
-        struct UnPaddingExp : public MakeTensorExp< UnPaddingExp<SrcExp, srcdim>, SrcExp, srcdim> {
+        struct CroppingExp : public MakeTensorExp< CroppingExp<SrcExp, srcdim>, SrcExp, srcdim> {
             /*! \brief source operand */
             const SrcExp& src_;
-            /*! \brief pad size */
-            index_t pad_;
+            /*! \brief pad height */
+            index_t pad_height_;
+            /*! \brief pad height */
+            index_t pad_width_;
             /*! \brief src height */
             index_t src_height_;
             /*! \brief constructor */
-            UnPaddingExp(const SrcExp &src, index_t pad)
-                : src_(src), pad_(pad) {
+            CroppingExp(const SrcExp &src, Shape<2> cshape ): src_(src) {
                 this->shape_ = ShapeCheck<srcdim,SrcExp>::Check( src_ );
-                utils::Assert(this->shape_[0] > 2 * pad, "UnPaddingExp: padding size should be smaller than img width");
-                utils::Assert(this->shape_[1] > 2 * pad, "UnPaddingExp: padding size should be smaller than img height");
+                utils::Assert(this->shape_[1] >= cshape[1], "CroppingExp: height requirement not met");
+                utils::Assert(this->shape_[0] >= cshape[0], "CroppingExp: width requirement not met");
+                pad_height_ = (this->shape_[1] - cshape[1]) / 2;
+                pad_width_ = (this->shape_[0] - cshape[0]) / 2;
                 src_height_ = this->shape_[1];
-                this->shape_[0] -= 2 * pad; // width
-                this->shape_[1] -= 2 * pad; // height
+                this->shape_[1] = cshape[1]; // width
+                this->shape_[0] = cshape[0]; // height
             }
-        }; // struct UnPaddingExp
+        }; // struct CroppingExp
 
         /*!
          * \brief channel pooling expression, do reduction over (local nearby) channels, used to implement local response normalization
@@ -409,17 +412,17 @@ namespace mshadow{
          }
 
         /*!
-         * \brief revserse operationg of padding, cut off boundaries, padding affects shape[0], and shape[1]
+         * \brief revserse operationg of padding, cut off boundaries, crop output from center of input
          * \param src original image batches
-         * \param pad padding size to be cut off
+         * \param oshape output shape to be cropped
          * \return expression corresponding to padded result
          * \tparam SrcExp source expression
          * \tparam etype type of expression
          */
          template<typename SrcExp, int etype>
-         inline UnPaddingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim> unpad(const Exp<SrcExp, etype> &src, index_t pad) {
+         inline CroppingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim> crop( const Exp<SrcExp, etype> &src, Shape<2> oshape ) {
              TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
-             return UnPaddingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim>(src.self(), pad);
+             return CroppingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim>(src.self(), oshape);
          }
 
         /*!
@@ -707,21 +710,22 @@ namespace mshadow{
         };
 
         template<typename SrcExp, int srcdim>
-        struct Plan<UnPaddingExp<SrcExp, srcdim> > {
+        struct Plan<CroppingExp<SrcExp, srcdim> > {
         public:
-            Plan(const UnPaddingExp<SrcExp, srcdim> &e)
-                : src_(MakePlan(e.src_)), pad_(e.pad_), new_height_(e.shape_[1]), src_height_(e.src_height_) {}
+            Plan(const CroppingExp<SrcExp, srcdim> &e)
+                : src_(MakePlan(e.src_)), pad_height_(e.pad_height_),pad_width_(e.pad_width_), 
+                  new_height_(e.shape_[1]), src_height_(e.src_height_) {}
             MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
                 const index_t x = j;
                 const index_t y = i % new_height_;
                 const index_t c = i / new_height_;
-                const index_t h = y + pad_;
-                const index_t w = x + pad_;
+                const index_t h = y + pad_height_;
+                const index_t w = x + pad_width_;
                 return src_.Eval(c * src_height_ + h, w);
             }
         private:
             Plan<SrcExp> src_;
-            index_t pad_;
+            index_t pad_height_, pad_width_;
             index_t new_height_;
             index_t src_height_;
         };
