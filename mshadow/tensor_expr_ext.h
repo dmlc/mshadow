@@ -244,7 +244,34 @@ namespace mshadow{
                 this->shape_[1] = cshape[1]; // width
                 this->shape_[0] = cshape[0]; // height
             }
+            /*! \brief constructor */
+            CroppingExp(const SrcExp &src, Shape<2> cshape, index_t start_height, index_t start_width  )
+                : src_(src), pad_height_(start_height), pad_width_(start_width) {
+                this->shape_ = ShapeCheck<srcdim,SrcExp>::Check( src_ );
+                utils::Assert(this->shape_[1] >= cshape[1], "CroppingExp: height requirement not met");
+                utils::Assert(this->shape_[0] >= cshape[0], "CroppingExp: width requirement not met");
+                src_height_ = this->shape_[1];
+                this->shape_[1] = cshape[1]; // width
+                this->shape_[0] = cshape[0]; // height
+            }
+
         }; // struct CroppingExp
+
+
+        /*!
+         * \brief mirror expression, mirror a image in width
+         * \tparam SrcExp source expression to be mirrored
+         * \tparam srcdim dimension of src
+         */
+        template<typename SrcExp, int srcdim>
+        struct MirroringExp : public MakeTensorExp<MirroringExp<SrcExp, srcdim>, SrcExp, srcdim> {
+            /*! \brief source operand */
+            const SrcExp& src_;
+            /*! \brief constructor */
+            MirroringExp( const SrcExp &src ): src_(src) {
+                this->shape_ = ShapeCheck<srcdim,SrcExp>::Check( src_ );
+            }
+        };
 
         /*!
          * \brief channel pooling expression, do reduction over (local nearby) channels, used to implement local response normalization
@@ -423,6 +450,32 @@ namespace mshadow{
          inline CroppingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim> crop( const Exp<SrcExp, etype> &src, Shape<2> oshape ) {
              TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
              return CroppingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim>(src.self(), oshape);
+         }
+        /*!
+         * \brief same as crop, but can specify starting position to do cropping
+         * \param src original image batches
+         * \param oshape output shape to be cropped
+         * \return expression corresponding to padded result
+         * \tparam SrcExp source expression
+         * \tparam etype type of expression
+         */
+         template<typename SrcExp, int etype>
+         inline CroppingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim> crop( const Exp<SrcExp, etype> &src, Shape<2> oshape, index_t start_height, index_t start_width ) {
+             TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
+             return CroppingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim>(src.self(), oshape, start_height, start_width);
+         }
+
+        /*!
+         * \brief mirroring expression, mirror images in width
+         * \param src original image batches
+         * \return expression corresponding to mirrored result
+         * \tparam SrcExp source expression
+         * \tparam etype type of expression
+         */
+         template<typename SrcExp, int etype>
+         inline MirroringExp<SrcExp, ExpInfoXPU<SrcExp>::kDim> mirror(const Exp<SrcExp, etype> &src) {
+             TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
+             return MirroringExp<SrcExp, ExpInfoXPU<SrcExp>::kDim>(src.self());
          }
 
         /*!
@@ -728,6 +781,19 @@ namespace mshadow{
             index_t pad_height_, pad_width_;
             index_t new_height_;
             index_t src_height_;
+        };
+
+        template<typename SrcExp, int srcdim>
+        struct Plan< MirroringExp<SrcExp, srcdim> > {
+        public:
+            Plan(const MirroringExp<SrcExp, srcdim> &e)
+                : src_(MakePlan(e.src_)), width_(e.shape_[0]){}
+            MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
+                return src_.Eval( i, width_ - j - 1 );
+            }
+        private:
+            Plan<SrcExp> src_;
+            index_t width_;
         };
     }; // namespace expr
 
