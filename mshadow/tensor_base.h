@@ -48,7 +48,7 @@
 #endif
 /*! \brief whether use NVML to get dynamic info */
 #ifndef MSHADOW_USE_NVML
-  #define MSHADOW_USE_NVML 1
+  #define MSHADOW_USE_NVML 0
 #endif
 // SSE is conflict with cudacc
 #ifdef __CUDACC__
