@@ -17,7 +17,44 @@ namespace mshadow {
 };
 #else
 namespace mshadow {
+    #if (MSHADOW_USE_NVML)
+    inline int SelectDevice() {
+        cudaError_t cuda_result;
+        nvmlReturn_t nvml_result;
+        int device_id = 0;
+        int device_count = 0;
+        unsigned long long max_free_mem = 0;
+
+        nvmlDevice_t device;
+        nvmlMemory_t mem;
+
+        nvml_result = nvmlInit();
+        utils::Assert(nvml_result == NVML_SUCCESS, "NVML Failed");
+        cuda_result = cudaGetDeviceCount(&device_count);
+        utils::Assert(cuda_result == cudaSuccess, "Get CUDA device count failed");
+        utils::Assert(device_count > 0);
+
+        for (int i = 0; i < device_count; ++i) {
+            nvmlDeviceGetHandleByIndex(i, &device);
+            nvmlDeviceGetMemoryInfo(device, &mem);
+            if (mem.free > max_free_mem) {
+                max_free_mem = mem.free;
+                device_id = i;
+            }
+        }
+        nvmlShutdown();
+        return device_id;
+    }
+    #endif
     inline void InitTensorEngine( void ){
+        int device_id = 0;
+        cudaDeviceProp prop;
+        #if (MSHADOW_USE_NVML)
+        device_id = SelectDevice();
+        #endif
+        cudaSetDevice(device_id);
+        cudaGetDeviceProperties(&prop, device_id);
+        printf("Use CUDA Device %d: %s\n", device_id, prop.name);
         cublasInit();
     }
     inline void ShutdownTensorEngine( void ){
@@ -29,13 +66,13 @@ namespace mshadow {
         size_t pitch;
         if( pad ){
             cudaError_t err = cudaMallocPitch( (void**)&obj.dptr, &pitch, \
-                                               obj.shape[0] * sizeof(real_t), obj.FlatTo2D().shape[1] );        
+                                               obj.shape[0] * sizeof(real_t), obj.FlatTo2D().shape[1] );
             utils::Assert( err == cudaSuccess, cudaGetErrorString(err) );
             obj.shape.stride_ = static_cast<index_t>( pitch / sizeof(real_t) );
         }else{
             obj.shape.stride_ = obj.shape[0];
             cudaError_t err = cudaMallocPitch( (void**)&obj.dptr, &pitch, \
-                                               obj.shape.Size() * sizeof(real_t), 1 );        
+                                               obj.shape.Size() * sizeof(real_t), 1 );
             utils::Assert( err == cudaSuccess, cudaGetErrorString(err) );
         }
     }
@@ -50,12 +87,12 @@ namespace mshadow {
         utils::Assert( _dst.shape == _src.shape, "Copy:shape mismatch" );
         Tensor<A,2> dst = _dst.FlatTo2D();
         Tensor<B,2> src = _src.FlatTo2D();
-        cudaError_t err = cudaMemcpy2D( dst.dptr, dst.shape.stride_ * sizeof(real_t), 
-                                        src.dptr, src.shape.stride_ * sizeof(real_t), 
-                                        dst.shape[0] * sizeof(real_t), 
+        cudaError_t err = cudaMemcpy2D( dst.dptr, dst.shape.stride_ * sizeof(real_t),
+                                        src.dptr, src.shape.stride_ * sizeof(real_t),
+                                        dst.shape[0] * sizeof(real_t),
                                         dst.shape[1], kind );
         utils::Assert( err == cudaSuccess, cudaGetErrorString(err) );
-    }    
+    }
     template<int dim>
     inline void Copy(Tensor<cpu,dim> dst, const Tensor<gpu,dim> &src){
         Copy( dst, src, cudaMemcpyDeviceToHost );
@@ -76,7 +113,7 @@ namespace mshadow {
 
 namespace mshadow{
     template<typename Saver, typename E, int dim>
-    inline void MapPlan(Tensor<gpu,dim> _dst, const expr::Plan<E> &plan){ 
+    inline void MapPlan(Tensor<gpu,dim> _dst, const expr::Plan<E> &plan){
         cuda::MapPlan<Saver>( _dst.FlatTo2D(), plan );
     }
 
@@ -94,7 +131,7 @@ namespace mshadow{
         using namespace expr;
         TypeCheckPass< TypeCheck<gpu,1,E>::kRedPass >::Error_TypeCheck_Not_Pass_For_Reduce_Exp();
         Shape<2> eshape = ShapeCheck< ExpInfo<gpu,E>::kDim, E >::Check( exp.self() ).FlatTo2D();
-        
+
         utils::Assert( eshape[0] == dst.shape[0], "reduction dimension do not match" );
         utils::Assert( eshape[1] != 0, "can not reduce over empty tensor" );
         cuda::MapReduceKeepLowest<Saver,Reducer>( dst, MakePlan( exp.self() ), scale, eshape );
@@ -106,10 +143,10 @@ namespace mshadow{
         TypeCheckPass< TypeCheck<gpu,dimkeep,E>::kRedPass >::Error_TypeCheck_Not_Pass_For_Reduce_Exp();
         typedef Shape< ExpInfo<gpu,E>::kDim > EShape;
         EShape eshape = ShapeCheck< ExpInfo<gpu,E>::kDim, E >::Check( exp.self() );
-        utils::Assert( eshape[dimkeep] == dst.shape[0], "reduction dimension do not match" );            
-        // use equvalent form 
+        utils::Assert( eshape[dimkeep] == dst.shape[0], "reduction dimension do not match" );
+        // use equvalent form
         Shape<4> pshape = Shape4( 1, eshape[dimkeep], 1, eshape[0] );
-        #pragma unroll        
+        #pragma unroll
         for( int i = 1; i < dimkeep; ++ i ) pshape[1] *= eshape[i];
         #pragma unroll
         for( int i = dimkeep+1; i < EShape::kMaxShape; ++i ) pshape[3] *= eshape[i];

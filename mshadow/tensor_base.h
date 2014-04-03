@@ -46,7 +46,10 @@
 #ifndef MSHADOW_USE_SSE
   #define MSHADOW_USE_SSE 1
 #endif
-
+/*! \brief whether use NVML to get dynamic info */
+#ifndef MSHADOW_USE_NVML
+  #define MSHADOW_USE_NVML 1
+#endif
 // SSE is conflict with cudacc
 #ifdef __CUDACC__
   #undef MSHADOW_USE_SSE
@@ -69,6 +72,9 @@ extern "C"{
   #include <curand.h>
 #endif
 
+#if MSHADOW_USE_NVML
+  #include <nvml.h>
+#endif
 // --------------------------------
 // MSHADOW_XINLINE is used for inlining template code for both CUDA and CPU code.
 #ifdef MSHADOW_XINLINE
