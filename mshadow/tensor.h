@@ -295,8 +295,9 @@ namespace mshadow {
      * \brief initialize tensor engine, used to call intialization functions of dependent libs
      *        this function should be called before all GPU tensor operations,
      *        for using tensors in CPU, this call is actually not needed
+     * \param device_id GPU device id to be choosed, if -1 will use auto select mode from nvml
      */
-    inline void InitTensorEngine(int);
+    inline void InitTensorEngine( int device_id = -1 );
     /*!
      * \brief Shutdown tensor engine,
      *        this function should be called after all GPU tensor operations,

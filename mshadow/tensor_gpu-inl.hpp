@@ -18,31 +18,12 @@ namespace mshadow {
 #else
 namespace mshadow {
     #if (MSHADOW_USE_NVML)
-    inline int SelectDevice(int device_count) {
-        nvmlReturn_t nvml_result;
-        int device_id = 0;
-        unsigned long long max_free_mem = 0;
-
-        nvmlDevice_t device;
-        nvmlMemory_t mem;
-
-        nvml_result = nvmlInit();
-        utils::Assert(nvml_result == NVML_SUCCESS, "NVML Failed");
-
-        utils::Assert(device_count > 0);
-        for (int i = 0; i < device_count; ++i) {
-            nvmlDeviceGetHandleByIndex(i, &device);
-            nvmlDeviceGetMemoryInfo(device, &mem);
-            if (mem.free > max_free_mem) {
-                max_free_mem = mem.free;
-                device_id = i;
-            }
-        }
-        nvmlShutdown();
-        return device_id;
+    inline int AutoSelectDevice(int device_count) {
+        // TODO nvml device id and cuda device id are not consistent
+        return 0;
     }
     #endif
-    inline void InitTensorEngine(int dev_id = -1){
+    inline void InitTensorEngine(int dev_id){
         cudaDeviceProp prop;
         int device_id = 0;
         int device_count = 0;
@@ -50,13 +31,13 @@ namespace mshadow {
 
         if (dev_id < 0) {
             #if (MSHADOW_USE_NVML)
-            device_id = SelectDevice(device_count);
+            device_id = AutoSelectDevice(device_count);
             #endif
         } else {
             device_id = dev_id;
         }
-        utils::Assert(device_id < device_count, "Incorrect Device ID");
-        cudaSetDevice(device_id);
+        utils::Assert( device_id < device_count, "Incorrect Device ID" );
+        utils::Assert( cudaSetDevice(device_id) == cudaSuccess, "cannot set device" );
         cudaGetDeviceProperties(&prop, device_id);
         printf("Use CUDA Device %d: %s\n", device_id, prop.name);
         cublasInit();

@@ -3,8 +3,8 @@
 export CC  = gcc
 export CXX = g++
 export NVCC =nvcc
-export CFLAGS = -Wall -O3 -msse3 -Wno-unknown-pragmas -funroll-loops -I.. -I/usr/local/cuda-5.5/include/ 
-export LDFLAGS= -lm -lcudart -lcublas -lmkl_core -lmkl_intel_lp64 -lmkl_intel_thread -liomp5 -lpthread  -L/usr/local/cuda-5.5/lib64/
+export CFLAGS = -Wall -O3 -msse3 -Wno-unknown-pragmas -funroll-loops -I.. -I/usr/local/cuda-5.5/include/ -DMSHADOW_USE_NVML=1
+export LDFLAGS= -lm -lcudart -lcublas -lmkl_core -lmkl_intel_lp64 -lmkl_intel_thread -liomp5 -lpthread -lnvidia-ml -L/usr/local/cuda-5.5/lib64/
 export NVCCFLAGS = -O3 --use_fast_math -ccbin $(CXX)
 
 # specify tensor path
