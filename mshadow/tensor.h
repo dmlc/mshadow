@@ -119,9 +119,9 @@ namespace mshadow {
          *    this is used to deal with pitch allocation in gpu or sse(align x dimension to 64bit) for efficiency
          */
         index_t stride_;
-    };    
-    // useful construction functions to generate shape    
-    /*! 
+    };
+    // useful construction functions to generate shape
+    /*!
      * \brief construct a one dimension shape, stride will equal s0
      * \param s0 size of dimension 0
      * \return the shape construction
@@ -130,7 +130,7 @@ namespace mshadow {
         Shape<1> s; s[0] = s0; s.stride_ = s0;
         return s;
     }
-    /*! 
+    /*!
      * \brief construct a two dimension shape, stride will equal s0
      * \param s1 size of dimension 1
      * \param s0 size of dimension 0
@@ -140,19 +140,19 @@ namespace mshadow {
         Shape<2> s; s[0] = s0; s[1] = s1; s.stride_ = s0;
         return s;
     }
-    /*! 
-     * \brief construct a three dimension shape, stride will equal s0 
+    /*!
+     * \brief construct a three dimension shape, stride will equal s0
      * \param s2 size of dimension 2
      * \param s1 size of dimension 1
      * \param s0 size of dimension 0
      * \return the shape construction
      */
     MSHADOW_XINLINE Shape<3> Shape3( index_t s2, index_t s1, index_t s0 ){
-        Shape<3> s; 
+        Shape<3> s;
         s[0] = s0; s[1] = s1; s[2] = s2; s.stride_ = s0;
         return s;
     }
-    /*! 
+    /*!
      * \brief construct a four dimension shape, stride will equal s0
      * \param s3 size of dimension 3
      * \param s2 size of dimension 2
@@ -161,7 +161,7 @@ namespace mshadow {
      * \return the shape construction
      */
     MSHADOW_XINLINE Shape<4> Shape4( index_t s3, index_t s2, index_t s1, index_t s0 ){
-        Shape<4> s; 
+        Shape<4> s;
         s[0] = s0; s[1] = s1; s[2] = s2; s[3] = s3; s.stride_ = s0;
         return s;
     }
@@ -259,7 +259,7 @@ namespace mshadow {
         MSHADOW_XINLINE Tensor(void) {}
         MSHADOW_XINLINE Tensor(const Shape<1> &shape): shape(shape) {}
         MSHADOW_XINLINE Tensor(real_t *dptr, Shape<1> shape) :dptr(dptr), shape(shape) {}
-        
+
         MSHADOW_XINLINE Tensor<Device, 2> FlatTo2D(void) const {
             return Tensor<Device, 2>(reinterpret_cast<real_t*> \
                                      (dptr), shape.FlatTo2D());
@@ -290,26 +290,26 @@ namespace mshadow {
 
 // add unroll loops for the shape
 namespace mshadow {
-    // function declarations    
+    // function declarations
     /*!
      * \brief initialize tensor engine, used to call intialization functions of dependent libs
      *        this function should be called before all GPU tensor operations,
      *        for using tensors in CPU, this call is actually not needed
      */
-    inline void InitTensorEngine( void );
+    inline void InitTensorEngine(int);
     /*!
-     * \brief Shutdown tensor engine, 
+     * \brief Shutdown tensor engine,
      *        this function should be called after all GPU tensor operations,
      *        for using tensors in CPU, this call is actually not needed
      */
     inline void ShutdownTensorEngine( void );
-    
+
     /*!
      * \brief CPU/CPU: allocate space for CTensor, according to the shape in the obj
-     *        this function is responsible to set the stride_ in each obj.shape     
+     *        this function is responsible to set the stride_ in each obj.shape
      * \tparam dim specify the dim of tensor
      * \param obj the tensor object, with shape specified
-     * \param pad whether padding dimension 0, to make last dimension aligned, 
+     * \param pad whether padding dimension 0, to make last dimension aligned,
      *            padding may help improve efficiency of matrix multiplications
      *            if true, will allocate space with stride_ that may not equals shape[0]
      *            if false, will allocate continuous space
@@ -360,9 +360,9 @@ namespace mshadow {
     /*! \brief refer to comment of cpu ver \sa Copy */
     template<int dim>
     inline void Copy(Tensor<gpu,dim> dst, const Tensor<gpu,dim> &src );
-    
-       
-    /*! 
+
+
+    /*!
      * \brief CPU/GPU: normalize softmax: dst[i][j] = exp( energy[i][j] ) /( sum_j exp( energy[i][j] ) )
      * \param dst destination
      * \param energy input energy
@@ -370,14 +370,14 @@ namespace mshadow {
     inline void Softmax( Tensor<cpu,2> dst, const Tensor<cpu,2> &energy );
     /*! \brief refer to comment of cpu ver \sa Softmax */
     inline void Softmax( Tensor<gpu,2> dst, const Tensor<gpu,2> &energy );
-    
-}; // namespace mshadow 
+
+}; // namespace mshadow
 
 
 namespace mshadow{
     // function declarations to support expression, no need to understand them
-    // these functions do not need to be directly used 
-    
+    // these functions do not need to be directly used
+
     /*!
      * \brief CPU/GPU: map a expression to a tensor, this function calls MapPlan
      * \tparam Saver specify storage method
