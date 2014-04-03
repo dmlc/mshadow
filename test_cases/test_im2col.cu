@@ -88,7 +88,7 @@ inline void test( int channels, int height, int width, int ksize, int stride ){
     Check( xmat, cmat );
     col2im_cpu( cmat.dptr, channels, height, width, ksize, spad, stride, cimg.dptr ) ;
     Shape<3> pshape= ximg.shape; pshape[1]+=2*spad; pshape[0]+=2*spad;
-    ximg = unpad( pack_col2patch( xmat, pshape, ksize, stride ), spad );
+    ximg = crop( pack_col2patch( xmat, pshape, ksize, stride ), ximg[0].shape );
     //ximg = F<op::identity>( pack_col2patch( xmat, ximg.shape, ksize, stride ));
     Check( ximg, cimg );
 }

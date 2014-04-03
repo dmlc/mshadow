@@ -2,17 +2,17 @@
 #include "mshadow/tensor.h"
 // this namespace contains all data structures, functions
 using namespace mshadow;
-// this namespace contains all operator overloads 
+// this namespace contains all operator overloads
 using namespace mshadow::expr;
 
 int main( void ){
     // intialize tensor engine before using tensor operation, needed for CuBLAS
-    InitTensorEngine();
+    InitTensorEngine(88);
     // assume we have a float space
     real_t data[ 20 ];
     // create a 2 x 5 x 2 tensor, from existing space
     Tensor<cpu,3> ts( data, Shape3(2,5,2) );
-    // take first subscript of the tensor 
+    // take first subscript of the tensor
     Tensor<cpu,2> mat = ts[0];
     // Tensor object is only a handle, assignment means they have same data content
     Tensor<cpu,2> mat2 = mat;
