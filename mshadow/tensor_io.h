@@ -90,7 +90,7 @@ namespace mshadow{
     // implementations
     template<int dim, typename TStream>
     inline void SaveBinary( TStream &fo, const Tensor<cpu,dim> &src_ ){
-        fo.Write( &src_.shape, sizeof(Shape<dim>) );
+        fo.Write( src_.shape.shape_, sizeof(index_t) * dim );
         Tensor<cpu,2> src = src_.FlatTo2D();
         for( index_t i = 0; i < src.shape[1]; ++ i ){
             fo.Write( src[i].dptr, sizeof(real_t)*src.shape[0] );
@@ -109,7 +109,7 @@ namespace mshadow{
     template<int dim, typename TStream>
     inline void LoadBinary( TStream &fi, Tensor<cpu,dim> &dst_, bool pre_alloc ){
         Shape<dim> shape;
-        utils::Assert( fi.Read( &shape, sizeof(Shape<dim>) ) != 0, "mshadow::LoadBinary" );
+        utils::Assert( fi.Read( shape.shape_, sizeof(index_t) * dim ) != 0, "mshadow::LoadBinary" );
         if( pre_alloc ){
             utils::Assert( shape == dst_.shape );
         }else{
