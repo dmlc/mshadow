@@ -32,8 +32,13 @@ namespace mshadow{
         const int kBaseGridNum    = 1024;
         
         /*! \brief get align stride for given size in x dimension */
-        index_t GetAlignStride( index_t xsize ){
-            return ( (xsize  + kMemUnit - 1) >> kMemUnitBits) << kMemUnitBits;
+        index_t GetAlignStride( index_t xsize, index_t xstride ){ 
+            if( (xstride & (kMemUnit-1)) == 0 ){
+                return ( (xsize  + kMemUnit - 1) >> kMemUnitBits) << kMemUnitBits;
+            }else{
+                // if originally space is not aligned, no necessary to to alligned thread allocation
+                return xsize;
+            }
         }
         inline void CheckLaunchParam( dim3 dimGrid, dim3 dimBlock, const char *estr = "" ){
             if( dimBlock.x*dimBlock.y*dimBlock.z > (unsigned)kMaxThreadsPerBlock ||
@@ -67,7 +72,7 @@ namespace mshadow{
         
         template<typename Saver, typename E>
         inline void MapPlan( Tensor<gpu,2> dst, const expr::Plan<E> &plan ){
-            const index_t xstride = GetAlignStride( dst.shape[0] );
+            const index_t xstride = GetAlignStride( dst.shape[0], dst.shape.stride_ );
             const int num_block = ( dst.shape[1]*xstride + kBaseThreadNum-1) / kBaseThreadNum;
             dim3 dimBlock(kBaseThreadNum, 1, 1);
 

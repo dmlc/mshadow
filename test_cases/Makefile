@@ -11,7 +11,7 @@ export NVCCFLAGS = -O3 --use_fast_math -ccbin $(CXX)
 BIN = test testc 
 OBJ =
 CUOBJ = testcuda.o
-CUBIN = test_im2col test_lrn
+CUBIN = test_im2col testlrn
 .PHONY: clean all
 
 all: $(BIN) $(OBJ) $(CUBIN) $(CUOBJ)

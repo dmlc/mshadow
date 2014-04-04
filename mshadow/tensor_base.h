@@ -17,15 +17,27 @@
 #ifndef MSHADOW_STAND_ALONE
     #define MSHADOW_STAND_ALONE 0
 #endif
+
+/*! \brief whether do padding during allocation */
+#ifndef MSHADOW_ALLOC_PAD
+    #define MSHADOW_ALLOC_PAD true
+#endif
+
+/*! 
+ * \brief x dimension of data must be bigger pad_size * ratio to be alloced padded memory, otherwise use tide allocation 
+ *        for example, if pad_ratio=2, GPU memory alignement size is 32, then we will only allocate padded memory if x dimension > 64
+ *        set it to 0 then we will always allocate padded memory
+ */
+#ifndef MSHADOW_MIN_PAD_RATIO
+    #define MSHADOW_MIN_PAD_RATIO 2
+#endif
+
 #if MSHADOW_STAND_ALONE
    #define MSHADOW_USE_CBLAS 0
    #define MSHADOW_USE_MKL   0
    #define MSHADOW_USE_CUDA  0
 #endif
-/*! \brief whether do padding during allocation */
-#ifndef MSHADOW_ALLOC_PAD
-    #define MSHADOW_ALLOC_PAD true
-#endif
+
 /*! \brief use CBLAS for CBLAS */
 #ifndef MSHADOW_USE_CBLAS
    #define MSHADOW_USE_CBLAS 0

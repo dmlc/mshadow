@@ -49,7 +49,8 @@ namespace mshadow {
     template<int dim>
     inline void AllocSpace(Tensor<gpu,dim> &obj, bool pad){
         size_t pitch;
-        if( pad ){
+        // common choice for cuda mem align unit is 32
+        if( pad && obj.shape[0] >= MSHADOW_MIN_PAD_RATIO * 32 ){
             cudaError_t err = cudaMallocPitch( (void**)&obj.dptr, &pitch, \
                                                obj.shape[0] * sizeof(real_t), obj.FlatTo2D().shape[1] );
             utils::Assert( err == cudaSuccess, cudaGetErrorString(err) );
@@ -90,7 +91,7 @@ namespace mshadow {
     inline void Copy(Tensor<gpu,dim> dst, const Tensor<cpu,dim> &src){
         Copy( dst, src, cudaMemcpyHostToDevice );
     }
-}; // namespace mshadow
+};
 
 #ifdef __CUDACC__
 // the following part is included only if compiler is nvcc
