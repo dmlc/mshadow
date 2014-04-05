@@ -96,7 +96,7 @@ namespace mshadow {
             }
             return memsz;
         }
-        /*! 
+        /*!
          * \return product shape in [dimstart,dimend)
          * \param dimstart start dimension
          * \param dimend   end dimension
@@ -454,7 +454,10 @@ namespace mshadow{
 #include "tensor_cpu-inl.hpp"
 // gpu implementation of functions
 #include "tensor_gpu-inl.hpp"
+// io 
+#include "tensor_io.h"
+// container
+#include "tensor_container.h"
 // random number generator
 #include "tensor_random.h"
-
 #endif // TENSOR_H
