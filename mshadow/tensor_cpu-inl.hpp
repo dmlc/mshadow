@@ -123,11 +123,8 @@ namespace mshadow {
         EShape eshape = ShapeCheck< ExpInfo<cpu,E>::kDim, E >::Check( exp.self() );
         utils::Assert( eshape[dimkeep] == dst.shape[0], "reduction dimension do not match" );
         // use equvalent form
-        Shape<4> pshape = Shape4( 1, eshape[dimkeep], 1, eshape[0] );
-        #pragma unroll
-        for( int i = 1; i < dimkeep; ++ i ) pshape[1] *= eshape[i];
-        #pragma unroll
-        for( int i = dimkeep+1; i < EShape::kMaxShape; ++i ) pshape[3] *= eshape[i];
+        Shape<4> pshape = Shape4( eshape.ProdShape(dimkeep+1,EShape::kMaxShape), eshape[dimkeep], 
+                                  eshape.ProdShape(1,dimkeep), eshape[0] );
 
         // execution
         expr::Plan<E> plan = MakePlan( exp.self() );

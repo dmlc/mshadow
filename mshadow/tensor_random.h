@@ -122,7 +122,7 @@ namespace mshadow {
          * \tparam dim dimension of tensor
          */
         template<int dim>
-        inline expr::ReshapeExp<cpu,dim,1> gaussian( Shape<dim> shape ){
+        inline expr::ReshapeExp<Tensor<cpu,1>,dim,1> gaussian( Shape<dim> shape ){
             buffer_.Resize( Shape1( shape.Size() ) );
             this->SampleGaussian( buffer_, 0.0f, 1.0f );
             return expr::reshape( buffer_, shape );
@@ -138,7 +138,7 @@ namespace mshadow {
          * \tparam dim dimension of tensor
          */
         template<int dim>
-        inline expr::ReshapeExp<cpu,dim,1> uniform( Shape<dim> shape ){
+        inline expr::ReshapeExp<Tensor<cpu,1>,dim,1> uniform( Shape<dim> shape ){
             buffer_.Resize( Shape1( shape.Size() ) );
             this->SampleUniform( buffer_, 0.0f, 1.0f );
             return expr::reshape( buffer_, shape );
@@ -247,7 +247,7 @@ namespace mshadow {
          * \tparam dim dimension of tensor
          */
         template<int dim>
-        inline expr::ReshapeExp<gpu,dim,1> gaussian( Shape<dim> shape, real_t mu=0.0f, real_t sigma=1.0f){
+        inline expr::ReshapeExp<Tensor<gpu,1>,dim,1> gaussian( Shape<dim> shape, real_t mu=0.0f, real_t sigma=1.0f){
             buffer_.Resize( Shape1( shape.Size() ) );
             curandStatus_t status;
             #if MSHADOW_SINGLE_PRECISION
@@ -269,7 +269,7 @@ namespace mshadow {
          * \tparam dim dimension of tensor
          */
         template<int dim>
-        inline expr::ReshapeExp<gpu,dim,1> uniform(Shape<dim> shape) {
+        inline expr::ReshapeExp<Tensor<gpu,1>,dim,1> uniform(Shape<dim> shape) {
             buffer_.Resize( Shape1( shape.Size() ) );
             curandStatus_t status;
             #if MSHADOW_SINGLE_PRECISION

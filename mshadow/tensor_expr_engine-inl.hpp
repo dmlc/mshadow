@@ -43,7 +43,6 @@ namespace mshadow{
         class Plan< Tensor<Device,dim> >{
         public:
             Plan( const Tensor<Device,dim> &t )
-
                 :dptr_(t.dptr),stride_(t.shape.stride_){}
             MSHADOW_XINLINE real_t Eval( index_t y, index_t x ) const{
                 return dptr_[ y * stride_ + x ];
@@ -52,7 +51,18 @@ namespace mshadow{
             const real_t  *dptr_;
             index_t stride_;
         };
-
+        // special evaluation case for 1d tensor
+        template <typename Device>
+        class Plan< Tensor<Device,1> >{
+        public:
+            Plan( const Tensor<Device,1> &t ):dptr_(t.dptr){}
+            MSHADOW_XINLINE real_t Eval( index_t y, index_t x ) const{
+                return dptr_[ x ];
+            }
+        private:
+            const real_t  *dptr_;
+        };
+        
         template<>
         class Plan<ScalarExp>{
         public:

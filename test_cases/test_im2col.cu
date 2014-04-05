@@ -78,35 +78,69 @@ inline void test( int channels, int height, int width, int ksize, int stride ){
     TensorContainer<xpu,2> xmat(false); xmat.Resize( cmat.shape );
     for( index_t  i =0; i < cimg.shape.Size(); ++ i ){
         cimg.dptr[i] = i;
-    } 
+    }     
     Copy( ximg, cimg );
     im2col_cpu( cimg.dptr, channels, height, width, ksize, spad, stride, cmat.dptr );
-    //ximg = chpool<red::sum>( ximg, 2);
 
-    xmat = unpack_patch2col( pad(ximg,spad) , ksize, stride );
-    //xmat = unpack_patch2col( ximg, ksize, stride ) * 1.0f ;
+    xmat = unpack_patch2colX( pad(ximg,spad) , ksize, stride );
     Check( xmat, cmat );
     col2im_cpu( cmat.dptr, channels, height, width, ksize, spad, stride, cimg.dptr ) ;
     Shape<3> pshape= ximg.shape; pshape[1]+=2*spad; pshape[0]+=2*spad;
-    ximg = crop( pack_col2patch( xmat, pshape, ksize, stride ), ximg[0].shape );
+    ximg = crop( pack_col2patchX( xmat, pshape, ksize, stride ), ximg[0].shape );
     //ximg = F<op::identity>( pack_col2patch( xmat, ximg.shape, ksize, stride ));
     Check( ximg, cimg );
 }
 
+
+template<typename xpu>
+inline void testX( int num, int channels, int height, int width, int ksize, int stride ){
+    int height_col = (height + 2* spad- ksize) / stride + 1;
+    int width_col = (width +2*spad- ksize) / stride + 1;
+    TensorContainer<cpu,4> cimg(false); cimg.Resize( Shape4( num, channels, height, width));
+    TensorContainer<cpu,3> cmat(false); cmat.Resize( Shape3( num, channels*ksize*ksize, height_col*width_col ) );
+    TensorContainer<xpu,4> ximg(false); ximg.Resize( cimg.shape );
+    TensorContainer<xpu,2> xmat(false); xmat.Resize( Shape2( channels*ksize*ksize, height_col*width_col*num ) );
+    TensorContainer<xpu,3> xtmat(false); xtmat.Resize( Shape3( channels*ksize*ksize, num, height_col*width_col ) );
+    TensorContainer<xpu,3> xxmat(false); xxmat.Resize( cmat.shape );
+    for( index_t  i =0; i < cimg.shape.Size(); ++ i ){
+        cimg.dptr[i] = i;
+    } 
+    Copy( ximg, cimg );
+    for( int n = 0; n < num; ++ n ){
+        im2col_cpu( cimg[n].dptr , channels, height, width, ksize, spad, stride, cmat[n].dptr );
+    }
+    xmat = unpack_patch2colX( pad(ximg,spad) , ksize, stride );
+    xxmat = swapaxis<0,1>( swapaxis<0,2>( swapaxis<0,1>( reshape( xmat, xtmat.shape ) ) ));
+    //Check( xxmat, cmat );
+    for( int n = 0; n < num; ++ n ){
+        col2im_cpu( cmat[n].dptr, channels, height, width, ksize, spad, stride, cimg[n].dptr ) ;
+    }
+    Shape<4> pshape= ximg.shape; pshape[1]+=2*spad; pshape[0]+=2*spad;
+    ximg = crop( pack_col2patchX( xmat, pshape, ksize, stride ), ximg[0][0].shape );
+    Check( ximg, cimg );
+}
+#include <ctime>
 int main( int argc, char *argv[] ){
+    if( argc < 2 ){
+        printf("Usage:<deviceid>\n"); exit(-1);
+    }
+    
     InitTensorEngine( atoi(argv[1]) );
+    time_t start = time(NULL);
+    for( int n = 2; n < 3; ++n )  
     for( int c = 1; c < 3; ++ c )
         for( int h = 5; h < 30; ++ h )
-            for( int w = 6; w< 31; ++ w ){
+            for( int w = 25; w< 31; ++ w ){
                 int kmax = 10;
                 if( kmax > h ) kmax = h;
                 if( kmax > w ) kmax = w;
                 for( int ksize = 5; ksize < kmax; ++ ksize )
                     for( int stride = 1; stride < 8; ++ stride ){
-                        test<cpu>( c,h,w,ksize, stride);
-                        test<gpu>( c,h,w,ksize, stride);
+                        testX<cpu>( n, c,h,w,ksize, stride);
+                        testX<gpu>( n, c,h,w,ksize, stride);
                     }
-            }
+            }    
+    printf("all test passed, %lu sec\n", time(NULL) - start);
     ShutdownTensorEngine();
     return 0;
 }

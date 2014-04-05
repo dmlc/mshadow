@@ -59,6 +59,43 @@ namespace mshadow{
         };
 
         /*!
+         * \brief unpack local (overlap) patches of image to column of mat, can be used to implement convolution, this expression allow unpack of a batch
+         *  after getting unpacked mat, we can use: output = dot( weight, mat ) to get covolved results, the relations:
+         * \tparam SrcExp source expression
+         * \tparam dstdim destination dimension
+         */
+        template<typename SrcExp, int srcdim>
+        struct UnpackPatchToColXExp: public MakeTensorExp< UnpackPatchToColXExp<SrcExp,srcdim>, SrcExp, 2>{
+            /*! \brief source operand */
+            const SrcExp& img_;
+            /*! \brief patch size */
+            index_t psize_;
+            /*! \brief patch stride */
+            index_t pstride_;
+            /*! \brief number of input channel */
+            index_t i_channel_;
+            /*! \brief height of img */
+            index_t i_height_;
+            /*! \brief width of img */
+            index_t i_width_;            
+            /*! \brief constructor */
+            UnpackPatchToColXExp( const SrcExp &img, index_t psize, index_t pstride )
+                :img_(img), psize_(psize), pstride_(pstride){
+                Shape<srcdim> imshape = ShapeCheck<srcdim,SrcExp>::Check( img_ );
+                utils::Assert( imshape[0] >= psize && imshape[1] >= psize, "UnpackPatchToCol:image shape smaller than patch size");
+                this->i_channel_ = imshape[2];
+                this->i_height_  = imshape[1];
+                this->i_width_   = imshape[0];
+                // calculate number of batches 
+                const index_t num = imshape.ProdShape( 3, srcdim );
+                const index_t o_height = ( i_height_ - psize ) / pstride + 1;
+                const index_t o_width  = ( i_width_  - psize ) / pstride + 1;
+                this->shape_[0] = o_height * o_width * num;
+                this->shape_[1] = psize * psize * imshape[2];
+            }
+        };
+
+        /*!
          * \brief reverse operation of UnpackPatchToCol, used to backprop gradient back
          * \tparam Device which device it lies
          */
@@ -81,23 +118,73 @@ namespace mshadow{
             }
         };
 
+
+        /*!
+         * \brief reverse operation of UnpackPatchToCol, used to backprop gradient back
+         * \tparam Device which device it lies
+         * \tparam dstdim destination dimension
+         */
+        template<typename Device, int dstdim>
+        struct PackColToPatchXExp: public MakeTensorExp< PackColToPatchXExp<Device,dstdim>, Tensor<Device,2>, dstdim>{
+            /*! \brief source operand */
+            const Tensor<Device,2>& mat_;
+            /*! \brief patch size */
+            index_t psize_;
+            /*! \brief patch stride */
+            index_t pstride_;
+            /*! \brief constructor */
+            PackColToPatchXExp( const Tensor<Device,2> &mat, Shape<dstdim> imshape, index_t psize, index_t pstride )
+                :mat_(mat), psize_(psize), pstride_(pstride){
+                this->shape_ = imshape;
+                const index_t o_height = ( imshape[1]  - psize ) / pstride + 1;                
+                const index_t o_width  = ( imshape[0]  - psize ) / pstride + 1;                
+                utils::Assert( mat.shape[0] == o_height * o_width * imshape.ProdShape(3,dstdim), "PackColToPatchExp: mat.shape[0] mismatch" );
+                utils::Assert( mat.shape[1] == psize * psize * imshape[2], "PackColToPatchExp: mat.shape[1] mismatch" );
+            }
+        };
+
         /*!
          * \brief reshape the content to another shape
          * input: Tensor<Device,dimsrc>: ishape
          * output: Tensor<Device,dimdst> ishape.Size() == oshape.Size()
          *
-         * \tparam Device where the data lies
+         * \tparam SrcExp source expression
          * \tparam dimdst target dimension
          * \tparam dimsrc source dimension
          */
-        template<typename Device, int dimdst, int dimsrc>
-        struct ReshapeExp: public MakeTensorExp< ReshapeExp<Device,dimdst,dimsrc>, Tensor<Device,dimsrc>, dimdst>{
+        template<typename SrcExp, int dimdst, int dimsrc>
+        struct ReshapeExp: public MakeTensorExp< ReshapeExp<SrcExp,dimdst,dimsrc>, SrcExp, dimdst>{
             /*! \brief source expression */
-            const Tensor<Device,dimsrc>& src_;
+            const SrcExp& src_;
+            /*! \brief smallest dimension of input */
+            index_t ishape0_;
             /*! \brief constructor */
-            ReshapeExp( const Tensor<Device,dimsrc> &src, Shape<dimdst> shape ):src_(src){
-                utils::Assert( shape.Size() == src.shape.Size(), "reshape size must match" );
+            ReshapeExp( const SrcExp &src, Shape<dimdst> shape ):src_(src){
+                Shape<dimsrc> ishape = ShapeCheck<dimsrc,SrcExp>::Check( src_ );
+                utils::Assert( ishape.Size() == shape.Size(), "reshape size must match" );
+                ishape0_ = ishape[0];
                 this->shape_ = shape;
+            }
+        };
+
+        /*!
+         * \brief swap two axis of a tensor
+         * input: Tensor<Device,dim>: ishape
+         * output: Tensor<Device,dimdst> oshape[a1],oshape[a2] = ishape[a2],oshape[a1]
+         *
+         * \tparam Device where the data lies
+         * \tparam dimsrc source dimension
+         * \tparam a1 smaller dimension to be swapped
+         * \tparam a2 larger dimension to be swapped
+         */
+        template<typename SrcExp,int dimsrc, int a1, int a2>
+        struct SwapAxisExp: public MakeTensorExp< SwapAxisExp<SrcExp,dimsrc,a1,a2>, SrcExp, dimsrc>{
+            /*! \brief source expression */
+            const SrcExp& src_;
+            /*! \brief constructor */
+            SwapAxisExp( const SrcExp &src ):src_(src){                
+                this->shape_ = ShapeCheck<dimsrc,SrcExp>::Check(src); 
+                std::swap( this->shape_[a1], this->shape_[a2] );
             }
         };
 
@@ -345,6 +432,11 @@ namespace mshadow{
             TypeCheckPass< ExpInfoXPU<SrcExp>::kDim == 3 >::Error_Expression_Does_Not_Meet_Dimension_Req();
             return UnpackPatchToColExp<SrcExp>( img.self(), psize, pstride );
         }
+        template<typename SrcExp, int etype>
+        inline UnpackPatchToColXExp<SrcExp, ExpInfoXPU<SrcExp>::kDim > unpack_patch2colX( const Exp<SrcExp,etype> &img, index_t psize, index_t pstride ){
+            TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 3 >::Error_Expression_Does_Not_Meet_Dimension_Req();
+            return UnpackPatchToColXExp<SrcExp, ExpInfoXPU<SrcExp>::kDim >( img.self(), psize, pstride );
+        }
 
         /*!
          * \brief reverse operation of pack_col2patch, can be used to implement deconvolution
@@ -359,6 +451,11 @@ namespace mshadow{
             utils::Assert( imshape[0] >= psize && imshape[1] >= psize, "PackColToPatch:image shape smaller than patch size");
             return PackColToPatchExp<Device>( mat, imshape, psize, pstride );
         }
+        template<typename Device, int dstdim>
+        inline PackColToPatchXExp<Device,dstdim> pack_col2patchX( const Tensor<Device,2> &mat, Shape<dstdim> imshape, index_t psize, index_t pstride ){
+            utils::Assert( imshape[0] >= psize && imshape[1] >= psize, "PackColToPatch:image shape smaller than patch size");
+            return PackColToPatchXExp<Device,dstdim>( mat, imshape, psize, pstride );
+        }
         /*!
          * \brief a expression that reshapes a tensor to another shape
          * \param src Tensor<Device,dimsrc>:
@@ -368,9 +465,25 @@ namespace mshadow{
          * \tparam dimdst target dimension
          * \tparam dimsrc source dimension
          */
-        template<typename Device, int dimdst, int dimsrc>
-        inline ReshapeExp<Device,dimdst,dimsrc> reshape( const Tensor<Device,dimsrc> &src, Shape<dimdst> oshape ){
-            return ReshapeExp<Device,dimdst,dimsrc>( src, oshape );
+        template<typename SrcExp, int etype, int dimdst>
+        inline ReshapeExp< SrcExp,dimdst, ExpInfoXPU<SrcExp>::kDim > reshape( const Exp<SrcExp,etype> &src, Shape<dimdst> oshape ){
+            return ReshapeExp< SrcExp,dimdst, ExpInfoXPU<SrcExp>::kDim >( src.self(), oshape );
+        }
+
+        /*!
+         * \brief a expression that reshapes a tensor to another shape
+         * \param src Tensor<Device,dimsrc>:
+         * \param oshape target shape
+         * \return a expresion with type Tensor<Device,dimdst>
+         * \tparam Device which device it lies
+         * \tparam dimdst target dimension
+         * \tparam dimsrc source dimension
+         */
+        template<int a1, int a2, typename SrcExp, int etype>
+        inline SwapAxisExp< SrcExp, ExpInfoXPU<SrcExp>::kDim, a1,a2> swapaxis( const Exp<SrcExp,etype> &src ){ 
+            typedef ExpInfoXPU<SrcExp> Info;
+            TypeCheckPass< Info::kDim>=a1+1 && Info::kDim >= a2+1 && a1+1 <= a2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
+            return SwapAxisExp< SrcExp,Info::kDim,a1,a2>( src.self() );
         }
 
         /*!
@@ -546,21 +659,18 @@ namespace mshadow{
         template<typename Device, int dimdst, int dimcast>
         struct Plan< Broadcast1DExp<Device,dimdst,dimcast> >{
         public:
-            Plan( const Broadcast1DExp<Device,dimdst,dimcast> &e ): dptr_( e.src_.dptr ){
+            Plan( const Broadcast1DExp<Device,dimdst,dimcast> &e )
+                : dptr_( e.src_.dptr ), 
+                  ystride_( e.shape_.ProdShape(1,dimcast) ),
+                  length_(e.shape_[dimcast]){
                 TypeCheckPass< dimcast!=0 >::Error_Expression_Does_Not_Meet_Dimension_Req();
-                ystride_ = 1;
-                #pragma unroll
-                for( int i = 1; i < dimcast; ++ i ){
-                    ystride_ *= e.shape_[i];
-                }
-                length_ = e.shape_[ dimcast ];
             }
             MSHADOW_XINLINE real_t Eval( index_t y, index_t x ) const{
                 return dptr_[ (y / ystride_) % length_ ];
             }
         private:
             const real_t  *dptr_;
-            index_t  ystride_, length_;
+            const index_t  ystride_, length_;
         };
 
         /*! \brief execution plan of Broadcast1DExp */
@@ -582,8 +692,8 @@ namespace mshadow{
         public:
             Plan( const UnpackPatchToColExp<SrcExp> &e )
                 :src_(MakePlan(e.img_)),psize_(e.psize_), pstride_(e.pstride_),
-                 i_height_(e.i_height_), i_width_(e.i_width_){
-                o_width_  = ( i_width_  - psize_ ) / pstride_ + 1;
+                 i_height_(e.i_height_), i_width_(e.i_width_),
+                 o_width_(( i_width_  - psize_ ) / pstride_ + 1){
             }
             MSHADOW_XINLINE real_t Eval( index_t i, index_t j ) const{
                 const index_t x_offset = i % psize_;
@@ -600,17 +710,46 @@ namespace mshadow{
             }
         private:
             Plan<SrcExp> src_;
-            index_t psize_, pstride_, i_height_, i_width_, o_width_;
+            const index_t psize_, pstride_, i_height_, i_width_, o_width_;
+        };
+
+        template<typename SrcExp, int srcdim>
+        struct Plan< UnpackPatchToColXExp<SrcExp,srcdim> >{
+        public:
+            Plan( const UnpackPatchToColXExp<SrcExp,srcdim> &e )
+                :src_(MakePlan(e.img_)),psize_(e.psize_), pstride_(e.pstride_),
+                 i_channel_(e.i_channel_), i_height_(e.i_height_), i_width_(e.i_width_),                 
+                 o_height_(( i_height_  - psize_ ) / pstride_ + 1),
+                 o_width_ (( i_width_   - psize_ ) / pstride_ + 1){
+            }
+            MSHADOW_XINLINE real_t Eval( index_t i, index_t j ) const{
+                const index_t x_offset = i % psize_;
+                const index_t idivp    = i / psize_;
+                const index_t y_offset = idivp % psize_;
+                const index_t c = idivp / psize_;                
+                const index_t x = (j % o_width_) * pstride_ + x_offset;
+                const index_t jdivw = j / o_width_;
+                const index_t y = (jdivw % o_height_) * pstride_ + y_offset;
+                const index_t n = jdivw / o_height_;
+
+                if( x < i_width_ && y < i_height_ ){
+                    return src_.Eval( ( n * i_channel_  + c ) * i_height_ + y, x );
+                }else{
+                    return 0.0f;
+                }
+            }
+        private:
+            Plan<SrcExp> src_;
+            const index_t psize_, pstride_, i_channel_, i_height_, i_width_, o_height_, o_width_;
         };
 
         template<typename Device>
         struct Plan< PackColToPatchExp<Device> >{
         public:
             Plan( const PackColToPatchExp<Device> &e )
-                :mat_(e.mat_), psize_(e.psize_), pstride_(e.pstride_){
-                i_height_  = e.shape_[1];
-                o_width_   = ( e.shape_[0]  - psize_ ) / pstride_ + 1;
-                o_height_  = ( e.shape_[1]  - psize_ ) / pstride_ + 1;
+                :mat_(e.mat_), psize_(e.psize_), pstride_(e.pstride_), i_height_(e.shape_[1]),
+                 o_width_(( e.shape_[0]  - psize_ ) / pstride_ + 1),
+                 o_height_(( e.shape_[1]  - psize_ ) / pstride_ + 1){
             }
             MSHADOW_XINLINE real_t Eval( index_t i, index_t j ) const{
                 using namespace std;
@@ -631,40 +770,123 @@ namespace mshadow{
             }
         private:
             Tensor<Device,2> mat_;
-            index_t psize_, pstride_, i_height_, o_width_, o_height_;
+            const index_t psize_, pstride_, i_height_, o_width_, o_height_;
+        };
+
+
+        template<typename Device, int dstdim>
+        struct Plan< PackColToPatchXExp<Device, dstdim> >{
+        public:
+            Plan( const PackColToPatchXExp<Device, dstdim> &e )
+                :mat_(e.mat_), psize_(e.psize_), pstride_(e.pstride_),
+                 i_channel_(e.shape_[2]), i_height_(e.shape_[1]),
+                 o_width_(( e.shape_[0]  - psize_ ) / pstride_ + 1),
+                 o_height_(( e.shape_[1]  - psize_ ) / pstride_ + 1){
+                // note: i/o convention are same as unpack
+            }
+            MSHADOW_XINLINE real_t Eval( index_t i, index_t j ) const{
+                using namespace std;
+                const index_t y = i % i_height_;
+                const index_t idivh = i / i_height_;                
+                const index_t c = idivh % i_channel_;
+                const index_t n = idivh / i_channel_; 
+                const index_t x = j;
+                const index_t py_min = y < psize_ ? 0 : (y-psize_+pstride_)/pstride_;
+                const index_t px_min = x < psize_ ? 0 : (x-psize_+pstride_)/pstride_;
+                const index_t py_max = min( (y+pstride_)/pstride_, o_height_);
+                const index_t px_max = min( (x+pstride_)/pstride_, o_width_ );
+                real_t res = 0.0f;
+                for( index_t py = py_min; py < py_max; ++py ){
+                    for( index_t px = px_min; px < px_max; ++px ){
+                        res += mat_[ (c * psize_ + y - py*pstride_) * psize_ + x - px*pstride_ ][ (n * o_height_ + py) * o_width_+px ];
+                    }
+                }
+                return res;
+            }
+        private:
+            Tensor<Device,2> mat_;
+            const index_t psize_, pstride_, i_channel_, i_height_, o_width_, o_height_;
         };
     };
 
     namespace expr{
-        template<typename Device, int dimdst, int dimsrc>
-        struct Plan< ReshapeExp<Device,dimdst,dimsrc> >{
+        template<typename SrcExp, int dimdst, int dimsrc>
+        struct Plan< ReshapeExp<SrcExp,dimdst,dimsrc> >{
         public:
-            Plan( const ReshapeExp<Device,dimdst,dimsrc> &e ): dptr_( e.src_.dptr ){
-                oshape0_ = e.shape_[0];
-                ishape0_ = e.src_.shape[0];
-                istride_ = e.src_.shape.stride_;
+            Plan( const ReshapeExp<SrcExp,dimdst,dimsrc> &e )
+                : src_(MakePlan(e.src_)), oshape0_(e.shape_[0]), ishape0_(e.ishape0_){
             }
             MSHADOW_XINLINE real_t Eval( index_t y, index_t x ) const{
                 const index_t idx = y * oshape0_ + x;
-                return dptr_[ ( idx / ishape0_ ) * istride_ + ( idx % ishape0_ ) ];
+                return src_.Eval( idx / ishape0_, idx % ishape0_ );
             }
         private:
-            const real_t *dptr_;
-            index_t oshape0_, ishape0_, istride_;
+            Plan<SrcExp> src_;
+            const index_t oshape0_, ishape0_;
         };
-
-        template<typename Device,int dimdst>
-        struct Plan< ReshapeExp<Device,dimdst,1> >{
+        // special work plan for 1 dimensional data
+        template<typename SrcExp,int dimdst>
+        struct Plan< ReshapeExp<SrcExp,dimdst,1> >{
         public:
-            Plan( const ReshapeExp<Device,dimdst,1> &e ): dptr_( e.src_.dptr ){
-                oshape0_ = e.shape_[0];
+            Plan( const ReshapeExp<SrcExp,dimdst,1> &e )
+                : src_(MakePlan(e.src_)), oshape0_(e.shape_[0]){
             }
             MSHADOW_XINLINE real_t Eval( index_t y, index_t x ) const{
-                    return dptr_[ y * oshape0_ + x ];
+                return src_.Eval( 0, y * oshape0_ + x );
             }
         private:
-            const real_t *dptr_;
-            index_t oshape0_;
+            Plan<SrcExp> src_;
+            const index_t oshape0_;
+        };
+    };
+    
+    namespace expr{
+        template<typename SrcExp,int dimsrc, int a1, int a2>
+        struct Plan< SwapAxisExp<SrcExp,dimsrc,a1,a2> >{
+        public:
+            Plan( const SwapAxisExp<SrcExp,dimsrc,a1,a2> &e )
+                : src_(MakePlan(e.src_)),
+                  shape1_( e.shape_.ProdShape( 1, a1 ) ),
+                  shape2_( e.shape_[a1] ),
+                  shape3_( e.shape_.ProdShape( a1+1, a2 ) ),
+                  shape4_( e.shape_[a2] ){
+            }
+            MSHADOW_XINLINE real_t Eval( index_t i, index_t j ) const{
+                const index_t y = i % shape1_;
+                i /= shape1_; 
+                const index_t z = i % shape2_;
+                i /= shape2_;
+                const index_t c = i % shape3_;
+                i /= shape3_;
+                const index_t n = i % shape4_;
+                // swap z and n
+                return src_.Eval( ((((i/shape4_)*shape2_ + z) * shape3_+c) * shape4_ + n ) * shape1_ + y, j ); 
+            }
+        private:
+            Plan<SrcExp> src_;
+            const index_t shape1_, shape2_, shape3_, shape4_;
+        };
+
+        template<typename SrcExp,int dimsrc, int a2>
+        struct Plan< SwapAxisExp<SrcExp,dimsrc,0,a2> >{
+        public:
+            Plan( const SwapAxisExp<SrcExp,dimsrc,0,a2> &e )
+                : src_(MakePlan(e.src_)),
+                  shape0_( e.shape_[0] ),
+                  shape1_( e.shape_.ProdShape(1,a2) ),
+                  shape2_( e.shape_[a2] ){
+            }
+            MSHADOW_XINLINE real_t Eval( index_t i, index_t x ) const{
+                // swap x and z
+                const index_t y = i % shape1_;
+                i /= shape1_; 
+                const index_t z = i % shape2_;
+                const index_t n = i / shape2_;
+                return src_.Eval(  ( n*shape0_ + x ) * shape1_ + y , z ); 
+            }
+        private:
+            Plan<SrcExp> src_;
+            const index_t shape0_, shape1_, shape2_;
         };
     };
 
@@ -696,9 +918,9 @@ namespace mshadow{
             }
         private:
             Plan<SrcExp> src_;
-            index_t ksize_, kstride_;
-            index_t src_height_, src_width_;
-            index_t new_height_;
+            const index_t ksize_, kstride_;
+            const index_t src_height_, src_width_;
+            const index_t new_height_;
         };
 
         template<typename Reducer, typename Device>
@@ -729,8 +951,8 @@ namespace mshadow{
             }
         private:
             Tensor<Device, 4> data_src_, data_pooled_, grad_pooled_;
-            index_t ksize_;
-            index_t kstride_;
+            const index_t ksize_;
+            const index_t kstride_;
         };
     }; // namespace expr
 
@@ -756,10 +978,10 @@ namespace mshadow{
             }
         private:
             Plan<SrcExp> src_;
-            index_t pad_;
-            index_t new_height_;
-            index_t src_height_;
-            index_t src_width_;
+            const index_t pad_;
+            const index_t new_height_;
+            const index_t src_height_;
+            const index_t src_width_;
         };
 
         template<typename SrcExp, int srcdim>
@@ -778,9 +1000,9 @@ namespace mshadow{
             }
         private:
             Plan<SrcExp> src_;
-            index_t pad_height_, pad_width_;
-            index_t new_height_;
-            index_t src_height_;
+            const index_t pad_height_, pad_width_;
+            const index_t new_height_;
+            const index_t src_height_;
         };
 
         template<typename SrcExp, int srcdim>
@@ -793,7 +1015,7 @@ namespace mshadow{
             }
         private:
             Plan<SrcExp> src_;
-            index_t width_;
+            const index_t width_;
         };
     }; // namespace expr
 
@@ -822,7 +1044,7 @@ namespace mshadow{
             }
         private:
             Plan<SrcExp> src_;
-            index_t channel_, height_, width_, hnsize_;
+            const index_t channel_, height_, width_, hnsize_;
         };
     };
 }; // namespace mshadow

@@ -96,6 +96,19 @@ namespace mshadow {
             }
             return memsz;
         }
+        /*! 
+         * \return product shape in [dimstart,dimend)
+         * \param dimstart start dimension
+         * \param dimend   end dimension
+         */
+        MSHADOW_XINLINE index_t ProdShape( int dimstart, int dimend ) const{
+            index_t num = 1;
+            #pragma unroll
+            for (int i = dimstart; i < dimend; ++i) {
+                num *= this->shape_[ i ];
+            }
+            return num;
+        }
         /*!
          * \brief get subshape
          * \return subshape
