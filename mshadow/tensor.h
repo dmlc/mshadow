@@ -181,12 +181,19 @@ namespace mshadow {
 }; // namespace mshadow
 
 namespace mshadow {
-    // simple device name
+    /*! \brief device name CPU */
     struct cpu {
+        /*! \brief whether this device is CPU or not */
         const static bool kDevCPU = true;
+        /*! \brief device flag number, identifies this device */
+        const static int kDevMask = 1<<0;
     };
+    /*! \brief device name CPU */
     struct gpu {
+        /*! \brief whether this device is CPU or not */
         const static bool kDevCPU = false;
+        /*! \brief device flag number, identifies this device */
+        const static int kDevMask = 1<<1;
     };
 
     // more compact template

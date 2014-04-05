@@ -375,9 +375,9 @@ namespace mshadow{
          * \tparam etype type of expression
          */
         template<typename SrcExp, int etype>
-        inline UnpackPatchToColXExp<SrcExp, ExpInfoXPU<SrcExp>::kDim > unpack_patch2col( const Exp<SrcExp,etype> &img, index_t psize, index_t pstride ){
-            TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 3 >::Error_Expression_Does_Not_Meet_Dimension_Req();
-            return UnpackPatchToColXExp<SrcExp, ExpInfoXPU<SrcExp>::kDim >( img.self(), psize, pstride );
+        inline UnpackPatchToColXExp<SrcExp, ExpInfo<SrcExp>::kDim > unpack_patch2col( const Exp<SrcExp,etype> &img, index_t psize, index_t pstride ){
+            TypeCheckPass< ExpInfo<SrcExp>::kDim >= 3 >::Error_Expression_Does_Not_Meet_Dimension_Req();
+            return UnpackPatchToColXExp<SrcExp, ExpInfo<SrcExp>::kDim >( img.self(), psize, pstride );
         }
 
         /*!
@@ -403,8 +403,8 @@ namespace mshadow{
          * \tparam dimsrc source dimension
          */
         template<typename SrcExp, int etype, int dimdst>
-        inline ReshapeExp< SrcExp,dimdst, ExpInfoXPU<SrcExp>::kDim > reshape( const Exp<SrcExp,etype> &src, Shape<dimdst> oshape ){
-            return ReshapeExp< SrcExp,dimdst, ExpInfoXPU<SrcExp>::kDim >( src.self(), oshape );
+        inline ReshapeExp< SrcExp,dimdst, ExpInfo<SrcExp>::kDim > reshape( const Exp<SrcExp,etype> &src, Shape<dimdst> oshape ){
+            return ReshapeExp< SrcExp,dimdst, ExpInfo<SrcExp>::kDim >( src.self(), oshape );
         }
 
         /*!
@@ -417,8 +417,8 @@ namespace mshadow{
          * \tparam dimsrc source dimension
          */
         template<int a1, int a2, typename SrcExp, int etype>
-        inline SwapAxisExp< SrcExp, ExpInfoXPU<SrcExp>::kDim, a1,a2> swapaxis( const Exp<SrcExp,etype> &src ){ 
-            typedef ExpInfoXPU<SrcExp> Info;
+        inline SwapAxisExp< SrcExp, ExpInfo<SrcExp>::kDim, a1,a2> swapaxis( const Exp<SrcExp,etype> &src ){ 
+            typedef ExpInfo<SrcExp> Info;
             TypeCheckPass< Info::kDim>=a1+1 && Info::kDim >= a2+1 && a1+1 <= a2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
             return SwapAxisExp< SrcExp,Info::kDim,a1,a2>( src.self() );
         }
@@ -447,15 +447,15 @@ namespace mshadow{
          * \tparam etype type of expression
          */
         template<typename Reducer, typename SrcExp, int etype>
-        inline PoolingExp<Reducer,SrcExp, ExpInfoXPU<SrcExp>::kDim > pool( const Exp<SrcExp,etype> &src, index_t ksize, index_t kstride ) {
-            TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
-            return PoolingExp<Reducer,SrcExp, ExpInfoXPU<SrcExp>::kDim >(src.self(), ksize, kstride);
+        inline PoolingExp<Reducer,SrcExp, ExpInfo<SrcExp>::kDim > pool( const Exp<SrcExp,etype> &src, index_t ksize, index_t kstride ) {
+            TypeCheckPass< ExpInfo<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
+            return PoolingExp<Reducer,SrcExp, ExpInfo<SrcExp>::kDim >(src.self(), ksize, kstride);
         }
         /*! \brief same as pool, except the output shape is specified by pshape */
         template<typename Reducer, typename SrcExp, int etype>
-        inline PoolingExp<Reducer,SrcExp, ExpInfoXPU<SrcExp>::kDim > pool( const Exp<SrcExp,etype> &src, Shape<2> pshape, index_t ksize, index_t kstride ) {
-            TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
-            return PoolingExp<Reducer,SrcExp, ExpInfoXPU<SrcExp>::kDim >(src.self(), pshape, ksize, kstride);
+        inline PoolingExp<Reducer,SrcExp, ExpInfo<SrcExp>::kDim > pool( const Exp<SrcExp,etype> &src, Shape<2> pshape, index_t ksize, index_t kstride ) {
+            TypeCheckPass< ExpInfo<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
+            return PoolingExp<Reducer,SrcExp, ExpInfo<SrcExp>::kDim >(src.self(), pshape, ksize, kstride);
         }
         /*!
          * \brief unpooling gradient for 4D, backprop gradient value back, revserse operation of pooling
@@ -483,9 +483,9 @@ namespace mshadow{
          * \tparam etype type of expression
          */
          template<typename SrcExp, int etype>
-         inline PaddingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim> pad(const Exp<SrcExp, etype> &src, index_t pad) {
-             TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
-             return PaddingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim>(src.self(), pad);
+         inline PaddingExp<SrcExp, ExpInfo<SrcExp>::kDim> pad(const Exp<SrcExp, etype> &src, index_t pad) {
+             TypeCheckPass< ExpInfo<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
+             return PaddingExp<SrcExp, ExpInfo<SrcExp>::kDim>(src.self(), pad);
          }
 
         /*!
@@ -497,9 +497,9 @@ namespace mshadow{
          * \tparam etype type of expression
          */
          template<typename SrcExp, int etype>
-         inline CroppingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim> crop( const Exp<SrcExp, etype> &src, Shape<2> oshape ) {
-             TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
-             return CroppingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim>(src.self(), oshape);
+         inline CroppingExp<SrcExp, ExpInfo<SrcExp>::kDim> crop( const Exp<SrcExp, etype> &src, Shape<2> oshape ) {
+             TypeCheckPass< ExpInfo<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
+             return CroppingExp<SrcExp, ExpInfo<SrcExp>::kDim>(src.self(), oshape);
          }
         /*!
          * \brief same as crop, but can specify starting position to do cropping
@@ -510,9 +510,9 @@ namespace mshadow{
          * \tparam etype type of expression
          */
          template<typename SrcExp, int etype>
-         inline CroppingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim> crop( const Exp<SrcExp, etype> &src, Shape<2> oshape, index_t start_height, index_t start_width ) {
-             TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
-             return CroppingExp<SrcExp, ExpInfoXPU<SrcExp>::kDim>(src.self(), oshape, start_height, start_width);
+         inline CroppingExp<SrcExp, ExpInfo<SrcExp>::kDim> crop( const Exp<SrcExp, etype> &src, Shape<2> oshape, index_t start_height, index_t start_width ) {
+             TypeCheckPass< ExpInfo<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
+             return CroppingExp<SrcExp, ExpInfo<SrcExp>::kDim>(src.self(), oshape, start_height, start_width);
          }
 
         /*!
@@ -523,9 +523,9 @@ namespace mshadow{
          * \tparam etype type of expression
          */
          template<typename SrcExp, int etype>
-         inline MirroringExp<SrcExp, ExpInfoXPU<SrcExp>::kDim> mirror(const Exp<SrcExp, etype> &src) {
-             TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
-             return MirroringExp<SrcExp, ExpInfoXPU<SrcExp>::kDim>(src.self());
+         inline MirroringExp<SrcExp, ExpInfo<SrcExp>::kDim> mirror(const Exp<SrcExp, etype> &src) {
+             TypeCheckPass< ExpInfo<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
+             return MirroringExp<SrcExp, ExpInfo<SrcExp>::kDim>(src.self());
          }
 
         /*!
@@ -538,9 +538,9 @@ namespace mshadow{
          * \tparam etype type of expression
          */
         template<typename Reducer, typename SrcExp, int etype>
-        inline ChannelPoolingExp<Reducer,SrcExp, ExpInfoXPU<SrcExp>::kDim > chpool( const Exp<SrcExp,etype> &src, index_t nsize ) {
-            TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 3 >::Error_Expression_Does_Not_Meet_Dimension_Req();
-            return ChannelPoolingExp<Reducer,SrcExp, ExpInfoXPU<SrcExp>::kDim >(src.self(),nsize);
+        inline ChannelPoolingExp<Reducer,SrcExp, ExpInfo<SrcExp>::kDim > chpool( const Exp<SrcExp,etype> &src, index_t nsize ) {
+            TypeCheckPass< ExpInfo<SrcExp>::kDim >= 3 >::Error_Expression_Does_Not_Meet_Dimension_Req();
+            return ChannelPoolingExp<Reducer,SrcExp, ExpInfo<SrcExp>::kDim >(src.self(),nsize);
         }
         // short cut functions
         /*!

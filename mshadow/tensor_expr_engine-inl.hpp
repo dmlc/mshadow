@@ -146,55 +146,55 @@ namespace mshadow{
          * \brief static type inference template, 
          *        used to get the dimension of each expression, 
          *        if ExpInfo<E>::kDim == -1, this means here are mismatch in expression
-         * \tparam Device the type of Device
+         *        if ( ExpInfo<E>::kDevMask & cpu::kDevMask ) != 0, this means this expression can be assigned to cpu
          * \tparam E expression
          */
-        template<typename Device, typename E>
+        template<typename E>
         struct ExpInfo{
             const static int kDim = -1;
+            const static int kDevMask = 0;
         };
-
-        template<typename Device>
-        struct ExpInfo<Device,ScalarExp>{
+        template<>
+        struct ExpInfo<ScalarExp>{
             const static int kDim = 0;
+            const static int kDevMask = 0xffff;
         };
         template<typename Device, int dim>
-        struct ExpInfo<Device, Tensor<Device,dim> >{
+        struct ExpInfo< Tensor<Device,dim> >{
             const static int kDim = dim;
+            const static int kDevMask = Device::kDevMask;            
         };
-        template<typename T,typename Device, typename SrcExp, int dim>
-        struct ExpInfo<Device, MakeTensorExp<T,SrcExp,dim> >{
-            const static int kDimSrc = ExpInfo<Device,SrcExp>::kDim;
+        template<typename T, typename SrcExp, int dim>
+        struct ExpInfo< MakeTensorExp<T,SrcExp,dim> >{
+            const static int kDimSrc = ExpInfo<SrcExp>::kDim;
             const static int kDim = kDimSrc >= 0 ? dim : -1;
+            const static int kDevMask = ExpInfo<SrcExp>::kDevMask;
         };
-        template<typename Device, typename OP, typename TA, int etype>
-        struct ExpInfo<Device, UnaryMapExp<OP,TA,etype> >{
-            const static int kDim = ExpInfo<Device, TA>::kDim;
+        template<typename OP, typename TA, int etype>
+        struct ExpInfo< UnaryMapExp<OP,TA,etype> >{
+            const static int kDim = ExpInfo<TA>::kDim;
+            const static int kDevMask = ExpInfo<TA>::kDevMask;
         };
-        template<typename Device, typename OP, typename TA, typename TB, int etype>
-        struct ExpInfo<Device,BinaryMapExp<OP,TA,TB,etype> >{
-            const static int kDimLhs = ExpInfo<Device,TA>::kDim;
-            const static int kDimRhs = ExpInfo<Device,TB>::kDim;
+        template<typename OP, typename TA, typename TB, int etype>
+        struct ExpInfo< BinaryMapExp<OP,TA,TB,etype> >{
+            const static int kDimLhs = ExpInfo<TA>::kDim;
+            const static int kDimRhs = ExpInfo<TB>::kDim;
             const static int kDim = (kDimLhs>=0 && kDimRhs >= 0) ? \
                 ( kDimLhs==0 ? kDimRhs : ( (kDimRhs==0||kDimLhs==kDimRhs) ? kDimLhs : -1 ) ):-1;
-        };
-
-        /*! \brief dimension information that is invariant of device */
-        template<typename E>
-        struct ExpInfoXPU{
-            const static int kDimCPU = ExpInfo<cpu,E>::kDim;
-            const static int kDimGPU = ExpInfo<gpu,E>::kDim;
-            const static int kDim = kDimCPU >= 0 ? kDimCPU : kDimGPU;
+            const static int kDevMask = ExpInfo<TA>::kDevMask & ExpInfo<TB>::kDevMask;
         };
 
         /*! \brief template to do type check */
         template<typename Device, int dim, typename E>
         struct TypeCheck{
-            const static int kExpDim = ExpInfo<Device,E>::kDim;
+            /*! \brief dimension of expression*/
+            const static int kExpDim = ExpInfo<E>::kDim;
+            /*! \brief whether the expression device type matches */
+            const static bool kDevPass = (ExpInfo<E>::kDevMask & Device::kDevMask) != 0;
             /*! \brief whether the expression can be mapped to expression of dim */
-            const static bool kMapPass = kExpDim == 0 || kExpDim == dim;
+            const static bool kMapPass = (kExpDim == 0 || kExpDim == dim) && kDevPass;
             /*! \brief whether the expression can be reduced to expression of dim */
-            const static bool kRedPass = kExpDim > dim;
+            const static bool kRedPass = (kExpDim > dim) && kDevPass;
         };
 
         template<bool kPass>

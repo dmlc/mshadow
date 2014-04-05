@@ -69,30 +69,6 @@ inline void Check( Tensor<xpu,dim>& xmat, Tensor<cpu,dim>& cmat ){
 const int spad = 1;
 
 template<typename xpu>
-inline void test( int channels, int height, int width, int ksize, int stride ){
-    int height_col = (height + 2* spad- ksize) / stride + 1;
-    int width_col = (width +2*spad- ksize) / stride + 1;
-    TensorContainer<cpu,3> cimg(false); cimg.Resize( Shape3( channels, height, width));
-    TensorContainer<cpu,2> cmat(false); cmat.Resize( Shape2( channels * ksize*ksize, height_col*width_col ) );
-    TensorContainer<xpu,3> ximg(false); ximg.Resize( cimg.shape );
-    TensorContainer<xpu,2> xmat(false); xmat.Resize( cmat.shape );
-    for( index_t  i =0; i < cimg.shape.Size(); ++ i ){
-        cimg.dptr[i] = i;
-    }     
-    Copy( ximg, cimg );
-    im2col_cpu( cimg.dptr, channels, height, width, ksize, spad, stride, cmat.dptr );
-
-    xmat = unpack_patch2colX( pad(ximg,spad) , ksize, stride );
-    Check( xmat, cmat );
-    col2im_cpu( cmat.dptr, channels, height, width, ksize, spad, stride, cimg.dptr ) ;
-    Shape<3> pshape= ximg.shape; pshape[1]+=2*spad; pshape[0]+=2*spad;
-    ximg = crop( pack_col2patchX( xmat, pshape, ksize, stride ), ximg[0].shape );
-    //ximg = F<op::identity>( pack_col2patch( xmat, ximg.shape, ksize, stride ));
-    Check( ximg, cimg );
-}
-
-
-template<typename xpu>
 inline void testX( int num, int channels, int height, int width, int ksize, int stride ){
     int height_col = (height + 2* spad- ksize) / stride + 1;
     int width_col = (width +2*spad- ksize) / stride + 1;
@@ -109,14 +85,14 @@ inline void testX( int num, int channels, int height, int width, int ksize, int 
     for( int n = 0; n < num; ++ n ){
         im2col_cpu( cimg[n].dptr , channels, height, width, ksize, spad, stride, cmat[n].dptr );
     }
-    xmat = unpack_patch2colX( pad(ximg,spad) , ksize, stride );
+    xmat = unpack_patch2col( pad(ximg,spad) , ksize, stride );
     xxmat = swapaxis<0,1>( swapaxis<0,2>( swapaxis<0,1>( reshape( xmat, xtmat.shape ) ) ));
     //Check( xxmat, cmat );
     for( int n = 0; n < num; ++ n ){
         col2im_cpu( cmat[n].dptr, channels, height, width, ksize, spad, stride, cimg[n].dptr ) ;
     }
     Shape<4> pshape= ximg.shape; pshape[1]+=2*spad; pshape[0]+=2*spad;
-    ximg = crop( pack_col2patchX( xmat, pshape, ksize, stride ), ximg[0][0].shape );
+    ximg = crop( pack_col2patch( xmat, pshape, ksize, stride ), ximg[0][0].shape );
     Check( ximg, cimg );
 }
 #include <ctime>

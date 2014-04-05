@@ -116,7 +116,7 @@ namespace mshadow{
     inline void MapReduceKeepLowest( Tensor<gpu,1> dst, const expr::Exp<E,etype> &exp, real_t scale ){
         using namespace expr;
         TypeCheckPass< TypeCheck<gpu,1,E>::kRedPass >::Error_TypeCheck_Not_Pass_For_Reduce_Exp();
-        Shape<2> eshape = ShapeCheck< ExpInfo<gpu,E>::kDim, E >::Check( exp.self() ).FlatTo2D();
+        Shape<2> eshape = ShapeCheck< ExpInfo<E>::kDim, E >::Check( exp.self() ).FlatTo2D();
 
         utils::Assert( eshape[0] == dst.shape[0], "reduction dimension do not match" );
         utils::Assert( eshape[1] != 0, "can not reduce over empty tensor" );
@@ -127,8 +127,8 @@ namespace mshadow{
     inline void MapReduceKeepHighDim( Tensor<gpu,1> dst, const expr::Exp<E,etype> &exp, real_t scale ){
         using namespace expr;
         TypeCheckPass< TypeCheck<gpu,dimkeep,E>::kRedPass >::Error_TypeCheck_Not_Pass_For_Reduce_Exp();
-        typedef Shape< ExpInfo<gpu,E>::kDim > EShape;
-        EShape eshape = ShapeCheck< ExpInfo<gpu,E>::kDim, E >::Check( exp.self() );
+        typedef Shape< ExpInfo<E>::kDim > EShape;
+        EShape eshape = ShapeCheck< ExpInfo<E>::kDim, E >::Check( exp.self() );
         utils::Assert( eshape[dimkeep] == dst.shape[0], "reduction dimension do not match" );
         // use equvalent form
         Shape<4> pshape = Shape4( eshape.ProdShape(dimkeep+1,EShape::kMaxShape), eshape[dimkeep], 
