@@ -28,38 +28,8 @@ namespace mshadow{
         };
 
         /*!
-         * \brief unpack local (overlap) patches of image to column of mat, can be used to implement convolution
-         *  after getting unpacked mat, we can use: output = dot( weight, mat ) to get covolved results, the relations:
-         * \tparam SrcExp source expression
-         */
-        template<typename SrcExp>
-        struct UnpackPatchToColExp: public MakeTensorExp< UnpackPatchToColExp<SrcExp>, SrcExp, 2>{
-            /*! \brief source operand */
-            const SrcExp& img_;
-            /*! \brief patch size */
-            index_t psize_;
-            /*! \brief patch stride */
-            index_t pstride_;
-            /*! \brief height of img */
-            index_t i_height_;
-            /*! \brief width of img */
-            index_t i_width_;
-            /*! \brief constructor */
-            UnpackPatchToColExp( const SrcExp &img, index_t psize, index_t pstride )
-                :img_(img), psize_(psize), pstride_(pstride){
-                Shape<3> imshape = ShapeCheck<3,SrcExp>::Check( img_ );
-                utils::Assert( imshape[0] >= psize && imshape[1] >= psize, "UnpackPatchToCol:image shape smaller than patch size");
-                this->i_height_ = imshape[1];
-                this->i_width_  = imshape[0];
-                const index_t o_height = ( i_height_ - psize ) / pstride + 1;
-                const index_t o_width  = ( i_width_  - psize ) / pstride + 1;
-                this->shape_[0] = o_height * o_width;
-                this->shape_[1] = psize * psize * imshape[2];
-            }
-        };
-
-        /*!
-         * \brief unpack local (overlap) patches of image to column of mat, can be used to implement convolution, this expression allow unpack of a batch
+         * \brief unpack local (overlap) patches of image to column of mat, can be used to implement convolution, this expression allow unpack of a batch        
+         *  this is a version support unpacking multiple images
          *  after getting unpacked mat, we can use: output = dot( weight, mat ) to get covolved results, the relations:
          * \tparam SrcExp source expression
          * \tparam dstdim destination dimension
@@ -97,30 +67,7 @@ namespace mshadow{
 
         /*!
          * \brief reverse operation of UnpackPatchToCol, used to backprop gradient back
-         * \tparam Device which device it lies
-         */
-        template<typename Device>
-        struct PackColToPatchExp: public MakeTensorExp< PackColToPatchExp<Device>, Tensor<Device,2>, 3>{
-            /*! \brief source operand */
-            const Tensor<Device,2>& mat_;
-            /*! \brief patch size */
-            index_t psize_;
-            /*! \brief patch stride */
-            index_t pstride_;
-            /*! \brief constructor */
-            PackColToPatchExp( const Tensor<Device,2> &mat, Shape<3> imshape, index_t psize, index_t pstride )
-                :mat_(mat), psize_(psize), pstride_(pstride){
-                this->shape_ = imshape;
-                const index_t o_height = ( imshape[1]  - psize ) / pstride + 1;
-                const index_t o_width  = ( imshape[0]  - psize ) / pstride + 1;
-                utils::Assert( mat.shape[0] == o_height * o_width, "PackColToPatchExp: mat.shape[0] mismatch" );
-                utils::Assert( mat.shape[1] == psize * psize * imshape[2], "PackColToPatchExp: mat.shape[1] mismatch" );
-            }
-        };
-
-
-        /*!
-         * \brief reverse operation of UnpackPatchToCol, used to backprop gradient back
+         *    this is a version supporting multiple images
          * \tparam Device which device it lies
          * \tparam dstdim destination dimension
          */
@@ -416,24 +363,19 @@ namespace mshadow{
          *  after getting unpacked mat, we can use: output = dot( weight, mat ) to get covolved results, the relations:
          *
          *  weight; shape[1]: out_channel, shape[0]: ichannel*psize*psize
-         *  output; shape[1]: out_channel, shape[0]: out_height*out_width
+         *  output; shape[1]: out_channel, shape[0]: out_height*out_width * num_of_images
          *  out_height = ( in_height - psize ) / pstride + 1, this means we pad inperfect patch with 0
          *  out_width  = ( in_width - psize ) / pstride + 1
          *
-         * \return mat target matrix; shape[1]: in_channel*psize*psize  shape[0]: out_height*out_width
-         * \param img source image; shape[2]:  in_channels, shape[1]: in_height, shape[0]: in_width
+         * \return mat target matrix; shape[1]: in_channel*psize*psize  shape[0]: out_height*out_width * num_of_images
+         * \param img source image; shape[2]:  in_channels, shape[1]: in_height, shape[0]: in_width, can be 3D or 4D tensor(multiple images)
          * \param psize height and width of each patch
          * \param pstride stride of each patch
          * \tparam SrcExp source expression
          * \tparam etype type of expression
          */
         template<typename SrcExp, int etype>
-        inline UnpackPatchToColExp<SrcExp> unpack_patch2col( const Exp<SrcExp,etype> &img, index_t psize, index_t pstride ){
-            TypeCheckPass< ExpInfoXPU<SrcExp>::kDim == 3 >::Error_Expression_Does_Not_Meet_Dimension_Req();
-            return UnpackPatchToColExp<SrcExp>( img.self(), psize, pstride );
-        }
-        template<typename SrcExp, int etype>
-        inline UnpackPatchToColXExp<SrcExp, ExpInfoXPU<SrcExp>::kDim > unpack_patch2colX( const Exp<SrcExp,etype> &img, index_t psize, index_t pstride ){
+        inline UnpackPatchToColXExp<SrcExp, ExpInfoXPU<SrcExp>::kDim > unpack_patch2col( const Exp<SrcExp,etype> &img, index_t psize, index_t pstride ){
             TypeCheckPass< ExpInfoXPU<SrcExp>::kDim >= 3 >::Error_Expression_Does_Not_Meet_Dimension_Req();
             return UnpackPatchToColXExp<SrcExp, ExpInfoXPU<SrcExp>::kDim >( img.self(), psize, pstride );
         }
@@ -446,13 +388,8 @@ namespace mshadow{
          * \param psize height and width of each patch
          * \param pstride stride of each patch
          */
-        template<typename Device>
-        inline PackColToPatchExp<Device> pack_col2patch( const Tensor<Device,2> &mat, Shape<3> imshape, index_t psize, index_t pstride ){
-            utils::Assert( imshape[0] >= psize && imshape[1] >= psize, "PackColToPatch:image shape smaller than patch size");
-            return PackColToPatchExp<Device>( mat, imshape, psize, pstride );
-        }
         template<typename Device, int dstdim>
-        inline PackColToPatchXExp<Device,dstdim> pack_col2patchX( const Tensor<Device,2> &mat, Shape<dstdim> imshape, index_t psize, index_t pstride ){
+        inline PackColToPatchXExp<Device,dstdim> pack_col2patch( const Tensor<Device,2> &mat, Shape<dstdim> imshape, index_t psize, index_t pstride ){
             utils::Assert( imshape[0] >= psize && imshape[1] >= psize, "PackColToPatch:image shape smaller than patch size");
             return PackColToPatchXExp<Device,dstdim>( mat, imshape, psize, pstride );
         }
@@ -687,32 +624,6 @@ namespace mshadow{
     }; // namespace expr
 
     namespace expr{
-        template<typename SrcExp>
-        struct Plan< UnpackPatchToColExp<SrcExp> >{
-        public:
-            Plan( const UnpackPatchToColExp<SrcExp> &e )
-                :src_(MakePlan(e.img_)),psize_(e.psize_), pstride_(e.pstride_),
-                 i_height_(e.i_height_), i_width_(e.i_width_),
-                 o_width_(( i_width_  - psize_ ) / pstride_ + 1){
-            }
-            MSHADOW_XINLINE real_t Eval( index_t i, index_t j ) const{
-                const index_t x_offset = i % psize_;
-                const index_t idivp    = i / psize_;
-                const index_t y_offset = idivp % psize_;
-                const index_t channel  = idivp / psize_;
-                const index_t y = (j / o_width_) * pstride_ + y_offset;
-                const index_t x = (j % o_width_) * pstride_ + x_offset;
-                if( x < i_width_ && y < i_height_ ){
-                    return src_.Eval( channel * i_height_ + y, x );
-                }else{
-                    return 0.0f;
-                }
-            }
-        private:
-            Plan<SrcExp> src_;
-            const index_t psize_, pstride_, i_height_, i_width_, o_width_;
-        };
-
         template<typename SrcExp, int srcdim>
         struct Plan< UnpackPatchToColXExp<SrcExp,srcdim> >{
         public:
@@ -742,37 +653,6 @@ namespace mshadow{
             Plan<SrcExp> src_;
             const index_t psize_, pstride_, i_channel_, i_height_, i_width_, o_height_, o_width_;
         };
-
-        template<typename Device>
-        struct Plan< PackColToPatchExp<Device> >{
-        public:
-            Plan( const PackColToPatchExp<Device> &e )
-                :mat_(e.mat_), psize_(e.psize_), pstride_(e.pstride_), i_height_(e.shape_[1]),
-                 o_width_(( e.shape_[0]  - psize_ ) / pstride_ + 1),
-                 o_height_(( e.shape_[1]  - psize_ ) / pstride_ + 1){
-            }
-            MSHADOW_XINLINE real_t Eval( index_t i, index_t j ) const{
-                using namespace std;
-                const index_t c = i / i_height_;
-                const index_t y = i % i_height_;
-                const index_t x = j;
-                const index_t py_min = y < psize_ ? 0 : (y-psize_+pstride_)/pstride_;
-                const index_t px_min = x < psize_ ? 0 : (x-psize_+pstride_)/pstride_;
-                const index_t py_max = min( (y+pstride_)/pstride_, o_height_);
-                const index_t px_max = min( (x+pstride_)/pstride_, o_width_ );
-                real_t res = 0.0f;
-                for( index_t py = py_min; py < py_max; ++py ){
-                    for( index_t px = px_min; px < px_max; ++px ){
-                        res += mat_[ (c * psize_ + y - py*pstride_) * psize_ + x - px*pstride_ ][ py*o_width_+px ];
-                    }
-                }
-                return res;
-            }
-        private:
-            Tensor<Device,2> mat_;
-            const index_t psize_, pstride_, i_height_, o_width_, o_height_;
-        };
-
 
         template<typename Device, int dstdim>
         struct Plan< PackColToPatchXExp<Device, dstdim> >{
