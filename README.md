@@ -41,3 +41,8 @@ Goals
 * Unified CPU/GPU code: write a code and it should run in both CPU and GPU
 * Lightweight library: light amount of code to support frequently used functions in machine learning
 * Extendable: user can write simple functions that plugs into mshadow and run on GPU/CPU, no experience in CUDA is required.
+* 
+
+Related Projects
+=====
+* CXXNET: a neural network implementation based on mshadow: https://github.com/antinucleon/cxxnet
