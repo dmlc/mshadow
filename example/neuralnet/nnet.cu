@@ -74,8 +74,8 @@ public:
     // update weight
     virtual void Update( void ){
         // run SGD
-        const float eta = 0.1;
-        const float wd = 0.00005;
+        const float eta = 1.0;
+        const float wd = 0.0000;
         // update weight
         Wi2h -= eta * ( wd * Wi2h + g_Wi2h );
         Wh2o -= eta * ( wd * Wh2o + g_Wh2o );
@@ -95,10 +95,11 @@ public:
         obias.Resize( Shape1( num_out ) ); g_obias.Resize( obias.shape );
         hbias = 0.0f; obias = 0.0f;
         // setup weights
-        Wi2h.Resize( Shape2( num_in, num_hidden ) );
-        Wh2o.Resize( Shape2( num_hidden, num_out ) );
-        Wi2h = rnd.gaussian( Wi2h.shape ) * 0.01f;
-        Wh2o = rnd.gaussian( Wh2o.shape ) * 0.01f;
+        Wi2h.Resize( Shape2( num_in, num_hidden ) );  g_Wi2h.Resize( Wi2h.shape );
+        Wh2o.Resize( Shape2( num_hidden, num_out ) ); g_Wh2o.Resize( Wh2o.shape );
+        rnd.SampleGaussian( Wi2h, 0, 0.01f );
+        rnd.SampleGaussian( Wh2o, 0, 0.01f );
+
     }
 private:
     // random seed generator
@@ -122,21 +123,23 @@ inline int MaxIndex( Tensor<cpu,1> pred ){
 
 int main( int argc, char *argv[] ){
     if( argc < 2 ){
-        printf("Usage: cpu or gpu\n");
+        printf("Usage: cpu or gpu\n"); return 0;
     }
+    srand(0);
     InitTensorEngine();
+    // choose which version to use
+    INNet *net;
+    if( !strcmp( argv[1], "gpu") ) {
+        net = new NNet<gpu>();
+    }else{
+        net = new NNet<cpu>();
+    }
+
     // settings
     int batch_size = 100;
     int num_in = 28 * 28;
     int num_hidden = 100;
     int num_out = 10;
-    // choose which version to use
-    INNet *net;
-    if( !strcmp( argv[1], "cpu") ) {
-        net = new NNet<cpu>();
-    }else{
-        net = new NNet<gpu>();
-    }
 
     // temp output layer
     TensorContainer<cpu,2> pred;    
@@ -147,8 +150,10 @@ int main( int argc, char *argv[] ){
     std::vector<int> ytrain, ytest;
     // data
     TensorContainer<cpu,2> xtrain, xtest;
+    LoadMNIST( "train-images-idx3-ubyte", "train-labels-idx1-ubyte", ytrain, xtrain, true);
+    LoadMNIST( "t10k-images-idx3-ubyte", "t10k-labels-idx1-ubyte", ytest, xtest, false);
     
-    int num_iter = 10;
+    int num_iter = 20;
 
     for( int i = 0; i < num_iter; ++ i ){
         // training 
@@ -165,12 +170,13 @@ int main( int argc, char *argv[] ){
             // update net parameters
             net->Update();
         }
-        long nerr = 0;
         // evaluation
+        long nerr = 0;
         for( index_t j = 0; j + batch_size <= xtest.shape[1]; j += batch_size ){
             net->Forward( xtest.Slice( j, j + batch_size ), pred );            
-            for( int k = 0; k < batch_size; ++ k ){
+            for( int k = 0; k < batch_size; ++ k ){                
                 nerr += MaxIndex( pred[k] ) != ytest[j+k];
+                
             }
         }
         printf("round %d: test-err=%f\n", i, (float)nerr/xtest.shape[1] );

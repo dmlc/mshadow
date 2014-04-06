@@ -16,7 +16,7 @@ int pack( unsigned char zz[4] ){
 template<typename T>
 inline void shuffle( T *data, size_t sz ){
     if( sz == 0 ) return;
-    for( uint32_t i = (uint32_t)sz - 1; i > 0; i-- ){
+    for( size_t i = sz - 1; i > 0; i-- ){
         std::swap( data[i], data[ rand() % ( i+1 ) ] );
     } 
 }
@@ -58,13 +58,14 @@ inline void LoadMNIST( const char *path_img, const char *path_label,
     nlabel = pack( zz );
     assert( num_image == nlabel );
     l_data = new unsigned char[ num_image ];
+    assert( fread( l_data, num_image , 1 , fi ) );    
     // try to do shuffle 
     std::vector<int> rindex;
     for( int i = 0; i < num_image; ++ i ){
         rindex.push_back( i );
     }
     if( do_shuffle ){
-        shuffle( rindex )
+        shuffle( rindex );
     }
 
     // save out result
@@ -72,9 +73,10 @@ inline void LoadMNIST( const char *path_img, const char *path_label,
     xdata.Resize( Shape2( num_image, width * height ) );
     for( int i = 0 ; i < num_image ; ++i ){
         for( int j = 0; j < step; ++j ) {
-            data[ i ][ j ] = (float)(t_data[ rindex[i]*step + j ]) / 256.0f;            
+            xdata[ i ][ j ] = (float)(t_data[ rindex[i]*step + j ]) / 256.0f;            
         }        
         ylabel[ i ] = l_data[ rindex[i] ];
     }
     delete[] t_data; delete [] l_data;
+    printf("finish loading %dx%d matrix from %s, shuffle=%d\n", num_image, step, path_img, (int)do_shuffle );
 }
