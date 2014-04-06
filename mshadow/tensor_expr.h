@@ -3,7 +3,7 @@
 /*!
  * \file tensor_expr.h
  * \brief definitions of abstract expressions and expressions template
- * \author Tianqi Chen, Bing Hsu
+ * \author Tianqi Chen, Bing Xu
  */
 #include "tensor_base.h"
 

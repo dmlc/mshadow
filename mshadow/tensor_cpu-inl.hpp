@@ -3,7 +3,7 @@
 /*!
  * \file tensor_cpu-inl.hpp
  * \brief implementation of CPU host code
- * \author Bing Hsu, Tianqi Chen
+ * \author Bing Xu, Tianqi Chen
  */
 #include <cstring>
 #include "tensor_base.h"

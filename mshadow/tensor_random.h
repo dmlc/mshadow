@@ -3,7 +3,7 @@
 /*!
  *  \file tensor_random.h
  *  \brief Random inline functions for tensor.
- *  \author Bing Hsu, Tianqi Chen
+ *  \author Bing Xu, Tianqi Chen
  *   Based on curand|MKL|stdlib
  */
 #include <cstdlib>
@@ -11,8 +11,11 @@
 #include "tensor_container.h"
 
 namespace mshadow {
-    /*! \brief random number generator */
-    template<typename device>
+    /*! 
+     * \brief random number generator 
+     * \tparam Device the device of random number generator
+     */
+    template<typename Device>
     class Random {};
 
     /*! \brief CPU random number generator */

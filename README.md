@@ -3,7 +3,7 @@ mshadow: Matrix Shadow
 
 Lightweight CPU/GPU Matrix/Tensor Template Library in C++/CUDA
 
-Creater: Bing Hsu and Tianqi Chen
+Creater: Bing Xu and Tianqi Chen
 
 
 Documentation and Tutorial: https://github.com/tqchen/mshadow/wiki

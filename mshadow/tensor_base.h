@@ -4,7 +4,7 @@
  * \file tensor_base.h
  * \brief definitions of base types, macros functions
  *
- * \author Bing Hsu, Tianqi Chen
+ * \author Bing Xu, Tianqi Chen
  */
 #include <cmath>
 #include <cstdio>

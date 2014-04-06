@@ -94,7 +94,6 @@ namespace mshadow{
          * \brief reshape the content to another shape
          * input: Tensor<Device,dimsrc>: ishape
          * output: Tensor<Device,dimdst> ishape.Size() == oshape.Size()
-         *
          * \tparam SrcExp source expression
          * \tparam dimdst target dimension
          * \tparam dimsrc source dimension
@@ -119,7 +118,7 @@ namespace mshadow{
          * input: Tensor<Device,dim>: ishape
          * output: Tensor<Device,dimdst> oshape[a1],oshape[a2] = ishape[a2],oshape[a1]
          *
-         * \tparam Device where the data lies
+         * \tparam SrcExp type of source expression
          * \tparam dimsrc source dimension
          * \tparam a1 smaller dimension to be swapped
          * \tparam a2 larger dimension to be swapped
@@ -387,6 +386,7 @@ namespace mshadow{
          * \param imshape shape of target img
          * \param psize height and width of each patch
          * \param pstride stride of each patch
+         * \tparam Device the Device where input data lies
          */
         template<typename Device, int dstdim>
         inline PackColToPatchXExp<Device,dstdim> pack_col2patch( const Tensor<Device,2> &mat, Shape<dstdim> imshape, index_t psize, index_t pstride ){
@@ -398,9 +398,9 @@ namespace mshadow{
          * \param src Tensor<Device,dimsrc>:
          * \param oshape target shape
          * \return a expresion with type Tensor<Device,dimdst>
-         * \tparam Device which device it lies
+         * \tparam SrcExp source expression
+         * \tparam etype source expression type
          * \tparam dimdst target dimension
-         * \tparam dimsrc source dimension
          */
         template<typename SrcExp, int etype, int dimdst>
         inline ReshapeExp< SrcExp,dimdst, ExpInfo<SrcExp>::kDim > reshape( const Exp<SrcExp,etype> &src, Shape<dimdst> oshape ){
@@ -410,11 +410,11 @@ namespace mshadow{
         /*!
          * \brief a expression that reshapes a tensor to another shape
          * \param src Tensor<Device,dimsrc>:
-         * \param oshape target shape
          * \return a expresion with type Tensor<Device,dimdst>
-         * \tparam Device which device it lies
-         * \tparam dimdst target dimension
-         * \tparam dimsrc source dimension
+         * \tparam a1 smaller dimension to be swapped
+         * \tparam a2 larger dimension to be swapped
+         * \tparam SrcExp source expression
+         * \tparam etype source expression type
          */
         template<int a1, int a2, typename SrcExp, int etype>
         inline SwapAxisExp< SrcExp, ExpInfo<SrcExp>::kDim, a1,a2> swapaxis( const Exp<SrcExp,etype> &src ){ 
@@ -428,12 +428,12 @@ namespace mshadow{
          * \param exp input expression that must be a matrix Tensor<?,2>
          * \return a expresion with type Tensor<Device,1>
          * \tparam dimkeep the dimension that will be kept
-         * \tparam E expression
+         * \tparam SrcExp expression
          * \tparam etype type of expression
          */
-        template<int dimkeep,  typename E, int etype>
-        inline ReduceTo1DExp<E, red::sum, dimkeep > sumall_except_dim( const Exp<E,etype> &exp ){
-            return ReduceTo1DExp<E,red::sum,dimkeep>( exp.self(), 1.0f );
+        template<int dimkeep,  typename SrcExp, int etype>
+        inline ReduceTo1DExp<SrcExp, red::sum, dimkeep > sumall_except_dim( const Exp<SrcExp,etype> &exp ){
+            return ReduceTo1DExp<SrcExp,red::sum,dimkeep>( exp.self(), 1.0f );
         }
 
         /*!
@@ -451,7 +451,17 @@ namespace mshadow{
             TypeCheckPass< ExpInfo<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
             return PoolingExp<Reducer,SrcExp, ExpInfo<SrcExp>::kDim >(src.self(), ksize, kstride);
         }
-        /*! \brief same as pool, except the output shape is specified by pshape */
+        /*! 
+         * \brief same as pool, except the output shape is specified by pshape
+         * \param src source image
+         * \param pshape ouput shape 
+         * \param ksize kernel size
+         * \param kstride stride for each kernel
+         * \return expression of pooled result
+         * \tparam Reducer reducer type
+         * \tparam SrcExp source expression
+         * \tparam etype type of expression
+         */
         template<typename Reducer, typename SrcExp, int etype>
         inline PoolingExp<Reducer,SrcExp, ExpInfo<SrcExp>::kDim > pool( const Exp<SrcExp,etype> &src, Shape<2> pshape, index_t ksize, index_t kstride ) {
             TypeCheckPass< ExpInfo<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
@@ -505,6 +515,8 @@ namespace mshadow{
          * \brief same as crop, but can specify starting position to do cropping
          * \param src original image batches
          * \param oshape output shape to be cropped
+         * \param start_height start height position to do cropping
+         * \param start_width  start width position to do cropping
          * \return expression corresponding to padded result
          * \tparam SrcExp source expression
          * \tparam etype type of expression
@@ -558,11 +570,11 @@ namespace mshadow{
          * \brief a expression that sum over rows of a matrix
          * \param exp input expression that must be a matrix Tensor<?,2>
          * \return a expresion with type Tensor<Device,1>
-         * \tparam E expression
+         * \tparam SrcExp expression
          * \tparam etype type of expression
          */
-        template<typename E, int etype>
-        inline ReduceTo1DExp<E, red::sum, 0 > sum_rows( const Exp<E,etype> &exp ){
+        template<typename SrcExp, int etype>
+        inline ReduceTo1DExp<SrcExp, red::sum, 0 > sum_rows( const Exp<SrcExp,etype> &exp ){
             return sumall_except_dim<0>( exp );
         }
 

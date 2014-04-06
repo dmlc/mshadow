@@ -6,7 +6,7 @@
  *        covention: this lib requires explicit memory allocation and de-allocation
  *                   all the data structure Tensor<cpu,1>, Tensor<gpu,1> are like handles(pointers),
  *                   no memory allocation is happening during calculation
- * \author Bing Hsu, Tianqi Chen
+ * \author Bing Xu, Tianqi Chen
  */
 #include "tensor_base.h"
 #include "tensor_expr.h"
@@ -241,7 +241,9 @@ namespace mshadow {
                                            (dptr) + s.MSize() * idx, s);
         }
         /*!
-         * \brief slice the tensor
+         * \brief slice the tensor in highest dimension [begin,end)
+         * \param begin begin position of slice
+         * \param end end position of slice
          * \return tensor after slice
          */
         MSHADOW_XINLINE Tensor<Device, dimension> Slice(index_t begin, index_t end) const {

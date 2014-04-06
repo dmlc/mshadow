@@ -3,7 +3,7 @@
 /*!
  * \file tensor_gpu-inl.cuh
  * \brief implementation of GPU code using CUDA
- * \author Bing Hsu, Tianqi Chen
+ * \author Bing Xu, Tianqi Chen
  */
 #include "../tensor.h"
 #include "cuda_reduce.cuh"

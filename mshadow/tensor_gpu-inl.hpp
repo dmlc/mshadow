@@ -3,7 +3,7 @@
 /*!
  * \file tensor_gpu-inl.hpp
  * \brief implementation of GPU host code
- * \author Bing Hsu, Tianqi Chen
+ * \author Bing Xu, Tianqi Chen
  */
 #include "tensor.h"
 
