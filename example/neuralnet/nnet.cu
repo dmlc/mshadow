@@ -22,7 +22,6 @@ public:
     virtual void Forward( const Tensor<cpu,2>& inbatch, Tensor<cpu,2> &oubatch ) = 0;
     virtual void Backprop( const Tensor<cpu,2>& gradout ) = 0;    
     virtual void Update( void ) = 0;
-    virtual void Init( int batch_size, int num_in, int num_hidden, int num_out ) = 0;    
     virtual ~INNet(){}
 };
 
@@ -33,7 +32,24 @@ public:
 template<typename xpu>
 class NNet : public INNet{
 public:
-    NNet( void ):rnd(0){}
+    // initialize the network
+    NNet( int batch_size, int num_in, int num_hidden, int num_out ):rnd(0){
+        // setup nodes
+        ninput.Resize( Shape2( batch_size, num_in ) );
+        nhidden.Resize( Shape2( batch_size, num_hidden ) );
+        nhiddenbak.Resize( nhidden.shape );
+        nout.Resize( Shape2( batch_size, num_out ) );
+        // setup bias
+        hbias.Resize( Shape1( num_hidden ) ); g_hbias.Resize( hbias.shape );
+        obias.Resize( Shape1( num_out ) ); g_obias.Resize( obias.shape );
+        hbias = 0.0f; obias = 0.0f;
+        // setup weights
+        Wi2h.Resize( Shape2( num_in, num_hidden ) );  g_Wi2h.Resize( Wi2h.shape );
+        Wh2o.Resize( Shape2( num_hidden, num_out ) ); g_Wh2o.Resize( Wh2o.shape );
+        rnd.SampleGaussian( Wi2h, 0, 0.01f );
+        rnd.SampleGaussian( Wh2o, 0, 0.01f );
+
+    }
     virtual ~NNet(){}
     // forward propagation
     virtual void Forward( const Tensor<cpu,2>& inbatch, Tensor<cpu,2> &oubatch ){
@@ -47,9 +63,9 @@ public:
         nhidden+= repmat( hbias, batch_size );
         // activation, sigmloid, backup activation in nhidden 
         nhidden = F<sigmoid>( nhidden );
-        Copy( nhidden2, nhidden );
+        Copy( nhiddenbak, nhidden );
         // second layer fullc
-        nout = dot( nhidden2, Wh2o );
+        nout = dot( nhiddenbak, Wh2o );
         nout += repmat( obias, batch_size );
         // softmax calculation
         Softmax( nout, nout );
@@ -62,11 +78,11 @@ public:
         Copy( nout, gradout );
         // calc grad of layer 2
         g_obias = sum_rows( nout );
-        g_Wh2o  = dot( nhidden2.T(), nout );
+        g_Wh2o  = dot( nhiddenbak.T(), nout );
         // backprop to layer 1 
-        nhidden2 = dot( nout, Wh2o.T() );
+        nhiddenbak = dot( nout, Wh2o.T() );
         // calculate gradient of sigmoid layer
-        nhidden = nhidden * (1.0f-nhidden) * nhidden2;
+        nhidden = nhidden * (1.0f-nhidden) * nhiddenbak;
         // calc grad of layer 1
         g_hbias = sum_rows( nhidden );
         g_Wi2h  = dot( ninput.T(), nhidden );        
@@ -83,29 +99,11 @@ public:
         hbias-= eta * g_hbias;
         obias-= eta * g_obias;        
     }
-    // initialize the network
-    virtual void Init( int batch_size, int num_in, int num_hidden, int num_out ){
-        // setup nodes
-        ninput.Resize( Shape2( batch_size, num_in ) );
-        nhidden.Resize( Shape2( batch_size, num_hidden ) );
-        nhidden2.Resize( nhidden.shape );
-        nout.Resize( Shape2( batch_size, num_out ) );
-        // setup bias
-        hbias.Resize( Shape1( num_hidden ) ); g_hbias.Resize( hbias.shape );
-        obias.Resize( Shape1( num_out ) ); g_obias.Resize( obias.shape );
-        hbias = 0.0f; obias = 0.0f;
-        // setup weights
-        Wi2h.Resize( Shape2( num_in, num_hidden ) );  g_Wi2h.Resize( Wi2h.shape );
-        Wh2o.Resize( Shape2( num_hidden, num_out ) ); g_Wh2o.Resize( Wh2o.shape );
-        rnd.SampleGaussian( Wi2h, 0, 0.01f );
-        rnd.SampleGaussian( Wh2o, 0, 0.01f );
-
-    }
 private:
     // random seed generator
     Random<xpu> rnd;
-    // hidden bias, gradient
-    TensorContainer<xpu,2> ninput, nhidden, nhidden2, nout;
+    // nodes in neural net
+    TensorContainer<xpu,2> ninput, nhidden, nhiddenbak, nout;
     // hidden bias, gradient
     TensorContainer<xpu,1> hbias, obias, g_hbias, g_obias;
     // weight gradient
@@ -127,13 +125,6 @@ int main( int argc, char *argv[] ){
     }
     srand(0);
     InitTensorEngine();
-    // choose which version to use
-    INNet *net;
-    if( !strcmp( argv[1], "gpu") ) {
-        net = new NNet<gpu>();
-    }else{
-        net = new NNet<cpu>();
-    }
 
     // settings
     int batch_size = 100;
@@ -141,9 +132,16 @@ int main( int argc, char *argv[] ){
     int num_hidden = 100;
     int num_out = 10;
 
+    // choose which version to use
+    INNet *net;
+    if( !strcmp( argv[1], "gpu") ) {
+        net = new NNet<gpu>( batch_size, num_in, num_hidden, num_out );
+    }else{
+        net = new NNet<cpu>( batch_size, num_in, num_hidden, num_out );
+    }
+
     // temp output layer
     TensorContainer<cpu,2> pred;    
-    net->Init( batch_size, num_in, num_hidden, num_out );
     pred.Resize( Shape2( batch_size, num_out ) );
     
     // label 

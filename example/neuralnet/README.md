@@ -7,4 +7,4 @@ To compile the code, type make:
 To run the demo, download  MNIST dataset from: http://yann.lecun.com/exdb/mnist/
 unzip all the files into current folder
 
-and run by  ./nnet cpu or ./nnet gpu
+and run by  ./nnet cpu or ./nnet gpu. ./convnet cpu or ./convnet gpu

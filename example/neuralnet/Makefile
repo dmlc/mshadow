@@ -18,12 +18,13 @@ export NVCCFLAGS = -O3 --use_fast_math -ccbin $(CXX)
 BIN =
 OBJ =
 CUOBJ =
-CUBIN = nnet
+CUBIN = nnet convnet
 .PHONY: clean all
 
 all: $(BIN) $(OBJ) $(CUBIN) $(CUOBJ)
 
 nnet: nnet.cu
+convnet: convnet.cu
 
 $(BIN) :
 	$(CXX) $(CFLAGS) $(LDFLAGS) -o $@ $(filter %.cpp %.o %.c, $^)
