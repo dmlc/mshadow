@@ -74,8 +74,8 @@ public:
     // update weight
     virtual void Update( void ){
         // run SGD
-        const float eta = 1.0;
-        const float wd = 0.0000;
+        const float eta = 0.8;
+        const float wd = 0.00001;
         // update weight
         Wi2h -= eta * ( wd * Wi2h + g_Wi2h );
         Wh2o -= eta * ( wd * Wh2o + g_Wh2o );
@@ -115,7 +115,7 @@ private:
 // helper function to get the max inde
 inline int MaxIndex( Tensor<cpu,1> pred ){
     int maxidx = 0;
-    for( index_t i = 1; i < pred.shape[1]; ++i ){
+    for( index_t i = 1; i < pred.shape[0]; ++i ){
         if( pred[i] > pred[maxidx] ) maxidx = (int)i;
     }
     return maxidx;
