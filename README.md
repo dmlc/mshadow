@@ -45,4 +45,4 @@ Goals
 
 Related Projects
 =====
-* CXXNET: a neural network implementation based on mshadow: https://github.com/antinucleon/cxxnet
+* CXXNET: neural network implementation based on mshadow: https://github.com/antinucleon/cxxnet
