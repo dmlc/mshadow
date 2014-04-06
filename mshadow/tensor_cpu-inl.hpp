@@ -88,7 +88,7 @@ namespace mshadow {
         using namespace expr;
         TypeCheckPass< TypeCheck<cpu,dim,E>::kMapPass >::Error_All_Tensor_in_Exp_Must_Have_Same_Type();
         Shape<dim> eshape = ShapeCheck<dim,E>::Check( exp.self() );
-        utils::Assert( eshape[0] == 0 || eshape == dst.shape, "shape of Tensors in expression is not consistent with target" );
+        utils::Assert( eshape[0] == 0 || eshape == dst.shape, "Assignment: Shape of Tensors in expression is not consistent with target" );
         #if MSHADOW_USE_SSE
         MapExpCPUEngine< SSECheck<E>::kPass,Saver,dim,E,etype >::Map( dst, exp );
         #else

@@ -60,7 +60,7 @@ namespace mshadow{
          * \param shape target shape
          */
         inline void Resize( const Shape<dimension> &shape ){
-            Shape<2> s2 = shape.FlatTo2D();
+            Shape<2> s2 = shape.FlatTo2D();            
             if( s2.shape_[0] > data_.shape.stride_ || s2.shape_[1] > data_.shape[1] ){
                 this->AllocByShape( shape );
             }else{

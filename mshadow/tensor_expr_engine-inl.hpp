@@ -250,7 +250,7 @@ namespace mshadow{
                 Shape<dim> shape2 = ShapeCheck<dim,TB>::Check( t.rhs_ );
                 if( shape1[0] == 0 ) return shape2;
                 if( shape2[0] == 0 ) return shape1;
-                utils::Assert( shape1 == shape2, "Shapes of tensors in expression is not consistent");
+                utils::Assert( shape1 == shape2, "BinaryMapExp: Shapes of two tensors in BinaryMapExp expression is not the same");
                 return shape1;
             }
         };
