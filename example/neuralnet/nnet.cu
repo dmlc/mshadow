@@ -74,7 +74,7 @@ public:
     // update weight
     virtual void Update( void ){
         // run SGD
-        const float eta = 1.0;
+        const float eta = 2.0;
         const float wd = 0.0000;
         // update weight
         Wi2h -= eta * ( wd * Wi2h + g_Wi2h );
