@@ -12,5 +12,6 @@
 *.la
 *.a
 *~
-
+doc/html
+doc/latex
 test*
