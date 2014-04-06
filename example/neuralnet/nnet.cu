@@ -1,0 +1,181 @@
+// this implements a simple two layer neural net
+#include <vector>
+// header file to use mshadow
+#include "mshadow/tensor.h"
+// helper function to load mnist dataset
+#include "util.h"
+// this namespace contains all data structures, functions
+using namespace mshadow;
+// this namespace contains all operator overloads
+using namespace mshadow::expr;
+
+// define sigmoid operation
+struct sigmoid{
+    MSHADOW_XINLINE static real_t Map(real_t a) {
+        return  1.0f/(1.0f+expf(-a));
+    }
+};
+
+/*! \brief interface for nnet, interfacd allows use to use GPU/CPU implementation in a unified way */
+class INNet{
+public:
+    virtual void Forward( const Tensor<cpu,2>& inbatch, Tensor<cpu,2> &oubatch ) = 0;
+    virtual void Backprop( const Tensor<cpu,2>& gradout ) = 0;    
+    virtual void Update( void ) = 0;
+    virtual void Init( int batch_size, int num_in, int num_hidden, int num_out ) = 0;    
+    virtual ~INNet(){}
+};
+
+/*! 
+ * \brief simple two layer neural net 
+ *        this implementation is device invariant
+ */
+template<typename xpu>
+class NNet : public INNet{
+public:
+    NNet( void ):rnd(0){}
+    virtual ~NNet(){}
+    // forward propagation
+    virtual void Forward( const Tensor<cpu,2>& inbatch, Tensor<cpu,2> &oubatch ){
+        // note: in mshadow, shape[0] means lowest dimension, shape[1] is number of rows in matrix
+        // this is different from numpy convention
+        index_t batch_size = inbatch.shape[1];
+        // copy data to input layer
+        Copy( ninput, inbatch );
+        // first layer, fullc
+        nhidden = dot( ninput, Wi2h );
+        nhidden+= repmat( hbias, batch_size );
+        // activation, sigmloid, backup activation in nhidden 
+        nhidden = F<sigmoid>( nhidden );
+        Copy( nhidden2, nhidden );
+        // second layer fullc
+        nout = dot( nhidden2, Wh2o );
+        nout += repmat( obias, batch_size );
+        // softmax calculation
+        Softmax( nout, nout );
+        // copy result out
+        Copy( oubatch, nout );
+    }
+    // back propagation
+    virtual void Backprop( const Tensor<cpu,2>& gradout ){        
+        // copy gradient to output layer
+        Copy( nout, gradout );
+        // calc grad of layer 2
+        g_obias = sum_rows( nout );
+        g_Wh2o  = dot( nhidden2.T(), nout );
+        // backprop to layer 1 
+        nhidden2 = dot( nout, Wh2o.T() );
+        // calculate gradient of sigmoid layer
+        nhidden = nhidden * (1.0f-nhidden) * nhidden2;
+        // calc grad of layer 1
+        g_hbias = sum_rows( nhidden );
+        g_Wi2h  = dot( ninput.T(), nhidden );        
+    }
+    // update weight
+    virtual void Update( void ){
+        // run SGD
+        const float eta = 0.1;
+        const float wd = 0.00005;
+        // update weight
+        Wi2h -= eta * ( wd * Wi2h + g_Wi2h );
+        Wh2o -= eta * ( wd * Wh2o + g_Wh2o );
+        // no regularization for bias
+        hbias-= eta * g_hbias;
+        obias-= eta * g_obias;        
+    }
+    // initialize the network
+    virtual void Init( int batch_size, int num_in, int num_hidden, int num_out ){
+        // setup nodes
+        ninput.Resize( Shape2( batch_size, num_in ) );
+        nhidden.Resize( Shape2( batch_size, num_hidden ) );
+        nhidden2.Resize( nhidden.shape );
+        nout.Resize( Shape2( batch_size, num_out ) );
+        // setup bias
+        hbias.Resize( Shape1( num_hidden ) ); g_hbias.Resize( hbias.shape );
+        obias.Resize( Shape1( num_out ) ); g_obias.Resize( obias.shape );
+        hbias = 0.0f; obias = 0.0f;
+        // setup weights
+        Wi2h.Resize( Shape2( num_in, num_hidden ) );
+        Wh2o.Resize( Shape2( num_hidden, num_out ) );
+        Wi2h = rnd.gaussian( Wi2h.shape ) * 0.01f;
+        Wh2o = rnd.gaussian( Wh2o.shape ) * 0.01f;
+    }
+private:
+    // random seed generator
+    Random<xpu> rnd;
+    // hidden bias, gradient
+    TensorContainer<xpu,2> ninput, nhidden, nhidden2, nout;
+    // hidden bias, gradient
+    TensorContainer<xpu,1> hbias, obias, g_hbias, g_obias;
+    // weight gradient
+    TensorContainer<xpu,2> Wi2h, Wh2o, g_Wi2h, g_Wh2o;    
+};
+
+// helper function to get the max inde
+inline int MaxIndex( Tensor<cpu,1> pred ){
+    int maxidx = 0;
+    for( index_t i = 1; i < pred.shape[1]; ++i ){
+        if( pred[i] > pred[maxidx] ) maxidx = (int)i;
+    }
+    return maxidx;
+}
+
+int main( int argc, char *argv[] ){
+    if( argc < 2 ){
+        printf("Usage: cpu or gpu\n");
+    }
+    InitTensorEngine();
+    // settings
+    int batch_size = 100;
+    int num_in = 28 * 28;
+    int num_hidden = 100;
+    int num_out = 10;
+    // choose which version to use
+    INNet *net;
+    if( !strcmp( argv[1], "cpu") ) {
+        net = new NNet<cpu>();
+    }else{
+        net = new NNet<gpu>();
+    }
+
+    // temp output layer
+    TensorContainer<cpu,2> pred;    
+    net->Init( batch_size, num_in, num_hidden, num_out );
+    pred.Resize( Shape2( batch_size, num_out ) );
+    
+    // label 
+    std::vector<int> ytrain, ytest;
+    // data
+    TensorContainer<cpu,2> xtrain, xtest;
+    
+    int num_iter = 10;
+
+    for( int i = 0; i < num_iter; ++ i ){
+        // training 
+        for( index_t j = 0; j + batch_size <= xtrain.shape[1]; j += batch_size ){
+            net->Forward( xtrain.Slice( j, j + batch_size ), pred );
+            // set gradient into pred
+            for( int k = 0; k < batch_size; ++ k ){
+                pred[k][ ytrain[k+j] ] -= 1.0f;
+            }
+            // scale gradient by batchs zie
+            pred *= 1.0f / batch_size;
+            // run backprop
+            net->Backprop( pred );
+            // update net parameters
+            net->Update();
+        }
+        long nerr = 0;
+        // evaluation
+        for( index_t j = 0; j + batch_size <= xtest.shape[1]; j += batch_size ){
+            net->Forward( xtest.Slice( j, j + batch_size ), pred );            
+            for( int k = 0; k < batch_size; ++ k ){
+                nerr += MaxIndex( pred[k] ) != ytest[j+k];
+            }
+        }
+        printf("round %d: test-err=%f\n", i, (float)nerr/xtest.shape[1] );
+    }    
+    delete net;
+    ShutdownTensorEngine();
+    return 0;
+}
