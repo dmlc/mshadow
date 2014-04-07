@@ -10,7 +10,7 @@
 #if !(MSHADOW_USE_CUDA)
 namespace mshadow {
     // do nothing if no GPU operation is involved
-    inline void InitTensorEngine( void ){
+    inline void InitTensorEngine( int dev_id ){
     }
     inline void ShutdownTensorEngine( void ){
     }
