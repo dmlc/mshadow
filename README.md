@@ -34,7 +34,7 @@ However:
 mshadow is a unified C++/CUDA lib to to write Eq.(1) and Eq.(2) in C++, and *translate* them to the for loop and standard packages such as MKL, CuBLAS *in compile time*. 
 
 
-Goals
+Features
 =====
 * Shadow instead of giant: mshadow does not implement all of the functions,  it is more of a wrapper to translated easy-to-read code to standard 'giant' packages such as MKL
 * Whitebox instead of blackbox: put a float* into the Tensor struct and take the benefit of the package, no memory allocation is happened unless explicitly called
@@ -45,4 +45,4 @@ Goals
 
 Related Projects
 =====
-* CXXNET: (on going) neural network implementation based on mshadow: https://github.com/antinucleon/cxxnet
+* CXXNET: neural network implementation based on mshadow: https://github.com/antinucleon/cxxnet
