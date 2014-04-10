@@ -1,5 +1,6 @@
-#include <cstdio>
 // Example Lazy evaluation code
+// for simplicity, we use struct and make all members public
+#include <cstdio>
 struct Vec;
 // expression structure holds the expression
 struct BinaryAddExp{
@@ -15,7 +16,7 @@ struct Vec {
     Vec (float *dptr, int len):len(len),dptr(dptr){}
     // here is where evaluation happens
     inline Vec& operator= (const BinaryAddExp& src){
-        for( int i=0; i< src.lhs.len; ++ i ){
+        for( int i = 0; i < len; ++i ){
             dptr[i] = src.lhs.dptr[i] + src.rhs.dptr[i];
         }
         return *this;
