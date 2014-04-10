@@ -1,5 +1,4 @@
 # set LD_LIBRARY_PATH
-
 export CC  = gcc
 export CXX = g++
 export NVCC =nvcc
