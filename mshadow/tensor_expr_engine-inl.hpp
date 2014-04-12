@@ -262,10 +262,12 @@ namespace mshadow{
         struct DotEngine{
             inline static void Eval( Tensor<Device,ddim> &dst, const Tensor<Device,ldim> &lhs, const Tensor<Device,rdim> &rhs, real_t scale );
         };
-        #if (MSHADOW_USE_CBLAS||MSHADOW_USE_MKL)
+
         // handles the dot
         template<typename Device>
         struct BLASEngine;
+
+        #if (MSHADOW_USE_CBLAS||MSHADOW_USE_MKL)
         template<>
         struct BLASEngine<cpu>{
             inline static CBLAS_TRANSPOSE GetT( bool t ){
@@ -294,6 +296,7 @@ namespace mshadow{
                 cblas_dger(CblasColMajor,m,n,alpha,X,incX,Y,incY,A,lda);
             }
         };
+        #endif // MSHADOW_USE_CBLAS || MSHADOW_USE_MKL
 
         #if MSHADOW_USE_CUDA
         // All CuBLAS goes to here, use legacy API: not threadsafe
@@ -378,9 +381,8 @@ namespace mshadow{
                 }
             }
         };
-        #endif // MSHADOW_USE_CBLAS || MSHADOW_USE_MKL
-    }; // namespace expr
 
+    }; // namespace expr
 
     namespace expr{
         /*! \brief some engine that evaluate complex expression */
