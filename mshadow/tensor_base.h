@@ -100,6 +100,12 @@ extern "C"{
 /*! \brief cpu force inline */
 #define MSHADOW_CINLINE inline __attribute__((always_inline))
 
+#if defined(__GXX_EXPERIMENTAL_CXX0X) || __cplusplus >= 201103L
+  #define MSHADOW_CONSTEXPR constexpr
+#else
+  #define MSHADOW_CONSTEXPR const
+#endif
+
 /*! \brief namespace for mshadow */
 namespace mshadow {
     /*! \brief buffer size for each random number generator */
@@ -167,9 +173,9 @@ namespace mshadow {
                 a  = b;
             }
             /*! \brief helper constant to use BLAS, alpha */
-            const static real_t kAlphaBLAS = 1.0f;
+            MSHADOW_CONSTEXPR static real_t kAlphaBLAS = 1.0f;
             /*! \brief helper constant to use BLAS, beta */
-            const static real_t kBetaBLAS  = 0.0f;
+            MSHADOW_CONSTEXPR static real_t kBetaBLAS  = 0.0f;
             /*! \brief corresponding binary operator type */
             typedef op::right OPType;
         };
@@ -180,9 +186,9 @@ namespace mshadow {
                 a += b;
             }
             /*! \brief helper constant to use BLAS, alpha */
-            const static real_t kAlphaBLAS = 1.0f;
+            MSHADOW_CONSTEXPR static real_t kAlphaBLAS = 1.0f;
             /*! \brief helper constant to use BLAS, beta */
-            const static real_t kBetaBLAS  = 1.0f;
+            MSHADOW_CONSTEXPR static real_t kBetaBLAS  = 1.0f;
             /*! \brief corresponding binary operator type */
             typedef op::plus OPType;
         };
@@ -193,9 +199,9 @@ namespace mshadow {
                 a -= b;
             }
             /*! \brief helper constant to use BLAS, alpha */
-            const static real_t kAlphaBLAS = -1.0f;
+            MSHADOW_CONSTEXPR static real_t kAlphaBLAS = -1.0f;
             /*! \brief helper constant to use BLAS, beta */
-            const static real_t kBetaBLAS  = 1.0f;
+            MSHADOW_CONSTEXPR static real_t kBetaBLAS  = 1.0f;
             /*! \brief corresponding binary operator type */
             typedef op::minus OPType;
         };
@@ -246,7 +252,7 @@ namespace mshadow {
                 return 1.0f;
             }
             /*! \brief an intial value of reducer */
-            const static real_t kInitV = 0.0f;
+            MSHADOW_CONSTEXPR static real_t kInitV = 0.0f;
         };
         /*! \brief maximum reducer */
         struct maximum {
@@ -261,9 +267,9 @@ namespace mshadow {
             }
             /*! \brief an intial value of reducer */
 #if MSHADOW_SINGLE_PRECISION
-            const static real_t kInitV = -FLT_MAX;
+            MSHADOW_CONSTEXPR static real_t kInitV = -FLT_MAX;
 #else
-            const static real_t kInitV = -DBL_MAX;
+            MSHADOW_CONSTEXPR static real_t kInitV = -DBL_MAX;
 #endif
         };
     };
