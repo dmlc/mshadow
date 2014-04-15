@@ -28,7 +28,7 @@ namespace mshadow {
         int device_id = 0;
         int device_count = 0;
         cudaGetDeviceCount(&device_count);
-
+        utils::Assert(device_count > 0, "Cannot find CUDA device. Please check CUDA-Configuration");
         if (dev_id < 0) {
             #if (MSHADOW_USE_NVML)
             device_id = AutoSelectDevice(device_count);
@@ -131,7 +131,7 @@ namespace mshadow{
         EShape eshape = ShapeCheck< ExpInfo<E>::kDim, E >::Check( exp.self() );
         utils::Assert( eshape[dimkeep] == dst.shape[0], "reduction dimension do not match" );
         // use equvalent form
-        Shape<4> pshape = Shape4( eshape.ProdShape(dimkeep+1,EShape::kMaxShape), eshape[dimkeep], 
+        Shape<4> pshape = Shape4( eshape.ProdShape(dimkeep+1,EShape::kMaxShape), eshape[dimkeep],
                                   eshape.ProdShape(1,dimkeep), eshape[0] );
         // call equavalent map red dim 2
         cuda::MapReduceKeepDim2<Saver,Reducer>( dst, MakePlan( exp.self() ), scale, pshape );
