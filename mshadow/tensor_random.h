@@ -251,12 +251,7 @@ namespace mshadow {
          */
         template<int dim>
         inline expr::ReshapeExp<Tensor<gpu,1>,dim,1> gaussian( Shape<dim> shape, real_t mu=0.0f, real_t sigma=1.0f){
-        	int sz = shape.Size();
-        	bool odd = sz %2;
-        	if(odd){
-        		++sz;
-        	}
-            buffer_.Resize( Shape1( sz ) );
+            buffer_.Resize( Shape1( ((shape.Size() + 1UL)<<1)>>1 ) );
             curandStatus_t status;
             #if MSHADOW_SINGLE_PRECISION
             status = curandGenerateNormal(gen_, buffer_.dptr, buffer_.shape[0], mu, sigma);
@@ -264,10 +259,7 @@ namespace mshadow {
             status = curandGenerateNormalDouble(gen_, buffer_.dptr, buffer_.shape[0], mu, sigma);
             #endif
             utils::Assert(status == CURAND_STATUS_SUCCESS, "CURAND Gen Uniform failed\n");
-            if(odd){
-            	buffer_.Resize(Shape1(sz-1));
-            }
-            return expr::reshape( buffer_, shape );
+            return expr::reshape( buffer_.Slice(0, shape.Size()), shape );
         }
         /*!
          * \brief return a temporal expression storing standard uniform [0,1)
