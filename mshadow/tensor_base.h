@@ -100,7 +100,7 @@ extern "C"{
 /*! \brief cpu force inline */
 #define MSHADOW_CINLINE inline __attribute__((always_inline))
 
-#if defined(__GXX_EXPERIMENTAL_CXX0X) || __cplusplus >= 201103L
+#if defined(__GXX_EXPERIMENTAL_CXX0X) || defined(__GXX_EXPERIMENTAL_CXX0X__) || __cplusplus >= 201103L
   #define MSHADOW_CONSTEXPR constexpr
 #else
   #define MSHADOW_CONSTEXPR const

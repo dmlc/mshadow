@@ -251,10 +251,13 @@ namespace mshadow {
          */
         template<int dim>
         inline expr::ReshapeExp<Tensor<gpu,1>,dim,1> gaussian( Shape<dim> shape, real_t mu=0.0f, real_t sigma=1.0f){
+            size_t aligned_sz = ((shape.Size() + 1UL)>>1)<<1;
+            // allocate alligned size
+            buffer_.Resize( Shape1( aligned_sz ) );
             buffer_.Resize( Shape1( shape.Size() ) );
             curandStatus_t status;
             #if MSHADOW_SINGLE_PRECISION
-            status = curandGenerateNormal(gen_, buffer_.dptr, buffer_.shape[0], mu, sigma);
+            status = curandGenerateNormal(gen_, buffer_.dptr, aligned_sz , mu, sigma);
             #else
             status = curandGenerateNormalDouble(gen_, buffer_.dptr, buffer_.shape[0], mu, sigma);
             #endif

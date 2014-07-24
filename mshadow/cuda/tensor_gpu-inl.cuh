@@ -32,7 +32,7 @@ namespace mshadow{
         const int kBaseGridNum    = 1024;
         
         /*! \brief get align stride for given size in x dimension */
-        index_t GetAlignStride( index_t xsize, index_t xstride ){ 
+        inline index_t GetAlignStride( index_t xsize, index_t xstride ){ 
             if( (xstride & (kMemUnit-1)) == 0 ){
                 return ( (xsize  + kMemUnit - 1) >> kMemUnitBits) << kMemUnitBits;
             }else{
