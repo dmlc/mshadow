@@ -26,7 +26,7 @@ nnet: nnet.cu
 convnet: convnet.cu
 
 $(BIN) :
-	$(CXX) $(CFLAGS) $(LDFLAGS) -o $@ $(filter %.cpp %.o %.c, $^)
+	$(CXX) $(CFLAGS) -o $@ $(filter %.cpp %.o %.c, $^) $(LDFLAGS) 
 
 $(OBJ) :
 	$(CXX) -c $(CFLAGS) -o $@ $(firstword $(filter %.cpp %.c, $^) )
