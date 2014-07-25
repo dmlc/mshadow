@@ -91,6 +91,65 @@ namespace mshadow{
         };
 
         /*!
+         * \brief unpack local (overlap) windows of a series to column of mat, can be used to implement 1D convolution, 
+         *        this expression allow unpack of a batch  this is a version support unpacking multiple series
+         *  after getting unpacked mat, we can use: output = dot( weight, mat ) to get covolved results, the relations:
+         * \tparam SrcExp source expression
+         * \tparam dstdim destination dimension
+         */
+        template<typename SrcExp, int srcdim>
+        struct UnpackWindowToColExp: public MakeTensorExp< UnpackWindowToColExp<SrcExp,srcdim>, SrcExp, 2>{
+            /*! \brief source operand */
+            const SrcExp& series_;
+            /*! \brief patch size */
+            index_t psize_;
+            /*! \brief patch stride */
+            index_t pstride_;
+            /*! \brief number of input channel */
+            index_t i_channel_;
+            /*! \brief length of img */
+            index_t i_length_;
+
+            /*! \brief constructor */
+            UnpackWindowToColExp( const SrcExp series, index_t psize, index_t pstride )
+                :series_(series), psize_(psize), pstride_(pstride){
+                Shape<srcdim> ishape = ShapeCheck<srcdim,SrcExp>::Check( series_ );
+                utils::Assert( ishape[0] >= psize , "UnpackWindowToCol:series length smaller than patch size");
+                this->i_channel_ = ishape[2] * ishape[1];
+                this->i_length_  = ishape[0];
+                // calculate number of batches 
+                const index_t num = ishape.ProdShape( 3, srcdim );
+                const index_t o_length = ( i_length_ - psize ) / pstride + 1;
+                this->shape_[0] = o_length * num;
+                this->shape_[1] = psize * i_channel_;
+            }
+        };
+
+        /*!
+         * \brief reverse operation of UnpackWindowToCol, used to backprop gradient back
+         *    this is a version supporting multiple images
+         * \tparam Device which device it lies
+         * \tparam dstdim destination dimension
+         */
+        template<typename Device, int dstdim>
+        struct PackColToWindowExp: public MakeTensorExp< PackColToWindowExp<Device,dstdim>, Tensor<Device,2>, dstdim>{
+            /*! \brief source operand */
+            const Tensor<Device,2>& mat_;
+            /*! \brief patch size */
+            index_t psize_;
+            /*! \brief patch stride */
+            index_t pstride_;
+            /*! \brief constructor */
+            PackColToWindowExp( const Tensor<Device,2> &mat, Shape<dstdim> ishape, index_t psize, index_t pstride )
+                :mat_(mat), psize_(psize), pstride_(pstride){
+                this->shape_ = ishape;
+                const index_t o_length = ( ishape[0]  - psize ) / pstride + 1;
+                utils::Assert( mat.shape[0] == o_length * ishape.ProdShape(3,dstdim), "PackColToWindowExp: mat.shape[0] mismatch" );
+                utils::Assert( mat.shape[1] == psize * ishape[1] * ishape[2], "PackColToWindowExp: mat.shape[1] mismatch" );
+            }
+        };
+        
+        /*!
          * \brief reshape the content to another shape
          * input: Tensor<Device,dimsrc>: ishape
          * output: Tensor<Device,dimdst> ishape.Size() == oshape.Size()
@@ -234,20 +293,22 @@ namespace mshadow{
         struct PaddingExp : public MakeTensorExp<PaddingExp<SrcExp, srcdim>, SrcExp, srcdim> {
             /*! \brief source operand */
             const SrcExp& src_;
-            /*! \brief pad size */
-            index_t pad_;
+            /*! \brief pad size in y */
+            index_t pad_y_;
+            /*! \brief pad size in x */
+            index_t pad_x_;
             /*! \brief source tensor height */
             index_t src_height_;
             /*! \brief source tensor width */
             index_t src_width_;
             /*! \brief constructor */
-            PaddingExp( const SrcExp &src, index_t pad )
-                : src_(src), pad_(pad) {
+            PaddingExp( const SrcExp &src, index_t pad_y, index_t pad_x )
+                : src_(src), pad_y_(pad_y), pad_x_(pad_x) {
                 this->shape_ = ShapeCheck<srcdim,SrcExp>::Check( src_ );
                 src_height_ = this->shape_[1];
                 src_width_  = this->shape_[0];
-                this->shape_[1] += pad * 2; // height
-                this->shape_[0] += pad * 2; // width
+                this->shape_[1] += pad_y * 2; // height
+                this->shape_[0] += pad_x * 2; // width
             }
         };
 
@@ -393,6 +454,44 @@ namespace mshadow{
             utils::Assert( imshape[0] >= psize && imshape[1] >= psize, "PackColToPatch:image shape smaller than patch size");
             return PackColToPatchXExp<Device,dstdim>( mat, imshape, psize, pstride );
         }
+
+
+        /*!
+         * \brief  unpack local (overlap) windows of time series to column of mat, can be used to implement  1D convolution
+         *  after getting unpacked mat, we can use: output = dot( weight, mat ) to get covolved results, the relations:
+         *
+         *  weight; shape[1]: out_channel, shape[0]: ichannel*psize
+         *  output; shape[1]: out_channel, shape[0]: out_length * num_of_series
+         *  out_length  = ( in_length - psize ) / pstride + 1
+         *
+         * \return mat target matrix;  shape[1]: in_channel*psize  shape[0]: out_length * num_of_series
+         * \param series source series; shape[2]*shape[1]: in_channels, shape[0]: in_length, can be 3D or 4D tensor(multiple series), either dimension  1 or 2 can be used as channel
+         * \param psize size of each window
+         * \param pstride stride of each window
+         * \tparam SrcExp source expression
+         * \tparam etype type of expression
+         */
+        template<typename SrcExp, int etype>
+        inline UnpackWindowToColExp<SrcExp, ExpInfo<SrcExp>::kDim > unpack_window2col( const Exp<SrcExp,etype> &series, index_t psize, index_t pstride ){
+            TypeCheckPass< ExpInfo<SrcExp>::kDim >= 3 >::Error_Expression_Does_Not_Meet_Dimension_Req();
+            return UnpackWindowToColExp<SrcExp, ExpInfo<SrcExp>::kDim >( series.self(), psize, pstride );
+        }
+
+        /*!
+         * \brief reverse operation of pack_col2window, can be used to implement deconvolution
+         * \return packed img expression
+         * \param mat source matrix
+         * \param tshape shape of target series
+         * \param psize size of each window
+         * \param pstride stride of each window
+         * \tparam Device the Device where input data lies
+         */
+        template<typename Device, int dstdim>
+        inline PackColToWindowExp<Device,dstdim> pack_col2window( const Tensor<Device,2> &mat, Shape<dstdim> tshape, index_t psize, index_t pstride ){
+            utils::Assert( tshape[0] >= psize, "PackColToWindow:series length smaller than patch size");
+            return PackColToWindowExp<Device,dstdim>( mat, tshape, psize, pstride );
+        }
+
         /*!
          * \brief a expression that reshapes a tensor to another shape
          * \param src Tensor<Device,dimsrc>:
@@ -495,8 +594,24 @@ namespace mshadow{
          template<typename SrcExp, int etype>
          inline PaddingExp<SrcExp, ExpInfo<SrcExp>::kDim> pad(const Exp<SrcExp, etype> &src, index_t pad) {
              TypeCheckPass< ExpInfo<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
-             return PaddingExp<SrcExp, ExpInfo<SrcExp>::kDim>(src.self(), pad);
+             return PaddingExp<SrcExp, ExpInfo<SrcExp>::kDim>(src.self(), pad, pad);
          }
+        
+        /*!
+         * \brief padding expression, pad a image with zeros on boundaries, padding affects shape[0], and shape[1]
+         * \param src original image batches
+         * \param pad_y padding size in y
+         * \param pad_x padding size in x
+         * \return expression corresponding to padded result
+         * \tparam SrcExp source expression
+         * \tparam etype type of expression
+         */
+         template<typename SrcExp, int etype>
+         inline PaddingExp<SrcExp, ExpInfo<SrcExp>::kDim> pad(const Exp<SrcExp, etype> &src, index_t pad_y, index_t pad_x) {
+             TypeCheckPass< ExpInfo<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
+             return PaddingExp<SrcExp, ExpInfo<SrcExp>::kDim>(src.self(), pad_y, pad_x);
+         }
+
 
         /*!
          * \brief revserse operationg of padding, cut off boundaries, crop output from center of input
@@ -702,6 +817,60 @@ namespace mshadow{
     };
 
     namespace expr{
+        template<typename SrcExp, int srcdim>
+        struct Plan< UnpackWindowToColExp<SrcExp,srcdim> >{
+        public:
+            Plan( const UnpackWindowToColExp<SrcExp,srcdim> &e )
+                :src_(MakePlan(e.series_)),psize_(e.psize_), pstride_(e.pstride_),
+                 i_channel_(e.i_channel_), i_length_(e.i_length_),
+                 o_length_(( i_length_ - psize_) / pstride_+1 ){
+            }
+            MSHADOW_XINLINE real_t Eval( index_t i, index_t j ) const{
+                const index_t x_offset = i % psize_;
+                const index_t c = i / psize_;                
+                const index_t x = ( j % o_length_ ) * pstride_ + x_offset;                
+                const index_t n = j / o_length_;
+
+                if( x < o_length_ ){
+                    return src_.Eval( n * i_channel_  + c , x );
+                }else{
+                    return 0.0f;
+                }
+            }
+        private:
+            Plan<SrcExp> src_;
+            const index_t psize_, pstride_, i_channel_, i_length_, o_length_;
+        };
+
+        template<typename Device, int dstdim>
+        struct Plan< PackColToWindowExp<Device, dstdim> >{
+        public:
+            Plan( const PackColToWindowExp<Device, dstdim> &e )
+                :mat_(e.mat_), psize_(e.psize_), pstride_(e.pstride_),
+                 i_channel_(e.shape_[2]),
+                 o_length_(( e.shape_[0]  - psize_ ) / pstride_ + 1){                 
+            }
+            MSHADOW_XINLINE real_t Eval( index_t i, index_t j ) const{
+                using namespace std;
+                const index_t c = i % i_channel_;
+                const index_t n = i / i_channel_;                 
+                const index_t x = j;
+                const index_t px_min = x < psize_ ? 0 : (x-psize_+pstride_)/pstride_;
+                const index_t px_max = min( (x+pstride_)/pstride_, o_length_ );
+
+                real_t res = 0.0f;
+                for( index_t px = px_min; px < px_max; ++px ){
+                    res += mat_[ c * psize_ + x - px*pstride_ ][ n * o_length_ +px ];
+                }
+                return res;
+            }
+        private:
+            Tensor<Device,2> mat_;
+            const index_t psize_, pstride_, i_channel_, o_length_;
+        };
+    };
+
+    namespace expr{
         template<typename SrcExp, int dimdst, int dimsrc>
         struct Plan< ReshapeExp<SrcExp,dimdst,dimsrc> >{
         public:
@@ -853,15 +1022,16 @@ namespace mshadow{
         struct Plan< PaddingExp<SrcExp, srcdim> > {
         public:
             Plan(const PaddingExp<SrcExp, srcdim> &e)
-                : src_(MakePlan(e.src_)), pad_(e.pad_), new_height_(e.shape_[1]),
+                : src_(MakePlan(e.src_)), pad_y_(e.pad_y_), pad_x_(e.pad_x_), 
+                  new_height_(e.shape_[1]),
                   src_height_(e.src_height_), src_width_(e.src_width_) {}
             MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
                 const index_t x = j;
                 const index_t y = i % new_height_;
                 const index_t c = i / new_height_;
-                if (y < pad_ || x < pad_) return 0.0f;
-                const index_t h = y - pad_;
-                const index_t w = x - pad_;
+                if (y < pad_y_ || x < pad_x_) return 0.0f;
+                const index_t h = y - pad_y_;
+                const index_t w = x - pad_x_;
                 if (h < src_height_ && w < src_width_) {
                     return src_.Eval(c * src_height_ + h, w);
                 } else {
@@ -870,7 +1040,8 @@ namespace mshadow{
             }
         private:
             Plan<SrcExp> src_;
-            const index_t pad_;
+            const index_t pad_y_;
+            const index_t pad_x_;
             const index_t new_height_;
             const index_t src_height_;
             const index_t src_width_;
