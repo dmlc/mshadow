@@ -38,8 +38,10 @@ namespace mshadow{
         struct UnpackPatchToColXExp: public MakeTensorExp< UnpackPatchToColXExp<SrcExp,srcdim>, SrcExp, 2>{
             /*! \brief source operand */
             const SrcExp& img_;
-            /*! \brief patch size */
-            index_t psize_;
+            /*! \brief patch height */
+            index_t psize_y_;
+            /*! \brief patch width */
+            index_t psize_x_;
             /*! \brief patch stride */
             index_t pstride_;
             /*! \brief number of input channel */
@@ -49,19 +51,19 @@ namespace mshadow{
             /*! \brief width of img */
             index_t i_width_;            
             /*! \brief constructor */
-            UnpackPatchToColXExp( const SrcExp &img, index_t psize, index_t pstride )
-                :img_(img), psize_(psize), pstride_(pstride){
+            UnpackPatchToColXExp( const SrcExp &img, index_t psize_y, index_t psize_x, index_t pstride )
+                :img_(img), psize_y_(psize_y), psize_x_(psize_x), pstride_(pstride){
                 Shape<srcdim> imshape = ShapeCheck<srcdim,SrcExp>::Check( img_ );
-                utils::Assert( imshape[0] >= psize && imshape[1] >= psize, "UnpackPatchToCol:image shape smaller than patch size");
+                utils::Assert( imshape[0] >= psize_x && imshape[1] >= psize_y, "UnpackPatchToCol:image shape smaller than patch size");
                 this->i_channel_ = imshape[2];
                 this->i_height_  = imshape[1];
                 this->i_width_   = imshape[0];
                 // calculate number of batches 
                 const index_t num = imshape.ProdShape( 3, srcdim );
-                const index_t o_height = ( i_height_ - psize ) / pstride + 1;
-                const index_t o_width  = ( i_width_  - psize ) / pstride + 1;
+                const index_t o_height = ( i_height_ - psize_y ) / pstride + 1;
+                const index_t o_width  = ( i_width_  - psize_x ) / pstride + 1;
                 this->shape_[0] = o_height * o_width * num;
-                this->shape_[1] = psize * psize * imshape[2];
+                this->shape_[1] = psize_y * psize_x * imshape[2];
             }
         };
 
@@ -75,18 +77,20 @@ namespace mshadow{
         struct PackColToPatchXExp: public MakeTensorExp< PackColToPatchXExp<Device,dstdim>, Tensor<Device,2>, dstdim>{
             /*! \brief source operand */
             const Tensor<Device,2>& mat_;
-            /*! \brief patch size */
-            index_t psize_;
+            /*! \brief patch height */
+            index_t psize_y_;
+            /*! \brief patch height */
+            index_t psize_x_;
             /*! \brief patch stride */
             index_t pstride_;
             /*! \brief constructor */
-            PackColToPatchXExp( const Tensor<Device,2> &mat, Shape<dstdim> imshape, index_t psize, index_t pstride )
-                :mat_(mat), psize_(psize), pstride_(pstride){
+            PackColToPatchXExp( const Tensor<Device,2> &mat, Shape<dstdim> imshape, index_t psize_y, index_t psize_x, index_t pstride )
+                :mat_(mat), psize_y_(psize_y), psize_x_(psize_x), pstride_(pstride){
                 this->shape_ = imshape;
-                const index_t o_height = ( imshape[1]  - psize ) / pstride + 1;                
-                const index_t o_width  = ( imshape[0]  - psize ) / pstride + 1;                
+                const index_t o_height = ( imshape[1]  - psize_y ) / pstride + 1;                
+                const index_t o_width  = ( imshape[0]  - psize_x ) / pstride + 1;                
                 utils::Assert( mat.shape[0] == o_height * o_width * imshape.ProdShape(3,dstdim), "PackColToPatchExp: mat.shape[0] mismatch" );
-                utils::Assert( mat.shape[1] == psize * psize * imshape[2], "PackColToPatchExp: mat.shape[1] mismatch" );
+                utils::Assert( mat.shape[1] == psize_y * psize_x * imshape[2], "PackColToPatchExp: mat.shape[1] mismatch" );
             }
         };
 
@@ -426,22 +430,23 @@ namespace mshadow{
          * \brief  unpack local (overlap) patches of image to column of mat, can be used to implement convolution
          *  after getting unpacked mat, we can use: output = dot( weight, mat ) to get covolved results, the relations:
          *
-         *  weight; shape[1]: out_channel, shape[0]: ichannel*psize*psize
+         *  weight; shape[1]: out_channel, shape[0]: ichannel*psize_y*psize_x
          *  output; shape[1]: out_channel, shape[0]: out_height*out_width * num_of_images
-         *  out_height = ( in_height - psize ) / pstride + 1, this means we pad inperfect patch with 0
-         *  out_width  = ( in_width - psize ) / pstride + 1
+         *  out_height = ( in_height - psize_y ) / pstride + 1, this means we pad inperfect patch with 0
+         *  out_width  = ( in_width - psize_x ) / pstride + 1
          *
-         * \return mat target matrix; shape[1]: in_channel*psize*psize  shape[0]: out_height*out_width * num_of_images
+         * \return mat target matrix; shape[1]: in_channel*psize_y*psize_x  shape[0]: out_height*out_width * num_of_images
          * \param img source image; shape[2]:  in_channels, shape[1]: in_height, shape[0]: in_width, can be 3D or 4D tensor(multiple images)
-         * \param psize height and width of each patch
+         * \param psize_y height of each patch
+         * \param psize_x width of each patch
          * \param pstride stride of each patch
          * \tparam SrcExp source expression
          * \tparam etype type of expression
          */
         template<typename SrcExp, int etype>
-        inline UnpackPatchToColXExp<SrcExp, ExpInfo<SrcExp>::kDim > unpack_patch2col( const Exp<SrcExp,etype> &img, index_t psize, index_t pstride ){
+        inline UnpackPatchToColXExp<SrcExp, ExpInfo<SrcExp>::kDim > unpack_patch2col( const Exp<SrcExp,etype> &img, index_t psize_y, index_t psize_x, index_t pstride ){
             TypeCheckPass< ExpInfo<SrcExp>::kDim >= 3 >::Error_Expression_Does_Not_Meet_Dimension_Req();
-            return UnpackPatchToColXExp<SrcExp, ExpInfo<SrcExp>::kDim >( img.self(), psize, pstride );
+            return UnpackPatchToColXExp<SrcExp, ExpInfo<SrcExp>::kDim >( img.self(), psize_y, psize_x, pstride );
         }
 
         /*!
@@ -449,14 +454,15 @@ namespace mshadow{
          * \return packed img expression
          * \param mat source matrix
          * \param imshape shape of target img
-         * \param psize height and width of each patch
+         * \param psize_y height of each patch
+         * \param psize_x height of each patch
          * \param pstride stride of each patch
          * \tparam Device the Device where input data lies
          */
         template<typename Device, int dstdim>
-        inline PackColToPatchXExp<Device,dstdim> pack_col2patch( const Tensor<Device,2> &mat, Shape<dstdim> imshape, index_t psize, index_t pstride ){
-            utils::Assert( imshape[0] >= psize && imshape[1] >= psize, "PackColToPatch:image shape smaller than patch size");
-            return PackColToPatchXExp<Device,dstdim>( mat, imshape, psize, pstride );
+        inline PackColToPatchXExp<Device,dstdim> pack_col2patch( const Tensor<Device,2> &mat, Shape<dstdim> imshape, index_t psize_y, index_t psize_x, index_t pstride ){
+            utils::Assert( imshape[0] >= psize_x && imshape[1] >= psize_y, "PackColToPatch:image shape smaller than patch size");
+            return PackColToPatchXExp<Device,dstdim>( mat, imshape, psize_y, psize_x, pstride );
         }
 
 
@@ -764,16 +770,16 @@ namespace mshadow{
         struct Plan< UnpackPatchToColXExp<SrcExp,srcdim> >{
         public:
             Plan( const UnpackPatchToColXExp<SrcExp,srcdim> &e )
-                :src_(MakePlan(e.img_)),psize_(e.psize_), pstride_(e.pstride_),
+                :src_(MakePlan(e.img_)), psize_y_(e.psize_y_), psize_x_(e.psize_x_), pstride_(e.pstride_),
                  i_channel_(e.i_channel_), i_height_(e.i_height_), i_width_(e.i_width_),                 
-                 o_height_(( i_height_  - psize_ ) / pstride_ + 1),
-                 o_width_ (( i_width_   - psize_ ) / pstride_ + 1){
+                 o_height_(( i_height_  - psize_y_ ) / pstride_ + 1),
+                 o_width_ (( i_width_   - psize_x_ ) / pstride_ + 1){
             }
             MSHADOW_XINLINE real_t Eval( index_t i, index_t j ) const{
-                const index_t x_offset = i % psize_;
-                const index_t idivp    = i / psize_;
-                const index_t y_offset = idivp % psize_;
-                const index_t c = idivp / psize_;                
+                const index_t x_offset = i % psize_x_;
+                const index_t idivp    = i / psize_x_;
+                const index_t y_offset = idivp % psize_y_;
+                const index_t c = idivp / psize_y_;                
                 const index_t x = (j % o_width_) * pstride_ + x_offset;
                 const index_t jdivw = j / o_width_;
                 const index_t y = (jdivw % o_height_) * pstride_ + y_offset;
@@ -787,17 +793,17 @@ namespace mshadow{
             }
         private:
             Plan<SrcExp> src_;
-            const index_t psize_, pstride_, i_channel_, i_height_, i_width_, o_height_, o_width_;
+            const index_t psize_y_, psize_x_, pstride_, i_channel_, i_height_, i_width_, o_height_, o_width_;
         };
 
         template<typename Device, int dstdim>
         struct Plan< PackColToPatchXExp<Device, dstdim> >{
         public:
             Plan( const PackColToPatchXExp<Device, dstdim> &e )
-                :mat_(e.mat_), psize_(e.psize_), pstride_(e.pstride_),
+                :mat_(e.mat_), psize_y_(e.psize_y_), psize_x_(e.psize_x_), pstride_(e.pstride_),
                  i_channel_(e.shape_[2]), i_height_(e.shape_[1]),
-                 o_width_(( e.shape_[0]  - psize_ ) / pstride_ + 1),
-                 o_height_(( e.shape_[1]  - psize_ ) / pstride_ + 1){
+                 o_height_(( e.shape_[1]  - psize_y_ ) / pstride_ + 1),
+                 o_width_(( e.shape_[0]  - psize_x_ ) / pstride_ + 1){
                 // note: i/o convention are same as unpack
             }
             MSHADOW_XINLINE real_t Eval( index_t i, index_t j ) const{
@@ -807,21 +813,21 @@ namespace mshadow{
                 const index_t c = idivh % i_channel_;
                 const index_t n = idivh / i_channel_; 
                 const index_t x = j;
-                const index_t py_min = y < psize_ ? 0 : (y-psize_+pstride_)/pstride_;
-                const index_t px_min = x < psize_ ? 0 : (x-psize_+pstride_)/pstride_;
+                const index_t py_min = y < psize_y_ ? 0 : (y-psize_y_+pstride_)/pstride_;
+                const index_t px_min = x < psize_x_ ? 0 : (x-psize_x_+pstride_)/pstride_;
                 const index_t py_max = min( (y+pstride_)/pstride_, o_height_);
                 const index_t px_max = min( (x+pstride_)/pstride_, o_width_ );
                 real_t res = 0.0f;
                 for( index_t py = py_min; py < py_max; ++py ){
                     for( index_t px = px_min; px < px_max; ++px ){
-                        res += mat_[ (c * psize_ + y - py*pstride_) * psize_ + x - px*pstride_ ][ (n * o_height_ + py) * o_width_+px ];
+                        res += mat_[ (c * psize_y_ + y - py*pstride_) * psize_x_ + x - px*pstride_ ][ (n * o_height_ + py) * o_width_+px ];
                     }
                 }
                 return res;
             }
         private:
             Tensor<Device,2> mat_;
-            const index_t psize_, pstride_, i_channel_, i_height_, o_width_, o_height_;
+            const index_t psize_y_, psize_x_, pstride_, i_channel_, i_height_, o_height_, o_width_;
         };
     };
 
@@ -1015,8 +1021,7 @@ namespace mshadow{
                 real_t val = 0;
                 for( index_t py = py_min; py < py_max; ++py ){
                     for( index_t px = px_min; px < px_max; ++px ){
-                        val += Reducer::PartialGrad(vsrc, data_pooled_[0][c][py][px]) *
-                            grad_pooled_[0][c][py][px];
+                        val += Reducer::PartialGrad(vsrc, data_pooled_[0][c][py][px]) * grad_pooled_[0][c][py][px];
                     }
                 }
                 return val;
