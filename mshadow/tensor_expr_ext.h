@@ -223,8 +223,10 @@ namespace mshadow{
         struct PoolingExp: public MakeTensorExp< PoolingExp<Reducer, SrcExp,srcdim>, SrcExp, srcdim> {
             /*! \brief source operand */
             const SrcExp& src_;
-            /*! \brief kernel size */
-            index_t ksize_;
+            /*! \brief kernel size in height */
+            index_t ksize_y_;
+            /*! \brief kernel size in width */
+            index_t ksize_x_;
             /*! \brief kernel stride */
             index_t kstride_;
             /*! \brief source height shape[1] */
@@ -232,21 +234,21 @@ namespace mshadow{
             /*! \brief source width shape[0] */
             index_t src_width_;
             /*! \brief constructor */
-            PoolingExp( const SrcExp &src, index_t ksize, index_t kstride )
-                : src_(src), ksize_(ksize), kstride_(kstride) {
+            PoolingExp( const SrcExp &src, index_t ksize_y, index_t ksize_x, index_t kstride )
+                : src_(src), ksize_y_(ksize_y), ksize_x_(ksize_x), kstride_(kstride) {
                 Shape< srcdim > sshape = ShapeCheck< srcdim,SrcExp>::Check( src_ );
-                utils::Assert( sshape[0] >= ksize && sshape[1] >= ksize, "pool: kernel must be smaller than image" );
+                utils::Assert( sshape[0] >= ksize_x && sshape[1] >= ksize_y, "pool: kernel must be smaller than image" );
                 this->src_height_ = sshape[1];
                 this->src_width_  = sshape[0];
                 this->shape_ = sshape;
-                this->shape_[1] =  (src_height_ - ksize) / kstride + 1;                
-                this->shape_[0] =  (src_width_  - ksize) / kstride + 1;
+                this->shape_[1] =  (src_height_ - ksize_y) / kstride + 1;                
+                this->shape_[0] =  (src_width_  - ksize_x) / kstride + 1;
             }
             /*! \brief constructor, specify shape */
-            PoolingExp( const SrcExp &src, Shape<2> pshape, index_t ksize, index_t kstride )
-                : src_(src), ksize_(ksize), kstride_(kstride) {
+            PoolingExp( const SrcExp &src, Shape<2> pshape, index_t ksize_y, index_t ksize_x, index_t kstride )
+                : src_(src), ksize_y_(ksize_y), ksize_x_(ksize_x), kstride_(kstride) {
                 Shape< srcdim > sshape = ShapeCheck< srcdim,SrcExp>::Check( src_ );
-                utils::Assert( sshape[0] >= ksize && sshape[1] >= ksize, "pool: kernel must be smaller than image" );
+                utils::Assert( sshape[0] >= ksize_x && sshape[1] >= ksize_y, "pool: kernel must be smaller than image" );
                 this->src_height_ = sshape[1];
                 this->src_width_  = sshape[0];
                 this->shape_    = sshape;
@@ -268,15 +270,17 @@ namespace mshadow{
             const Tensor<Device, 4>& data_pooled_;
             /*! \brief gradient data of pooled part, to be propgate down */
             const Tensor<Device, 4>& grad_pooled_;
-            /*! \brief kernel size */
-            index_t ksize_;
+            /*! \brief kernel size in height */
+            index_t ksize_y_;
+            /*! \brief kernel size in width */
+            index_t ksize_x_;
             /*! \brief kernel stride */
             index_t kstride_;
             /*! \brief constructor */
             UnPoolingExp( const Tensor<Device,4> &data_src,  const Tensor<Device,4> &data_pooled,
-                          const Tensor<Device,4> &grad_pooled, index_t ksize, index_t kstride )
+                          const Tensor<Device,4> &grad_pooled, index_t ksize_y, index_t ksize_x, index_t kstride )
                 : data_src_(data_src), data_pooled_(data_pooled), grad_pooled_(grad_pooled),
-                  ksize_(ksize), kstride_(kstride) {
+                  ksize_y_(ksize_y), ksize_x_(ksize_x), kstride_(kstride) {
                 utils::Assert( grad_pooled.shape == data_pooled.shape, "UnPoolingExp: pooled shape mismatch" );
                 utils::Assert( grad_pooled.shape[2] == data_src.shape[2], "UnPoolingExp: pool and src shape mismatch" );
                 utils::Assert( grad_pooled.shape[3] == data_src.shape[3], "UnPoolingExp: pool and src shape mismatch" );
@@ -538,23 +542,26 @@ namespace mshadow{
         /*!
          * \brief pooling subregion results together
          * \param src source image, shape[3]: batch, shape[2]: channel shape[1]: height shape[0]:width
-         * \param ksize kernel size
+         * \param ksize_y kernel size in height
+         * \param ksize_x kernel size in width
          * \param kstride stride for each kernel
          * \return expression of pooled result
          * \tparam Reducer reducer type
          * \tparam SrcExp source expression
          * \tparam etype type of expression
-         */
+         */        
         template<typename Reducer, typename SrcExp, int etype>
-        inline PoolingExp<Reducer,SrcExp, ExpInfo<SrcExp>::kDim > pool( const Exp<SrcExp,etype> &src, index_t ksize, index_t kstride ) {
+        inline PoolingExp<Reducer,SrcExp, ExpInfo<SrcExp>::kDim > pool( const Exp<SrcExp,etype> &src, index_t ksize_y, index_t ksize_x, index_t kstride ) {
             TypeCheckPass< ExpInfo<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
-            return PoolingExp<Reducer,SrcExp, ExpInfo<SrcExp>::kDim >(src.self(), ksize, kstride);
+            return PoolingExp<Reducer,SrcExp, ExpInfo<SrcExp>::kDim >(src.self(), ksize_y, ksize_x, kstride);
         }
+
         /*! 
          * \brief same as pool, except the output shape is specified by pshape
          * \param src source image
          * \param pshape ouput shape 
-         * \param ksize kernel size
+         * \param ksize_y kernel size in y
+         * \param ksize_x kernel size in x
          * \param kstride stride for each kernel
          * \return expression of pooled result
          * \tparam Reducer reducer type
@@ -562,16 +569,18 @@ namespace mshadow{
          * \tparam etype type of expression
          */
         template<typename Reducer, typename SrcExp, int etype>
-        inline PoolingExp<Reducer,SrcExp, ExpInfo<SrcExp>::kDim > pool( const Exp<SrcExp,etype> &src, Shape<2> pshape, index_t ksize, index_t kstride ) {
+        inline PoolingExp<Reducer,SrcExp, ExpInfo<SrcExp>::kDim > pool( const Exp<SrcExp,etype> &src, Shape<2> pshape, index_t ksize_y, index_t ksize_x, index_t kstride ) {
             TypeCheckPass< ExpInfo<SrcExp>::kDim >= 2 >::Error_Expression_Does_Not_Meet_Dimension_Req();
-            return PoolingExp<Reducer,SrcExp, ExpInfo<SrcExp>::kDim >(src.self(), pshape, ksize, kstride);
+            return PoolingExp<Reducer,SrcExp, ExpInfo<SrcExp>::kDim >(src.self(), pshape, ksize_y, ksize_x, kstride);
         }
+
         /*!
-         * \brief unpooling gradient for 4D, backprop gradient value back, revserse operation of pooling
+         * \brief unpooling gradient for 4D, backprop gradient value back, revserse operation of pooling, same as unpooling, but allows unequal size of kernel
          * \param data_src  source input, corresponds to src in pooling
          * \param data_pooled result of pooled data, corresponds to result of pooling
          * \param grad_pooled gradient data of pooled part, to be propgate down
-         * \param ksize kernel size
+         * \param ksize_y kernel height
+         * \param ksize_x kernel width
          * \param kstride stride for each kernel
          * \return expression corresponding to unpooled 4D Tensor, storing backproped gradient
          * \tparam Reducer reducer type
@@ -579,8 +588,8 @@ namespace mshadow{
          */
          template<typename Reducer, typename Device>
          inline UnPoolingExp<Reducer, Device> unpool( const Tensor<Device,4>&data_src, const Tensor<Device,4> &data_pooled,
-                                                      const Tensor<Device,4> &grad_pooled, index_t ksize, index_t kstride ) {
-             return UnPoolingExp<Reducer, Device>(data_src, data_pooled, grad_pooled,ksize, kstride);
+                                                      const Tensor<Device,4> &grad_pooled, index_t ksize_y, index_t ksize_x, index_t kstride ) {
+             return UnPoolingExp<Reducer, Device>(data_src, data_pooled, grad_pooled, ksize_y, ksize_x, kstride);
          }
 
         /*!
@@ -956,19 +965,20 @@ namespace mshadow{
         struct Plan< PoolingExp< Reducer, SrcExp, srcdim> > {
         public:
             Plan( const PoolingExp<Reducer, SrcExp, srcdim> &e )
-                : src_( MakePlan( e.src_ ) ), ksize_(e.ksize_), kstride_(e.kstride_),
+                : src_( MakePlan( e.src_ ) ), ksize_y_(e.ksize_y_), ksize_x_(e.ksize_x_),
+                  kstride_(e.kstride_),
                   src_height_(e.src_height_),src_width_(e.src_width_), new_height_(e.shape_[1]) {
             }
             MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
                 using namespace std;
                 const index_t py = i % new_height_;
                 const index_t y_start = py * kstride_;
-                const index_t y_end = min( y_start + ksize_, src_height_ );
+                const index_t y_end = min( y_start + ksize_y_, src_height_ );
                 const index_t px = j;
                 const index_t x_start = px * kstride_;
-                const index_t x_end = min( x_start + ksize_, src_width_ );
+                const index_t x_end = min( x_start + ksize_x_, src_width_ );
                 const index_t c = i / new_height_;
-
+                
                 real_t res = Reducer::kInitV;
                 for (index_t y = y_start; y < y_end; ++y) {
                     for (index_t x = x_start; x < x_end; ++x) {
@@ -979,7 +989,7 @@ namespace mshadow{
             }
         private:
             Plan<SrcExp> src_;
-            const index_t ksize_, kstride_;
+            const index_t ksize_y_, ksize_x_, kstride_;
             const index_t src_height_, src_width_;
             const index_t new_height_;
         };
@@ -989,7 +999,7 @@ namespace mshadow{
         public:
             Plan(const UnPoolingExp<Reducer, Device> &e)
                 : data_src_(e.data_src_), data_pooled_(e.data_pooled_), grad_pooled_(e.grad_pooled_),
-                  ksize_(e.ksize_), kstride_(e.kstride_) {}
+                  ksize_y_(e.ksize_y_), ksize_x_(e.ksize_x_), kstride_(e.kstride_) {}
             MSHADOW_XINLINE real_t Eval(index_t i, index_t j) const {
                 using namespace std;
                 const index_t x = j;
@@ -997,22 +1007,23 @@ namespace mshadow{
                 const index_t c = i / data_src_.shape[1];
                 const real_t vsrc = data_src_[0][c][y][x];
 
-                const index_t py_min = y < ksize_ ? 0 : (y-ksize_+kstride_)/kstride_;
-                const index_t px_min = x < ksize_ ? 0 : (x-ksize_+kstride_)/kstride_;
+                const index_t py_min = y < ksize_y_ ? 0 : (y-ksize_y_+kstride_)/kstride_;
+                const index_t px_min = x < ksize_x_ ? 0 : (x-ksize_x_+kstride_)/kstride_;
                 const index_t py_max = min( (y+kstride_)/kstride_, data_pooled_.shape[1]);
                 const index_t px_max = min( (x+kstride_)/kstride_, data_pooled_.shape[0]);
 
                 real_t val = 0;
                 for( index_t py = py_min; py < py_max; ++py ){
                     for( index_t px = px_min; px < px_max; ++px ){
-                        val += Reducer::PartialGrad(vsrc, data_pooled_[0][c][py][px]) * grad_pooled_[0][c][py][px];
+                        val += Reducer::PartialGrad(vsrc, data_pooled_[0][c][py][px]) *
+                            grad_pooled_[0][c][py][px];
                     }
                 }
                 return val;
             }
         private:
             Tensor<Device, 4> data_src_, data_pooled_, grad_pooled_;
-            const index_t ksize_;
+            const index_t ksize_y_, ksize_x_;
             const index_t kstride_;
         };
     }; // namespace expr
