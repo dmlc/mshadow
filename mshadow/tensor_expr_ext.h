@@ -350,8 +350,8 @@ namespace mshadow{
             CroppingExp(const SrcExp &src, Shape<2> cshape, index_t start_height, index_t start_width  )
                 : src_(src), pad_height_(start_height), pad_width_(start_width) {
                 this->shape_ = ShapeCheck<srcdim,SrcExp>::Check( src_ );
-                utils::Assert(this->shape_[1] >= cshape[1], "CroppingExp: height requirement not met");
-                utils::Assert(this->shape_[0] >= cshape[0], "CroppingExp: width requirement not met");
+                utils::Assert(this->shape_[1] >= cshape[1]+start_height, "CroppingExp: height requirement not met");
+                utils::Assert(this->shape_[0] >= cshape[0]+start_width, "CroppingExp: width requirement not met");
                 src_height_ = this->shape_[1];
                 this->shape_[1] = cshape[1]; // width
                 this->shape_[0] = cshape[0]; // height
