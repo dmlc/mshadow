@@ -450,7 +450,7 @@ namespace mshadow{
     template<typename Saver, typename Reducer, int dimkeep, typename E, int etype>
     inline void MapReduceKeepHighDim( Tensor<cpu,1> dst, const expr::Exp<E,etype> &exp, real_t scale = 1.0f );
     /*! \brief refer to comment of cpu ver \sa MapReduceKeepHighDim */
-    template<typename Saver, typename Reducer, typename E, int etype>
+    template<typename Saver, typename Reducer, int dimkeep, typename E, int etype>
     inline void MapReduceKeepHighDim( Tensor<gpu,1> dst, const expr::Exp<E,etype> &exp, real_t scale = 1.0f );
 
 };// namespace mshadow
