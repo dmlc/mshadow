@@ -163,6 +163,15 @@ namespace mshadow {
             Softmax( dst[y], energy[y] );
         }
     }
+    
+    inline real_t VDot( const Tensor<cpu,1>& lhs, const Tensor<cpu,1>& rhs ){ 
+        utils::Assert( lhs.shape == rhs.shape, "VDot: shape mismatch" );
+        real_t sum = 0.0f;
+        for( index_t x = 0; x < lhs.shape[0]; ++x ){
+            sum += lhs[x] * rhs[x];
+        }
+        return sum;
+    }
 }; // namespace mshadow
 
 #endif // TENSOR_CPU_INL_HPP
