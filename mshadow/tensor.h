@@ -457,12 +457,12 @@ namespace mshadow{
 
 // execution implementation of expression evaluations
 #include "tensor_expr_engine-inl.hpp"
-// extension of expressions
-#include "tensor_expr_ext.h"
 // cpu implementation of functions
 #include "tensor_cpu-inl.hpp"
 // gpu implementation of functions
 #include "tensor_gpu-inl.hpp"
+// extension of expressions
+#include "tensor_expr_ext.h"
 // io 
 #include "tensor_io.h"
 // container
