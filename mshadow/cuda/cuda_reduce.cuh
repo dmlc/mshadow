@@ -62,7 +62,8 @@ namespace mshadow{
             // in warp optimization
             if( x_bits >= 5 ){
                 if( tid < 16 ) Reducer::Reduce( buf[tid] , buf[tid + 16] );
-                __MSHADOW_EMUSYNC__;
+                // for save, change it to 5 warp
+                __syncthreads();
             }
             if( x_bits >= 4 ){
                 if( tid < 8 ) Reducer::Reduce( buf[tid] , buf[tid + 8 ] );
