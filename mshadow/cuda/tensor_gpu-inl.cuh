@@ -10,8 +10,11 @@
 
 namespace mshadow{
     namespace cuda{
+        #ifndef __CUDA_ARCH__
+        #warning "__CUDA_ARCH__ is not defined, I will assume compiling with CUDA verion greater than 2.0"
+        #endif
         /* load unit for memory access */
-        #if __CUDA_ARCH__>=200
+        #if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 200
         const int kMemUnitBits = 5;
         const int kMaxThreadsPerBlock = 1024;
         #else

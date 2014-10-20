@@ -62,12 +62,15 @@ namespace mshadow{
             // in warp optimization
             if( x_bits >= 5 ){
                 if( tid < 16 ) Reducer::Reduce( buf[tid] , buf[tid + 16] );
-                // for save, change it to 5 warp
+                #if __CUDA_ARCH__ < 200
                 __syncthreads();
+                #else
+                __MSHADOW_EMUSYNC__;
+                #endif
             }
             if( x_bits >= 4 ){
                 if( tid < 8 ) Reducer::Reduce( buf[tid] , buf[tid + 8 ] );
-                __MSHADOW_EMUSYNC__;            
+                __MSHADOW_EMUSYNC__;
             }
             if( x_bits >= 3 ){
                 if( tid < 4 ) Reducer::Reduce( buf[tid] , buf[tid + 4 ] );
