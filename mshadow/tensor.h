@@ -222,6 +222,16 @@ namespace mshadow {
         MSHADOW_XINLINE Tensor(const Shape<dimension> &shape): shape(shape) {}
         /*! \brief constructor from data pointer and shape  */
         MSHADOW_XINLINE Tensor(real_t *dptr, const Shape<dimension> &shape): dptr((real_t*)dptr), shape(shape) {}
+        /*! 
+         * \brief return size of i-th dimension, start counting from highest dimension
+         *  This meets the habit of normal usage of size of matrix. Note that mat.shape[0] gives lowest dimension,
+         *  while mat.size(0) returns the highest dimension
+         * \param the dimension count from the highest dimensin
+         * \return the size
+         */
+        MSHADOW_XINLINE index_t size(index_t i) const {
+            return shape_[dimension - 1 - i];
+        }
         /*!
          * \brief flatten the tensor to 2 dimension, collapse the higher dimensions together
          * \return tensor after flatten
