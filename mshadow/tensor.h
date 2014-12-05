@@ -302,6 +302,9 @@ namespace mshadow {
             return Tensor<Device, 1>(reinterpret_cast<real_t*> \
                                      (dptr) + begin, s);
         }
+        MSHADOW_XINLINE index_t size(index_t i) const {
+            return shape_[0];
+        }        
         MSHADOW_XINLINE real_t &operator[](index_t idx) { return dptr[ idx ]; }
         MSHADOW_XINLINE const real_t &operator[](index_t idx)const { return dptr[ idx ]; }
     public:
