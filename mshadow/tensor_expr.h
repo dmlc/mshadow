@@ -68,7 +68,7 @@ namespace mshadow{
 
         /*! \brief represent a transpose expression of a container */
         template<typename EType>
-        struct TransposeExp: public Exp< TransposeExp<EType>, type::kComplex >{
+        struct TransposeExp: public Exp< TransposeExp<EType>, type::kMapper >{
         public:
             /*! \brief expression to be transposed */
             const EType &exp;

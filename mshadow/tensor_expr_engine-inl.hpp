@@ -441,13 +441,6 @@ namespace mshadow{
                 DotEngine<SV,Device,dim,ldim,rdim,ltrans,rtrans>::Eval( dst, exp.lhs_, exp.rhs_, exp.scale_ );
             }
         };
-
-        template<typename SV, typename Device, typename E, int dim>
-        struct ExpComplexEngine< SV, Device, dim, E >{
-            inline static void Eval( Tensor<Device,dim> &dst, const E &exp ){
-                MapExp<SV, dim, E>(dst, exp );
-            }
-        };
     }; // namespace expr
 };
 #endif

@@ -38,8 +38,9 @@ int main( void ){
 
     // create a tensor without explictly allocating spaces.
     Tensor<cpu, 2> mat3 = NewTensor<cpu>(Shape2(2, 5), 0.0f);
-    // transpose, and then add 1.
-    mat3 = mat.T() + 1;
+    Tensor<cpu, 2> mat4 = NewTensor<cpu>(Shape2(2, 5), 1.0f);
+    // transpose, and then add mat4.
+    mat3 = mat.T() + mat4;
 
     // index the shape using size(), this is more natural for MATLAB/numpy user.
     printf("%u X %u matrix\n", mat3.size(0), mat3.size(1) );
