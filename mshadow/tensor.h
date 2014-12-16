@@ -230,7 +230,7 @@ namespace mshadow {
          * \return the size
          */
         MSHADOW_XINLINE index_t size(index_t i) const {
-            return shape_[dimension - 1 - i];
+            return shape[dimension - 1 - i];
         }
         /*!
          * \brief flatten the tensor to 2 dimension, collapse the higher dimensions together
@@ -303,7 +303,7 @@ namespace mshadow {
                                      (dptr) + begin, s);
         }
         MSHADOW_XINLINE index_t size(index_t i) const {
-            return shape_[0];
+            return shape[0];
         }        
         MSHADOW_XINLINE real_t &operator[](index_t idx) { return dptr[ idx ]; }
         MSHADOW_XINLINE const real_t &operator[](index_t idx)const { return dptr[ idx ]; }
@@ -470,12 +470,12 @@ namespace mshadow{
 
 // execution implementation of expression evaluations
 #include "tensor_expr_engine-inl.hpp"
-// extension of expressions
-#include "tensor_expr_ext.h"
 // cpu implementation of functions
 #include "tensor_cpu-inl.hpp"
 // gpu implementation of functions
 #include "tensor_gpu-inl.hpp"
+// extension of expressions
+#include "tensor_expr_ext.h"
 // io 
 #include "tensor_io.h"
 // container

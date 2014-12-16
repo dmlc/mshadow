@@ -111,6 +111,17 @@ namespace mshadow{
             Plan<SubType> src_;  
         };
 
+        template<typename EType>
+        class Plan< TransposeExp<EType> >{
+        public:
+            Plan( const Plan<EType> &src ):src_(src){}
+            MSHADOW_XINLINE real_t Eval( index_t y, index_t x ) const{
+                return src_.Eval( x, y );
+            }
+        private:
+            Plan<EType> src_;
+        };
+
         // allow UnaryMap see the plan
         template<typename OP, typename TA, typename TB, int etype>
         inline Plan< BinaryMapExp<OP,TA,TB,etype> > MakePlan( const BinaryMapExp<OP,TA,TB,etype> &e );
@@ -123,6 +134,11 @@ namespace mshadow{
         template<typename T>
         inline Plan<T> MakePlan( const ContainerExp<T> &e ){
             return Plan<T>( e.self() );
+        }
+
+        template<typename T>
+        inline Plan<TransposeExp<T> > MakePlan( const TransposeExp<T> &e ){
+            return Plan<TransposeExp<T> >( MakePlan(e.exp) );
         }
 
         template<typename T, typename SrcExp, int dim>
@@ -158,6 +174,11 @@ namespace mshadow{
         struct ExpInfo<ScalarExp>{
             const static int kDim = 0;
             const static int kDevMask = 0xffff;
+        };
+        template<typename E>
+        struct ExpInfo<TransposeExp< E > >{
+            const static int kDim = ExpInfo<E>::kDim;
+            const static int kDevMask = ExpInfo<E>::kDevMask;
         };
         template<typename Device, int dim>
         struct ExpInfo< Tensor<Device,dim> >{
@@ -222,6 +243,15 @@ namespace mshadow{
                 // use lowest dimension to mark scalar exp
                 Shape<dim> shape; shape[0] = 0; 
                 return shape;
+            }
+        };
+        template<int dim, typename E>
+        struct ShapeCheck<dim, TransposeExp< E > >{
+            inline static Shape<dim> Check( const TransposeExp< E > &e ){
+                // swap the lowest two dimensions
+                Shape<dim> s = ShapeCheck<dim,E>::Check( e.exp ); 
+                std::swap(s[0], s[1]);
+                return s;
             }
         };
         template<int dim,typename Device>
