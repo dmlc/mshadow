@@ -48,9 +48,10 @@ struct ExpEngine {
 /*!
  * \brief base class for expression
  * \tparam SubType inheritated class must put their type into this parameter
+ * \tparam DType the data type of each element in the expression
  * \tparam exp_type expression type, see namespace type
  */
-template<typename SubType, int exp_type>
+template<typename SubType, typename DType, int exp_type>
 struct Exp {
  public:
   /*! \return  subtype instance of current class */
@@ -67,7 +68,7 @@ struct Exp {
  * \tparam DType the data type of the scalar
  */
 template<typename DType>
-struct ScalarExp: public Exp<ScalarExp<DType>, type::kMapper> {
+struct ScalarExp: public Exp<ScalarExp<DType>, DType, type::kMapper> {
   /*! \brief scalar value */
   DType scalar_;
   /*! \brief constructor, must be implicit for implicit conversion */
@@ -75,7 +76,7 @@ struct ScalarExp: public Exp<ScalarExp<DType>, type::kMapper> {
 };
 /*! \brief create an scalar expression */
 template<typename DType>
-inline ScalarExp<DType> scalar(DType s) {
+inline ScalarExp<DType> scalar(const DType &s) {
   return ScalarExp<DType>(s);
 }
 /*!
@@ -85,19 +86,19 @@ inline ScalarExp<DType> scalar(DType s) {
  * \tparam etype the type of expression after cast
  */
 template<typename DType, typename EType, int etype>
-struct TypecastExp: public Exp<TypecastExp<DType, EType, etype>, etype> {
+struct TypecastExp: public Exp<TypecastExp<DType, EType, etype>, DType, etype> {
   const EType &exp;
   /*! \brief constructor */
   explicit TypecastExp(const EType &e) : exp(e) {}  
 };
 /*! \brief create an scalar expression */
-template<typename DType, typename EType, int etype>
-inline TypecastExp<DType, EType, (etype|type::kMapper)> tcast(const Exp<EType, etype> &exp) {
+template<typename DType, typename EType, typename SDType, int etype>
+inline TypecastExp<DType, EType, (etype|type::kMapper)> tcast(const Exp<EType, SDType, etype> &exp) {
   return TypecastExp<DType, EType, (etype|type::kMapper)>(exp.self());
 }
 /*! \brief represent a transpose expression of a container */
-template<typename EType>
-struct TransposeExp: public Exp<TransposeExp<EType>, type::kChainer> {
+template<typename EType, typename DType>
+struct TransposeExp: public Exp<TransposeExp<EType, DType>, DType, type::kChainer> {
   /*! \brief expression to be transposed */
   const EType &exp;
   /*! \brief constructor */
@@ -113,79 +114,76 @@ struct TransposeExp: public Exp<TransposeExp<EType>, type::kChainer> {
  * \tparam DataType the element data type of each element in the container
  */
 template<typename Container, typename DType>
-class RValueExp: public Exp<Container, type::kRValue> {
+class RValueExp: public Exp<Container, DType, type::kRValue> {
  public:
   /*!
    *\brief transpose of a matrix
    *\return transpose of current expression
    */
-  inline const TransposeExp<Container> T(void) const {
-    return TransposeExp<Container>(this->self());
+  inline const TransposeExp<Container, DType> T(void) const {
+    return TransposeExp<Container, DType>(this->self());
   }
   /*! \brief operator overload */
-  inline Container &operator+=(default_real_t s) {
-    ExpEngine<sv::plusto, Container>::Eval(this->refself(), scalar(s));
+  inline Container &operator+=(DType s) {
+    ExpEngine<sv::plusto, Container>::Eval(this->refself(), scalar<DType>(s));
     return this->refself();
   }
-  /*! \brief operator overload */ 
-  inline Container &operator-=(default_real_t s) {
-    ExpEngine<sv::minusto, Container>::Eval(this->refself(), scalar(s));
+  inline Container &operator-=(DType s) {
+    ExpEngine<sv::minusto, Container>::Eval(this->refself(), scalar<DType>(s));
     return this->refself();
   }
-  /*! \brief operator overload */
-  inline Container &operator*=(default_real_t s) {
-    ExpEngine<sv::multo, Container>::Eval(this->refself(), scalar(s));
+  inline Container &operator*=(DType s) {
+    ExpEngine<sv::multo, Container>::Eval(this->refself(), scalar<DType>(s));
     return this->refself();
   }
-  /*! \brief operator overload */
-  inline Container &operator/=(default_real_t s) {
-    ExpEngine<sv::divto, Container>::Eval(this->refself(), scalar(s));
+  inline Container &operator/=(DType s) {
+    ExpEngine<sv::divto, Container>::Eval(this->refself(), scalar<DType>(s));
     return this->refself();
   }
   /*! \brief operator overload */
-  inline Container &__assign(default_real_t s) {
-    ExpEngine<sv::saveto, Container>::Eval(this->refself(), scalar(s));
+  inline Container &__assign(DType s) {
+    ExpEngine<sv::saveto, Container>::Eval(this->refself(), scalar<DType>(s));
     return this->refself();
   }
   /*! \brief implementation of operator=, note that we can not define container = container */
   template<typename E>
-  inline Container &__assign(const Exp<E, type::kMapper> &exp) {
+  inline Container &__assign(const Exp<E, DType, type::kMapper> &exp) {
     ExpEngine<sv::saveto, Container>::Eval(this->refself(), exp.self());
     return this->refself();
   }
   /*! \brief implementation of operator=, note that we can not define conatiner = container */
   template<typename E>
-  inline Container &__assign(const Exp<E, type::kChainer> &exp) {
+  inline Container &__assign(const Exp<E, DType, type::kChainer> &exp) {
     ExpEngine<sv::saveto, Container>::Eval(this->refself(), exp.self());
     return this->refself();
   }
   /*! \brief implementation of operator=, note that we can not define container = container */
   template<typename E>
-  inline Container &__assign(const Exp<E, type::kComplex> &exp) {
+  inline Container &__assign(const Exp<E, DType, type::kComplex> &exp) {
     ExpEngine<sv::saveto, Container>::Eval(this->refself(), exp.self());
     return this->refself();
   }
   /*! \brief implementation of operator+= */
   template<typename E, int etype>
-  inline Container &operator+=(const Exp<E, etype> &exp) {
+  inline Container &operator+=(const Exp<E, DType, etype> &exp) {
     ExpEngine<sv::plusto, Container>::Eval(this->refself(), exp.self());
     return this->refself();
   }
   /*! \brief implementation of operator-= */
   template<typename E, int etype>
-  inline Container &operator-=(const Exp<E, etype> &exp) {
+  inline Container &operator-=(const Exp<E, DType, etype> &exp) {
     ExpEngine<sv::minusto, Container>::Eval(this->refself(), exp.self());
     return this->refself();
   }
   /*! \brief implementation of operator*= */
   template<typename E, int etype>
-  inline Container &operator*=(const Exp<E, etype> &exp) {
+  inline Container &operator*=(const Exp<E, DType, etype> &exp) {
     ExpEngine<sv::multo, Container>::Eval(this->refself(), exp.self());
     return this->refself();
   }
   /*! \brief implementation of operator/= */
   template<typename E, int etype>
-  inline Container &operator/=(const Exp<E, etype> &exp) {
+  inline Container &operator/=(const Exp<E, DType, etype> &exp) {
     ExpEngine<sv::divto, Container>::Eval(this->refself(), exp.self());
     return this->refself();
   }
@@ -197,54 +195,42 @@ class RValueExp: public Exp<Container, type::kRValue> {
  * \tparam ltrans whether lhs is transposed
  * \tparam rtrans whether rhs is transposed
  */
-template<typename TA, typename TB, bool ltrans, bool rtrans>
-struct DotExp: public Exp<DotExp<TA, TB, ltrans, rtrans>, type::kComplex> {
+template<typename TA, typename TB, bool ltrans, bool rtrans, typename DType>
+struct DotExp: public Exp<DotExp<TA, TB, ltrans, rtrans, DType>, DType, type::kComplex> {
   /*! \brief left operand */
   const TA &lhs_;
   /*! \brief right operand */
   const TB &rhs_;
   /*! \brief scale over result */
-  default_real_t scale_;
+  DType scale_;
   /*! \brief constructor */
-  explicit DotExp(const TA &lhs, const TB &rhs, default_real_t scale)
+  explicit DotExp(const TA &lhs, const TB &rhs, DType scale)
       : lhs_(lhs), rhs_(rhs), scale_(scale) {}
 };
 // definition of dot expression
 /*! \brief dot operator def */
 template<typename TA, typename TB, typename DType>
-inline DotExp<TA, TB, false, false>
+inline DotExp<TA, TB, false, false, DType>
 dot(const RValueExp<TA, DType> &lhs, const RValueExp<TB, DType> &rhs) {
-  return DotExp<TA, TB, false, false>(lhs.self(), rhs.self(), 1.0f);
+  return DotExp<TA, TB, false, false, DType>(lhs.self(), rhs.self(), 1.0f);
 }
 /*! \brief dot operator def */
 template<typename TA, typename TB, typename DType>
-inline DotExp<TA, TB, true, false>
-dot(const TransposeExp<TA> &lhs, const RValueExp<TB, DType> &rhs) {
-  return DotExp<TA, TB, true, false>(lhs.exp, rhs.self(), 1.0f);
+inline DotExp<TA, TB, true, false, DType>
+dot(const TransposeExp<TA, DType> &lhs, const RValueExp<TB, DType> &rhs) {
+  return DotExp<TA, TB, true, false, DType>(lhs.exp, rhs.self(), 1.0f);
 }
 /*! \brief dot operator def */
 template<typename TA, typename TB, typename DType>
-inline DotExp<TA, TB, false, true>
-dot(const RValueExp<TA, DType> &lhs, const TransposeExp<TB> &rhs) {
-  return DotExp<TA, TB, false, true>(lhs.self(), rhs.exp, 1.0f);
+inline DotExp<TA, TB, false, true, DType>
+dot(const RValueExp<TA, DType> &lhs, const TransposeExp<TB, DType> &rhs) {
+  return DotExp<TA, TB, false, true, DType>(lhs.self(), rhs.exp, 1.0f);
 }
 /*! \brief dot operator def */
-template<typename TA, typename TB>
-inline DotExp<TA, TB, true, true>
-dot(const TransposeExp<TA> &lhs, const TransposeExp<TB> &rhs) {
-  return DotExp<TA, TB, true, true>(lhs.exp, rhs.exp, 1.0f);
-}
-/*! \brief dot operator def */
-template<typename TA, typename TB, bool ltrans, bool rtrans>
-inline DotExp<TA, TB, ltrans, rtrans>
-operator*(const DotExp<TA, TB, ltrans, rtrans> &lhs, default_real_t rhs) {
-  return DotExp<TA, TB, ltrans, rtrans>(lhs.lhs_, lhs.rhs_, lhs.scale_ * rhs);
-}
-/*! \brief scale of dot operation */
-template<typename TA, typename TB, bool ltrans, bool rtrans>
-inline DotExp<TA, TB, ltrans, rtrans>
-operator*(default_real_t lhs, const DotExp<TA, TB, ltrans, rtrans> &rhs) {
-  return DotExp<TA, TB, ltrans, rtrans>(rhs.lhs_, rhs.rhs_, rhs.scale_ * lhs);
+template<typename TA, typename TB, typename DType>
+inline DotExp<TA, TB, true, true, DType>
+dot(const TransposeExp<TA, DType> &lhs, const TransposeExp<TB, DType> &rhs) {
+  return DotExp<TA, TB, true, true, DType>(lhs.exp, rhs.exp, 1.0f);
 }
 //---------------
 // BinaryMapExp
@@ -256,8 +242,8 @@ operator*(default_real_t lhs, const DotExp<TA, TB, ltrans, rtrans> &rhs) {
  * \tparam TB type of rhs
  * \tparam etype expression type, sa namespace::type
  */
-template<typename OP, typename TA, typename TB, int etype>
-struct BinaryMapExp: public Exp< BinaryMapExp<OP, TA, TB, etype>, etype> {
+template<typename OP, typename TA, typename TB, typename DType, int etype>
+struct BinaryMapExp: public Exp<BinaryMapExp<OP, TA, TB, DType, etype>, DType, etype> {
   /*! \brief left operand */
   const TA &lhs_;
   /*! \brief right operand */
@@ -268,10 +254,10 @@ struct BinaryMapExp: public Exp< BinaryMapExp<OP, TA, TB, etype>, etype> {
 };
 
 /*! \brief make expression */
-template<typename OP, typename TA, typename TB, int ta, int tb>
-inline BinaryMapExp<OP, TA, TB, (ta|tb|type::kMapper)>
-MakeExp(const Exp<TA, ta> &lhs, const Exp<TB, tb> &rhs) {
-  return BinaryMapExp<OP, TA, TB, (ta|tb|type::kMapper)>(lhs.self(), rhs.self());
+template<typename OP, typename TA, typename TB, typename DType, int ta, int tb>
+inline BinaryMapExp<OP, TA, TB, DType, (ta|tb|type::kMapper)>
+MakeExp(const Exp<TA, DType, ta> &lhs, const Exp<TB, DType, tb> &rhs) {
+  return BinaryMapExp<OP, TA, TB, DType, (ta|tb|type::kMapper)>(lhs.self(), rhs.self());
 }
 /*! 
  * \brief short hand for MakeExp, usage F<op>(lhs, rhs). create a binary operation expression 
@@ -284,96 +270,34 @@ MakeExp(const Exp<TA, ta> &lhs, const Exp<TB, tb> &rhs) {
  * \tparam tb rhs expression type
  * \sa mshadow::op
  */
-template<typename OP, typename TA, typename TB, int ta, int tb>
-inline BinaryMapExp<OP, TA, TB, (ta|tb|type::kMapper)>
-F(const Exp<TA, ta> &lhs, const Exp<TB, tb> &rhs) {
-  return MakeExp<OP>(lhs, rhs);
-}
-/*! \brief operator overload for const */
-template<typename OP, typename TA, int ta>
-inline BinaryMapExp<OP, TA, ScalarExp<default_real_t>, (ta|type::kMapper)>
-F(const Exp<TA, ta> &lhs, const ScalarExp<default_real_t> &rhs) {
-  return MakeExp<OP>(lhs, rhs);
-}
-/*! \brief operator overload for const */
-template<typename OP, typename TB, int tb>
-inline BinaryMapExp<OP, ScalarExp<default_real_t>, TB, (tb|type::kMapper)>
-F(const ScalarExp<default_real_t> &lhs, const Exp<TB, tb> &rhs) {
+template<typename OP, typename TA, typename TB, typename DType, int ta, int tb>
+inline BinaryMapExp<OP, TA, TB, DType, (ta|tb|type::kMapper)>
+F(const Exp<TA, DType, ta> &lhs, const Exp<TB, DType, tb> &rhs) {
   return MakeExp<OP>(lhs, rhs);
 }
 // operator rules
 /*! \brief operator overload */
-template<typename TA, typename TB, int ta, int tb>
-inline BinaryMapExp<op::plus, TA, TB, (ta|tb|type::kMapper)>
-operator+(const Exp<TA, ta> &lhs, const Exp<TB, tb> &rhs) {
+template<typename TA, typename TB, typename DType, int ta, int tb>
+inline BinaryMapExp<op::plus, TA, TB, DType, (ta|tb|type::kMapper)>
+operator+(const Exp<TA, DType, ta> &lhs, const Exp<TB, DType, tb> &rhs) {
   return MakeExp<op::plus>(lhs, rhs);
 }
 /*! \brief operator overload */
-template<typename TA, typename TB, int ta, int tb>
-inline BinaryMapExp<op::minus, TA, TB, (ta|tb|type::kMapper)>
-operator-(const Exp<TA, ta> &lhs, const Exp<TB, tb> &rhs) {
+template<typename TA, typename TB, typename DType, int ta, int tb>
+inline BinaryMapExp<op::minus, TA, TB, DType, (ta|tb|type::kMapper)>
+operator-(const Exp<TA, DType, ta> &lhs, const Exp<TB, DType, tb> &rhs) {
   return MakeExp<op::minus>(lhs, rhs);
 }
 /*! \brief operator overload */
-template<typename TA, typename TB, int ta, int tb>
-inline BinaryMapExp<op::mul, TA, TB, (ta|tb|type::kMapper)>
-operator*(const Exp<TA, ta> &lhs, const Exp<TB, tb> &rhs) {
+template<typename TA, typename TB, typename DType, int ta, int tb>
+inline BinaryMapExp<op::mul, TA, TB, DType, (ta|tb|type::kMapper)>
+operator*(const Exp<TA, DType, ta> &lhs, const Exp<TB, DType, tb> &rhs) {
   return MakeExp<op::mul>(lhs, rhs);
 }
 /*! \brief operator overload */
-template<typename TA, typename TB, int ta, int tb>
-inline BinaryMapExp<op::div, TA, TB, (ta|tb|type::kMapper)>
-operator/(const Exp<TA, ta> &lhs, const Exp<TB, tb> &rhs) {
-  return MakeExp<op::div>(lhs, rhs);
-}
-// constant operators
-/*! \brief operator overload */
-template<typename TA, int ta>
-inline BinaryMapExp<op::plus, TA, ScalarExp<default_real_t>, (ta|type::kMapper)>
-operator+(const Exp<TA, ta> &lhs,  const ScalarExp<default_real_t> &rhs) {
-  return MakeExp<op::plus>(lhs, rhs);
-}
-/*! \brief operator overload */
-template<typename TA, int ta>
-inline BinaryMapExp<op::minus, TA, ScalarExp<default_real_t>, (ta|type::kMapper)>
-operator-(const Exp<TA, ta> &lhs,  const ScalarExp<default_real_t> &rhs) {
-  return MakeExp<op::minus>(lhs, rhs);
-}
-/*! \brief operator overload */
-template<typename TA, int ta>
-inline BinaryMapExp<op::mul, TA, ScalarExp<default_real_t>, (ta|type::kMapper)>
-operator*(const Exp<TA, ta> &lhs,  const ScalarExp<default_real_t> &rhs) {
-  return MakeExp<op::mul>(lhs, rhs);
-}
-/*! \brief operator overload */
-template<typename TA, int ta>
-inline BinaryMapExp<op::div, TA, ScalarExp<default_real_t>, (ta|type::kMapper)>
-operator/(const Exp<TA, ta> &lhs,  const ScalarExp<default_real_t> &rhs) {
-  return MakeExp<op::div>(lhs, rhs);
-}
-// constant operators 2
-/*! \brief operator overload */
-template<typename TB, int tb>
-inline BinaryMapExp<op::plus, ScalarExp<default_real_t>, TB, (tb|type::kMapper)>
-operator+(const ScalarExp<default_real_t> &lhs, const Exp<TB, tb> &rhs) {
-  return MakeExp<op::plus>(lhs, rhs);
-}
-/*! \brief operator overload */
-template<typename TB, int tb>
-inline BinaryMapExp<op::minus, ScalarExp<default_real_t>, TB, (tb|type::kMapper)>
-operator-(const ScalarExp<default_real_t> &lhs, const Exp<TB, tb> &rhs) {
-  return MakeExp<op::minus>(lhs, rhs);
-}
-/*! \brief operator overload */
-template<typename TB, int tb>
-inline BinaryMapExp<op::mul, ScalarExp<default_real_t>, TB, (tb|type::kMapper)>
-operator*(const ScalarExp<default_real_t> &lhs, const Exp<TB, tb> &rhs) {
-  return MakeExp<op::mul>(lhs, rhs);
-}
-/*! \brief operator overload */
-template<typename TB, int tb>
-inline BinaryMapExp<op::div, ScalarExp<default_real_t>, TB, (tb|type::kMapper)>
-operator/(const ScalarExp<default_real_t> &lhs, const Exp<TB, tb> &rhs) {
+template<typename TA, typename TB, typename DType, int ta, int tb>
+inline BinaryMapExp<op::div, TA, TB, DType, (ta|tb|type::kMapper)>
+operator/(const Exp<TA, DType, ta> &lhs, const Exp<TB, DType, tb> &rhs) {
   return MakeExp<op::div>(lhs, rhs);
 }
 //---------------
@@ -385,8 +309,8 @@ operator/(const ScalarExp<default_real_t> &lhs, const Exp<TB, tb> &rhs) {
  * \tparam TA type of src
  * \tparam etype expression type, sa namespace::type
  */
-template<typename OP, typename TA, int etype>
-struct UnaryMapExp: public Exp< UnaryMapExp<OP, TA, etype>, etype> {
+template<typename OP, typename TA, typename DType, int etype>
+struct UnaryMapExp: public Exp<UnaryMapExp<OP, TA, DType, etype>, DType, etype> {
   /*! \brief source expression */
   const TA &src_;
   /*! \brief constructor */
@@ -394,9 +318,9 @@ struct UnaryMapExp: public Exp< UnaryMapExp<OP, TA, etype>, etype> {
 };
 
 /*! \brief make expression */
-template<typename OP, typename TA, int ta>
-inline UnaryMapExp<OP, TA, (ta|type::kMapper)> MakeExp(const Exp<TA, ta> &src) {
-  return UnaryMapExp<OP, TA, (ta|type::kMapper)>(src.self());
+template<typename OP, typename TA, typename DType, int ta>
+inline UnaryMapExp<OP, TA, DType, (ta|type::kMapper)> MakeExp(const Exp<TA, DType, ta> &src) {
+  return UnaryMapExp<OP, TA, DType, (ta|type::kMapper)>(src.self());
 }
 /*! 
  * \brief short hand for MakeExp, usage F<op>(src), create a unary operation expression 
@@ -406,12 +330,22 @@ inline UnaryMapExp<OP, TA, (ta|type::kMapper)> MakeExp(const Exp<TA, ta> &src) {
  * \tparam ta source expression type
  * \sa mshadow::op
  */
-template<typename OP, typename TA, int ta>
-inline UnaryMapExp<OP, TA, (ta|type::kMapper)> F(const Exp<TA, ta> &src) {
+template<typename OP, typename TA, typename DType, int ta>
+inline UnaryMapExp<OP, TA, DType, (ta|type::kMapper)> F(const Exp<TA, DType, ta> &src) {
   return MakeExp<OP>(src);
 }
-
-
 }  // namespace expr
 }  // namespace mshadow
+
+
+#ifdef MSAHDOW_SCALAR_
+  #error "MSHADOW_SCALAR_ must not be defined"
+#endif
+// enumerate all the scalar data type we aim to be good at
+#define MSHADOW_SCALAR_ float
+#include "./expression-inl.h"
+#undef MSHADOW_SCALAR_
+#define MSHADOW_SCALAR_ double
+#include "./expression-inl.h"
+#undef MSHADOW_SCALAR_
 #endif  // MSHADOW_EXPRESSION_H_
