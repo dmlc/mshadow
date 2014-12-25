@@ -120,7 +120,6 @@ v   * \return subshape
    */
   MSHADOW_XINLINE Shape<kSubdim> SubShape(void) const {
     Shape<kSubdim> s;
-    s.stride_ = this->stride_;
     // for cuda
     #pragma unroll
     for (int i = 0; i < kSubdim; ++i) {
@@ -319,7 +318,7 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
  */
 template<typename Device, typename DType>
 struct Tensor<Device, 1, DType>:
-      public expr::RValueExp<Tensor<Device, 1, DType>, DType> {
+      public TRValue<Tensor<Device, 1, DType>, Device, 1, DType> {
  public:
   DType *dptr_;
   Shape<1> shape_;
@@ -330,6 +329,8 @@ struct Tensor<Device, 1, DType>:
   MSHADOW_XINLINE Tensor(const Shape<1> &shape): shape_(shape) {}
   MSHADOW_XINLINE Tensor(DType *dptr, Shape<1> shape)
       : dptr_(dptr), shape_(shape), stride_(shape[0]), stream_(NULL) {}
+  MSHADOW_XINLINE Tensor(DType *dptr, Shape<1> shape, index_t stride)
+      : dptr_(dptr), shape_(shape), stride_(stride), stream_(NULL) {}
   MSHADOW_XINLINE Tensor<Device, 2> FlatTo2D(void) const {
     return Tensor<Device, 2>(dptr_, shape_.FlatTo2D(), stride_);
   }
@@ -471,12 +472,12 @@ inline void Softmax(Tensor<gpu, 2> dst, const Tensor<gpu, 2> &energy);
  */
 template<typename Saver, typename R, int dim,
          typename DType, typename E, int etype>
-inline void MapExp(TRValue<R, cpu, dim, DType> dst,
+inline void MapExp(TRValue<R, cpu, dim, DType> *dst,
                    const expr::Exp<E, DType, etype> &exp);
 /*! \brief refer to comment of cpu ver \sa MapExp */
 template<typename Saver, typename R, int dim,
          typename DType, typename E, int etype>
-inline void MapExp(TRValue<R, gpu, dim, DType> dst,
+inline void MapExp(TRValue<R, gpu, dim, DType> *dst,
                    const expr::Exp<E, DType, etype> &exp);
 /*!
  * \brief CPU/GPU: map a expression, do reduction to 1D Tensor in lowest dimension (dimension 0)
@@ -493,13 +494,13 @@ inline void MapExp(TRValue<R, gpu, dim, DType> dst,
  */
 template<typename Saver, typename Reducer,
          typename R, typename DType, typename E, int etype>
-inline void MapReduceKeepLowest(TRValue<R, cpu, 1, DType> dst,
+inline void MapReduceKeepLowest(TRValue<R, cpu, 1, DType> *dst,
                                 const expr::Exp<E, DType, etype> &exp,
                                 DType scale = 1);
 /*! \brief refer to comment of cpu ver \sa MapReduceKeepLowest */
 template<typename Saver, typename Reducer, typename R,
          typename DType, typename E, int etype>
-inline void MapReduceKeepLowest(TRValue<R, gpu, 1, DType> dst,
+inline void MapReduceKeepLowest(TRValue<R, gpu, 1, DType> *dst,
                                 const expr::Exp<E, DType, etype> &exp,
                                 DType scale = 1);
 /*!
@@ -518,16 +519,17 @@ inline void MapReduceKeepLowest(TRValue<R, gpu, 1, DType> dst,
  */
 template<typename Saver, typename Reducer, int dimkeep,
          typename R, typename DType, typename E, int etype>
-inline void MapReduceKeepHighDim(TRValue<R, cpu, 1, DType> dst,
+inline void MapReduceKeepHighDim(TRValue<R, cpu, 1, DType> *dst,
                                  const expr::Exp<E, DType, etype> &exp,
                                  DType scale = 1);
 /*! \brief refer to comment of cpu ver \sa MapReduceKeepHighDim */
 template<typename Saver, typename Reducer, int dimkeep,
          typename R, typename DType, typename E, int etype>
-inline void MapReduceKeepHighDim(TRValue<R, gpu, 1, DType> dst,
+inline void MapReduceKeepHighDim(TRValue<R, gpu, 1, DType> *dst,
                                  const expr::Exp<E, DType, etype> &exp,
                                  DType scale = 1);
 }  // namespace mshadow
 // include headers
 #include "./expr_engine-inl.h"
+#include "./tensor_cpu-inl.h"
 #endif  // MSHADOW_TENSOR_H_

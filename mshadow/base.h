@@ -24,10 +24,13 @@
 #ifndef MSHADOW_ALLOC_PAD
 #define MSHADOW_ALLOC_PAD true
 #endif
-/*! 
- * \brief x dimension of data must be bigger pad_size * ratio to be alloced padded memory, otherwise use tide allocation 
- *        for example, if pad_ratio=2, GPU memory alignement size is 32, then we will only allocate padded memory if x dimension > 64
- *        set it to 0 then we will always allocate padded memory
+/*!
+ * \brief 
+ *  x dimension of data must be bigger pad_size * ratio to be alloced padded memory,
+ *  otherwise use tide allocation 
+ *  for example, if pad_ratio=2, GPU memory alignement size is 32,
+ *  then we will only allocate padded memory if x dimension > 64
+ *  set it to 0 then we will always allocate padded memory
  */
 #ifndef MSHADOW_MIN_PAD_RATIO
   #define MSHADOW_MIN_PAD_RATIO 2
@@ -60,7 +63,7 @@
 #endif
 /*! \brief whether use SSE */
 #ifndef MSHADOW_USE_SSE
-  #define MSHADOW_USE_SSE 0
+  #define MSHADOW_USE_SSE 1
 #endif
 /*! \brief whether use NVML to get dynamic info */
 #ifndef MSHADOW_USE_NVML

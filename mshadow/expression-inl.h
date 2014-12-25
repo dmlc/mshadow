@@ -31,15 +31,15 @@ operator*(MSHADOW_SCALAR_ lhs,
 template<typename OP, typename TA, int ta>
 inline BinaryMapExp<OP, TA, ScalarExp<MSHADOW_SCALAR_>,
                     MSHADOW_SCALAR_, (ta|type::kMapper)>
-F(const Exp<TA, MSHADOW_SCALAR_, ta> &lhs, MSHADOW_SCALAR_ rhs) {
-  return MakeExp<OP>(lhs, scalar<MSHADOW_SCALAR_>(rhs));
+F(const Exp<TA, MSHADOW_SCALAR_, ta> &lhs, const ScalarExp<MSHADOW_SCALAR_> &rhs) {
+  return MakeExp<OP>(lhs, rhs);
 }
 /*! \brief operator overload for const */
 template<typename OP, typename TB, int tb>
 inline BinaryMapExp<OP, ScalarExp<MSHADOW_SCALAR_>, TB,
                     MSHADOW_SCALAR_, (tb|type::kMapper)>
-F(MSHADOW_SCALAR_ lhs, const Exp<TB, MSHADOW_SCALAR_, tb> &rhs) {
-  return MakeExp<OP>(scalar<MSHADOW_SCALAR_>(lhs), rhs);
+F(const ScalarExp<MSHADOW_SCALAR_> &lhs, const Exp<TB, MSHADOW_SCALAR_, tb> &rhs) {
+  return MakeExp<OP>(lhs, rhs);
 }
 // constant operators
 /*! \brief operator overload */
@@ -47,16 +47,16 @@ template<typename TA, int ta>
 inline BinaryMapExp<op::plus, TA, ScalarExp<MSHADOW_SCALAR_>,
                     MSHADOW_SCALAR_, (ta|type::kMapper)>
 operator+(const Exp<TA, MSHADOW_SCALAR_, ta> &lhs,
-          const MSHADOW_SCALAR_ &rhs) {
-  return MakeExp<op::plus>(lhs, scalar<MSHADOW_SCALAR_>(rhs));
+          const ScalarExp<MSHADOW_SCALAR_> &rhs) {
+  return MakeExp<op::plus>(lhs, rhs);
 }
 /*! \brief operator overload */
 template<typename TA, int ta>
 inline BinaryMapExp<op::minus, TA, ScalarExp<MSHADOW_SCALAR_>,
                     MSHADOW_SCALAR_, (ta|type::kMapper)>
 operator-(const Exp<TA, MSHADOW_SCALAR_, ta> &lhs,
-          const MSHADOW_SCALAR_ &rhs) {
-  return MakeExp<op::minus>(lhs, scalar<MSHADOW_SCALAR_>(rhs));
+          const ScalarExp<MSHADOW_SCALAR_> &rhs) {
+  return MakeExp<op::minus>(lhs, rhs);
 }
 /*! \brief operator overload */
 template<typename TA, int ta>
@@ -71,40 +71,40 @@ template<typename TA, int ta>
 inline BinaryMapExp<op::div, TA, ScalarExp<MSHADOW_SCALAR_>,
                     MSHADOW_SCALAR_, (ta|type::kMapper)>
 operator/(const Exp<TA, MSHADOW_SCALAR_, ta> &lhs,
-          const MSHADOW_SCALAR_ &rhs) {
-  return MakeExp<op::div>(lhs, scalar<MSHADOW_SCALAR_>(rhs));
+          const ScalarExp<MSHADOW_SCALAR_> &rhs) {
+  return MakeExp<op::div>(lhs, rhs);
 }
 // constant operators 2
 /*! \brief operator overload */
 template<typename TB, int tb>
 inline BinaryMapExp<op::plus, ScalarExp<MSHADOW_SCALAR_>, TB,
                     MSHADOW_SCALAR_, (tb|type::kMapper)>
-operator+(MSHADOW_SCALAR_ lhs,
+operator+(const ScalarExp<MSHADOW_SCALAR_> &lhs,
           const Exp<TB, MSHADOW_SCALAR_, tb> &rhs) {
-  return MakeExp<op::plus>(scalar<MSHADOW_SCALAR_>(lhs), rhs);
+  return MakeExp<op::plus>(lhs, rhs);
 }
 /*! \brief operator overload */
 template<typename TB, int tb>
 inline BinaryMapExp<op::minus, ScalarExp<MSHADOW_SCALAR_>, TB,
                     MSHADOW_SCALAR_, (tb|type::kMapper)>
-operator-(MSHADOW_SCALAR_ lhs,
+operator-(const ScalarExp<MSHADOW_SCALAR_> &lhs,
           const Exp<TB, MSHADOW_SCALAR_, tb> &rhs) {
-  return MakeExp<op::minus>(scalar<MSHADOW_SCALAR_>(lhs), rhs);
+  return MakeExp<op::minus>(lhs, rhs);
 }
 /*! \brief operator overload */
 template<typename TB, int tb>
 inline BinaryMapExp<op::mul, ScalarExp<MSHADOW_SCALAR_>, TB,
                     MSHADOW_SCALAR_, (tb|type::kMapper)>
-operator*(MSHADOW_SCALAR_ lhs,
+operator*(const ScalarExp<MSHADOW_SCALAR_> &lhs,
           const Exp<TB, MSHADOW_SCALAR_, tb> &rhs) {
-  return MakeExp<op::mul>(scalar<MSHADOW_SCALAR_>(lhs), rhs);
+  return MakeExp<op::mul>(lhs, rhs);
 }
 /*! \brief operator overload */
 template<typename TB, int tb>
 inline BinaryMapExp<op::div, ScalarExp<MSHADOW_SCALAR_>, TB,
                     MSHADOW_SCALAR_, (tb|type::kMapper)>
-operator/(MSHADOW_SCALAR_ lhs, const Exp<TB, MSHADOW_SCALAR_, tb> &rhs) {
-  return MakeExp<op::div>(scalar<MSHADOW_SCALAR_>(lhs), rhs);
+operator/(const ScalarExp<MSHADOW_SCALAR_> &lhs, const Exp<TB, MSHADOW_SCALAR_, tb> &rhs) {
+  return MakeExp<op::div>(lhs, rhs);
 }
 }  // namespace expr
 }  // namespace mshadow

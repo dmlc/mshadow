@@ -78,31 +78,36 @@ template<typename DType>
 struct ScalarExp: public Exp<ScalarExp<DType>, DType, type::kMapper> {
   /*! \brief scalar value */
   DType scalar_;
-  /*! \brief constructor  */
-  explicit ScalarExp(DType scalar) : scalar_(scalar) {}
+  /*! \brief implicit constructor, MUST NOT BE explicit */
+  ScalarExp(DType scalar) : scalar_(scalar) {}
 };
 /*! \brief create an scalar expression */
 template<typename DType>
-inline ScalarExp<DType> scalar(const DType &s) {
+inline ScalarExp<DType> scalar(DType s) {
   return ScalarExp<DType>(s);
 }
 /*!
  * \brief typecast expression, cast the type of elements
- * \tparam DType the target type we want to cast into
+ * \tparam DstDType the target type we want to cast into
+ * \tparam SrcDType the target type we want to cast from
  * \tparam EType the type of the source expression
  * \tparam etype the type of expression after cast
  */
-template<typename DType, typename EType, int etype>
-struct TypecastExp: public Exp<TypecastExp<DType, EType, etype>, DType, etype> {
+template<typename DstDType, typename SrcDType, typename EType, int etype>
+struct TypecastExp:
+      public Exp<TypecastExp<DstDType, SrcDType, EType, etype>,
+                 DstDType, etype> {
   const EType &exp;
   /*! \brief constructor */
   explicit TypecastExp(const EType &e) : exp(e) {}
 };
 /*! \brief create an scalar expression */
-template<typename DType, typename EType, typename SDType, int etype>
-inline TypecastExp<DType, EType, (etype|type::kMapper)>
-tcast(const Exp<EType, SDType, etype> &exp) {
-  return TypecastExp<DType, EType, (etype|type::kMapper)>(exp.self());
+template<typename DstDType, typename SrcDType,
+         typename EType, int etype>
+inline TypecastExp<DstDType, SrcDType, EType, (etype|type::kMapper)>
+tcast(const Exp<EType, SrcDType, etype> &exp) {
+  return TypecastExp<DstDType, SrcDType, EType,
+                     (etype|type::kMapper)>(exp.self());
 }
 /*! \brief represent a transpose expression of a container */
 template<typename EType, typename DType>
@@ -351,8 +356,7 @@ F(const Exp<TA, DType, ta> &src) {
 }
 }  // namespace expr
 }  // namespace mshadow
-
-
+// add definition of scalar related operators
 #ifdef MSAHDOW_SCALAR_
   #error "MSHADOW_SCALAR_ must not be defined"
 #endif
