@@ -533,4 +533,5 @@ inline void MapReduceKeepHighDim(TRValue<R, gpu, 1, DType> *dst,
 #include "./expr_engine-inl.h"
 #include "./tensor_cpu-inl.h"
 #include "./io.h"
+#include "./tensor_container.h"
 #endif  // MSHADOW_TENSOR_H_
