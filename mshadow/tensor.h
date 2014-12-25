@@ -312,15 +312,16 @@ template<typename Device, typename DType>
 struct Tensor<Device, 1, DType>: public expr::RValueExp<Tensor<Device, 1, DType>, DType> {
  public:
   DType *dptr_;
-  Shape<1> shape_;  
+  Shape<1> shape_;
+  index_t stride_;
   Stream<Device> *stream_;
   // constructor
   MSHADOW_XINLINE Tensor(void) {}
   MSHADOW_XINLINE Tensor(const Shape<1> &shape): shape_(shape) {}
   MSHADOW_XINLINE Tensor(DType *dptr, Shape<1> shape)
-      : dptr_(dptr), shape_(shape), stream_(NULL) {}
+      : dptr_(dptr), shape_(shape), stride_(shape[0]), stream_(NULL) {}
   MSHADOW_XINLINE Tensor<Device, 2> FlatTo2D(void) const {
-    return Tensor<Device, 2>(dptr_, shape_.FlatTo2D(), shape_[0]);
+    return Tensor<Device, 2>(dptr_, shape_.FlatTo2D(), stride_);
   }
   MSHADOW_XINLINE Tensor<Device, 1> Slice(index_t begin, index_t end) const {
     Shape<1> s;
@@ -486,4 +487,6 @@ inline void MapReduceKeepHighDim(TRValue<R, cpu, 1, DType> dst, const expr::Exp<
 template<typename Saver, typename Reducer, int dimkeep, typename R, typename DType, typename E, int etype>
 inline void MapReduceKeepHighDim(TRValue<R, gpu, 1, DType> dst, const expr::Exp<E, DType, etype> &exp, DType scale = 1);
 }  // namespace mshadow
+
+#include "./expr_engine-inl.h"
 #endif // TENSOR_H

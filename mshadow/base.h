@@ -182,10 +182,10 @@ struct saveto {
   MSHADOW_XINLINE static void Save(DType &a, DType b) {
     a = b;
   }
-  /*! \brief helper constant to use BLAS, alpha */
-  MSHADOW_CONSTEXPR static default_real_t kAlphaBLAS = 1.0f;
+  /*! \brief helper constant to use BLAS, alpha */  
+  inline static default_real_t AlphaBLAS(void) { return 1.0f; }
   /*! \brief helper constant to use BLAS, beta */
-  MSHADOW_CONSTEXPR static default_real_t kBetaBLAS  = 0.0f;
+  inline static default_real_t BetaBLAS(void) { return 0.0f; }
   /*! \brief corresponding binary operator type */
   typedef op::right OPType;
 };
@@ -197,9 +197,9 @@ struct plusto {
     a += b;
   }
   /*! \brief helper constant to use BLAS, alpha */
-  MSHADOW_CONSTEXPR static default_real_t kAlphaBLAS = 1.0f;
+  inline static default_real_t AlphaBLAS(void) { return 1.0f; }
   /*! \brief helper constant to use BLAS, beta */
-  MSHADOW_CONSTEXPR static default_real_t kBetaBLAS  = 1.0f;
+  inline static default_real_t BetaBLAS(void) { return 1.0f; }
   /*! \brief corresponding binary operator type */
   typedef op::plus OPType;
 };
@@ -211,9 +211,9 @@ struct minusto {
     a -= b;
   }
   /*! \brief helper constant to use BLAS, alpha */
-  MSHADOW_CONSTEXPR static default_real_t kAlphaBLAS = -1.0f;
+  inline static default_real_t AlphaBLAS(void) { return -1.0f; }
   /*! \brief helper constant to use BLAS, beta */
-  MSHADOW_CONSTEXPR static default_real_t kBetaBLAS  = 1.0f;
+  inline static default_real_t BetaBLAS(void) { return 1.0f; }
   /*! \brief corresponding binary operator type */
   typedef op::minus OPType;
 };
