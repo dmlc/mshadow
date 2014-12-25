@@ -348,4 +348,7 @@ inline UnaryMapExp<OP, TA, DType, (ta|type::kMapper)> F(const Exp<TA, DType, ta>
 #define MSHADOW_SCALAR_ double
 #include "./expression-inl.h"
 #undef MSHADOW_SCALAR_
+#define MSHADOW_SCALAR_ int
+#include "./expression-inl.h"
+#undef MSHADOW_SCALAR_
 #endif  // MSHADOW_EXPRESSION_H_

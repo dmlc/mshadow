@@ -43,11 +43,6 @@ struct Shape {
   static const int kSubdim = dimension - 1;
   /*! \brief storing the dimension information */
   index_t shape_[kDimension];
-  /*!
-   * \brief storing the stride information in x dimension
-   *    this is used to deal with pitch allocation in gpu or sse(align x dimension to 64bit) for efficiency
-   */
-  index_t stride_;
   /*! \brief default constructor, do nothing */
   MSHADOW_XINLINE Shape(void) {}
   /*! \brief constuctor */
@@ -56,7 +51,6 @@ struct Shape {
     for (int i = 0; i < kDimension; ++i) {
       this->shape_[i] = s[i];
     }
-    this->stride_ = s.stride_;
   }
   /*!
    * \brief get corresponding index
@@ -88,7 +82,6 @@ struct Shape {
    */
   MSHADOW_XINLINE Shape<2> FlatTo2D(void) const {
     Shape<2> s;
-    s.stride_ = this->stride_;
     s.shape_[1] = this->shape_[kDimension - 1];
     index_t ymax = 1;    
     #pragma unroll
@@ -106,15 +99,6 @@ struct Shape {
       size *= this->shape_[i];
     }
     return size;
-  }
-  /*! \return memory size, including the aligned x dimension */
-  MSHADOW_XINLINE size_t MSize(void) const {
-    size_t memsz = this->stride_;
-    #pragma unroll
-    for (int i = 0; i < kDimension - 1; ++i) {
-      memsz *= this->shape_[i];
-    }
-    return memsz;
   }
   /*!
    * \return product shape in [dimstart,dimend)
@@ -153,7 +137,7 @@ v   * \return subshape
  * \return the shape construction
  */
 MSHADOW_XINLINE Shape<1> Shape1(index_t s0) {
-  Shape<1> s; s[0] = s0; s.stride_ = s0;
+  Shape<1> s; s[0] = s0;
   return s;
 }
 /*!
@@ -163,7 +147,7 @@ MSHADOW_XINLINE Shape<1> Shape1(index_t s0) {
  * \return the shape construction
  */
 MSHADOW_XINLINE Shape<2> Shape2(index_t s0, index_t s1) {
-  Shape<2> s; s[0] = s0; s[1] = s1; s.stride_ = s1;
+  Shape<2> s; s[0] = s0; s[1] = s1;
   return s;
 }
 /*!
@@ -175,7 +159,7 @@ MSHADOW_XINLINE Shape<2> Shape2(index_t s0, index_t s1) {
  */
 MSHADOW_XINLINE Shape<3> Shape3(index_t s0, index_t s1, index_t s2) {
   Shape<3> s;
-  s[0] = s0; s[1] = s1; s[2] = s2; s.stride_ = s2;
+  s[0] = s0; s[1] = s1; s[2] = s2;
   return s;
 }
 /*!
@@ -188,7 +172,7 @@ MSHADOW_XINLINE Shape<3> Shape3(index_t s0, index_t s1, index_t s2) {
  */
 MSHADOW_XINLINE Shape<4> Shape4(index_t s3, index_t s2, index_t s1, index_t s0) {
   Shape<4> s;
-  s[0] = s0; s[1] = s1; s[2] = s2; s[3] = s3; s.stride_ = s3;
+  s[0] = s0; s[1] = s1; s[2] = s2; s[3] = s3;
   return s;
 }
 /*!
@@ -228,38 +212,59 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>, Device, dimensio
   // struct memembers
   //--------------------------------
   /*! \brief pointer to the data */
-  DType *dptr;
+  DType *dptr_;
   /*! \brief shape of the tensor */
-  Shape<dimension> shape;
+  Shape<dimension> shape_;
+  /*!
+   * \brief storing the stride information in x dimension
+   *    this is used to deal with pitch allocation in gpu or sse(align x dimension to 64bit) for efficiency
+   */
+  index_t stride_;
   /*! 
    * \brief stream where the computation lies 
    * stream is a device dependency concept where each computation
    */
-  Stream<Device> *stream;
+  Stream<Device> *stream_;
   //--------------------------------
   // functions
   //-------------------------------- 
   /*! \brief default constructor */
-  MSHADOW_XINLINE Tensor(void) : stream(NULL) {}
+  MSHADOW_XINLINE Tensor(void) {}
   /*! \brief constructor from shape  */
-  MSHADOW_XINLINE Tensor(const Shape<dimension> &shape) : shape(shape), stream(NULL) {}
-  /*! \brief constructor from data pointer and shape  */
+  MSHADOW_XINLINE Tensor(const Shape<dimension> &shape) : shape_(shape) {}
+  /*! \brief constructor from data pointer and shape, without stride */
   MSHADOW_XINLINE Tensor(DType *dptr, const Shape<dimension> &shape)
-      : dptr(dptr), shape(shape), stream(NULL) {}
+      : dptr_(dptr), shape_(shape), stride_(shape[kSubdim]), stream_(NULL) {}
+  /*! \brief constructor from data pointer and shape  */
+  MSHADOW_XINLINE Tensor(DType *dptr, const Shape<dimension> &shape, index_t stride)
+      : dptr_(dptr), shape_(shape), stride_(stride), stream_(NULL) {}
+  /*!
+   * \return memory cost of the tensor, including the aligned x dimension 
+   * \tparam startdim the starting dimension
+   */
+  template<int startdim>
+  MSHADOW_XINLINE size_t MSize(void) const {
+    size_t memsz = this->stride_;
+    #pragma unroll
+    for (int i = startdim; i < kSubdim; ++i) {
+      memsz *= this->shape_[i];
+    }
+    return memsz;
+  }
   /*!
    * \brief return size of i-th dimension, start counting from highest dimension
    * \param the dimension count from the highest dimensin
    * \return the size
    */
   MSHADOW_XINLINE index_t size(index_t i) const {
-    return shape[i];
+    return shape_[i];
   }
   /*!
    * \brief flatten the tensor to 2 dimension, collapse the higher dimensions together
    * \return tensor after flatten
    */
   MSHADOW_XINLINE Tensor<Device, 2, DType> FlatTo2D(void) const {
-    return Tensor<Device, 2, DType>(dptr, shape.FlatTo2D());
+    return Tensor<Device, 2, DType>(dptr_, shape_.FlatTo2D(), stride_);
   }
   /*!
    * \brief get a element of dimension - 1
@@ -267,8 +272,8 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>, Device, dimensio
    * \return the result tensor
    */
   MSHADOW_XINLINE Tensor<Device, kSubdim, DType> operator[](index_t idx) const {
-    Shape<kSubdim> s = shape.SubShape();
-    return Tensor<Device, kSubdim, DType>(dptr + s.MSize() * idx, s);
+    return Tensor<Device, kSubdim, DType>(dptr_ + this->MSize<1>() * idx,
+                                          shape_.SubShape(), stride_);
   }
   /*!
    * \brief slice the tensor in highest dimension [begin,end)
@@ -279,7 +284,7 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>, Device, dimensio
   MSHADOW_XINLINE Tensor<Device, dimension, DType> Slice(index_t begin, index_t end) const {
     Shape<dimension> s = this->shape;
     s[0] = end - begin;
-    return Tensor<Device, dimension, DType>(dptr + s.SubShape().MSize() * begin, s);
+    return Tensor<Device, dimension, DType>(dptr_ + this->MSize<1>() * begin, s, stride_);
   }
   /*!\brief functions to fit expression template */
   template<typename E>
@@ -306,27 +311,27 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>, Device, dimensio
 template<typename Device, typename DType>
 struct Tensor<Device, 1, DType>: public expr::RValueExp<Tensor<Device, 1, DType>, DType> {
  public:
-  DType *dptr;
-  Shape<1> shape;
-  Stream<Device> *stream;
+  DType *dptr_;
+  Shape<1> shape_;  
+  Stream<Device> *stream_;
   // constructor
-  MSHADOW_XINLINE Tensor(void) : stream(NULL) {}
-  MSHADOW_XINLINE Tensor(const Shape<1> &shape): shape(shape), stream(NULL) {}
-  MSHADOW_XINLINE Tensor(DType *dptr, Shape<1> shape) 
-      : dptr(dptr), shape(shape), stream(NULL) {}  
+  MSHADOW_XINLINE Tensor(void) {}
+  MSHADOW_XINLINE Tensor(const Shape<1> &shape): shape_(shape) {}
+  MSHADOW_XINLINE Tensor(DType *dptr, Shape<1> shape)
+      : dptr_(dptr), shape_(shape), stream_(NULL) {}
   MSHADOW_XINLINE Tensor<Device, 2> FlatTo2D(void) const {
-    return Tensor<Device, 2>(dptr, shape.FlatTo2D());
+    return Tensor<Device, 2>(dptr_, shape_.FlatTo2D(), shape_[0]);
   }
   MSHADOW_XINLINE Tensor<Device, 1> Slice(index_t begin, index_t end) const {
     Shape<1> s;
-    s[0] = s.stride_ = end  - begin;
-    return Tensor<Device, 1>(dptr + begin, s);
+    s[0] = end  - begin;
+    return Tensor<Device, 1>(dptr_ + begin, s);
   }
   MSHADOW_XINLINE index_t size(index_t i) const {
-    return shape[0];
+    return shape_[0];
   }
-  MSHADOW_XINLINE DType &operator[](index_t idx) { return dptr[idx]; }
-  MSHADOW_XINLINE const DType &operator[](index_t idx)const { return dptr[idx]; }
+  MSHADOW_XINLINE DType &operator[](index_t idx) { return dptr_[idx]; }
+  MSHADOW_XINLINE const DType &operator[](index_t idx)const { return dptr_[idx]; }
   template<typename E>
   inline Tensor<Device, 1, DType> &operator=(const expr::Exp<E, DType, expr::type::kMapper> &exp) {
     return this->__assign(exp);

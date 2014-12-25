@@ -2,6 +2,8 @@
  * \file expression-inl.h
  * \brief definitions of operators in expression with respect to scalar
  *  this file will be included several times, each time with MACRO MSHADOW_SCALAR_ to be different types
+ *
+ * DO NOT add pragma once for macro guard
  * \author Tianqi Chen, Bing Xu
  */
 namespace mshadow {
@@ -16,7 +18,7 @@ operator*(const DotExp<TA, TB, ltrans, rtrans, MSHADOW_SCALAR_> &lhs, MSHADOW_SC
 /*! \brief scale of dot operation */
 template<typename TA, typename TB, bool ltrans, bool rtrans>
 inline DotExp<TA, TB, ltrans, rtrans, MSHADOW_SCALAR_>
-operator*(MSHADOW_SCALAR_ &lhs, const DotExp<TA, TB, ltrans, rtrans, MSHADOW_SCALAR_> &rhs) {
+operator*(MSHADOW_SCALAR_ lhs, const DotExp<TA, TB, ltrans, rtrans, MSHADOW_SCALAR_> &rhs) {
   return DotExp<TA, TB, ltrans, rtrans, MSHADOW_SCALAR_>(rhs.lhs_, rhs.rhs_, rhs.scale_ * lhs);
 }
 
