@@ -1,18 +1,22 @@
-#ifndef MSHADOW_BASE_H_
-#define MSHADOW_BASE_H_
 /*!
+ *  Copyright (c) 2014 by Contributors
  * \file base.h
  * \brief definitions of base types, operators, macros functions
  *
  * \author Bing Xu, Tianqi Chen
  */
+#ifndef MSHADOW_BASE_H_
+#define MSHADOW_BASE_H_
 #include <cmath>
 #include <cstdio>
 #include <cfloat>
 #include <climits>
 #include <algorithm>
 // macro defintiions
-/*!\brief if this macro is define to be 1, mshadow should compile without any of other libs */
+/*!
+ * \brief if this macro is define to be 1,
+ * mshadow should compile without any of other libs 
+ */
 #ifndef MSHADOW_STAND_ALONE
 #define MSHADOW_STAND_ALONE 1
 #endif
@@ -30,7 +34,7 @@
 #endif
 
 #if MSHADOW_STAND_ALONE
-  #define MSHADOW_USE_CBLAS 0
+  #define MSHADOW_USE_CBLAS 1
   #define MSHADOW_USE_MKL   0
   #define MSHADOW_USE_CUDA  0
 #endif
@@ -88,7 +92,7 @@ extern "C" {
   #include <nvml.h>
 #endif
 // --------------------------------
-// MSHADOW_XINLINE is used for inlining template code for both CUDA and CPU code.
+// MSHADOW_XINLINE is used for inlining template code for both CUDA and CPU code
 #ifdef MSHADOW_XINLINE
   #error "MSHADOW_XINLINE must not be defined"
 #endif
@@ -162,7 +166,8 @@ struct right {
   }
 };
 // unary operator/ function: example
-// these operators can be defined by user, in the same style as binary and unary operator
+// these operators can be defined by user,
+// in the same style as binary and unary operator
 // to use, simply write F<op::identity>( src )
 /*! \brief identity function that maps a real number to it self */
 struct identity{
@@ -182,7 +187,7 @@ struct saveto {
   MSHADOW_XINLINE static void Save(DType &a, DType b) {
     a = b;
   }
-  /*! \brief helper constant to use BLAS, alpha */  
+  /*! \brief helper constant to use BLAS, alpha */
   inline static default_real_t AlphaBLAS(void) { return 1.0f; }
   /*! \brief helper constant to use BLAS, beta */
   inline static default_real_t BetaBLAS(void) { return 0.0f; }

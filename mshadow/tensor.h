@@ -1,6 +1,5 @@
-#ifndef MSHADOW_TENSOR_H_
-#define MSHADOW_TENSOR_H_
 /*!
+ *  Copyright (c) 2014 by Contributors
  * \file tensor.h
  * \brief header file of tensor data structure and functions
  *  This lib requires explicit memory allocation and de-allocation
@@ -10,6 +9,8 @@
  *  For STL style tensor, see tensor_container.h
  * \author Bing Xu, Tianqi Chen
  */
+#ifndef MSHADOW_TENSOR_H_
+#define MSHADOW_TENSOR_H_
 #include "./base.h"
 #include "./expression.h"
 
@@ -83,7 +84,7 @@ struct Shape {
   MSHADOW_XINLINE Shape<2> FlatTo2D(void) const {
     Shape<2> s;
     s.shape_[1] = this->shape_[kDimension - 1];
-    index_t ymax = 1;    
+    index_t ymax = 1;
     #pragma unroll
     for (int i = 0; i < kDimension - 1; ++i) {
       ymax *= this->shape_[i];
@@ -170,7 +171,8 @@ MSHADOW_XINLINE Shape<3> Shape3(index_t s0, index_t s1, index_t s2) {
  * \param s0 size of dimension 0
  * \return the shape construction
  */
-MSHADOW_XINLINE Shape<4> Shape4(index_t s3, index_t s2, index_t s1, index_t s0) {
+MSHADOW_XINLINE Shape<4> Shape4(index_t s3, index_t s2,
+                                index_t s1, index_t s0) {
   Shape<4> s;
   s[0] = s0; s[1] = s1; s[2] = s2; s[3] = s3;
   return s;
@@ -199,7 +201,8 @@ struct TRValue: public expr::RValueExp<Container, DType> {
  * \tparam DType the type of elements in the tensor
  */
 template<typename Device, int dimension, typename DType =  default_real_t>
-struct Tensor: public TRValue<Tensor<Device, dimension, DType>, Device, dimension, DType> {
+struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
+                              Device, dimension, DType> {
  public:
   //--------------------------------
   // struct memembers
@@ -227,7 +230,7 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>, Device, dimensio
   Stream<Device> *stream_;
   //--------------------------------
   // functions
-  //-------------------------------- 
+  //--------------------------------
   /*! \brief default constructor */
   MSHADOW_XINLINE Tensor(void) {}
   /*! \brief constructor from shape  */
@@ -236,7 +239,8 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>, Device, dimensio
   MSHADOW_XINLINE Tensor(DType *dptr, const Shape<dimension> &shape)
       : dptr_(dptr), shape_(shape), stride_(shape[kSubdim]), stream_(NULL) {}
   /*! \brief constructor from data pointer and shape  */
-  MSHADOW_XINLINE Tensor(DType *dptr, const Shape<dimension> &shape, index_t stride)
+  MSHADOW_XINLINE Tensor(DType *dptr,
+                         const Shape<dimension> &shape, index_t stride)
       : dptr_(dptr), shape_(shape), stride_(stride), stream_(NULL) {}
   /*!
    * \return memory cost of the tensor, including the aligned x dimension 
@@ -281,24 +285,29 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>, Device, dimensio
    * \param end end position of slice
    * \return tensor after slice
    */
-  MSHADOW_XINLINE Tensor<Device, dimension, DType> Slice(index_t begin, index_t end) const {
+  MSHADOW_XINLINE Tensor<Device, dimension, DType>
+  Slice(index_t begin, index_t end) const {
     Shape<dimension> s = this->shape;
     s[0] = end - begin;
-    return Tensor<Device, dimension, DType>(dptr_ + this->MSize<1>() * begin, s, stride_);
+    return Tensor<Device, dimension, DType>(dptr_ + this->MSize<1>() * begin,
+                                            s, stride_);
   }
   /*!\brief functions to fit expression template */
   template<typename E>
-  inline Tensor<Device, dimension, DType> &operator=(const expr::Exp<E, DType, expr::type::kMapper> &exp) {
+  inline Tensor<Device, dimension, DType> &
+  operator=(const expr::Exp<E, DType, expr::type::kMapper> &exp) {
     return this->__assign(exp);
   }
   /*!\brief functions to fit expression template */
   template<typename E>
-  inline Tensor<Device, dimension, DType> &operator=(const expr::Exp<E, DType, expr::type::kChainer> &exp) {
+  inline Tensor<Device, dimension, DType> &
+  operator=(const expr::Exp<E, DType, expr::type::kChainer> &exp) {
     return this->__assign(exp);
   }
   /*!\brief functions to fit expression template */
   template<typename E>
-  inline Tensor<Device, dimension, DType> &operator=(const expr::Exp<E, DType, expr::type::kComplex> &exp) {
+  inline Tensor<Device, dimension, DType> &
+  operator=(const expr::Exp<E, DType, expr::type::kComplex> &exp) {
     return this->__assign(exp);
   }
   inline Tensor<Device, dimension, DType> &operator=(const DType &exp) {
@@ -309,7 +318,8 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>, Device, dimensio
  *  respecialized class Tensor1D, thei is due to different implementation in operator[]
  */
 template<typename Device, typename DType>
-struct Tensor<Device, 1, DType>: public expr::RValueExp<Tensor<Device, 1, DType>, DType> {
+struct Tensor<Device, 1, DType>:
+      public expr::RValueExp<Tensor<Device, 1, DType>, DType> {
  public:
   DType *dptr_;
   Shape<1> shape_;
@@ -331,21 +341,28 @@ struct Tensor<Device, 1, DType>: public expr::RValueExp<Tensor<Device, 1, DType>
   MSHADOW_XINLINE index_t size(index_t i) const {
     return shape_[0];
   }
-  MSHADOW_XINLINE DType &operator[](index_t idx) { return dptr_[idx]; }
-  MSHADOW_XINLINE const DType &operator[](index_t idx)const { return dptr_[idx]; }
+  MSHADOW_XINLINE DType &operator[](index_t idx) {
+    return dptr_[idx];
+  }
+  MSHADOW_XINLINE const DType &operator[](index_t idx) const {
+    return dptr_[idx];
+  }
   template<typename E>
-  inline Tensor<Device, 1, DType> &operator=(const expr::Exp<E, DType, expr::type::kMapper> &exp) {
+  inline Tensor<Device, 1, DType> &
+  operator=(const expr::Exp<E, DType, expr::type::kMapper> &exp) {
     return this->__assign(exp);
   }
   template<typename E>
-  inline Tensor<Device, 1, DType> &operator=(const expr::Exp<E, DType, expr::type::kChainer> &exp) {
+  inline Tensor<Device, 1, DType> &
+  operator=(const expr::Exp<E, DType, expr::type::kChainer> &exp) {
     return this->__assign(exp);
   }
   template<typename E>
-  inline Tensor<Device, 1, DType> &operator=(const expr::Exp<E, DType, expr::type::kComplex> &exp) {
+  inline Tensor<Device, 1, DType> &
+  operator=(const expr::Exp<E, DType, expr::type::kComplex> &exp) {
     return this->__assign(exp);
   }
-  inline Tensor<Device, 1, DType> &operator=(const DType &exp) {    
+  inline Tensor<Device, 1, DType> &operator=(const DType &exp) {
     return this->__assign(exp);
   }
 };
@@ -377,10 +394,12 @@ inline void InitTensorEngine(int device_id = 0);
  * \tparam DType type of element in tensor
  */
 template<int dim, typename DType>
-inline void AllocSpace(Tensor<cpu, dim, DType> &obj, bool pad = MSHADOW_ALLOC_PAD);
+inline void AllocSpace(Tensor<cpu, dim, DType> *obj,
+                       bool pad = MSHADOW_ALLOC_PAD);
 /*! \brief refer to comment of cpu ver \sa AllocSpace */
 template<int dim, typename DType>
-inline void AllocSpace(Tensor<gpu, dim, DType> &obj, bool pad = MSHADOW_ALLOC_PAD);
+inline void AllocSpace(Tensor<gpu, dim, DType> *obj,
+                       bool pad = MSHADOW_ALLOC_PAD);
 /*!
  * \brief CPU/GPU: free the space of tensor, will set obj.dptr to NULL
  * \param obj the tensor object
@@ -388,10 +407,10 @@ inline void AllocSpace(Tensor<gpu, dim, DType> &obj, bool pad = MSHADOW_ALLOC_PA
  * \tparam DType type of element in tensor
  */
 template<int dim, typename DType>
-inline void FreeSpace(Tensor<cpu, dim, DType> &obj);
+inline void FreeSpace(Tensor<cpu, dim, DType> *obj);
 /*! \brief refer to comment of cpu ver \sa FreeSpace */
 template<int dim, typename DType>
-inline void FreeSpace(Tensor<gpu, dim, DType> &obj);
+inline void FreeSpace(Tensor<gpu, dim, DType> *obj);
 /*!
  * \brief CPU/GPU: short cut to allocate and initialize a Tensor
  * \param shape: shape of tensor
@@ -403,7 +422,9 @@ inline void FreeSpace(Tensor<gpu, dim, DType> &obj);
  * \sa AllocSpace
  */
 template<typename Device, typename DType, int dim>
-inline Tensor<Device, dim, DType> NewTensor(const Shape<dim> &shape, DType initv, bool pad = MSHADOW_ALLOC_PAD);
+inline Tensor<Device, dim, DType> NewTensor(const Shape<dim> &shape,
+                                            DType initv,
+                                            bool pad = MSHADOW_ALLOC_PAD);
 /*!
  * \brief copy data from one tensor to another, with same shape
  * \param dst target tensor
@@ -412,16 +433,20 @@ inline Tensor<Device, dim, DType> NewTensor(const Shape<dim> &shape, DType initv
  * \tparam DType type of element in tensor
  */
 template<int dim, typename DType>
-inline void Copy(Tensor<cpu, dim, DType> dst, const Tensor<cpu, dim, DType> &src);
+inline void Copy(Tensor<cpu, dim, DType> dst,
+                 const Tensor<cpu, dim, DType> &src);
 /*! \brief refer to comment of cpu ver \sa Copy */
 template<int dim, typename DType>
-inline void Copy(Tensor<cpu, dim, DType> dst, const Tensor<gpu, dim, DType> &src);
+inline void Copy(Tensor<cpu, dim, DType> dst,
+                 const Tensor<gpu, dim, DType> &src);
 /*! \brief refer to comment of cpu ver \sa Copy */
 template<int dim, typename DType>
-inline void Copy(Tensor<gpu, dim, DType> dst, const Tensor<cpu, dim, DType> &src);
+inline void Copy(Tensor<gpu, dim, DType> dst,
+                 const Tensor<cpu, dim, DType> &src);
 /*! \brief refer to comment of cpu ver \sa Copy */
 template<int dim, typename DType>
-inline void Copy(Tensor<gpu, dim, DType> dst, const Tensor<gpu, dim, DType> &src);
+inline void Copy(Tensor<gpu, dim, DType> dst,
+                 const Tensor<gpu, dim, DType> &src);
 /*!
  * \brief CPU/GPU: normalize softmax: dst[i][j] = exp(energy[i][j]) /(sum_j exp(energy[i][j]))
  * \param dst destination
@@ -444,11 +469,15 @@ inline void Softmax(Tensor<gpu, 2> dst, const Tensor<gpu, 2> &energy);
  * \param exp expression
  * \sa namespace mshadow:sv, mshadow::op, mshadow::expr
  */
-template<typename Saver, typename R, int dim, typename DType, typename E, int etype>
-inline void MapExp(TRValue<R, cpu, dim, DType> dst, const expr::Exp<E, DType, etype> &exp);
+template<typename Saver, typename R, int dim,
+         typename DType, typename E, int etype>
+inline void MapExp(TRValue<R, cpu, dim, DType> dst,
+                   const expr::Exp<E, DType, etype> &exp);
 /*! \brief refer to comment of cpu ver \sa MapExp */
-template<typename Saver, typename R, int dim, typename DType, typename E, int etype>
-inline void MapExp(TRValue<R, gpu, dim, DType> dst, const expr::Exp<E, DType, etype> &exp);
+template<typename Saver, typename R, int dim,
+         typename DType, typename E, int etype>
+inline void MapExp(TRValue<R, gpu, dim, DType> dst,
+                   const expr::Exp<E, DType, etype> &exp);
 /*!
  * \brief CPU/GPU: map a expression, do reduction to 1D Tensor in lowest dimension (dimension 0)
  * \tparam Saver specify storage method
@@ -462,11 +491,17 @@ inline void MapExp(TRValue<R, gpu, dim, DType> dst, const expr::Exp<E, DType, et
  * \param scale scale the result before save
  * \sa namespace mshadow:sv, mshadow::op, mshadow::red, mshadow::expr
  */
-template<typename Saver, typename Reducer, typename R, typename DType, typename E, int etype>
-inline void MapReduceKeepLowest(TRValue<R, cpu, 1, DType> dst, const expr::Exp<E, DType, etype> &exp, DType scale = 1);
+template<typename Saver, typename Reducer,
+         typename R, typename DType, typename E, int etype>
+inline void MapReduceKeepLowest(TRValue<R, cpu, 1, DType> dst,
+                                const expr::Exp<E, DType, etype> &exp,
+                                DType scale = 1);
 /*! \brief refer to comment of cpu ver \sa MapReduceKeepLowest */
-template<typename Saver, typename Reducer, typename R, typename DType, typename E, int etype>
-inline void MapReduceKeepLowest(TRValue<R, gpu, 1, DType> dst, const expr::Exp<E, DType, etype> &exp, DType scale = 1);
+template<typename Saver, typename Reducer, typename R,
+         typename DType, typename E, int etype>
+inline void MapReduceKeepLowest(TRValue<R, gpu, 1, DType> dst,
+                                const expr::Exp<E, DType, etype> &exp,
+                                DType scale = 1);
 /*!
  * \brief CPU/GPU: map a expression, do reduction to 1D Tensor in third dimension (dimension 2)
  * \tparam Saver specify storage method
@@ -481,12 +516,18 @@ inline void MapReduceKeepLowest(TRValue<R, gpu, 1, DType> dst, const expr::Exp<E
  * \param scale scale the result before save
  * \sa namespace mshadow:sv, mshadow::op, mshadow::red, mshadow::expr
  */
-template<typename Saver, typename Reducer, int dimkeep, typename R, typename DType, typename E, int etype>
-inline void MapReduceKeepHighDim(TRValue<R, cpu, 1, DType> dst, const expr::Exp<E, DType, etype> &exp, DType scale = 1);
+template<typename Saver, typename Reducer, int dimkeep,
+         typename R, typename DType, typename E, int etype>
+inline void MapReduceKeepHighDim(TRValue<R, cpu, 1, DType> dst,
+                                 const expr::Exp<E, DType, etype> &exp,
+                                 DType scale = 1);
 /*! \brief refer to comment of cpu ver \sa MapReduceKeepHighDim */
-template<typename Saver, typename Reducer, int dimkeep, typename R, typename DType, typename E, int etype>
-inline void MapReduceKeepHighDim(TRValue<R, gpu, 1, DType> dst, const expr::Exp<E, DType, etype> &exp, DType scale = 1);
+template<typename Saver, typename Reducer, int dimkeep,
+         typename R, typename DType, typename E, int etype>
+inline void MapReduceKeepHighDim(TRValue<R, gpu, 1, DType> dst,
+                                 const expr::Exp<E, DType, etype> &exp,
+                                 DType scale = 1);
 }  // namespace mshadow
-
+// include headers
 #include "./expr_engine-inl.h"
-#endif // TENSOR_H
+#endif  // MSHADOW_TENSOR_H_

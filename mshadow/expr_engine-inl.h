@@ -1,11 +1,13 @@
-#ifndef MSHADOW_EXPR_ENGINE_INL_H_
-#define MSHADOW_EXPR_ENGINE_INL_H_
 /*!
+ *  Copyright (c) 2014 by Contributors
  * \file expr_engine-inl.h
  * \brief definitions of how expressions should be evaluated
  * \author Tianqi Chen, Bing Xu
  */
+#ifndef MSHADOW_EXPR_ENGINE_INL_H_
+#define MSHADOW_EXPR_ENGINE_INL_H_
 #include <utility>
+#include <algorithm>
 #include "./utils.h"
 #include "./expression.h"
 #include "./tensor.h"
@@ -21,7 +23,8 @@ namespace expr {
  */
 template<typename SubType, typename SrcExp, int dim, typename DType>
 struct MakeTensorExp
-    : public Exp<MakeTensorExp<SubType, SrcExp, dim, DType>, DType, type::kChainer> {
+    : public Exp<MakeTensorExp<SubType, SrcExp, dim, DType>,
+                 DType, type::kChainer> {
   /*! \brief the shape of this expression */
   Shape<dim> shape_;
   /*! \brief true self of subtype */
@@ -30,7 +33,7 @@ struct MakeTensorExp
   }
 };
 //----------------------------------------------------------------------
-// This part of code gives plan that can be used to carry out execution 
+// This part of code gives plan that can be used to carry out execution
 //---------------------------------------------------------------------
 // Declarations of plans
 template<typename ExpType, typename DType>
@@ -46,7 +49,7 @@ class Plan {
 template <typename Device, int dim, typename DType>
 class Plan<Tensor<Device, dim, DType>, DType> {
  public:
-  Plan(const Tensor<Device,dim> &t)
+  explicit Plan(const Tensor<Device, dim> &t)
       : dptr_(t.dptr), stride_(t.shape.stride_) {}
   // for RValue, the return type should be reference
   MSHADOW_XINLINE DType &Eval(index_t y, index_t x) {
@@ -56,7 +59,7 @@ class Plan<Tensor<Device, dim, DType>, DType> {
   MSHADOW_XINLINE const DType &Eval(index_t y, index_t x) const {
     return dptr_[y * stride_ + x];
   }
-  
+
  private:
   DType  *dptr_;
   index_t stride_;
@@ -65,7 +68,7 @@ class Plan<Tensor<Device, dim, DType>, DType> {
 template <typename Device, typename DType>
 class Plan<Tensor<Device, 1, DType>, DType> {
  public:
-  Plan(const Tensor<Device,1> &t) : dptr_(t.dptr) {}
+  explicit Plan(const Tensor<Device, 1> &t) : dptr_(t.dptr) {}
   MSHADOW_XINLINE DType &Eval(index_t y, index_t x) {
     return dptr_[x];
   }
@@ -80,7 +83,7 @@ class Plan<Tensor<Device, 1, DType>, DType> {
 template<typename DType>
 class Plan<ScalarExp<DType>, DType> {
  public:
-  Plan(DType scalar) : scalar_(scalar) {}
+  explicit Plan(DType scalar) : scalar_(scalar) {}
   MSHADOW_XINLINE DType Eval(index_t y, index_t x) const {
     return scalar_;
   }
@@ -92,7 +95,7 @@ class Plan<ScalarExp<DType>, DType> {
 template<typename OP, typename TA, typename TB, int etype, typename DType>
 class Plan<BinaryMapExp<OP, TA, TB, DType, etype>, DType> {
  public:
-  Plan(const Plan<TA, DType> &lhs, const Plan<TB, DType> &rhs)
+  explicit Plan(const Plan<TA, DType> &lhs, const Plan<TB, DType> &rhs)
       : lhs_(lhs), rhs_(rhs) {}
   MSHADOW_XINLINE DType Eval(index_t y, index_t x) const {
     return OP::Map(lhs_.Eval(y, x), rhs_.Eval(y, x));
@@ -106,7 +109,7 @@ class Plan<BinaryMapExp<OP, TA, TB, DType, etype>, DType> {
 template<typename OP, typename TA, int etype, typename DType>
 class Plan<UnaryMapExp<OP, TA, DType, etype>, DType> {
  public:
-  Plan(const Plan<TA, DType> &src) : src_(src) {}
+  explicit Plan(const Plan<TA, DType> &src) : src_(src) {}
   MSHADOW_XINLINE DType Eval(index_t y, index_t x) const {
     return OP::Map(src_.Eval(y, x));
   }
@@ -114,23 +117,23 @@ class Plan<UnaryMapExp<OP, TA, DType, etype>, DType> {
  private:
   Plan<TA, DType> src_;
 };
-// remaps map tensor expression to subtype's plan     
+// remaps map tensor expression to subtype's plan
 template<typename SubType, typename SrcExp, int dim, typename DType>
 struct Plan<MakeTensorExp<SubType, SrcExp, dim, DType>, DType> {
  public:
-  Plan(const Plan<SubType, DType> &src) : src_(src) {}
+  explicit Plan(const Plan<SubType, DType> &src) : src_(src) {}
   MSHADOW_XINLINE DType Eval(index_t y, index_t x) const {
     return src_.Eval(y, x);
   }
 
  private:
-  Plan<SubType, DType> src_;  
+  Plan<SubType, DType> src_;
 };
 // tranpsoe
 template<typename EType, typename DType>
 class Plan<TransposeExp<EType, DType>, DType> {
  public:
-  Plan(const Plan<EType, DType> &src) : src_(src) {}
+  explicit Plan(const Plan<EType, DType> &src) : src_(src) {}
   MSHADOW_XINLINE DType Eval(index_t y, index_t x) const {
     return src_.Eval(x, y);
   }
@@ -176,7 +179,8 @@ MakePlan(const UnaryMapExp<OP, TA, DType, etype> &e) {
 template<typename OP, typename TA, typename TB, typename DType, int etype>
 inline Plan<BinaryMapExp<OP, TA, TB, DType, etype>, DType>
 MakePlan(const BinaryMapExp<OP, TA, TB, DType, etype> &e) {
-  return Plan<BinaryMapExp<OP, TA, TB, DType, etype>, DType>(MakePlan(e.lhs_), MakePlan(e.rhs_));
+  return Plan<BinaryMapExp<OP, TA, TB, DType, etype>,
+              DType>(MakePlan(e.lhs_), MakePlan(e.rhs_));
 }
 //----------------------------------------------------------------
 // Static Type inference and Type Checking
@@ -190,55 +194,57 @@ MakePlan(const BinaryMapExp<OP, TA, TB, DType, etype> &e) {
  */
 template<typename E>
 struct ExpInfo {
-  const static int kDim = -1;
-  const static int kDevMask = 0;
-  const static int kTypeMask = 0;
+  static const int kDim = -1;
+  static const int kDevMask = 0;
+  static const int kTypeMask = 0;
 };
 template<typename DType>
 struct ExpInfo< ScalarExp<DType> > {
-  const static int kDim = 0;
-  const static int kDevMask = 0xffff;
+  static const int kDim = 0;
+  static const int kDevMask = 0xffff;
 };
 template<typename E, typename DType>
 struct ExpInfo<TransposeExp<E, DType> > {
-  const static int kDim = ExpInfo<E>::kDim;
-  const static int kDevMask = ExpInfo<E>::kDevMask;
+  static const int kDim = ExpInfo<E>::kDim;
+  static const int kDevMask = ExpInfo<E>::kDevMask;
 };
 template<typename Device, int dim, typename DType>
 struct ExpInfo<Tensor<Device, dim, DType> > {
-  const static int kDim = dim;
-  const static int kDevMask = Device::kDevMask;
+  static const int kDim = dim;
+  static const int kDevMask = Device::kDevMask;
 };
 template<typename T, typename SrcExp, int dim, typename DType>
 struct ExpInfo<MakeTensorExp<T, SrcExp, dim, DType> > {
-  const static int kDimSrc = ExpInfo<SrcExp>::kDim;
-  const static int kDim = kDimSrc >= 0 ? dim : -1;
-  const static int kDevMask = ExpInfo<SrcExp>::kDevMask;
+  static const int kDimSrc = ExpInfo<SrcExp>::kDim;
+  static const int kDim = kDimSrc >= 0 ? dim : -1;
+  static const int kDevMask = ExpInfo<SrcExp>::kDevMask;
 };
 template<typename OP, typename TA, typename DType, int etype>
 struct ExpInfo<UnaryMapExp<OP, TA, DType, etype> > {
-  const static int kDim = ExpInfo<TA>::kDim;
-  const static int kDevMask = ExpInfo<TA>::kDevMask;
+  static const int kDim = ExpInfo<TA>::kDim;
+  static const int kDevMask = ExpInfo<TA>::kDevMask;
 };
 template<typename OP, typename TA, typename TB, typename DType, int etype>
 struct ExpInfo<BinaryMapExp<OP, TA, TB, DType, etype> > {
-  const static int kDimLhs = ExpInfo<TA>::kDim;
-  const static int kDimRhs = ExpInfo<TB>::kDim;
-  const static int kDim = (kDimLhs>=0 && kDimRhs >= 0) ? \
-      (kDimLhs==0 ? kDimRhs : ((kDimRhs==0||kDimLhs==kDimRhs) ? kDimLhs : -1)):-1;
-  const static int kDevMask = ExpInfo<TA>::kDevMask & ExpInfo<TB>::kDevMask;
+  static const int kDimLhs = ExpInfo<TA>::kDim;
+  static const int kDimRhs = ExpInfo<TB>::kDim;
+  static const int kDim = (kDimLhs >= 0 && kDimRhs >= 0) ?\
+      (kDimLhs == 0 ?\
+       kDimRhs :\
+       ((kDimRhs == 0 || kDimLhs == kDimRhs) ? kDimLhs : -1)) : -1;
+  static const int kDevMask = ExpInfo<TA>::kDevMask & ExpInfo<TB>::kDevMask;
 };
 /*! \brief template to do type check */
 template<typename Device, int dim, typename DType, typename E>
 struct TypeCheck {
   /*! \brief dimension of expression*/
-  const static int kExpDim = ExpInfo<E>::kDim;
+  static const int kExpDim = ExpInfo<E>::kDim;
   /*! \brief whether the expression device type matches */
-  const static bool kDevPass = (ExpInfo<E>::kDevMask & Device::kDevMask) != 0;
+  static const bool kDevPass = (ExpInfo<E>::kDevMask & Device::kDevMask) != 0;
   /*! \brief whether the expression can be mapped to expression of dim */
-  const static bool kMapPass = (kExpDim == 0 || kExpDim == dim) && kDevPass;
+  static const bool kMapPass = (kExpDim == 0 || kExpDim == dim) && kDevPass;
   /*! \brief whether the expression can be reduced to expression of dim */
-  const static bool kRedPass = (kExpDim > dim) && kDevPass;
+  static const bool kRedPass = (kExpDim > dim) && kDevPass;
 };
 /*! \brief used to help static type check*/
 template<bool kPass>
@@ -277,7 +283,7 @@ template<int dim, typename E, typename DType>
 struct ShapeCheck<dim, TransposeExp<E, DType> > {
   inline static Shape<dim> Check(const TransposeExp<E, DType> &e) {
     // swap the lowest two dimensions
-    Shape<dim> s = ShapeCheck<dim, E>::Check(e.exp); 
+    Shape<dim> s = ShapeCheck<dim, E>::Check(e.exp);
     std::swap(s[0], s[1]);
     return s;
   }
@@ -302,15 +308,17 @@ struct ShapeCheck<dim, UnaryMapExp<OP, TA, DType, etype> > {
     return s;
   }
 };
-template<int dim, typename OP, typename TA, typename TB, typename DType, int etype>
+template<int dim, typename OP, typename TA, typename TB,
+         typename DType, int etype>
 struct ShapeCheck<dim, BinaryMapExp<OP, TA, TB, DType, etype> > {
-  inline static Shape<dim> Check(const BinaryMapExp<OP, TA, TB, DType, etype> &t) {
+  inline static Shape<dim>
+  Check(const BinaryMapExp<OP, TA, TB, DType, etype> &t) {
     Shape<dim> shape1 = ShapeCheck<dim, TA>::Check(t.lhs_);
     Shape<dim> shape2 = ShapeCheck<dim, TB>::Check(t.rhs_);
     if (shape1[0] == 0) return shape2;
     if (shape2[0] == 0) return shape1;
     utils::Check(shape1 == shape2,
-                 "BinaryMapExp: Shapes of two operands in BinaryMapExp are not the same");
+                 "BinaryMapExp: Shapes of operands are not the same");
     return shape1;
   }
 };
@@ -324,37 +332,45 @@ namespace expr {
 /*! \brief some engine that evaluate complex expression */
 template<typename SV, typename Device, int dim, typename E, typename DType>
 struct ExpComplexEngine {
-  inline static void Eval(Tensor<Device, dim, DType>& dst, const E &exp);
+  inline static void Eval(Tensor<Device, dim, DType> *dst, const E &exp);
 };
 /*! \brief the engine that dispatches simple operations*/
 template<typename SV, typename Device, int dim, typename DType>
 struct ExpEngine<SV, Tensor<Device, dim, DType> > {
   template<typename E>
-  inline static void Eval(Tensor<Device, dim, DType>& dst, const Exp<E, DType, type::kMapper> &exp) {
-    MapExp<SV>(dst, exp);
+  inline static void Eval(Tensor<Device, dim, DType> *dst,
+                          const Exp<E, DType, type::kMapper> &exp) {
+    MapExp<SV>(*dst, exp);
   }
   template<typename E>
-  inline static void Eval(Tensor<Device, dim, DType>& dst, const Exp<E, DType, type::kChainer> &exp) {
-    MapExp<SV>(dst, exp);
+  inline static void Eval(Tensor<Device, dim, DType> *dst,
+                          const Exp<E, DType, type::kChainer> &exp) {
+    MapExp<SV>(*dst, exp);
   }
   template<typename E>
-  inline static void Eval(Tensor<Device, dim, DType>& dst, const Exp<E, DType, type::kRValue> &exp) {
-    MapExp<SV>(dst, exp);
+  inline static void Eval(Tensor<Device, dim, DType> *dst,
+                          const Exp<E, DType, type::kRValue> &exp) {
+    MapExp<SV>(*dst, exp);
   }
   template<typename E>
-  inline static void Eval(Tensor<Device, dim, DType>& dst, const Exp<E, DType, type::kComplex> &exp) {
+  inline static void Eval(Tensor<Device, dim, DType> *dst,
+                          const Exp<E, DType, type::kComplex> &exp) {
     ExpComplexEngine<SV, Device, dim, E, DType>::Eval(dst, exp.self());
   }
 };
-template<typename SV, typename Device, int dim, int ldim, int rdim, bool ltrans, bool rtrans, typename DType>
+template<typename SV, typename Device, int dim, int ldim,
+         int rdim, bool ltrans, bool rtrans, typename DType>
 struct ExpComplexEngine<SV, Device, dim,
-                        DotExp<Tensor<Device, ldim, DType>, Tensor<Device, rdim, DType>, ltrans, rtrans, DType>,
+                        DotExp<Tensor<Device, ldim, DType>,
+                               Tensor<Device, rdim, DType>,
+                               ltrans, rtrans, DType>,
                         DType> {
-  inline static void Eval(Tensor<Device,dim> &dst,
+  inline static void Eval(Tensor<Device, dim> *dst,
                           const DotExp<Tensor<Device, ldim, DType>,
                                        Tensor<Device, rdim, DType>,
                                        ltrans, rtrans, DType> &exp) {
-    DotEngine<SV, Device, dim, ldim, rdim, ltrans, rtrans, DType>::Eval(dst, exp.lhs_, exp.rhs_, exp.scale_);
+    DotEngine<SV, Device, dim, ldim, rdim,
+              ltrans, rtrans, DType>::Eval(dst, exp.lhs_, exp.rhs_, exp.scale_);
   }
 };
 }  // namespace expr

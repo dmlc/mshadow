@@ -1,13 +1,15 @@
-#ifndef MSHADOW_UTILS_H_
-#define MSHADOW_UTILS_H_
 /*!
+ *  Copyright (c) 2014 by Contributors
  * \file utils.h
  * \brief simple utils for error and checkings
  * \author Tianqi Chen
  */
+#ifndef MSHADOW_UTILS_H_
+#define MSHADOW_UTILS_H_
 #define _CRT_SECURE_NO_WARNINGS
 #include <cstdio>
 #include <string>
+#include <cstdarg>
 #include <cstdlib>
 namespace mshadow {
 /*! \brief namespace for helper utils of the project */
@@ -76,4 +78,4 @@ inline void Error(const char *fmt, ...) {
 }
 }  // namespace utils
 }  // namespace mshadow
-#endif
+#endif  // MSHADOW_UTILS_H_
