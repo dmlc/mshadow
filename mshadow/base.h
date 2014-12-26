@@ -114,6 +114,17 @@ extern "C" {
   #define MSHADOW_CONSTEXPR const
 #endif
 
+/*!
+ * \brief default data type for tensor string
+ *  in code release, change it to default_real_t
+ *  during development, change it to empty string so that missing
+ *  template arguments can be detected
+ */
+#ifndef MSHADOW_DEFAULT_DTYPE
+#define MSHADOW_DEFAULT_DTYPE = default_real_t
+//#define MSHADOW_DEFAULT_DTYPE
+#endif
+
 /*! \brief namespace for mshadow */
 namespace mshadow {
 /*! \brief buffer size for each random number generator */

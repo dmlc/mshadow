@@ -11,34 +11,34 @@ int main(void) {
   // assume we have a float space
   double data[20];
   // create a 2 x 5 x 2 tensor, from existing space
-  Tensor<cpu,3, double> ts(data, Shape3(2,5,2));
+  Tensor<cpu, 3, double> ts(data, Shape3(2,5,2));
   // take first subscript of the tensor
-  Tensor<cpu,2, double> mat = ts[0];
+  Tensor<cpu, 2, double> mat = ts[0];
   // Tensor object is only a handle, assignment means they have same data content
-  Tensor<cpu,2, double> mat2 = mat;
-  
+  Tensor<cpu, 1, double> mat2= NewTensor<cpu, double>(Shape1(2), 0.0f);
+  mat2[1] = 10;
   // shape of matrix, note shape order is different from numpy
   // shape[i] indicate the shape of i-th dimension
   printf("%u X %u matrix, stride=%u\n", mat.size(0), mat.size(1), mat.stride_);
   
-  // initialize all element to zero
-  mat = 0.0f;
+ 
   // assign some values
   mat[0][1] = 1.0f; mat[1][0] = 2.0f;
   // elementwise operations
-  mat = mat + 2.0f;
+  ts = broadcast<0>(mat2, ts.shape_);
   
   // print out matrix, note: mat2 and mat1 are handles(pointers)
+  for (index_t c = 0; c < ts.size(0); ++c) {
   for (index_t i = 0; i < mat.size(0); ++i) {
     for (index_t j = 0; j < mat.size(1); ++j) {
-      printf("%.2f ", mat[i][j]);
+      printf("%.2f ", ts[c][i][j]);
     }
     printf("\n");
   }
-  
+  }
   // create a tensor without explictly allocating spaces.
-  Tensor<cpu, 2> mat3 = NewTensor<cpu>(Shape2(2, 5), 0.0f);
-  Tensor<cpu, 2> mat4 = NewTensor<cpu>(Shape2(2, 5), 1.0f);
+  Tensor<cpu, 2, float> mat3 = NewTensor<cpu, float>(Shape2(2, 5), 0.0f);
+  Tensor<cpu, 2, float> mat4 = NewTensor<cpu, float>(Shape2(2, 5), 1.0f);
   // transpose, and then add mat4.
   mat3 = tcast<float>(mat.T()) + mat4;
   

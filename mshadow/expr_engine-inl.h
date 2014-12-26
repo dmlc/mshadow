@@ -68,7 +68,7 @@ class Plan<Tensor<Device, dim, DType>, DType> {
 template <typename Device, typename DType>
 class Plan<Tensor<Device, 1, DType>, DType> {
  public:
-  explicit Plan(const Tensor<Device, 1> &t) : dptr_(t.dptr_) {}
+  explicit Plan(const Tensor<Device, 1, DType> &t) : dptr_(t.dptr_) {}
   MSHADOW_XINLINE DType &Eval(index_t y, index_t x) {
     return dptr_[x];
   }
@@ -395,7 +395,7 @@ struct ExpComplexEngine<SV, Device, dim,
                                Tensor<Device, rdim, DType>,
                                ltrans, rtrans, DType>,
                         DType> {
-  inline static void Eval(Tensor<Device, dim> *dst,
+  inline static void Eval(Tensor<Device, dim, DType> *dst,
                           const DotExp<Tensor<Device, ldim, DType>,
                                        Tensor<Device, rdim, DType>,
                                        ltrans, rtrans, DType> &exp) {

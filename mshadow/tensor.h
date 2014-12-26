@@ -189,7 +189,7 @@ struct Stream {
  * \tparam dimension dimension of the tensor
  * \tparam DType the type of elements in the tensor
  */
-template<typename Container, typename Device, int dimension, typename DType>
+template<typename Container, typename Device, int dimension, typename DType> 
 struct TRValue: public expr::RValueExp<Container, DType> {
 };
 // more compact template
@@ -199,7 +199,8 @@ struct TRValue: public expr::RValueExp<Container, DType> {
  * \tparam dimension dimension of the tensor
  * \tparam DType the type of elements in the tensor
  */
-template<typename Device, int dimension, typename DType =  default_real_t>
+template<typename Device, int dimension,
+         typename DType MSHADOW_DEFAULT_DTYPE>
 struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
                               Device, dimension, DType> {
  public:
@@ -331,13 +332,13 @@ struct Tensor<Device, 1, DType>:
       : dptr_(dptr), shape_(shape), stride_(shape[0]), stream_(NULL) {}
   MSHADOW_XINLINE Tensor(DType *dptr, Shape<1> shape, index_t stride)
       : dptr_(dptr), shape_(shape), stride_(stride), stream_(NULL) {}
-  MSHADOW_XINLINE Tensor<Device, 2> FlatTo2D(void) const {
-    return Tensor<Device, 2>(dptr_, shape_.FlatTo2D(), stride_);
+  MSHADOW_XINLINE Tensor<Device, 2, DType> FlatTo2D(void) const {
+    return Tensor<Device, 2, DType>(dptr_, shape_.FlatTo2D(), stride_);
   }
-  MSHADOW_XINLINE Tensor<Device, 1> Slice(index_t begin, index_t end) const {
+  MSHADOW_XINLINE Tensor<Device, 1, DType> Slice(index_t begin, index_t end) const {
     Shape<1> s;
     s[0] = end  - begin;
-    return Tensor<Device, 1>(dptr_ + begin, s);
+    return Tensor<Device, 1, DType>(dptr_ + begin, s);
   }
   MSHADOW_XINLINE index_t size(index_t i) const {
     return shape_[0];
@@ -453,9 +454,11 @@ inline void Copy(Tensor<gpu, dim, DType> dst,
  * \param dst destination
  * \param energy input energy
  */
-inline void Softmax(Tensor<cpu, 2> dst, const Tensor<cpu, 2> &energy);
+template<typename DType>
+inline void Softmax(Tensor<cpu, 2, DType> dst, const Tensor<cpu, 2, DType> &energy);
 /*! \brief refer to comment of cpu ver \sa Softmax */
-inline void Softmax(Tensor<gpu, 2> dst, const Tensor<gpu, 2> &energy);
+template<typename DType>
+inline void Softmax(Tensor<gpu, 2, DType> dst, const Tensor<gpu, 2, DType> &energy);
 // function declarations to support expression, no need to understand them
 // these functions do not need to be directly used
 /*!
@@ -531,6 +534,7 @@ inline void MapReduceKeepHighDim(TRValue<R, gpu, 1, DType> *dst,
 }  // namespace mshadow
 // include headers
 #include "./expr_engine-inl.h"
+#include "./extension.h"
 #include "./tensor_cpu-inl.h"
 #include "./io.h"
 #include "./tensor_container.h"

@@ -132,7 +132,7 @@ class TensorContainer: public Tensor<Device, dimension, DType> {
   /*! \brief whether we do padding in the space */
   bool pad_;
   /*! \brief the shape of data_ is actually current data space */
-  Tensor<Device, 2> data_;
+  Tensor<Device, 2, DType> data_;
   // freespace
   inline void FreeSpace(void) {
     if (data_.dptr_ != NULL) {
