@@ -1,11 +1,11 @@
-#ifndef MSHADOW_EXTENSION_BROADCAST_H_
-#define MSHADOW_EXTENSION_BROADCAST_H_
 /*!
  *  Copyright (c) 2014 by Contributors
- * \file broadcast-inl.h
- * \brief definitions of abstract expressions and expressions template
+ * \file broadcast.h
+ * \brief support for broadcast and repmat
  * \author Tianqi Chen
  */
+#ifndef MSHADOW_EXTENSION_BROADCAST_H_
+#define MSHADOW_EXTENSION_BROADCAST_H_
 #include "../extension.h"
 namespace mshadow {
 namespace expr {
