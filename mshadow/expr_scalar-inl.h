@@ -27,6 +27,19 @@ operator*(MSHADOW_SCALAR_ lhs,
                 MSHADOW_SCALAR_>(rhs.lhs_, rhs.rhs_, rhs.scale_ * lhs);
 }
 
+/*! \brief operator overload */
+template<typename E, typename DType, typename R, int d>
+inline ReduceTo1DExp<E, DType, R, d>
+operator*(const ReduceTo1DExp<E, DType, R, d> &e, MSHADOW_SCALAR_ scale) {
+  return ReduceTo1DExp<E, DType, R, d>(e.src_, e.scale_ * scale);
+}
+/*! \brief operator overload */
+template<typename E, typename DType, typename R,int d>
+inline ReduceTo1DExp<E, DType, R, d>
+operator*(MSHADOW_SCALAR_ scale, const ReduceTo1DExp<E, DType, R, d> &e) {
+  return ReduceTo1DExp<E, DType, R, d>(e.src_, e.scale_ * scale);
+}
+
 /*! \brief operator overload for const */
 template<typename OP, typename TA, int ta>
 inline BinaryMapExp<OP, TA, ScalarExp<MSHADOW_SCALAR_>,

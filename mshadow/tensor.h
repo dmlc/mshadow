@@ -538,4 +538,18 @@ inline void MapReduceKeepHighDim(TRValue<R, gpu, 1, DType> *dst,
 #include "./tensor_cpu-inl.h"
 #include "./io.h"
 #include "./tensor_container.h"
+// add definition of scalar related operators
+#ifdef MSAHDOW_SCALAR_
+  #error "MSHADOW_SCALAR_ must not be defined"
+#endif
+// enumerate all the scalar data type we aim to be good at
+#define MSHADOW_SCALAR_ float
+#include "./expr_scalar-inl.h"
+#undef MSHADOW_SCALAR_
+#define MSHADOW_SCALAR_ double
+#include "./expr_scalar-inl.h"
+#undef MSHADOW_SCALAR_
+#define MSHADOW_SCALAR_ int
+#include "./expr_scalar-inl.h"
+#undef MSHADOW_SCALAR_
 #endif  // MSHADOW_TENSOR_H_

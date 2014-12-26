@@ -208,6 +208,7 @@ class RValueExp: public Exp<Container, DType, type::kRValue> {
  * \tparam TB type of rhs
  * \tparam ltrans whether lhs is transposed
  * \tparam rtrans whether rhs is transposed
+ * \tparam DType the data type of the scalar
  */
 template<typename TA, typename TB, bool ltrans, bool rtrans, typename DType>
 struct DotExp: public Exp<DotExp<TA, TB, ltrans, rtrans, DType>,
@@ -356,18 +357,4 @@ F(const Exp<TA, DType, ta> &src) {
 }
 }  // namespace expr
 }  // namespace mshadow
-// add definition of scalar related operators
-#ifdef MSAHDOW_SCALAR_
-  #error "MSHADOW_SCALAR_ must not be defined"
-#endif
-// enumerate all the scalar data type we aim to be good at
-#define MSHADOW_SCALAR_ float
-#include "./expression-inl.h"
-#undef MSHADOW_SCALAR_
-#define MSHADOW_SCALAR_ double
-#include "./expression-inl.h"
-#undef MSHADOW_SCALAR_
-#define MSHADOW_SCALAR_ int
-#include "./expression-inl.h"
-#undef MSHADOW_SCALAR_
 #endif  // MSHADOW_EXPRESSION_H_

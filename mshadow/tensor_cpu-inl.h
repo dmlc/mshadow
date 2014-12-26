@@ -116,9 +116,9 @@ inline void MapReduceKeepLowest(TRValue<R, cpu, 1, DType> *dst,
       ::Error_TypeCheck_Not_Pass_For_Reduce_Exp();
   Shape<2> eshape = expr::ShapeCheck<expr::ExpInfo<E>::kDim, E>
       ::Check(exp.self()).FlatTo2D();
-  utils::Check(eshape[0] == dst->self().size(0),
-               "reduction dimension do not match");
-  utils::Check(eshape[1] != 0, "can not reduce over empty tensor");
+  utils::Check(eshape[1] == dst->self().size(0),
+               "MapReduceKeepLowest::reduction dimension do not match");
+  utils::Check(eshape[0] != 0, "can not reduce over empty tensor");
   // execution
   expr::Plan<R, DType> dplan = MakePlan(dst->self());
   expr::Plan<E, DType> splan = MakePlan(exp.self());
@@ -142,7 +142,7 @@ inline void MapReduceKeepHighDim(TRValue<R, cpu, 1, DType> *dst,
   EShape eshape = expr::ShapeCheck<expr::ExpInfo<E>::kDim, E>
       ::Check(exp.self());
   utils::Check(eshape[dimkeep] == dst->self().size(0),
-               "reduction dimension do not match");
+               "MapReduceKeepHighDim::reduction dimension do not match");
   // use equvalent form
   Shape<4> pshape = Shape4(eshape.ProdShape(0, dimkeep),
                            eshape[dimkeep],
@@ -152,9 +152,9 @@ inline void MapReduceKeepHighDim(TRValue<R, cpu, 1, DType> *dst,
   expr::Plan<R, DType> dplan = MakePlan(dst->self());
   expr::Plan<E, DType> splan = MakePlan(exp.self());
   for (index_t c = 0; c < pshape[1]; ++c) {
-    DType res = Reducer::kInitV;
+    DType res; Reducer::SetInitValue(res);
     for (index_t n = 0; n < pshape[0]; ++n) {
-      DType tres = Reducer::kInitV;
+      DType tres; Reducer::SetInitValue(tres);
       for (index_t y = 0; y < pshape[2]; ++y) {
         for (index_t x = 0; x < pshape[3]; ++x) {
           Reducer::Reduce(tres,

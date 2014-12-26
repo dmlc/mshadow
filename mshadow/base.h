@@ -121,8 +121,8 @@ extern "C" {
  *  template arguments can be detected
  */
 #ifndef MSHADOW_DEFAULT_DTYPE
-#define MSHADOW_DEFAULT_DTYPE = default_real_t
-//#define MSHADOW_DEFAULT_DTYPE
+//#define MSHADOW_DEFAULT_DTYPE = default_real_t
+#define MSHADOW_DEFAULT_DTYPE
 #endif
 
 /*! \brief namespace for mshadow */
@@ -275,8 +275,8 @@ struct sum {
     return 1;
   }
   template<typename DType>
-  MSHADOW_XINLINE static DType InitValue(void) {
-    return 0;
+  MSHADOW_XINLINE static void SetInitValue(DType &initv) {
+    initv = 0;
   }
 };
 /*! \brief helper namespace to get the limits */
@@ -313,8 +313,8 @@ struct maximum {
     return redres == redsrc ? 1: 0;
   }
   template<typename DType>
-  MSHADOW_XINLINE static DType InitValue(void) {
-    return limits::MinValue<DType>();
+  MSHADOW_XINLINE static void SetInitValue(DType &initv) {
+    initv = limits::MinValue<DType>();
   }
 };
 }  // namespace red
