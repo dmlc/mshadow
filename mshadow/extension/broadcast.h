@@ -1,5 +1,5 @@
-#ifndef MSHADOW_EXTENSION_BROADCAST_INL_H_
-#define MSHADOW_EXTENSION_BROADCAST_INL_H_
+#ifndef MSHADOW_EXTENSION_BROADCAST_H_
+#define MSHADOW_EXTENSION_BROADCAST_H_
 /*!
  *  Copyright (c) 2014 by Contributors
  * \file broadcast-inl.h
@@ -49,7 +49,8 @@ broadcast(const expr::Exp<SrcExp, DType, etype> &src, Shape<dimdst> shape) {
                 ::Error_Expression_Does_Not_Meet_Dimension_Req();
   utils::Check(ShapeCheck<1, SrcExp>::Check(src.self())[0] == shape[dimcast],
                "broadcast, shape mismatch");
-  return Broadcast1DExp<SrcExp, DType, dimdst, dimdst - dimcast>(src.self(), shape);
+  return Broadcast1DExp<SrcExp, DType, dimdst,
+                        dimdst - dimcast>(src.self(), shape);
 }
 // short cut functions
 /*!
@@ -62,7 +63,8 @@ broadcast(const expr::Exp<SrcExp, DType, etype> &src, Shape<dimdst> shape) {
 template<typename SrcExp, typename DType, int etype>
 inline Broadcast1DExp<SrcExp, DType, 2, 1>
 repmat(const expr::Exp<SrcExp, DType, etype> &src, index_t nrow) {
-  return broadcast<1>(src, Shape2(nrow, ShapeCheck<1, SrcExp>::Check(src.self())[0]));
+  return broadcast<1>
+      (src, Shape2(nrow, ShapeCheck<1, SrcExp>::Check(src.self())[0]));
 }
 //----------------------
 // Execution plan
@@ -73,7 +75,7 @@ template<typename SrcExp, typename DType,
 struct Plan<Broadcast1DExp<SrcExp, DType, dimdst, dimdst_m_cast>, DType> {
  public:
   static const int dimcast = dimdst - dimdst_m_cast;
-  Plan(const Broadcast1DExp<SrcExp, DType, dimdst, dimdst_m_cast> &e)
+  explicit Plan(const Broadcast1DExp<SrcExp, DType, dimdst, dimdst_m_cast> &e)
       : src_(MakePlan(e.src_)),
         ystride_(e.shape_.ProdShape(dimcast + 1, dimdst - 1)),
         length_(e.shape_[dimcast]) {
@@ -93,15 +95,15 @@ struct Plan<Broadcast1DExp<SrcExp, DType, dimdst, dimdst_m_cast>, DType> {
 template<typename SrcExp, typename DType, int dimdst>
 struct Plan<Broadcast1DExp<SrcExp, DType, dimdst, 1>, DType>{
  public:
-  Plan(const Broadcast1DExp<SrcExp, DType, dimdst, 1> &e)
+  explicit Plan(const Broadcast1DExp<SrcExp, DType, dimdst, 1> &e)
       : src_(MakePlan(e.src_)) {}
-  MSHADOW_XINLINE DType Eval(index_t y, index_t x) const{
+  MSHADOW_XINLINE DType Eval(index_t y, index_t x) const {
     return src_.Eval(0, x);
   }
 
  private:
-  expr::Plan<SrcExp, DType> src_;  
+  expr::Plan<SrcExp, DType> src_;
 };
 }  // namespace expr
 }  // namespace mshadow
-#endif  // MSHADOW_EXTENSION_BROADCAST_INL_H_
+#endif  // MSHADOW_EXTENSION_BROADCAST_H_
