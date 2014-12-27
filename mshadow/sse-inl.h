@@ -36,7 +36,7 @@ inline void* AlignedMallocPitch(size_t *out_pitch,
   void *res = memalign(16, pitch * num_line);
 #endif
 #endif
-  utils::Assert(res != NULL, "AlignedMallocPitch failed");
+  utils::Check(res != NULL, "AlignedMallocPitch failed");
   return res;
 }
 /*! 

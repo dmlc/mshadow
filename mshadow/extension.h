@@ -18,5 +18,7 @@
 #include "./extension/spatial_unpool.h"
 #include "./extension/channel_pool.h"
 #include "./extension/pad.h"
+#include "./extension/crop.h"
+#include "./extension/mirror.h"
 #endif
 

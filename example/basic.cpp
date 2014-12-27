@@ -16,17 +16,18 @@ int main(void) {
   Tensor<cpu, 2, double> mat = ts[0];
   // Tensor object is only a handle, assignment means they have same data content
   Tensor<cpu, 1, double> mat2= NewTensor<cpu, double>(Shape1(2), 0.0f);
+  Tensor<cpu, 3, double> ts1= NewTensor<cpu, double>(ts.shape_, 0.0f);
   mat2[1] = 10;
   // shape of matrix, note shape order is different from numpy
   // shape[i] indicate the shape of i-th dimension
   printf("%u X %u matrix, stride=%u\n", mat.size(0), mat.size(1), mat.stride_);
-  
- 
+
   // assign some values
   mat[0][1] = 1.0f; mat[1][0] = 2.0f;
   // elementwise operations
-  ts = broadcast<0>(mat2, ts.shape_);
-  
+
+  //ts = broadcast<0>(mat2, ts.shape_);  
+  mat2 = sumall_except_dim<0>(mat);
   // print out matrix, note: mat2 and mat1 are handles(pointers)
   for (index_t c = 0; c < ts.size(0); ++c) {
   for (index_t i = 0; i < mat.size(0); ++i) {
