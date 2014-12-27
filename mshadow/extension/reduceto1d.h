@@ -56,22 +56,27 @@ template<typename SrcExp, typename DType, int etype>
 inline ReduceTo1DExp<SrcExp, DType, red::sum, 1>
 sum_rows(const Exp<SrcExp, DType, etype> &exp) {
   TypeCheckPass<ExpInfo<SrcExp>::kDim ==2>
-      ::Error_Expression_Does_Not_Meet_Dimension_Req();  
+      ::Error_Expression_Does_Not_Meet_Dimension_Req();
   return sumall_except_dim<1>(exp);
 }
 template<typename SV, typename Device, typename DType,
          typename SrcExp, typename Reducer, int m_dimkeep>
-struct ExpComplexEngine<SV, Device, 1, ReduceTo1DExp<SrcExp, DType, Reducer, m_dimkeep>, DType> {
+struct ExpComplexEngine<SV, Device, 1,
+                        ReduceTo1DExp<SrcExp, DType, Reducer, m_dimkeep>,
+                        DType> {
   static const int dimkeep = ExpInfo<SrcExp>::kDim - m_dimkeep;
   inline static void Eval(Tensor<Device, 1, DType> *dst,
-                          const ReduceTo1DExp<SrcExp, DType, Reducer, m_dimkeep> &exp) {    
-    TypeCheckPass<m_dimkeep != 1>::Error_Expression_Does_Not_Meet_Dimension_Req();
+                          const ReduceTo1DExp<SrcExp, DType,
+                                              Reducer, m_dimkeep> &exp) {
+    TypeCheckPass<m_dimkeep != 1>
+        ::Error_Expression_Does_Not_Meet_Dimension_Req();
     MapReduceKeepHighDim<SV, Reducer, dimkeep>(dst, exp.src_, exp.scale_);
   }
 };
 template<typename SV, typename Device, typename DType,
          typename SrcExp, typename Reducer>
-struct ExpComplexEngine<SV, Device, 1, ReduceTo1DExp<SrcExp, DType, Reducer, 1>, DType> {
+struct ExpComplexEngine<SV, Device, 1,
+                        ReduceTo1DExp<SrcExp, DType, Reducer, 1>, DType> {
   inline static void Eval(Tensor<Device, 1, DType> *dst,
                           const ReduceTo1DExp<SrcExp, DType, Reducer, 1> &exp) {
     MapReduceKeepLowest<SV, Reducer>(dst, exp.src_, exp.scale_);
