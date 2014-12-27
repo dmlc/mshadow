@@ -105,7 +105,7 @@ struct Plan<UnPoolingExp<Reducer, SrcExp, DType, srcdim>, DType> {
     const index_t py_max = min((y + kstride_) / kstride_, pshape_y_);
     const index_t px_max = min((x + kstride_) / kstride_, pshape_x_);
 
-    DType val = 0;
+    DType val = static_cast<DType>(0);
     for (index_t py = py_min; py < py_max; ++py) {
       for (index_t px = px_min; px < px_max; ++px) {
         val += Reducer::PartialGrad(vsrc,
