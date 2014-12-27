@@ -112,7 +112,8 @@ inline void MapExp(TRValue<R, gpu, dim, DType> *dst,
                "Assignment: Shape of Tensors are not consistent with target");
   cuda::MapPlan<Saver>(MakePlan(dst->self()),
                        MakePlan(exp.self()),
-                       dst->shape_.FlatTo2D());
+                       dst->shape_.FlatTo2D(),
+                       dst->stride_);
 }
 
 template<typename Saver, typename Reducer,
@@ -149,7 +150,7 @@ inline void MapReduceKeepHighDim(TRValue<R, cpu, 1, DType> *dst,
                            eshape.ProdShape(dimkeep, EShape::kSubdim),
                            eshape[EShape::kSubdim]);
   // call equavalent map red dim 2
-  cuda::MapReduceKeepDim2<Saver, Reducer>
+  cuda::MapReduceKeepDim1<Saver, Reducer>
       (MakePlan(dst->self()), MakePlan(exp.self()), scale, pshape);
 }
 template<typename DType>
