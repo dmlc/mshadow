@@ -6,9 +6,9 @@
  */
 #ifndef MSHADOW_TENSOR_CPU_INL_H_
 #define MSHADOW_TENSOR_CPU_INL_H_
-
 #include <cstring>
 #include "./base.h"
+#include "./tensor.h"
 #include "./sse-inl.h"
 
 namespace mshadow {
