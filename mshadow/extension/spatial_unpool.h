@@ -1,7 +1,7 @@
 /*!
  *  Copyright (c) 2014 by Contributors
- * \file broadcast.h
- * \brief support for broadcast and repmat
+ * \file spatial_unpool.h
+ * \brief support for unpool
  * \author Tianqi Chen
  */
 #ifndef MSHADOW_EXTENSION_SPATIAL_UNPOOL_H_
@@ -12,8 +12,10 @@ namespace mshadow {
 namespace expr {
 /*!
  * \brief unpooling expr reverse operation of pooling, used to pass gradient back
- * \tparam Reducer specifies reduction operation during pooling
- * \tparam Device which device it lies
+ * \tparam Reducer reduction method during pooling
+ * \tparam SrcExp source expression to be pooled from
+ * \tparam DType the content data type
+ * \tparam srcdim dimension of src
  */
 template<typename Reducer, typename SrcExp, typename DType, int srcdim>
 struct UnPoolingExp:

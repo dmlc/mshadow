@@ -1,7 +1,7 @@
 /*!
  *  Copyright (c) 2014 by Contributors
- * \file broadcast.h
- * \brief support for broadcast and repmat
+ * \file reduceto1d.h
+ * \brief support for sum_rows and sumall_except_dim
  * \author Tianqi Chen
  */
 #ifndef MSHADOW_EXTENSION_REDUCETO1D_H_

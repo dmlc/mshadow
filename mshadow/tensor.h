@@ -127,6 +127,21 @@ v   * \return subshape
     }
     return s;
   }
+  /*!
+   * \brief slice the shape from start to end
+   * \tparam dimstart start dimension
+   * \tparam dimend end dimension
+   * \return the sliced shape
+   */
+  template<int dimstart, int dimend>
+  MSHADOW_XINLINE Shape<dimend - dimstart> Slice(void) const {
+    Shape<dimend - dimstart> s;
+    #pragma unroll
+    for (int i = dimstart; i < dimend; ++i) {
+      s[i - dimstart] = this->shape_[i];
+    }
+    return s;
+  }
 };  // Shape
 //------------------------------------------------
 // useful construction functions to generate shape

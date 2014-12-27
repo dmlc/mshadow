@@ -69,7 +69,6 @@ repmat(const expr::Exp<SrcExp, DType, etype> &src, index_t nrow) {
 //----------------------
 // Execution plan
 //----------------------
-/*! \brief execution plan of Broadcast1DExp */
 template<typename SrcExp, typename DType,
          int dimdst, int dimdst_m_cast>
 struct Plan<Broadcast1DExp<SrcExp, DType, dimdst, dimdst_m_cast>, DType> {

@@ -1,7 +1,7 @@
 /*!
  *  Copyright (c) 2014 by Contributors
- * \file broadcast.h
- * \brief support for broadcast and repmat
+ * \file channel_pool.h
+ * \brief support for chpool
  * \author Tianqi Chen
  */
 #ifndef MSHADOW_EXTENSION_CHANNEL_POOL_H_
@@ -15,6 +15,7 @@ namespace expr {
  *        used to implement local response normalization
  * \tparam Reducer reduction method during pooling
  * \tparam SrcExp source expression to be pooled from
+ * \tparam DType the type of elements
  * \tparam srcdim dimension of src
  */
 template<typename Reducer, typename SrcExp, typename DType, int srcdim>
@@ -43,6 +44,7 @@ struct ChannelPoolingExp:
  * \return expression of pooled result
  * \tparam Reducer reducer type
  * \tparam SrcExp source expression
+ * \tparam DType the type of elements
  * \tparam etype type of expression
  */
 template<typename Reducer, typename SrcExp, typename DType, int etype>

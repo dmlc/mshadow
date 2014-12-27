@@ -14,5 +14,9 @@
 #include "./extension/reshape.h"
 #include "./extension/swapaxis.h"
 #include "./extension/reduceto1d.h"
+#include "./extension/spatial_pool.h"
+#include "./extension/spatial_unpool.h"
+#include "./extension/channel_pool.h"
+#include "./extension/pad.h"
 #endif
 
