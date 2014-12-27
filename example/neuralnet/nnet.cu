@@ -135,7 +135,9 @@ int main( int argc, char *argv[] ){
     // choose which version to use
     INNet *net;
     if( !strcmp( argv[1], "gpu") ) {
+#if DMSHADOW_USE_CUDA==1
         net = new NNet<gpu>( batch_size, num_in, num_hidden, num_out );
+#endif
     }else{
         net = new NNet<cpu>( batch_size, num_in, num_hidden, num_out );
     }
