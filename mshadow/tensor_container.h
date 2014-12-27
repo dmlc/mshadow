@@ -65,7 +65,7 @@ class TensorContainer: public Tensor<Device, dimension, DType> {
     if (s2.shape_[1] > data_.stride_ || s2.shape_[0] > data_.size(0)) {
       this->AllocByShape(shape);
     } else {
-      this->shape = shape;
+      this->shape_ = shape;
       if (this->pad_) {
         this->stride_ = data_.stride_;
       } else {
@@ -136,15 +136,15 @@ class TensorContainer: public Tensor<Device, dimension, DType> {
   // freespace
   inline void FreeSpace(void) {
     if (data_.dptr_ != NULL) {
-      mshadow::FreeSpace(data_);
-      data_.dptr = this->dptr = NULL;
+      mshadow::FreeSpace(&data_);
+      data_.dptr_ = this->dptr_ = NULL;
     }
   }
   inline void AllocByShape(const Shape<dimension>& shape) {
     if (data_.dptr_ != NULL) this->FreeSpace();
     data_.shape_ = shape.FlatTo2D();
-    mshadow::AllocSpace(data_, pad_);
-    this->dptr = data_.dptr_;
+    mshadow::AllocSpace(&data_, pad_);
+    this->dptr_ = data_.dptr_;
     this->shape_ = shape;
     if (this->pad_) {
       this->stride_ = data_.stride_;
