@@ -67,7 +67,7 @@ inline void AllocSpace(Tensor<gpu, dim, DType> *obj, bool pad) {
 }
 template<int dim, typename DType>
 inline void FreeSpace(Tensor<gpu, dim, DType> *obj) {
-  cudaFree(obj->dptr_); obj->dptr = NULL;
+  cudaFree(obj->dptr_); obj->dptr_ = NULL;
 }
 template<typename A, typename B, int dim, typename DType>
 inline void Copy(Tensor<A, dim, DType> _dst,

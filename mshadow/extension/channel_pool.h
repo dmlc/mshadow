@@ -66,7 +66,7 @@ struct Plan<ChannelPoolingExp<Reducer, SrcExp, DType, srcdim>, DType> {
         height_(e.shape_[srcdim - 2]), width_(e.shape_[srcdim - 1]),
         hnsize_(e.nsize_ / 2) {}
   MSHADOW_XINLINE DType Eval(index_t i, index_t j) const {
-    using std::min;
+    using namespace std;
     const index_t y = i % height_;
     i /= height_;
     const index_t c = i % channel_;

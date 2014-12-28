@@ -43,7 +43,7 @@ inline void FreeSpace(Tensor<cpu, dim, DType> *obj) {
 template<int dim, typename DType>
 inline void Copy(Tensor<cpu, dim, DType> _dst,
                  const Tensor<cpu, dim, DType> &_src) {
-  utils::Check(_dst.shape == _src.shape, "Copy:shape mismatch");
+  utils::Check(_dst.shape_ == _src.shape_, "Copy:shape mismatch");
   Tensor<cpu, 2, DType> dst = _dst.FlatTo2D();
   Tensor<cpu, 2, DType> src = _src.FlatTo2D();
   for (index_t y = 0; y < dst.size(0); ++y) {
@@ -186,7 +186,7 @@ inline void Softmax(Tensor<cpu, 1, DType> dst,
 template<typename DType>
 inline void Softmax(Tensor<cpu, 2, DType> dst,
                     const Tensor<cpu, 2, DType> &energy) {
-  utils::Check(dst.shape == energy.shape, "Softmax: shape mismatch");
+  utils::Check(dst.shape_ == energy.shape_, "Softmax: shape mismatch");
   for (index_t y = 0; y < dst.size(0); ++y) {
     Softmax(dst[y], energy[y]);
   }
@@ -195,7 +195,7 @@ inline void Softmax(Tensor<cpu, 2, DType> dst,
 template<typename DType>
 inline DType VDot(const Tensor<cpu, 1, DType> &lhs,
                   const Tensor<cpu, 1, DType> &rhs) {
-  utils::Check(lhs.shape == rhs.shape, "VDot: shape mismatch");
+  utils::Check(lhs.shape_ == rhs.shape_, "VDot: shape mismatch");
   DType sum = static_cast<DType>(0);
   for (index_t x = 0; x < lhs.size(0); ++x) {
     sum += lhs[x] * rhs[x];

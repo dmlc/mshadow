@@ -1,6 +1,6 @@
 # set LD_LIBRARY_PATH
 export CC  = gcc
-export CXX = clang++
+export CXX = g++
 export NVCC =nvcc
 export CFLAGS = -Wall -O3 -msse3 -Wno-unknown-pragmas -funroll-loops -I../
 export LDFLAGS= -lm 
@@ -10,13 +10,14 @@ export NVCCFLAGS = -O3 --use_fast_math -ccbin $(CXX)
 BIN = basic defop
 OBJ =
 CUOBJ =
-CUBIN =
+CUBIN = basicx
 .PHONY: clean all
 
 all: $(BIN) $(OBJ) $(CUBIN) $(CUOBJ)
 
 basic: basic.cpp
 defop: defop.cpp
+basicx: basic.cu
 
 $(BIN) :
 	$(CXX) $(CFLAGS) -o $@ $(filter %.cpp %.o %.c, $^)  $(LDFLAGS)

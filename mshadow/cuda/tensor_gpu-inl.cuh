@@ -198,7 +198,7 @@ __global__ void SoftmaxKernel(DstPlan dst, SrcPlan src, index_t xmax) {
   }
   for (unsigned x = x_size; x < xmax; x += x_size) {
     if (x + threadIdx.x < xmax) {
-      DType a = src[y][x + threadIdx.x];
+      DType a = src.Eval(y, x + threadIdx.x);
       s_rec[threadIdx.x] = max(a, s_rec[threadIdx.x]);
     }
   }
@@ -239,11 +239,13 @@ template<typename DType>
 inline void Softmax(Tensor<gpu, 2, DType> &dst,
                     const Tensor<gpu, 2, DType> &src) {
   dim3 dimBlock(kBaseThreadNum);
-  dim3 dimGrid(dst.shape[0]);
+  dim3 dimGrid(dst.size(0));
   utils::Check(dst.shape_ == src.shape_, "Softmax: shape mismatch");
   CheckLaunchParam(dimGrid, dimBlock, "Softmax");
   SoftmaxKernel<kBaseThreadBits, DType>
-      <<<dimGrid, dimBlock>>>(expr::MakePlan(dst), expr::MakePlan(src));
+      <<<dimGrid, dimBlock>>>(expr::MakePlan(dst),
+                              expr::MakePlan(src),
+                              dst.size(1));
 }
 }  // namespace cuda
 }  // namespace mshadow

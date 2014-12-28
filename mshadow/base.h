@@ -301,7 +301,7 @@ struct maximum {
   /*! \brief do reduction into dst */
   template<typename DType>
   MSHADOW_XINLINE static void Reduce(volatile DType& dst,  volatile DType src) {
-    using std::max;
+    using namespace std;
     dst = max(dst, src);
   }
   /*!

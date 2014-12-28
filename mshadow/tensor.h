@@ -302,7 +302,7 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
    */
   MSHADOW_XINLINE Tensor<Device, dimension, DType>
   Slice(index_t begin, index_t end) const {
-    Shape<dimension> s = this->shape;
+    Shape<dimension> s = this->shape_;
     s[0] = end - begin;
     return Tensor<Device, dimension, DType>(dptr_ + this->MSize<1>() * begin,
                                             s, stride_);

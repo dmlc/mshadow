@@ -85,7 +85,7 @@ struct Plan<PackColToPatchXExp<SrcExp, DType, dstdim>, DType> {
     // note: i/o convention are same as unpack
   }
   MSHADOW_XINLINE DType Eval(index_t i, index_t j) const {
-    using std::min;
+    using namespace std;
     const index_t y = i % i_height_;
     const index_t idivh = i / i_height_;
     const index_t c = idivh % i_channel_;

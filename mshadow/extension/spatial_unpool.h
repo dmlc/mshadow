@@ -95,7 +95,7 @@ struct Plan<UnPoolingExp<Reducer, SrcExp, DType, srcdim>, DType> {
         pshape_y_(e.pshape_y_),  pshape_x_(e.pshape_x_),
         ksize_y_(e.ksize_y_), ksize_x_(e.ksize_x_), kstride_(e.kstride_) {}
   MSHADOW_XINLINE DType Eval(index_t i, index_t j) const {
-    using std::min;
+    using namespace std;
     const index_t x = j;
     const index_t y = i % sshape_y_;
     const index_t c = i / sshape_y_;

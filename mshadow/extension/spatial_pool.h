@@ -117,7 +117,7 @@ struct Plan<PoolingExp< Reducer, SrcExp, DType, srcdim>, DType> {
         src_height_(e.src_height_), src_width_(e.src_width_),
         new_height_(e.shape_[srcdim - 2]) {}
   MSHADOW_XINLINE DType Eval(index_t i, index_t j) const {
-    using std::min;
+    using namespace std;
     const index_t py = i % new_height_;
     const index_t y_start = py * kstride_;
     const index_t y_end = min(y_start + ksize_y_, src_height_);
