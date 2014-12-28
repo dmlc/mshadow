@@ -3,7 +3,7 @@
 #include "mshadow/tensor.h"
 // this namespace contains all data structures, functions
 using namespace mshadow;
-// this namespace contains all operator overloads 
+// this namespace contains all operator overloads
 using namespace mshadow::expr;
 
 // user defined unary operator addone
@@ -25,13 +25,13 @@ struct maxoftwo{
 int main(void){
   // intialize tensor engine before using tensor operation, needed for CuBLAS
   //InitTensorEngine();
-  // take first subscript of the tensor 
-  Tensor<cpu,2> mat = NewTensor<cpu>(Shape2(2,3), 0.0f); 
-  Tensor<cpu,2> mat2= NewTensor<cpu>(Shape2(2,3), 0.0f);
-  
+  // take first subscript of the tensor
+  Tensor<cpu,2, float> mat = NewTensor<cpu>(Shape2(2,3), 0.0f);
+  Tensor<cpu,2, float> mat2= NewTensor<cpu>(Shape2(2,3), 0.0f);
+
   mat[0][0] = -2.0f;
   mat = F<maxoftwo>(F<addone>(mat) + 1.0f, mat2);
-  
+
   for(index_t i = 0; i < mat.size(0); ++i){
     for(index_t j = 0; j < mat.size(1); ++j){
       printf("%.2f ", mat[i][j]);
