@@ -50,9 +50,9 @@ template<int dim, typename DType>
 inline void AllocSpace(Tensor<gpu, dim, DType> *obj, bool pad) {
   size_t pitch;
   // common choice for cuda mem align unit is 32
-  if (pad && obj.size(dim - 1) >= MSHADOW_MIN_PAD_RATIO * 32) {
+  if (pad && obj->size(dim - 1) >= MSHADOW_MIN_PAD_RATIO * 32) {
     cudaError_t err =
-        cudaMallocPitch(reinterpret_cast<void**>(&obj.dptr_), &pitch,
+        cudaMallocPitch(reinterpret_cast<void**>(&(obj->dptr_)), &pitch,
                         obj->size(dim - 1) * sizeof(DType),
                         obj->shape_.FlatTo2D()[0]);
     utils::Check(err == cudaSuccess, cudaGetErrorString(err));
@@ -60,7 +60,7 @@ inline void AllocSpace(Tensor<gpu, dim, DType> *obj, bool pad) {
   } else {
     obj->stride_ = obj->size(dim - 1);
     cudaError_t err =
-        cudaMallocPitch(reinterpret_cast<void**>(&obj.dptr_), &pitch,
+        cudaMallocPitch(reinterpret_cast<void**>(&(obj->dptr_)), &pitch,
                         obj->shape_.Size() * sizeof(DType), 1);
     utils::Check(err == cudaSuccess, cudaGetErrorString(err));
   }
@@ -74,8 +74,8 @@ inline void Copy(Tensor<A, dim, DType> _dst,
                  Tensor<B, dim, DType> _src,
                  cudaMemcpyKind kind) {
   utils::Check(_dst.shape_ == _src.shape_, "Copy:shape mismatch");
-  Tensor<A, DType, 2> dst = _dst.FlatTo2D();
-  Tensor<B, DType, 2> src = _src.FlatTo2D();
+  Tensor<A, 2, DType> dst = _dst.FlatTo2D();
+  Tensor<B, 2, DType> src = _src.FlatTo2D();
   cudaError_t err = cudaMemcpy2D(dst.dptr_, dst.stride_ * sizeof(DType),
                                  src.dptr_, src.stride_ * sizeof(DType),
                                  dst.size(1) * sizeof(DType),
@@ -97,10 +97,12 @@ inline void Copy(Tensor<gpu, dim, DType> dst,
                  const Tensor<cpu, dim, DType> &src) {
   Copy(dst, src, cudaMemcpyHostToDevice);
 }
+}  // namespace mshadow
 // the following part is included only if compiler is nvcc
 #ifdef __CUDACC__
 #include "./cuda/tensor_gpu-inl.cuh"
 
+namespace mshadow {
 template<typename Saver, typename R, int dim,
          typename DType, typename E, int etype>
 inline void MapExp(TRValue<R, gpu, dim, DType> *dst,
@@ -112,13 +114,13 @@ inline void MapExp(TRValue<R, gpu, dim, DType> *dst,
                "Assignment: Shape of Tensors are not consistent with target");
   cuda::MapPlan<Saver>(MakePlan(dst->self()),
                        MakePlan(exp.self()),
-                       dst->shape_.FlatTo2D(),
-                       dst->stride_);
+                       dst->self().shape_.FlatTo2D(),
+                       dst->self().stride_);
 }
 
 template<typename Saver, typename Reducer,
          typename R, typename DType, typename E, int etype>
-inline void MapReduceKeepLowest(TRValue<R, cpu, 1, DType> *dst,
+inline void MapReduceKeepLowest(TRValue<R, gpu, 1, DType> *dst,
                                 const expr::Exp<E, DType, etype> &exp,
                                 DType scale) {
   expr::TypeCheckPass<expr::TypeCheck<gpu, 1, DType, E>::kRedPass>
@@ -134,7 +136,7 @@ inline void MapReduceKeepLowest(TRValue<R, cpu, 1, DType> *dst,
 
 template<typename Saver, typename Reducer, int dimkeep,
          typename R, typename DType, typename E, int etype>
-inline void MapReduceKeepHighDim(TRValue<R, cpu, 1, DType> *dst,
+inline void MapReduceKeepHighDim(TRValue<R, gpu, 1, DType> *dst,
                                  const expr::Exp<E, DType, etype> &exp,
                                  DType scale) {
   expr::TypeCheckPass<expr::TypeCheck<gpu, dimkeep, DType, E>::kRedPass>

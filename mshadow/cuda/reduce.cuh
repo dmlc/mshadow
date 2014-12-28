@@ -13,18 +13,20 @@ namespace cuda {
  * \brief reduce over the dimension x
  * \tparam Reducer reducer
  * \tparam x_bits dimension = 1<<x_bits
+ * \tparam DType content data type
  */
-template<typename Reducer, int x_bits>
-inline __device__ void Reduce1D(volatile real_t buf[1 << x_bits]);
+template<typename Reducer, int x_bits, typename DType>
+inline __device__ void Reduce1D(volatile DType buf[1 << x_bits]);
 /*
  * \brief reduce over the dimension x
  * \tparam Reducer reducer
  * \tparam xmax_bits maximum size of buffer
+ * \tparam DType content data type
  * \param xsize size of x dimension, not sure if aligned
  */
-template<typename Reducer, int xmax_bits>
+template<typename Reducer, int xmax_bits, typename DType>
 inline __device__ void
-Reduce1DNotAlign(volatile real_t buf[1 << xmax_bits], int xsize);
+Reduce1DNotAlign(volatile DType buf[1 << xmax_bits], int xsize);
 // ===============================================x===
 //  implementations afterwards,
 //  no need to read if only use the functions
@@ -35,8 +37,8 @@ Reduce1DNotAlign(volatile real_t buf[1 << xmax_bits], int xsize);
 #define __MSHADOW_EMUSYNC__
 #endif
 
-template<typename Reducer, int x_bits>
-inline __device__ void ReduceX(volatile real_t buf[], int tid) {
+template<typename Reducer, int x_bits, typename DType>
+inline __device__ void ReduceX(volatile DType  buf[], int tid) {
   if (x_bits >= 10) {
     if (tid < 512) Reducer::Reduce(buf[tid] , buf[tid + 512]);
     __syncthreads();
@@ -83,8 +85,8 @@ inline __device__ void ReduceX(volatile real_t buf[], int tid) {
     __MSHADOW_EMUSYNC__;
   }
 }
-template<typename Reducer, int x_bits>
-inline __device__ void Reduce1D(volatile real_t buf[1 << x_bits]) {
+template<typename Reducer, int x_bits, typename DType>
+inline __device__ void Reduce1D(volatile DType buf[1 << x_bits]) {
   ReduceX<Reducer, x_bits>(buf, threadIdx.x);
 }
 // reduce with a upper bound
@@ -98,8 +100,8 @@ inline __device__ void Reduce1D(volatile real_t buf[1 << x_bits]) {
     ReduceX<Reducer, x_bits>(buf, tid);                                 \
   }                                                                     \
 
-template<typename Reducer, int xmax_bits>
-inline __device__ void Reduce1DNotAlign(volatile real_t buf[], int x_size) {
+template<typename Reducer, int xmax_bits, typename DType>
+inline __device__ void Reduce1DNotAlign(volatile DType buf[], int x_size) {
   int tid = threadIdx.x;
   __RD_NON_ALIGN(, 8)
   __RD_NON_ALIGN(else, 7)

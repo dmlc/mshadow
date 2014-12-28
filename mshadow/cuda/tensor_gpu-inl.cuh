@@ -7,7 +7,7 @@
 #ifndef MSHADOW_CUDA_TENSOR_GPU_INL_CUH_
 #define MSHADOW_CUDA_TENSOR_GPU_INL_CUH_
 #include "../tensor.h"
-#include "./cuda_reduce.cuh"
+#include "./reduce.cuh"
 
 namespace mshadow {
 namespace cuda {
@@ -79,8 +79,8 @@ __global__ void MapPlanLargeKernel(DstPlan dst, index_t xstride,
   }
 }
 
-template<typename Saver, typename SrcExp, typename E, typename DType>
-inline void MapPlan(expr::Plan<SrcExp, DType> dst,
+template<typename Saver, typename DstExp, typename E, typename DType>
+inline void MapPlan(expr::Plan<DstExp, DType> dst,
                     const expr::Plan<E, DType> &plan,
                     Shape<2> dshape, index_t dstride) {
   const index_t xstride = GetAlignStride(dshape[1], dstride);
@@ -90,16 +90,16 @@ inline void MapPlan(expr::Plan<SrcExp, DType> dst,
   if (num_block < kMaxGridNum) {
     dim3 dimGrid(num_block, 1, 1);
     MapPlanKernel<Saver, kBaseThreadBits,
-                  expr::Plan<SrcExp, DType>,
+                  expr::Plan<DstExp, DType>,
                   expr::Plan<E, DType> >
-        <<<dimGrid, dimBlock>>>(dst, xstride, plan, dshape);
+        <<<dimGrid, dimBlock>>>(dst, xstride, dshape, plan);
   } else {
     int repeat = (num_block + kBaseGridNum-1) / kBaseGridNum;
     dim3 dimGrid(kBaseGridNum, 1 , 1);
     MapPlanLargeKernel<Saver, kBaseThreadBits, kBaseGridNum,
-                       expr::Plan<SrcExp, DType>,
+                       expr::Plan<DstExp, DType>,
                        expr::Plan<E, DType> >
-        <<<dimGrid, dimBlock>>>(dst, xstride, plan, dshape, repeat);
+        <<<dimGrid, dimBlock>>>(dst, xstride, dshape, plan, repeat);
   }
 }
 
@@ -134,15 +134,15 @@ __global__ void MapRedKeepLowestKernel(DstPlan dst, Plan plan,
 }
 
 template<typename Saver, typename Reducer,
-         typename SrcExp, typename E, typename DType>
-inline void MapReduceKeepLowest(expr::Plan<SrcExp, DType> dst,
+         typename DstExp, typename E, typename DType>
+inline void MapReduceKeepLowest(expr::Plan<DstExp, DType> dst,
                                 const expr::Plan<E, DType> &plan,
                                 DType scale, Shape<2> eshape) {
   dim3 dimBlock(kMemUnit, kMemUnit);
   dim3 dimGrid((eshape[1] + kMemUnit - 1) >> kMemUnitBits);
   CheckLaunchParam(dimGrid, dimBlock, "MapRedKeepLowestKernel");
   MapRedKeepLowestKernel<Saver, Reducer, kMemUnitBits, DType,
-                         expr::Plan<SrcExp, DType>,
+                         expr::Plan<DstExp, DType>,
                          expr::Plan<E, DType> >
       <<<dimGrid, dimBlock>>>(dst, plan, scale, eshape);
 }
@@ -174,15 +174,15 @@ __global__ void MapReduceKeepDim1Kernel(DstPlan dst, Plan plan, DType scale, Sha
   }
 }
 
-template<typename Saver, typename Reducer, typename SrcExp, typename E, typename DType>
-inline void MapReduceKeepDim1(expr::Plan<SrcExp, DType> dst,
+template<typename Saver, typename Reducer, typename DstExp, typename E, typename DType>
+inline void MapReduceKeepDim1(expr::Plan<DstExp, DType> dst,
                               const expr::Plan<E, DType> &plan,
                               DType scale, Shape<4> pshape) { 
   dim3 dimBlock(kBaseThreadNum);
   dim3 dimGrid (pshape[1]);
   CheckLaunchParam(dimGrid, dimBlock, "MapReduceKeepDim1");
   MapReduceKeepDim1Kernel<Saver,Reducer,kBaseThreadBits, DType,
-                          expr::Plan<SrcExp, DType>,
+                          expr::Plan<DstExp, DType>,
                           expr::Plan<E, DType> >
       <<<dimGrid, dimBlock>>>(dst, plan, scale, pshape);
 }
@@ -217,7 +217,7 @@ __global__ void SoftmaxKernel(DstPlan dst, SrcPlan src, index_t xmax) {
   // calculate normalizer, with writeback
   for (unsigned x = 0; x < xmax; x += x_size) {
     if (x + threadIdx.x < xmax) {
-      real_t p = expf(src.Eval(y, x + threadIdx.x) - smax);
+      DType p = expf(src.Eval(y, x + threadIdx.x) - smax);
       s_rec[threadIdx.x] += p;
       // write back first, will fetch later
       dst.Eval(y, x + threadIdx.x) = p;

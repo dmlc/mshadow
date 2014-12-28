@@ -214,7 +214,7 @@ class Random<gpu, DType> {
    * \brief constructor of random engine
    * \param seed random number seed
    */
-  Random<gpu>(int seed) {
+  Random(int seed) {
     curandStatus_t status;
     status = curandCreateGenerator(&gen_, CURAND_RNG_PSEUDO_DEFAULT);
     utils::Check(status == CURAND_STATUS_SUCCESS,
@@ -223,7 +223,7 @@ class Random<gpu, DType> {
     buffer_.Resize(Shape1(kRandBufferSize));
   }
 
-  ~Random<gpu>(void) {
+  ~Random(void) {
     curandStatus_t status;
     status = curandDestroyGenerator(gen_);
     utils::Check(status == CURAND_STATUS_SUCCESS,
@@ -250,9 +250,9 @@ class Random<gpu, DType> {
   inline void SampleUniform(Tensor<gpu, dim, DType> *dst,
                             DType a = 0.0f, DType b = 1.0f) {
     if (a == 0.0f && b == 1.0f) {
-      *dst = this->uniform(dst.shape);
+      *dst = this->uniform(dst->shape_);
     } else {
-      *dst = this->uniform(dst.shape) * (b - a) + a;
+      *dst = this->uniform(dst->shape_) * (b - a) + a;
     }
   }
   /*!
@@ -265,7 +265,7 @@ class Random<gpu, DType> {
   template<int dim>
   inline void SampleGaussian(Tensor<gpu, dim, DType> *dst,
                              DType mu = 0.0f, DType sigma = 1.0f) {
-    *dst = this->gaussian(dst.shape, mu, sigma);
+    *dst = this->gaussian(dst->shape_, mu, sigma);
   }
   /*!
    * \brief return a temporal expression storing standard gaussian random variables
@@ -286,7 +286,7 @@ class Random<gpu, DType> {
     // allocate alligned size
     buffer_.Resize(Shape1(aligned_sz));
     buffer_.Resize(Shape1(shape.Size()));
-    this->GenGaussian(buffer.dptr_, aligned_sz, mu, sigma);
+    this->GenGaussian(buffer_.dptr_, aligned_sz, mu, sigma);
     return expr::reshape(buffer_, shape);
   }
   /*!
@@ -303,7 +303,7 @@ class Random<gpu, DType> {
   inline expr::ReshapeExp<Tensor<gpu, 1, DType>, DType, dim, 1>
   uniform(Shape<dim> shape) {
     buffer_.Resize(Shape1(shape.Size()));
-    this->GenUniform(buffer.dptr_, buffer_.size(0));
+    this->GenUniform(buffer_.dptr_, buffer_.size(0));
     return expr::reshape(buffer_, shape);
   }
 
