@@ -179,14 +179,14 @@ MSHADOW_XINLINE Shape<3> Shape3(index_t s0, index_t s1, index_t s2) {
 }
 /*!
  * \brief construct a four dimension shape, stride will equal s0
- * \param s3 size of dimension 3
- * \param s2 size of dimension 2
- * \param s1 size of dimension 1
  * \param s0 size of dimension 0
+ * \param s1 size of dimension 1
+ * \param s2 size of dimension 2
+ * \param s3 size of dimension 3
  * \return the shape construction
  */
-MSHADOW_XINLINE Shape<4> Shape4(index_t s3, index_t s2,
-                                index_t s1, index_t s0) {
+MSHADOW_XINLINE Shape<4> Shape4(index_t s0, index_t s1,
+                                index_t s2, index_t s3) {
   Shape<4> s;
   s[0] = s0; s[1] = s1; s[2] = s2; s[3] = s3;
   return s;

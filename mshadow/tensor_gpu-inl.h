@@ -160,7 +160,7 @@ inline void Softmax(Tensor<gpu, 2, DType> dst,
                     const Tensor<gpu, 2, DType>& src) {
   cuda::Softmax(dst, src);
 }
-}  // namespace mshadow
 #endif  // __CUDACC__
 #endif  // MSHADOW_USE_CUDA
+}  // namespace mshadow
 #endif  // MSHADOW_TENSOR_GPU_INL_H_

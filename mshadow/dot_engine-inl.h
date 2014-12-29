@@ -115,7 +115,7 @@ struct BLASEngine<gpu> {
     cublasDger(m, n, alpha, X, incX, Y, incY, A, lda);
   }
 };
-#endif
+#endif  // MSHADOW_USE_CUDA
 // helper function to decide which shape we are in
 inline static Shape<2> GetShape(const Shape<2> &shape, bool transpose) {
   return transpose ? Shape2(shape[0], shape[1]) : shape;
