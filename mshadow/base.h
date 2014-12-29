@@ -38,8 +38,8 @@
 
 #if MSHADOW_STAND_ALONE
   #define MSHADOW_USE_CBLAS 0
-  #define MSHADOW_USE_MKL   1
-  #define MSHADOW_USE_CUDA  1
+  #define MSHADOW_USE_MKL   0
+  #define MSHADOW_USE_CUDA  0
 #endif
 
 /*! \brief use CBLAS for CBLAS */

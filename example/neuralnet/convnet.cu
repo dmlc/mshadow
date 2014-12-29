@@ -47,7 +47,7 @@ class ConvNet : public INNet {
     nhiddenbak.Resize(nhidden.shape_);
     npool.Resize(Shape4(batch_size, nchannel, (nhidden.size(2)+1-psize)/psize, (nhidden.size(3)+1-psize)/psize));
     npoolbak.Resize(npool.shape_);
-    nflat.Resize(Shape2(batch_size, npool.size(0)*npool.size(1)*npool.size(2)));
+    nflat.Resize(Shape2(batch_size, npool.size(1)*npool.size(2)*npool.size(3)));
     nout.Resize(Shape2(batch_size, num_out));
     // setup bias
     hbias.Resize(Shape1(nchannel)); g_hbias.Resize(hbias.shape_);
