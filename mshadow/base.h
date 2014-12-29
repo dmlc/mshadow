@@ -18,7 +18,7 @@
  * mshadow should compile without any of other libs 
  */
 #ifndef MSHADOW_STAND_ALONE
-#define MSHADOW_STAND_ALONE 1
+#define MSHADOW_STAND_ALONE 0
 #endif
 /*! \brief whether do padding during allocation */
 #ifndef MSHADOW_ALLOC_PAD
@@ -48,7 +48,7 @@
 #endif
 /*! \brief use MKL for BLAS */
 #ifndef MSHADOW_USE_MKL
-  #define MSHADOW_USE_MKL   0
+  #define MSHADOW_USE_MKL   1
 #endif
 /*!
  * \brief use CUDA support, must ensure that the cuda include path is correct,

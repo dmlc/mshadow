@@ -73,7 +73,7 @@ class NNet : public INNet {
     Copy(oubatch, nout);
   }
   // back propagation
-  virtual void Backprop(const Tensor<cpu, 2, real_t>& gradout) {        
+  virtual void Backprop(const Tensor<cpu, 2, real_t>& gradout) {
     // copy gradient to output layer
     Copy(nout, gradout);
     // calc grad of layer 2
