@@ -149,7 +149,7 @@ inline void MapReduceKeepHighDim(TRValue<R, gpu, 1, DType> *dst,
   // use equvalent form
   Shape<4> pshape = Shape4(eshape.ProdShape(0, dimkeep),
                            eshape[dimkeep],
-                           eshape.ProdShape(dimkeep, EShape::kSubdim),
+                           eshape.ProdShape(dimkeep + 1, EShape::kSubdim),
                            eshape[EShape::kSubdim]);
   // call equavalent map red dim 2
   cuda::MapReduceKeepDim1<Saver, Reducer>

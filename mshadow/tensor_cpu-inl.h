@@ -146,7 +146,7 @@ inline void MapReduceKeepHighDim(TRValue<R, cpu, 1, DType> *dst,
   // use equvalent form
   Shape<4> pshape = Shape4(eshape.ProdShape(0, dimkeep),
                            eshape[dimkeep],
-                           eshape.ProdShape(dimkeep, EShape::kSubdim),
+                           eshape.ProdShape(dimkeep + 1, EShape::kSubdim),
                            eshape[EShape::kSubdim]);
   // execution
   expr::Plan<R, DType> dplan = MakePlan(dst->self());

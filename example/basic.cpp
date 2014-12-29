@@ -17,7 +17,9 @@ int main(void) {
   // Tensor object is only a handle, assignment means they have same data content
   Tensor<cpu, 1, double> mat2= NewTensor<cpu, double>(Shape1(2), 0.0f);
   Tensor<cpu, 3, double> ts1= NewTensor<cpu, double>(ts.shape_, 0.0f);
+  Random<cpu, double> rnd(0);
   mat2[1] = 10;
+  mat2 = rnd.uniform(mat2.shape_);
   // shape of matrix, note shape order is different from numpy
   // shape[i] indicate the shape of i-th dimension
   printf("%u X %u matrix, stride=%u\n", mat.size(0), mat.size(1), mat.stride_);
