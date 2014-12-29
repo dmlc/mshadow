@@ -224,8 +224,8 @@ int main(int argc, char *argv[]) {
   LoadMNIST("train-images-idx3-ubyte", "train-labels-idx1-ubyte", ytrain, xtrain_, true);
   LoadMNIST("t10k-images-idx3-ubyte", "t10k-labels-idx1-ubyte", ytest, xtest_, false);
   
-  TensorContainer<cpu, 4, real_t> xtrain(Shape4(xtrain_.size(1), 1, insize, insize));
-  TensorContainer<cpu, 4, real_t> xtest(Shape4(xtest_.size(1),  1, insize, insize));
+  TensorContainer<cpu, 4, real_t> xtrain(Shape4(xtrain_.size(0), 1, insize, insize));
+  TensorContainer<cpu, 4, real_t> xtest(Shape4(xtest_.size(0),  1, insize, insize));
   xtrain = reshape(xtrain_, xtrain.shape_);
   xtest  = reshape(xtest_, xtest.shape_);
   
