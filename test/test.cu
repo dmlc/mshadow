@@ -19,6 +19,10 @@ int main() {
   // print
   printf("\n#print batch 0 of cpu tensor:\n");
   Print2DTensor(tc[0]);
+  printf("\n");
+  Print2DTensor(tc[1]);
+  printf("\n");
+  Print2DTensor(tc[2]);
   // check
   if (Check2DTensor(tg[1], tc[1])) {
     printf("batch 1 of gpu & cpu tensor are same.\n");
@@ -35,12 +39,12 @@ int main() {
   }
   FreeSpace(&tmp_tc);
   FreeSpace(&tmp_tg);
-  // sumall_except_dim: Waring, random fail!
+  // sumall_except_dim
   printf("\n#sumall_except_dim<0> of batch 0:\n");
-  Tensor<cpu, 1, float> red_tc = NewTensor<cpu, float>(Shape1(2), 0.0f);
-  Tensor<gpu, 1, float> red_tg = NewTensor<gpu, float>(Shape1(2), 0.0f);
-  red_tc = sumall_except_dim<0>(tc[0]);
-  red_tg = sumall_except_dim<0>(tg[0]);
+  Tensor<cpu, 1, float> red_tc = NewTensor<cpu, float>(Shape1(tc.size(0)), 0.0f);
+  Tensor<gpu, 1, float> red_tg = NewTensor<gpu, float>(Shape1(tg.size(0)), 0.0f);
+  red_tc = sumall_except_dim<0>(tc);
+  red_tg = sumall_except_dim<0>(tg);
   Print1DTensor(red_tc);
   if (Check1DTensor(red_tg, red_tc)) {
     printf("cpu & gpu result consists\n");
@@ -53,11 +57,20 @@ int main() {
   Tensor<gpu, 2, float> sm_tg = NewTensor<gpu, float>(tg[0].shape_, 0.0f);
   Softmax(sm_tc, tc[0]);
   Softmax(sm_tg, tg[0]);
-  FreeSpace(&sm_tc);
-  FreeSpace(&sm_tg);
   if (Check2DTensor(sm_tg, sm_tc)) {
     printf("cpu & gpu result consists\n");
   }
+  // mirror
+  printf("\n#mirror\n");
+  sm_tc = mirror(tc[0]);
+  sm_tg = mirror(tg[0]);
+  if (Check2DTensor(sm_tg, sm_tc)) {
+    printf("cpu & gpu result consists\n");
+  }
+  FreeSpace(&sm_tc);
+  FreeSpace(&sm_tg);
+  // reshape
+  
   FreeSpace(&tc);
   FreeSpace(&tg);
   ShutdownTensorEngine();

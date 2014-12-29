@@ -56,8 +56,8 @@ bool Check2DTensor(Tensor<gpu, 2, float> const &tg, Tensor<cpu, 2, float> const 
 bool Check1DTensor(Tensor<gpu, 1, float> const &tg, Tensor<cpu, 1, float> const &tc) {
   Tensor<cpu, 1, float> tcc = NewTensor<cpu, float>(tc.shape_, 0.0f);
   Copy(tcc, tg);
-  // printf("gpu result:\n");
-  // Print1DTensor(tcc);
+  printf("gpu result:\n");
+  Print1DTensor(tcc);
   for (index_t i = 0; i < tc.size(0); ++i) {
     assert(abs(tcc[i] - tc[i]) < EPS);
   }
