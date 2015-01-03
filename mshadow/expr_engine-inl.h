@@ -134,7 +134,7 @@ class Plan<UnaryMapExp<OP, TA, DType, etype>, DType> {
 template<typename SubType, typename SrcExp, int dim, typename DType>
 struct Plan<MakeTensorExp<SubType, SrcExp, dim, DType>, DType> {
  public:
-  explicit Plan(const Plan<SubType, DType> &src) : src_(src) {}
+  Plan(const Plan<SubType, DType> &src) : src_(src) {}
   MSHADOW_XINLINE DType Eval(index_t y, index_t x) const {
     return src_.Eval(y, x);
   }
