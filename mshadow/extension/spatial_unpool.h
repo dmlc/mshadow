@@ -111,10 +111,11 @@ struct Plan<UnPoolingExp<Reducer, SrcExp, DType, srcdim>, DType> {
     for (index_t py = py_min; py < py_max; ++py) {
       for (index_t px = px_min; px < px_max; ++px) {
         val += Reducer::PartialGrad(vsrc,
-                                    data_pooled_.Eval(c * pshape_y_ + py, px) *
-                                    grad_pooled_.Eval(c * pshape_y_ + py, px));
+                                    data_pooled_.Eval(c * pshape_y_ + py, px)) *
+                                    grad_pooled_.Eval(c * pshape_y_ + py, px);
       }
     }
+
     return val;
   }
 

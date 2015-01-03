@@ -118,7 +118,7 @@ struct BLASEngine<gpu> {
 #endif  // MSHADOW_USE_CUDA
 // helper function to decide which shape we are in
 inline static Shape<2> GetShape(const Shape<2> &shape, bool transpose) {
-  return transpose ? Shape2(shape[0], shape[1]) : shape;
+  return transpose ? Shape2(shape[1], shape[0]) : shape;
 }
 // dst = dot(lhs[.T], rhs[.T])
 template<typename SV, typename xpu,
@@ -132,7 +132,8 @@ struct DotEngine<SV, xpu, 2, 2, 2, transpose_left, transpose_right, DType> {
     Shape<2> sleft = GetShape(lhs.shape_, transpose_left);
     Shape<2> sright = GetShape(rhs.shape_, transpose_right);
     utils::Check(dst.size(0) == sleft[0] && dst.size(1) == sright[1] \
-                 && sleft[1] == sright[0] , "dot-gemm: matrix shape mismatch");
+                 && sleft[1] == sright[0] ,
+                 "dot-gemm: matrix shape mismatch");
     // use column major argument to compatible with most BLAS
     BLASEngine<xpu>::gemm
         (transpose_right , transpose_left,

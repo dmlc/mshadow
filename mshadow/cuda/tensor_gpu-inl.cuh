@@ -13,7 +13,7 @@ namespace mshadow {
 namespace cuda {
 /*! \brief seems CUDAARCH is deprecated in future NVCC */
 #ifndef __CUDA_ARCH__
-//#warning "__CUDA_ARCH__ is not defined, I will assume compiling with CUDA verion greater than 2.0"
+#warning "__CUDA_ARCH__ is not defined, I will assume compiling with CUDA verion greater than 2.0"
 #endif
 /* load unit for memory access, if CUDAARCH not defined, this is advanced nvcc */
 #if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 200

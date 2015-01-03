@@ -48,7 +48,7 @@
 #endif
 /*! \brief use MKL for BLAS */
 #ifndef MSHADOW_USE_MKL
-  #define MSHADOW_USE_MKL   0
+  #define MSHADOW_USE_MKL   1
 #endif
 /*!
  * \brief use CUDA support, must ensure that the cuda include path is correct,
