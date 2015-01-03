@@ -262,13 +262,19 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
    * \tparam startdim the starting dimension
    */
   template<int startdim>
-  MSHADOW_XINLINE size_t MSize(void) const {
+  MSHADOW_XINLINE size_t MemSize(void) const {
     size_t memsz = this->stride_;
     #pragma unroll
     for (int i = startdim; i < kSubdim; ++i) {
       memsz *= this->shape_[i];
     }
     return memsz;
+  }
+  /*!
+   * \return memory cost of the tensor, including the aligned x dimension 
+   */
+  MSHADOW_XINLINE size_t MSize(void) const {
+    return this->MemSize<0>();
   }
   /*!
    * \brief return size of i-th dimension, start counting from highest dimension
@@ -291,7 +297,7 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
    * \return the result tensor
    */
   MSHADOW_XINLINE Tensor<Device, kSubdim, DType> operator[](index_t idx) const {
-    return Tensor<Device, kSubdim, DType>(dptr_ + this->MSize<1>() * idx,
+    return Tensor<Device, kSubdim, DType>(dptr_ + this->MemSize<1>() * idx,
                                           shape_.SubShape(), stride_);
   }
   /*!
@@ -304,7 +310,7 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
   Slice(index_t begin, index_t end) const {
     Shape<dimension> s = this->shape_;
     s[0] = end - begin;
-    return Tensor<Device, dimension, DType>(dptr_ + this->MSize<1>() * begin,
+    return Tensor<Device, dimension, DType>(dptr_ + this->MemSize<1>() * begin,
                                             s, stride_);
   }
   /*!\brief functions to fit expression template */
@@ -354,6 +360,9 @@ struct Tensor<Device, 1, DType>:
     Shape<1> s;
     s[0] = end  - begin;
     return Tensor<Device, 1, DType>(dptr_ + begin, s);
+  }
+  MSHADOW_XINLINE size_t MSize(void) const {
+    return shape_[0];
   }
   MSHADOW_XINLINE index_t size(index_t i) const {
     return shape_[0];
