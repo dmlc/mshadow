@@ -18,7 +18,7 @@
  * mshadow should compile without any of other libs 
  */
 #ifndef MSHADOW_STAND_ALONE
-#define MSHADOW_STAND_ALONE 1
+#define MSHADOW_STAND_ALONE 0
 #endif
 /*! \brief whether do padding during allocation */
 #ifndef MSHADOW_ALLOC_PAD
@@ -121,8 +121,8 @@ extern "C" {
  *  template arguments can be detected
  */
 #ifndef MSHADOW_DEFAULT_DTYPE
-//#define MSHADOW_DEFAULT_DTYPE = default_real_t
-#define MSHADOW_DEFAULT_DTYPE
+#define MSHADOW_DEFAULT_DTYPE = default_real_t
+//#define MSHADOW_DEFAULT_DTYPE
 #endif
 
 /*! \brief namespace for mshadow */

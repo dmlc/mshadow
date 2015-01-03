@@ -69,7 +69,7 @@ inline void LoadBinary(TStream &fi,
 // implementations
 template<int dim, typename DType, typename TStream>
 inline void SaveBinary(TStream &fo, const Tensor<cpu, dim, DType> &src_) {
-  fo.Write(src_.shape_, sizeof(src_.shape_));
+  fo.Write(&src_.shape_, sizeof(src_.shape_));
   Tensor<cpu, 2, DType> src = src_.FlatTo2D();
   for (index_t i = 0; i < src.size(0); ++i) {
     fo.Write(src[i].dptr_, sizeof(DType) * src.size(1));
@@ -96,7 +96,7 @@ inline void LoadBinary(TStream &fi,
     dst_->shape_ = shape; AllocSpace(dst_);
   }
   Tensor<cpu, 2, DType> dst = dst_->FlatTo2D();
-  if (dst.shape[1] == 0) return;
+  if (dst.size(0) == 0) return;
   for (index_t i = 0; i < dst.size(0); ++i) {
     utils::Check(fi.Read(dst[i].dptr_, sizeof(DType) * dst.size(1)) != 0,
                  "mshadow::LoadBinary");
