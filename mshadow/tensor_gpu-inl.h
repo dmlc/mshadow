@@ -48,14 +48,14 @@ struct Stream<gpu> {
    */
   inline static cudaStream_t GetStream(Stream<gpu> *stream) {
     if (stream == NULL) return 0;
-    else return stream.stream_;
+    else return stream->stream_;
   }
 };
 
 template<>
 inline Stream<gpu> *NewStream<gpu>(void) {
-  Stream<gpu> st = new Stream<gpu>();
-  cudaError_t err = cudaStreamCreate(st->stream_);
+  Stream<gpu> *st = new Stream<gpu>();
+  cudaError_t err = cudaStreamCreate(&st->stream_);
   utils::Check(err == cudaSuccess, cudaGetErrorString(err));
   return st;
 }
