@@ -97,7 +97,9 @@ inline void Copy(Tensor<gpu, dim, DType> dst,
                  const Tensor<cpu, dim, DType> &src) {
   Copy(dst, src, cudaMemcpyHostToDevice);
 }
+#endif  // MSHADOW_USE_CUDA
 }  // namespace mshadow
+
 // the following part is included only if compiler is nvcc
 #ifdef __CUDACC__
 #include "./cuda/tensor_gpu-inl.cuh"
@@ -162,5 +164,4 @@ inline void Softmax(Tensor<gpu, 2, DType> dst,
 }
 }  // namespace mshadow
 #endif  // __CUDACC__
-#endif  // MSHADOW_USE_CUDA
 #endif  // MSHADOW_TENSOR_GPU_INL_H_
