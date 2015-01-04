@@ -36,8 +36,8 @@ const int kMaxGridNum = 65535;
 /*! \brief suggested grid number for mapping kernel */
 const int kBaseGridNum = 1024;
 /*! \brief get align stride for given size in x dimension */
-inline index_t GetAlignStride(index_t xsize, index_t xstride) { 
-  if ((xstride & (kMemUnit - 1)) == 0) {
+inline index_t GetAlignStride(index_t xsize) { 
+  if (xsize >= MSHADOW_MIN_PAD_RATIO * 32) {
     return ((xsize  + kMemUnit - 1) >> kMemUnitBits) << kMemUnitBits;
   } else {
     // if originally space is not aligned, no necessary to to alligned thread allocation
@@ -82,8 +82,8 @@ __global__ void MapPlanLargeKernel(DstPlan dst, index_t xstride,
 template<typename Saver, typename DstExp, typename E, typename DType>
 inline void MapPlan(expr::Plan<DstExp, DType> dst,
                     const expr::Plan<E, DType> &plan,
-                    Shape<2> dshape, index_t dstride) {
-  const index_t xstride = GetAlignStride(dshape[1], dstride);
+                    Shape<2> dshape) {
+  const index_t xstride = GetAlignStride(dshape[1]);
   const int num_block = (dshape[0] * xstride + kBaseThreadNum-1) / kBaseThreadNum;
   dim3 dimBlock(kBaseThreadNum, 1, 1);
   
