@@ -360,37 +360,38 @@ struct ShapeCheck<dim, BinaryMapExp<OP, TA, TB, DType, etype> > {
 namespace mshadow {
 namespace expr {
 /*! \brief some engine that evaluate complex expression */
-template<typename SV, typename Device, int dim, typename E, typename DType>
+template<typename SV, typename RV, typename E, typename DType>
 struct ExpComplexEngine {
-  inline static void Eval(Tensor<Device, dim, DType> *dst, const E &exp);
+  inline static void Eval(RV *dst, const E &exp);
 };
 /*! \brief the engine that dispatches simple operations*/
-template<typename SV, typename Device, int dim, typename DType>
-struct ExpEngine<SV, Tensor<Device, dim, DType> > {
+template<typename SV, typename RV, typename DType>
+struct ExpEngine {
   template<typename E>
-  inline static void Eval(Tensor<Device, dim, DType> *dst,
+  inline static void Eval(RV *dst,
                           const Exp<E, DType, type::kMapper> &exp) {
     MapExp<SV>(dst, exp);
   }
   template<typename E>
-  inline static void Eval(Tensor<Device, dim, DType> *dst,
+  inline static void Eval(RV *dst,
                           const Exp<E, DType, type::kChainer> &exp) {
     MapExp<SV>(dst, exp);
   }
   template<typename E>
-  inline static void Eval(Tensor<Device, dim, DType> *dst,
+  inline static void Eval(RV *dst,
                           const Exp<E, DType, type::kRValue> &exp) {
     MapExp<SV>(dst, exp);
   }
   template<typename E>
-  inline static void Eval(Tensor<Device, dim, DType> *dst,
+  inline static void Eval(RV *dst,
                           const Exp<E, DType, type::kComplex> &exp) {
-    ExpComplexEngine<SV, Device, dim, E, DType>::Eval(dst, exp.self());
+    ExpComplexEngine<SV, RV, E, DType>::Eval(dst->ptrself(), exp.self());
   }
 };
 template<typename SV, typename Device, int dim, int ldim,
          int rdim, bool ltrans, bool rtrans, typename DType>
-struct ExpComplexEngine<SV, Device, dim,
+struct ExpComplexEngine<SV,
+                        Tensor<Device, dim, DType>,
                         DotExp<Tensor<Device, ldim, DType>,
                                Tensor<Device, rdim, DType>,
                                ltrans, rtrans, DType>,

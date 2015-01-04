@@ -17,6 +17,55 @@ inline void InitTensorEngine(int dev_id) {
 inline void ShutdownTensorEngine(void) {
 }
 #else
+// Stream alocation
+// actual implementation of GPU stream in CUDA
+template<>
+struct Stream<gpu> {
+  /*! \brief cudaStream */
+  cudaStream_t stream_;
+  /*!
+   * \brief wait for all the computation associated
+   *  with this stream to complete
+   */
+  inline void Wait(void) {
+    cudaError_t err = cudaStreamSynchronize(stream_);
+    utils::Check(err == cudaSuccess, cudaGetErrorString(err));
+  }
+  /*!
+   * \brief query whether the the stream is idle
+   * \return true if the stream is idle and all the job have been completed
+   */  
+  inline bool CheckIdle(void) {
+    cudaError_t err = cudaStreamQuery(stream_);
+    if (err == cudaSuccess) return true;
+    if (err == cudaErrorNotReady) return false;
+    utils::Error(cudaGetErrorString(err));
+    return false;
+  }
+  /*!
+   * \brief returns actual cudaStream_t given an input GPU stream pointer
+   * \param stream pointer to GPU stream
+   */
+  inline static cudaStream_t GetStream(Stream<gpu> *stream) {
+    if (stream == NULL) return 0;
+    else return stream.stream_;
+  }
+};
+
+template<>
+inline Stream<gpu> *NewStream<gpu>(void) {
+  Stream<gpu> st = new Stream<gpu>();
+  cudaError_t err = cudaStreamCreate(st->stream_);
+  utils::Check(err == cudaSuccess, cudaGetErrorString(err));
+  return st;
+}
+template<>
+inline void DeleteStream<gpu>(Stream<gpu> *stream) {
+  cudaError_t err = cudaStreamDestroy(stream->stream_);
+  utils::Check(err == cudaSuccess, cudaGetErrorString(err));
+  delete stream;
+}
+
 #if (MSHADOW_USE_NVML)
 inline int AutoSelectDevice(int device_count) {
   // TODO(bing): nvml device id and cuda device id are not consistent
@@ -46,6 +95,7 @@ inline void InitTensorEngine(int dev_id) {
 inline void ShutdownTensorEngine(void) {
   cublasShutdown();
 }
+
 template<int dim, typename DType>
 inline void AllocSpace(Tensor<gpu, dim, DType> *obj, bool pad) {
   size_t pitch;
@@ -72,30 +122,40 @@ inline void FreeSpace(Tensor<gpu, dim, DType> *obj) {
 template<typename A, typename B, int dim, typename DType>
 inline void Copy(Tensor<A, dim, DType> _dst,
                  Tensor<B, dim, DType> _src,
-                 cudaMemcpyKind kind) {
+                 cudaMemcpyKind kind,
+                 Stream<gpu> *stream) {
   utils::Check(_dst.shape_ == _src.shape_, "Copy:shape mismatch");
   Tensor<A, 2, DType> dst = _dst.FlatTo2D();
   Tensor<B, 2, DType> src = _src.FlatTo2D();
-  cudaError_t err = cudaMemcpy2D(dst.dptr_, dst.stride_ * sizeof(DType),
-                                 src.dptr_, src.stride_ * sizeof(DType),
-                                 dst.size(1) * sizeof(DType),
-                                 dst.size(0), kind);
+  cudaError_t err = cudaMemcpy2DAsync(dst.dptr_, dst.stride_ * sizeof(DType),
+                                      src.dptr_, src.stride_ * sizeof(DType),
+                                      dst.size(1) * sizeof(DType),
+                                      dst.size(0), kind,
+                                      Stream<gpu>::GetStream(stream));
   utils::Check(err == cudaSuccess, cudaGetErrorString(err));
+  // use synchronize call behavior for zero stream
+  if (stream == NULL) {
+    err = cudaStreamSynchronize(0);
+    utils::Check(err == cudaSuccess, cudaGetErrorString(err));
+  }
 }
 template<int dim, typename DType>
 inline void Copy(Tensor<cpu, dim, DType> dst,
-                 const Tensor<gpu, dim, DType> &src) {
-  Copy(dst, src, cudaMemcpyDeviceToHost);
+                 const Tensor<gpu, dim, DType> &src,
+                 Stream<gpu> *stream) {
+  Copy(dst, src, cudaMemcpyDeviceToHost, stream);
 }
 template<int dim, typename DType>
 inline void Copy(Tensor<gpu, dim, DType> dst,
-                 const Tensor<gpu, dim, DType> &src) {
-  Copy(dst, src, cudaMemcpyDeviceToDevice);
+                 const Tensor<gpu, dim, DType> &src,
+                 Stream<gpu> *stream) {
+  Copy(dst, src, cudaMemcpyDeviceToDevice, stream);
 }
 template<int dim, typename DType>
 inline void Copy(Tensor<gpu, dim, DType> dst,
-                 const Tensor<cpu, dim, DType> &src) {
-  Copy(dst, src, cudaMemcpyHostToDevice);
+                 const Tensor<cpu, dim, DType> &src,
+                 Stream<gpu> *stream) {
+  Copy(dst, src, cudaMemcpyHostToDevice, stream);
 }
 #endif  // MSHADOW_USE_CUDA
 }  // namespace mshadow
@@ -112,12 +172,12 @@ inline void MapExp(TRValue<R, gpu, dim, DType> *dst,
   expr::TypeCheckPass<expr::TypeCheck<gpu, dim, DType, E>::kMapPass>
       ::Error_All_Tensor_in_Exp_Must_Have_Same_Type();
   Shape<dim> eshape = expr::ShapeCheck<dim, E>::Check(exp.self());
-  utils::Check(eshape[0] == 0 || eshape == dst->self().shape_,
+  Shape<dim> dshape = expr::ShapeCheck<dim, R>::Check(dst->self());
+  utils::Check(eshape[0] == 0 || eshape == dshape,
                "Assignment: Shape of Tensors are not consistent with target");
   cuda::MapPlan<Saver>(MakePlan(dst->self()),
                        MakePlan(exp.self()),
-                       dst->self().shape_.FlatTo2D(),
-                       dst->self().stride_);
+                       dshape.FlatTo2D());
 }
 
 template<typename Saver, typename Reducer,
@@ -129,7 +189,8 @@ inline void MapReduceKeepLowest(TRValue<R, gpu, 1, DType> *dst,
       ::Error_TypeCheck_Not_Pass_For_Reduce_Exp();
   Shape<2> eshape = expr::ShapeCheck<expr::ExpInfo<E>::kDim, E>
       ::Check(exp.self()).FlatTo2D();
-  utils::Check(eshape[1] == dst->self().size(0),
+  Shape<1> dshape = expr::ShapeCheck<1, R>::Check(dst->self());  
+  utils::Check(eshape[1] == dshape[0],
                "MapReduceKeepLowest::reduction dimension do not match");
   utils::Check(eshape[0] != 0, "can not reduce over empty tensor");
   cuda::MapReduceKeepLowest<Saver, Reducer>
@@ -146,7 +207,8 @@ inline void MapReduceKeepHighDim(TRValue<R, gpu, 1, DType> *dst,
   typedef Shape<expr::ExpInfo<E>::kDim> EShape;
   EShape eshape = expr::ShapeCheck<expr::ExpInfo<E>::kDim, E>
       ::Check(exp.self());
-  utils::Check(eshape[dimkeep] == dst->self().size(0),
+    Shape<1> dshape = expr::ShapeCheck<1, R>::Check(dst->self());  
+  utils::Check(eshape[dimkeep] == dshape[0],
                "MapReduceKeepHighDim::reduction dimension do not match");
   // use equvalent form
   Shape<4> pshape = Shape4(eshape.ProdShape(0, dimkeep),
