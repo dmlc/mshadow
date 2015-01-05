@@ -28,6 +28,8 @@ struct BLASEngine<cpu> {
   inline static CBLAS_TRANSPOSE GetT(bool t) {
     return t ? CblasTrans : CblasNoTrans;
   }
+  inline static void SetStream(Stream<cpu> *stream) {
+  }
   inline static void gemm(bool transa, bool transb,
                           int m, int n, int k, float alpha,
                           const float *A, int lda, const float *B, int ldb,
@@ -75,6 +77,9 @@ template<>
 struct BLASEngine<gpu> {
   inline static char GetT(bool t) {
     return t ? 'T' : 'N';
+  }
+  inline static void SetStream(Stream<gpu> *stream) {
+    cublasSetKernelStream(Stream<gpu>::GetStream(stream));
   }
   inline static void gemm(bool transa, bool transb,
                           int m, int n, int k, float alpha,
@@ -129,6 +134,8 @@ struct DotEngine<SV, xpu, 2, 2, 2, transpose_left, transpose_right, DType> {
                           const Tensor<xpu, 2, DType> &rhs,
                           DType scale) {
     Tensor<xpu, 2, DType> &dst = *p_dst;
+    // set kernel stream
+    BLASEngine<xpu>::SetStream(dst.stream_);
     Shape<2> sleft = GetShape(lhs.shape_, transpose_left);
     Shape<2> sright = GetShape(rhs.shape_, transpose_right);
     utils::Check(dst.size(0) == sleft[0] && dst.size(1) == sright[1] \
@@ -154,6 +161,8 @@ struct DotEngine<SV, xpu, 1, 1, 2, false, transpose_right, DType> {
                           const Tensor<xpu, 2, DType> &rhs,
                           DType scale) {
     Tensor<xpu, 1, DType> &dst = *p_dst;
+    // set kernel stream
+    BLASEngine<xpu>::SetStream(dst.stream_);
     Shape<2> sright = GetShape(rhs.shape, transpose_right);
     utils::Check(dst.size(0) == sright[1] && lhs.size(0) == sright[0],
                  "dot-gemv: matrix shape mismatch");
@@ -172,6 +181,8 @@ struct DotEngine<SV, xpu, 2, 1, 1, true, false, DType> {
                           const Tensor<xpu, 1, DType> &rhs,
                           DType scale) {
     Tensor<xpu, 2, DType> &dst = *p_dst;
+    // set kernel stream
+    BLASEngine<xpu>::SetStream(dst.stream_);
     utils::Check(dst.size(0) == lhs.size(0) && dst.size(1) == rhs.size(0),
                   "dot-ger: matrix shape mismatch");
     if (SV::kBetaBLAS == 0.0f) {

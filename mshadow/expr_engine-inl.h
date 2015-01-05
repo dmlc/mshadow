@@ -281,6 +281,20 @@ struct TypeCheckPass<true> {
   inline static void Error_TypeCheck_Not_Pass_For_Reduce_Exp(void) {}
   inline static void Error_Expression_Does_Not_Meet_Dimension_Req(void) {}
 };
+
+//----------------------------------------------------------------
+// Runtime Stream Getting
+//----------------------------------------------------------------
+template<typename Device, typename E>
+struct StreamInfo {
+  inline static Stream<Device> *Get(const E &t);
+};
+template<int dim, typename Device, typename DType>
+struct StreamInfo<Device, Tensor<Device, dim, DType> > {
+  inline static Stream<Device> *Get(const Tensor<Device, dim, DType> &t) {
+    return t.stream_;
+  }
+};
 //----------------------------------------------------------------
 // Runtime Shape Checking
 //----------------------------------------------------------------
@@ -291,7 +305,7 @@ struct TypeCheckPass<true> {
  * \tparam E expression
  */
 template<int dim, typename E>
-struct ShapeCheck{
+struct ShapeCheck {
   inline static Shape<dim> Check(const E &t);
 };
 template<int dim, typename DType>

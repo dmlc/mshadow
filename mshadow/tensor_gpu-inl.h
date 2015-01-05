@@ -177,7 +177,8 @@ inline void MapExp(TRValue<R, gpu, dim, DType> *dst,
                "Assignment: Shape of Tensors are not consistent with target");
   cuda::MapPlan<Saver>(MakePlan(dst->self()),
                        MakePlan(exp.self()),
-                       dshape.FlatTo2D());
+                       dshape.FlatTo2D(),
+                       Stream<gpu>::GetStream(StreamInfo<gpu, R>::Get(dst->self())));
 }
 
 template<typename Saver, typename Reducer,
@@ -194,7 +195,8 @@ inline void MapReduceKeepLowest(TRValue<R, gpu, 1, DType> *dst,
                "MapReduceKeepLowest::reduction dimension do not match");
   utils::Check(eshape[0] != 0, "can not reduce over empty tensor");
   cuda::MapReduceKeepLowest<Saver, Reducer>
-      (MakePlan(dst->self()), MakePlan(exp.self()), scale, eshape);
+      (MakePlan(dst->self()), MakePlan(exp.self()), scale, eshape,
+       StreamInfo<gpu, R>::Get(dst->self()));
 }
 
 template<typename Saver, typename Reducer, int dimkeep,
@@ -217,12 +219,13 @@ inline void MapReduceKeepHighDim(TRValue<R, gpu, 1, DType> *dst,
                            eshape[EShape::kSubdim]);
   // call equavalent map red dim 2
   cuda::MapReduceKeepDim1<Saver, Reducer>
-      (MakePlan(dst->self()), MakePlan(exp.self()), scale, pshape);
+      (MakePlan(dst->self()), MakePlan(exp.self()), scale, pshape,
+       Stream<gpu>::GetStream(StreamInfo<gpu, R>::Get(dst->self())));
 }
 template<typename DType>
 inline void Softmax(Tensor<gpu, 2, DType> dst,
                     const Tensor<gpu, 2, DType>& src) {
-  cuda::Softmax(dst, src);
+  cuda::Softmax(dst, src, stream);
 }
 }  // namespace mshadow
 #endif  // __CUDACC__

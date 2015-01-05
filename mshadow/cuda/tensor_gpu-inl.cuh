@@ -82,7 +82,8 @@ __global__ void MapPlanLargeKernel(DstPlan dst, index_t xstride,
 template<typename Saver, typename DstExp, typename E, typename DType>
 inline void MapPlan(expr::Plan<DstExp, DType> dst,
                     const expr::Plan<E, DType> &plan,
-                    Shape<2> dshape) {
+                    Shape<2> dshape,
+                    cudaStream_t stream) {
   const index_t xstride = GetAlignStride(dshape[1]);
   const int num_block = (dshape[0] * xstride + kBaseThreadNum-1) / kBaseThreadNum;
   dim3 dimBlock(kBaseThreadNum, 1, 1);
@@ -92,14 +93,14 @@ inline void MapPlan(expr::Plan<DstExp, DType> dst,
     MapPlanKernel<Saver, kBaseThreadBits,
                   expr::Plan<DstExp, DType>,
                   expr::Plan<E, DType> >
-        <<<dimGrid, dimBlock>>>(dst, xstride, dshape, plan);
+        <<<dimGrid, dimBlock, 0, stream>>>(dst, xstride, dshape, plan);
   } else {
     int repeat = (num_block + kBaseGridNum-1) / kBaseGridNum;
     dim3 dimGrid(kBaseGridNum, 1 , 1);
     MapPlanLargeKernel<Saver, kBaseThreadBits, kBaseGridNum,
                        expr::Plan<DstExp, DType>,
                        expr::Plan<E, DType> >
-        <<<dimGrid, dimBlock>>>(dst, xstride, dshape, plan, repeat);
+        <<<dimGrid, dimBlock, 0, stream>>>(dst, xstride, dshape, plan, repeat);
   }
 }
 
@@ -137,14 +138,15 @@ template<typename Saver, typename Reducer,
          typename DstExp, typename E, typename DType>
 inline void MapReduceKeepLowest(expr::Plan<DstExp, DType> dst,
                                 const expr::Plan<E, DType> &plan,
-                                DType scale, Shape<2> eshape) {
+                                DType scale, Shape<2> eshape,
+                                cudaStream_t stream) {
   dim3 dimBlock(kMemUnit, kMemUnit);
   dim3 dimGrid((eshape[1] + kMemUnit - 1) >> kMemUnitBits);
   CheckLaunchParam(dimGrid, dimBlock, "MapRedKeepLowestKernel");
   MapRedKeepLowestKernel<Saver, Reducer, kMemUnitBits, DType,
                          expr::Plan<DstExp, DType>,
                          expr::Plan<E, DType> >
-      <<<dimGrid, dimBlock>>>(dst, plan, scale, eshape);
+      <<<dimGrid, dimBlock, 0, stream>>>(dst, plan, scale, eshape);
 }
 
 template<typename Saver, typename Reducer, int block_dim_bits,
@@ -177,14 +179,15 @@ __global__ void MapReduceKeepDim1Kernel(DstPlan dst, Plan plan, DType scale, Sha
 template<typename Saver, typename Reducer, typename DstExp, typename E, typename DType>
 inline void MapReduceKeepDim1(expr::Plan<DstExp, DType> dst,
                               const expr::Plan<E, DType> &plan,
-                              DType scale, Shape<4> pshape) { 
+                              DType scale, Shape<4> pshape,
+                              cudaStream_t stream) {
   dim3 dimBlock(kBaseThreadNum);
   dim3 dimGrid (pshape[1]);
   CheckLaunchParam(dimGrid, dimBlock, "MapReduceKeepDim1");
   MapReduceKeepDim1Kernel<Saver,Reducer,kBaseThreadBits, DType,
                           expr::Plan<DstExp, DType>,
                           expr::Plan<E, DType> >
-      <<<dimGrid, dimBlock>>>(dst, plan, scale, pshape);
+      <<<dimGrid, dimBlock, 0, stream>>>(dst, plan, scale, pshape);
 }
 
 template<int x_bits, typename DType,  typename DstPlan, typename SrcPlan>
@@ -242,10 +245,12 @@ inline void Softmax(Tensor<gpu, 2, DType> &dst,
   dim3 dimGrid(dst.size(0));
   utils::Check(dst.shape_ == src.shape_, "Softmax: shape mismatch");
   CheckLaunchParam(dimGrid, dimBlock, "Softmax");
+  cudaStream_t stream = Stream<gpu>::GetStream(dst.stream_);
   SoftmaxKernel<kBaseThreadBits, DType>
-      <<<dimGrid, dimBlock>>>(expr::MakePlan(dst),
-                              expr::MakePlan(src),
-                              dst.size(1));
+      <<<dimGrid, dimBlock, 0 stream>>>
+      (expr::MakePlan(dst),
+       expr::MakePlan(src),
+       dst.size(1));
 }
 }  // namespace cuda
 }  // namespace mshadow
