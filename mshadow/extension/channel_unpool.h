@@ -113,14 +113,14 @@ struct Plan<ChannelUnpoolingExp<Reducer, SrcExp, DType, srcdim>, DType> {
     const index_t x = j;
     const index_t cstart = c < hnsize_ - pad_ ? 0
                         : (c - (hnsize_ - pad_) + stride_) / stride_;
-    const index_t cend = min((c + pad + stride_) / stride_, channel_);
+    const index_t cend = min((c + pad_ + stride_) / stride_, channel_);
     DType val = static_cast<DType>(0);
     for (index_t cc = cstart; cc < cend; ++cc) {
       val += Reducer::PartialGrad(vsrc,
-                                  data_pooled_.Eval(n * pchannel_ + cc) * height_ + y, x) *
-                                  grad_pooled_.Eval(n * pchannel_ + cc) * height_ + y, x);
+                                  data_pooled_.Eval((n * pchannel_ + cc) * height_ + y, x) *
+                                  grad_pooled_.Eval((n * pchannel_ + cc) * height_ + y, x) );
     }
-    return res;
+    return val;
   }
  private:
   Plan<SrcExp, DType> data_src_, data_pooled_, grad_pooled_;
