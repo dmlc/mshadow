@@ -7,7 +7,7 @@ export LDFLAGS= -lm
 export NVCCFLAGS = -O3 --use_fast_math -ccbin $(CXX)
 
 # specify tensor path
-BIN = basic defop
+BIN = basic defop concat
 OBJ =
 CUOBJ =
 CUBIN = basicx
@@ -16,6 +16,7 @@ CUBIN = basicx
 all: $(BIN) $(OBJ) $(CUBIN) $(CUOBJ)
 
 basic: basic.cpp
+concat: concat.cpp
 defop: defop.cpp
 basicx: basic.cu
 
