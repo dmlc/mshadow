@@ -11,6 +11,7 @@
 #include "./utils.h"
 
 namespace mshadow {
+#if MSHADOW_USE_CUDA==1
 // Stream alocation
 // actual implementation of GPU stream in CUDA
 template<>
@@ -58,5 +59,6 @@ inline void DeleteStream<gpu>(Stream<gpu> *stream) {
   utils::Check(err == cudaSuccess, cudaGetErrorString(err));
   delete stream;
 }
+#endif 
 }
 #endif  // MSHADOW_STREAM_GPU_INL_H_
