@@ -59,7 +59,7 @@ __device__ void MapPlanProc(DstPlan dst, index_t xstride,
   const int y = tid / xstride;
   const int x = tid % xstride;
   if (y < dshape[0] && x < dshape[1]) {
-    Saver::Save(dst.Eval(y, x), exp.Eval(y,x));
+    Saver::Save(dst.REval(y, x), exp.Eval(y,x));
   }
 }
 template<typename Saver,int block_dim_bits,
@@ -130,7 +130,7 @@ __global__ void MapRedKeepLowestKernel(DstPlan dst, Plan plan,
   __syncthreads();
 
   if (threadIdx.y == 0 && x < eshape[1]) {
-    Saver::Save(dst.Eval(0, x),  s_res[threadIdx.x][0] * scale);
+    Saver::Save(dst.REval(0, x),  s_res[threadIdx.x][0] * scale);
   }
 }
 
@@ -172,7 +172,7 @@ __global__ void MapReduceKeepDim1Kernel(DstPlan dst, Plan plan, DType scale, Sha
   __syncthreads();
   Reduce1D<Reducer, block_dim_bits>(s_rec);
   if (threadIdx.x == 0) {
-    Saver::Save(dst.Eval(0, c), s_rec[0] * scale);
+    Saver::Save(dst.REval(0, c), s_rec[0] * scale);
   }
 }
 
@@ -223,7 +223,7 @@ __global__ void SoftmaxKernel(DstPlan dst, SrcPlan src, index_t xmax) {
       DType p = expf(src.Eval(y, x + threadIdx.x) - smax);
       s_rec[threadIdx.x] += p;
       // write back first, will fetch later
-      dst.Eval(y, x + threadIdx.x) = p;
+      dst.REval(y, x + threadIdx.x) = p;
     }
   }
   // calculate normalizer
@@ -234,7 +234,7 @@ __global__ void SoftmaxKernel(DstPlan dst, SrcPlan src, index_t xmax) {
   
   for (unsigned x = 0; x < xmax; x += x_size) {
     if (x + threadIdx.x < xmax) {
-      dst.Eval(y, x + threadIdx.x) /= ssum;
+      dst.REval(y, x + threadIdx.x) /= ssum;
     }
   }
 }

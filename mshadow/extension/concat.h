@@ -120,13 +120,13 @@ struct Plan<ConcatExp<LhsExp, RhsExp, Device, DType, srcdim>, DType> {
     if (c < ch_src1_) return src1_.Eval(c * height_ + y, x);
     else return src2_.Eval((c - ch_src1_) * height_ + y, x);
   }
-  MSHADOW_XINLINE DType &Eval(index_t i, index_t j) {
+  MSHADOW_XINLINE DType &REval(index_t i, index_t j) {
     const index_t y = i % height_;
     i /= height_;
     const index_t c = i % ch_;
     const index_t x = j;
-    if (c < ch_src1_) return src1_.Eval(c * height_ + y, x);
-    else return src2_.Eval((c - ch_src1_) * height_ + y, x);
+    if (c < ch_src1_) return src1_.REval(c * height_ + y, x);
+    else return src2_.REval((c - ch_src1_) * height_ + y, x);
   }
  private:
   Plan<LhsExp, DType> src1_;

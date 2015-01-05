@@ -52,7 +52,7 @@ class Plan<Tensor<Device, dim, DType>, DType> {
   explicit Plan(const Tensor<Device, dim, DType> &t)
       : dptr_(t.dptr_), stride_(t.stride_) {}
   // for RValue, the return type should be reference
-  MSHADOW_XINLINE DType &Eval(index_t y, index_t x) {
+  MSHADOW_XINLINE DType &REval(index_t y, index_t x) {
     return dptr_[y * stride_ + x];
   }
   // const evaluation
@@ -69,7 +69,7 @@ template <typename Device, typename DType>
 class Plan<Tensor<Device, 1, DType>, DType> {
  public:
   explicit Plan(const Tensor<Device, 1, DType> &t) : dptr_(t.dptr_) {}
-  MSHADOW_XINLINE DType &Eval(index_t y, index_t x) {
+  MSHADOW_XINLINE DType &REval(index_t y, index_t x) {
     return dptr_[x];
   }
   MSHADOW_XINLINE const DType &Eval(index_t y, index_t x) const {
