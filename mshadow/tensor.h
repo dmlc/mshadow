@@ -20,14 +20,14 @@ struct cpu {
   /*! \brief whether this device is CPU or not */
   static const bool kDevCPU = true;
   /*! \brief device flag number, identifies this device */
-  static const int kDevMask = 1<<0;
+  static const int kDevMask = 1 << 0;
 };
 /*! \brief device name CPU */
 struct gpu {
   /*! \brief whether this device is CPU or not */
   static const bool kDevCPU = false;
   /*! \brief device flag number, identifies this device */
-  static const int kDevMask = 1<<1;
+  static const int kDevMask = 1 << 1;
 };
 /*!
  * \brief shape of a tensor
@@ -196,6 +196,20 @@ MSHADOW_XINLINE Shape<4> Shape4(index_t s0, index_t s1,
  */
 template<typename Device>
 struct Stream {
+  // this is only a dummy implementation for CPU
+  // for GPU, the actual implementation will be specialized in tensor_gpu-inl.h
+  /*!
+   * \brief wait for all the computation associated
+   *  with this stream to complete
+   */
+  inline void Wait(void) {}
+  /*!
+   * \brief query whether the the stream is idle
+   * \return true if the stream is idle and all the job have been completed
+   */  
+  inline bool CheckIdle(void) {
+    return true;
+  }
 };
 /*!
  * \brief Tensor RValue, this is the super type of all kinds of possible tensors
@@ -313,22 +327,20 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
     return Tensor<Device, dimension, DType>(dptr_ + this->MemSize<1>() * begin,
                                             s, stride_);
   }
-  /*!\brief functions to fit expression template */
-  template<typename E>
+  /*!\brief implement the assignment of same type */
+  template<typename E, int etype>
   inline Tensor<Device, dimension, DType> &
-  operator=(const expr::Exp<E, DType, expr::type::kMapper> &exp) {
-    return this->__assign(exp);
+  operator=(const Tensor<Device, dimension, DType> &exp) {
+    dptr_ = exp.dptr;
+    shape_ = exp.shape_;
+    stride_ = exp.stride_;
+    stream_ = exp.stream_;
+    return *this;
   }
   /*!\brief functions to fit expression template */
-  template<typename E>
+  template<typename E, int etype>
   inline Tensor<Device, dimension, DType> &
-  operator=(const expr::Exp<E, DType, expr::type::kChainer> &exp) {
-    return this->__assign(exp);
-  }
-  /*!\brief functions to fit expression template */
-  template<typename E>
-  inline Tensor<Device, dimension, DType> &
-  operator=(const expr::Exp<E, DType, expr::type::kComplex> &exp) {
+  operator=(const expr::Exp<E, DType, etype> &exp) {
     return this->__assign(exp);
   }
   inline Tensor<Device, dimension, DType> &operator=(const DType &exp) {
@@ -373,19 +385,19 @@ struct Tensor<Device, 1, DType>:
   MSHADOW_XINLINE const DType &operator[](index_t idx) const {
     return dptr_[idx];
   }
-  template<typename E>
+  /*!\brief implement the assignment of same type */
+  template<typename E, int etype>
   inline Tensor<Device, 1, DType> &
-  operator=(const expr::Exp<E, DType, expr::type::kMapper> &exp) {
-    return this->__assign(exp);
+  operator=(const Tensor<Device, 1, DType> &exp) {
+    dptr_ = exp.dptr;
+    shape_ = exp.shape_;
+    stride_ = exp.stride_;
+    stream_ = exp.stream_;
+    return *this;
   }
-  template<typename E>
+  template<typename E, int etype>
   inline Tensor<Device, 1, DType> &
-  operator=(const expr::Exp<E, DType, expr::type::kChainer> &exp) {
-    return this->__assign(exp);
-  }
-  template<typename E>
-  inline Tensor<Device, 1, DType> &
-  operator=(const expr::Exp<E, DType, expr::type::kComplex> &exp) {
+  operator=(const expr::Exp<E, DType, etype> &exp) {
     return this->__assign(exp);
   }
   inline Tensor<Device, 1, DType> &operator=(const DType &exp) {
@@ -406,8 +418,20 @@ inline void InitTensorEngine(int device_id = 0);
  * \brief Shutdown tensor engine,
  *        this function should be called after all GPU tensor operations,
  *        for using tensors in CPU, this call is actually not needed
- */inline void ShutdownTensorEngine(void);
-
+ */
+inline void ShutdownTensorEngine(void);
+/*!
+ * \brief create a new stream from system
+ * \return a pointer to the created stream
+ */
+template<typename Device>
+inline Stream<Device> *NewStream(void);
+/*!
+ * \brief delete the computing stream
+ * \param stream the stream parameter to be deleted
+ */
+template<typename Device>
+inline void DeleteStream(Stream<Device> *stream);
 /*!
  * \brief CPU/CPU: allocate space for CTensor, according to the shape in the obj
  *        this function is responsible to set the stride_ in each obj.shape
@@ -455,24 +479,29 @@ inline Tensor<Device, dim, DType> NewTensor(const Shape<dim> &shape,
  * \brief copy data from one tensor to another, with same shape
  * \param dst target tensor
  * \param src source tensor
+ * \param stream the stream, when specified, the copy can exhibit asynchronize behavior
  * \tparam dim specify the dim of tensor
  * \tparam DType type of element in tensor
  */
 template<int dim, typename DType>
 inline void Copy(Tensor<cpu, dim, DType> dst,
-                 const Tensor<cpu, dim, DType> &src);
+                 const Tensor<cpu, dim, DType> &src,
+                 Stream<cpu> *stream = NULL);
 /*! \brief refer to comment of cpu ver \sa Copy */
 template<int dim, typename DType>
 inline void Copy(Tensor<cpu, dim, DType> dst,
-                 const Tensor<gpu, dim, DType> &src);
+                 const Tensor<gpu, dim, DType> &src,
+                 Stream<gpu> *stream = NULL);
 /*! \brief refer to comment of cpu ver \sa Copy */
 template<int dim, typename DType>
 inline void Copy(Tensor<gpu, dim, DType> dst,
-                 const Tensor<cpu, dim, DType> &src);
+                 const Tensor<cpu, dim, DType> &src,
+                 Stream<gpu> *stream = NULL);
 /*! \brief refer to comment of cpu ver \sa Copy */
 template<int dim, typename DType>
 inline void Copy(Tensor<gpu, dim, DType> dst,
-                 const Tensor<gpu, dim, DType> &src);
+                 const Tensor<gpu, dim, DType> &src,
+                 Stream<gpu> *stream = NULL);
 /*!
  * \brief CPU/GPU: normalize softmax: dst[i][j] = exp(energy[i][j]) /(sum_j exp(energy[i][j]))
  * \param dst destination
@@ -557,6 +586,7 @@ inline void MapReduceKeepHighDim(TRValue<R, gpu, 1, DType> *dst,
                                  DType scale = 1);
 }  // namespace mshadow
 // include headers
+#include "./stream_gpu-inl.h"
 #include "./expr_engine-inl.h"
 #include "./extension.h"
 #include "./tensor_cpu-inl.h"

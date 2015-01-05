@@ -1,13 +1,13 @@
 # set LD_LIBRARY_PATH
 export CC  = gcc
-export CXX = g++
+export CXX = clang++
 export NVCC =nvcc
-export CFLAGS = -Wall -O3 -msse3 -Wno-unknown-pragmas -funroll-loops -I../
+export CFLAGS = -Wall -O3 -msse3 -Wno-unknown-pragmas -funroll-loops -I../ -DMSHADOW_STAND_ALONE=1
 export LDFLAGS= -lm 
 export NVCCFLAGS = -O3 --use_fast_math -ccbin $(CXX)
 
 # specify tensor path
-BIN = basic defop
+BIN = basic defop concat
 OBJ =
 CUOBJ =
 CUBIN = basicx
@@ -16,6 +16,7 @@ CUBIN = basicx
 all: $(BIN) $(OBJ) $(CUBIN) $(CUOBJ)
 
 basic: basic.cpp
+concat: concat.cpp
 defop: defop.cpp
 basicx: basic.cu
 

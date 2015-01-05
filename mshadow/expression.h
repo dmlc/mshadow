@@ -46,12 +46,11 @@ const int kComplex = 7;
  * \tparam RValue the type of RValue to be saved
  * \sa namespace sv
  */
-template<typename Saver, typename RValue>
-struct ExpEngine {
-  /*! \brief defines how expression exp can be evaluated and stored into dst */
-  template<typename EType>
-  inline static void Eval(RValue *dst, const EType &exp);
-};
+template<typename Saver, typename RValue, typename DType>
+struct ExpEngine;
+/*! \brief defines how expression exp can be evaluated and stored into dst */
+//template<typename EType>
+//inline static void Eval(RValue *dst, const EType &exp);
 /*!
  * \brief base class for expression
  * \tparam SubType inheritated class must put their type into this parameter
@@ -139,66 +138,56 @@ class RValueExp: public Exp<Container, DType, type::kRValue> {
   }
   /*! \brief operator overload */
   inline Container &operator+=(DType s) {
-    ExpEngine<sv::plusto, Container>::Eval(this->ptrself(), scalar<DType>(s));
+    ExpEngine<sv::plusto, Container, DType>::Eval(this->ptrself(), scalar<DType>(s));
     return *(this->ptrself());
   }
   inline Container &operator-=(DType s) {
-    ExpEngine<sv::minusto, Container>::Eval(this->ptrself(), scalar<DType>(s));
+    ExpEngine<sv::minusto, Container, DType>::Eval(this->ptrself(), scalar<DType>(s));
     return *(this->ptrself());
   }
   inline Container &operator*=(DType s) {
-    ExpEngine<sv::multo, Container>::Eval(this->ptrself(), scalar<DType>(s));
+    ExpEngine<sv::multo, Container, DType>::Eval(this->ptrself(), scalar<DType>(s));
     return *(this->ptrself());
   }
   inline Container &operator/=(DType s) {
-    ExpEngine<sv::divto, Container>::Eval(this->ptrself(), scalar<DType>(s));
+    ExpEngine<sv::divto, Container, DType>::Eval(this->ptrself(), scalar<DType>(s));
     return *(this->ptrself());
   }
   /*! \brief operator overload */
   inline Container &__assign(DType s) {
-    ExpEngine<sv::saveto, Container>::Eval(this->ptrself(), scalar<DType>(s));
+    ExpEngine<sv::saveto, Container, DType>::Eval(this->ptrself(), scalar<DType>(s));
     return *(this->ptrself());
   }
   /*! \brief  we can not define container = container */
-  template<typename E>
-  inline Container &__assign(const Exp<E, DType, type::kMapper> &exp) {
-    ExpEngine<sv::saveto, Container>::Eval(this->ptrself(), exp.self());
+  template<typename E, int etype>
+  inline Container &__assign(const Exp<E, DType, etype> &exp) {
+    ExpEngine<sv::saveto, Container, DType>::Eval(this->ptrself(), exp.self());
     return *(this->ptrself());
   }
-  /*! \brief we can not define conatiner = container */
-  template<typename E>
-  inline Container &__assign(const Exp<E, DType, type::kChainer> &exp) {
-    ExpEngine<sv::saveto, Container>::Eval(this->ptrself(), exp.self());
-    return *(this->ptrself());
-  }
-  /*! \brief we can not define container = container */
-  template<typename E>
-  inline Container &__assign(const Exp<E, DType, type::kComplex> &exp) {
-    ExpEngine<sv::saveto, Container>::Eval(this->ptrself(), exp.self());
-    return *(this->ptrself());
-  }
+  // declar but not implement the assign to self type
+  inline Container &__assign(const Exp<Container, DType, type::kRValue> &exp);
   /*! \brief implementation of operator+= */
   template<typename E, int etype>
   inline Container &operator+=(const Exp<E, DType, etype> &exp) {
-    ExpEngine<sv::plusto, Container>::Eval(this->ptrself(), exp.self());
+    ExpEngine<sv::plusto, Container, DType>::Eval(this->ptrself(), exp.self());
     return *(this->ptrself());
   }
   /*! \brief implementation of operator-= */
   template<typename E, int etype>
   inline Container &operator-=(const Exp<E, DType, etype> &exp) {
-    ExpEngine<sv::minusto, Container>::Eval(this->ptrself(), exp.self());
+    ExpEngine<sv::minusto, Container, DType>::Eval(this->ptrself(), exp.self());
     return *(this->ptrself());
   }
   /*! \brief implementation of operator*= */
   template<typename E, int etype>
   inline Container &operator*=(const Exp<E, DType, etype> &exp) {
-    ExpEngine<sv::multo, Container>::Eval(this->ptrself(), exp.self());
+    ExpEngine<sv::multo, Container, DType>::Eval(this->ptrself(), exp.self());
     return *(this->ptrself());
   }
   /*! \brief implementation of operator/= */
   template<typename E, int etype>
   inline Container &operator/=(const Exp<E, DType, etype> &exp) {
-    ExpEngine<sv::divto, Container>::Eval(this->ptrself(), exp.self());
+    ExpEngine<sv::divto, Container, DType>::Eval(this->ptrself(), exp.self());
     return *(this->ptrself());
   }
 };

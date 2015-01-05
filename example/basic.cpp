@@ -6,19 +6,23 @@ using namespace mshadow;
 using namespace mshadow::expr;
 
 int main(void) {
+
   // intialize tensor engine before using tensor operation, needed for CuBLAS
   //InitTensorEngine();
   // assume we have a float space
   double data[20];
   // create a 2 x 5 x 2 tensor, from existing space
   Tensor<cpu, 3, double> ts(data, Shape3(2,5,2));
+  Tensor<cpu, 4, double> ts4(data, Shape4(2,2,2,2));
   // take first subscript of the tensor
   Tensor<cpu, 2, double> mat = ts[0];
   // Tensor object is only a handle, assignment means they have same data content
   Tensor<cpu, 1, double> mat2= NewTensor<cpu, double>(Shape1(2), 0.0f);
   Tensor<cpu, 3, double> ts1= NewTensor<cpu, double>(ts.shape_, 0.0f);
   Random<cpu, double> rnd(0);
-  mat2[1] = 10;
+  ts.stream_ = NewStream<cpu>();
+  DeleteStream(ts.stream_);
+
   mat2 = rnd.uniform(mat2.shape_);
   // shape of matrix, note shape order is different from numpy
   // shape[i] indicate the shape of i-th dimension

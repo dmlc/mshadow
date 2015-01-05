@@ -52,7 +52,7 @@ class Plan<Tensor<Device, dim, DType>, DType> {
   explicit Plan(const Tensor<Device, dim, DType> &t)
       : dptr_(t.dptr_), stride_(t.stride_) {}
   // for RValue, the return type should be reference
-  MSHADOW_XINLINE DType &Eval(index_t y, index_t x) {
+  MSHADOW_XINLINE DType &REval(index_t y, index_t x) {
     return dptr_[y * stride_ + x];
   }
   // const evaluation
@@ -69,7 +69,7 @@ template <typename Device, typename DType>
 class Plan<Tensor<Device, 1, DType>, DType> {
  public:
   explicit Plan(const Tensor<Device, 1, DType> &t) : dptr_(t.dptr_) {}
-  MSHADOW_XINLINE DType &Eval(index_t y, index_t x) {
+  MSHADOW_XINLINE DType &REval(index_t y, index_t x) {
     return dptr_[x];
   }
   MSHADOW_XINLINE const DType &Eval(index_t y, index_t x) const {
@@ -281,6 +281,20 @@ struct TypeCheckPass<true> {
   inline static void Error_TypeCheck_Not_Pass_For_Reduce_Exp(void) {}
   inline static void Error_Expression_Does_Not_Meet_Dimension_Req(void) {}
 };
+
+//----------------------------------------------------------------
+// Runtime Stream Getting
+//----------------------------------------------------------------
+template<typename Device, typename E>
+struct StreamInfo {
+  inline static Stream<Device> *Get(const E &t);
+};
+template<int dim, typename Device, typename DType>
+struct StreamInfo<Device, Tensor<Device, dim, DType> > {
+  inline static Stream<Device> *Get(const Tensor<Device, dim, DType> &t) {
+    return t.stream_;
+  }
+};
 //----------------------------------------------------------------
 // Runtime Shape Checking
 //----------------------------------------------------------------
@@ -291,7 +305,7 @@ struct TypeCheckPass<true> {
  * \tparam E expression
  */
 template<int dim, typename E>
-struct ShapeCheck{
+struct ShapeCheck {
   inline static Shape<dim> Check(const E &t);
 };
 template<int dim, typename DType>
@@ -360,37 +374,38 @@ struct ShapeCheck<dim, BinaryMapExp<OP, TA, TB, DType, etype> > {
 namespace mshadow {
 namespace expr {
 /*! \brief some engine that evaluate complex expression */
-template<typename SV, typename Device, int dim, typename E, typename DType>
+template<typename SV, typename RV, typename E, typename DType>
 struct ExpComplexEngine {
-  inline static void Eval(Tensor<Device, dim, DType> *dst, const E &exp);
+  inline static void Eval(RV *dst, const E &exp);
 };
 /*! \brief the engine that dispatches simple operations*/
-template<typename SV, typename Device, int dim, typename DType>
-struct ExpEngine<SV, Tensor<Device, dim, DType> > {
+template<typename SV, typename RV, typename DType>
+struct ExpEngine {
   template<typename E>
-  inline static void Eval(Tensor<Device, dim, DType> *dst,
+  inline static void Eval(RV *dst,
                           const Exp<E, DType, type::kMapper> &exp) {
     MapExp<SV>(dst, exp);
   }
   template<typename E>
-  inline static void Eval(Tensor<Device, dim, DType> *dst,
+  inline static void Eval(RV *dst,
                           const Exp<E, DType, type::kChainer> &exp) {
     MapExp<SV>(dst, exp);
   }
   template<typename E>
-  inline static void Eval(Tensor<Device, dim, DType> *dst,
+  inline static void Eval(RV *dst,
                           const Exp<E, DType, type::kRValue> &exp) {
     MapExp<SV>(dst, exp);
   }
   template<typename E>
-  inline static void Eval(Tensor<Device, dim, DType> *dst,
+  inline static void Eval(RV *dst,
                           const Exp<E, DType, type::kComplex> &exp) {
-    ExpComplexEngine<SV, Device, dim, E, DType>::Eval(dst, exp.self());
+    ExpComplexEngine<SV, RV, E, DType>::Eval(dst->ptrself(), exp.self());
   }
 };
 template<typename SV, typename Device, int dim, int ldim,
          int rdim, bool ltrans, bool rtrans, typename DType>
-struct ExpComplexEngine<SV, Device, dim,
+struct ExpComplexEngine<SV,
+                        Tensor<Device, dim, DType>,
                         DotExp<Tensor<Device, ldim, DType>,
                                Tensor<Device, rdim, DType>,
                                ltrans, rtrans, DType>,

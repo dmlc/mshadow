@@ -69,8 +69,7 @@ repmat(const expr::Exp<SrcExp, DType, etype> &src, index_t nrow) {
 //----------------------
 // Execution plan
 //----------------------
-template<typename SrcExp, typename DType,
-         int dimdst, int dimdst_m_cast>
+template<typename SrcExp, typename DType, int dimdst, int dimdst_m_cast>
 struct Plan<Broadcast1DExp<SrcExp, DType, dimdst, dimdst_m_cast>, DType> {
  public:
   static const int dimcast = dimdst - dimdst_m_cast;

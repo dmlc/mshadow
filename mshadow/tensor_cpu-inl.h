@@ -12,6 +12,15 @@
 #include "./sse-inl.h"
 
 namespace mshadow {
+template<>
+inline Stream<cpu> *NewStream<cpu>(void) {
+  return new Stream<cpu>();
+}
+template<>
+inline void DeleteStream<cpu>(Stream<cpu> *stream) {
+  delete stream;
+}
+
 template<int dim, typename DType>
 inline void AllocSpace(Tensor<cpu, dim, DType> *obj, bool pad) {
   size_t pitch;
@@ -42,7 +51,8 @@ inline void FreeSpace(Tensor<cpu, dim, DType> *obj) {
 }
 template<int dim, typename DType>
 inline void Copy(Tensor<cpu, dim, DType> _dst,
-                 const Tensor<cpu, dim, DType> &_src) {
+                 const Tensor<cpu, dim, DType> &_src,
+                 Stream<cpu> *stream) {
   utils::Check(_dst.shape_ == _src.shape_, "Copy:shape mismatch");
   Tensor<cpu, 2, DType> dst = _dst.FlatTo2D();
   Tensor<cpu, 2, DType> src = _src.FlatTo2D();
@@ -54,12 +64,12 @@ template<typename Saver, typename R, int dim,
          typename DType, typename E>
 inline void MapPlan(TRValue<R, cpu, dim, DType> *dst,
                     const expr::Plan<E, DType> &plan) {
-  Shape<2> shape = dst->self().shape_.FlatTo2D();
+  Shape<2> shape = expr::ShapeCheck<dim, R>::Check(dst->self()).FlatTo2D();
   expr::Plan<R, DType> dplan = expr::MakePlan(dst->self());
   for (index_t y = 0; y < shape[0]; ++y) {
     for (index_t x = 0; x < shape[1]; ++x) {
       // trust your compiler! -_- they will optimize it
-      Saver::Save(dplan.Eval(y, x), plan.Eval(y, x));
+      Saver::Save(dplan.REval(y, x), plan.Eval(y, x));
     }
   }
 }
@@ -97,7 +107,8 @@ inline void MapExp(TRValue<R, cpu, dim, DType> *dst,
   expr::TypeCheckPass<expr::TypeCheck<cpu, dim, DType, E>::kMapPass>
       ::Error_All_Tensor_in_Exp_Must_Have_Same_Type();
   Shape<dim> eshape = expr::ShapeCheck<dim, E>::Check(exp.self());
-  utils::Check(eshape[0] == 0 || eshape == dst->self().shape_,
+  Shape<dim> dshape = expr::ShapeCheck<dim, R>::Check(dst->self());
+  utils::Check(eshape[0] == 0 || eshape == dshape,
                "Assignment: Shape of Tensors are not consistent with target");
 #if MSHADOW_USE_SSE
   MapExpCPUEngine<expr::SSECheck<E>::kPass, Saver, R, dim, DType, E, etype>
@@ -116,7 +127,8 @@ inline void MapReduceKeepLowest(TRValue<R, cpu, 1, DType> *dst,
       ::Error_TypeCheck_Not_Pass_For_Reduce_Exp();
   Shape<2> eshape = expr::ShapeCheck<expr::ExpInfo<E>::kDim, E>
       ::Check(exp.self()).FlatTo2D();
-  utils::Check(eshape[1] == dst->self().size(0),
+  Shape<1> dshape = expr::ShapeCheck<1, R>::Check(dst->self());  
+  utils::Check(eshape[1] == dshape[0],
                "MapReduceKeepLowest::reduction dimension do not match");
   utils::Check(eshape[0] != 0, "can not reduce over empty tensor");
   // execution
@@ -127,7 +139,7 @@ inline void MapReduceKeepLowest(TRValue<R, cpu, 1, DType> *dst,
     for (index_t y = 1; y < eshape[0]; ++y) {
       Reducer::Reduce(res, splan.Eval(y, x));
     }
-    Saver::Save(dplan.Eval(0, x), res * scale);
+    Saver::Save(dplan.REval(0, x), res * scale);
   }
 }
 
@@ -141,7 +153,8 @@ inline void MapReduceKeepHighDim(TRValue<R, cpu, 1, DType> *dst,
   typedef Shape<expr::ExpInfo<E>::kDim> EShape;
   EShape eshape = expr::ShapeCheck<expr::ExpInfo<E>::kDim, E>
       ::Check(exp.self());
-  utils::Check(eshape[dimkeep] == dst->self().size(0),
+  Shape<1> dshape = expr::ShapeCheck<1, R>::Check(dst->self());  
+  utils::Check(eshape[dimkeep] == dshape[0],
                "MapReduceKeepHighDim::reduction dimension do not match");
   // use equvalent form
   Shape<4> pshape = Shape4(eshape.ProdShape(0, dimkeep),
@@ -163,7 +176,7 @@ inline void MapReduceKeepHighDim(TRValue<R, cpu, 1, DType> *dst,
       }
       Reducer::Reduce(res, tres);
     }
-    Saver::Save(dplan.Eval(0, c), res * scale);
+    Saver::Save(dplan.REval(0, c), res * scale);
   }
 }
 

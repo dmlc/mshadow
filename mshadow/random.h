@@ -51,6 +51,12 @@ class Random<cpu, DType> {
 #endif
   }
   /*!
+   * \brief set the stream of computation
+   * \param stream computation stream
+   */
+  inline void SetStream(Stream<cpu> *stream) {    
+  }
+  /*!
    * \brief generate data from uniform [a,b)
    * \param dst destination
    * \param a lower bound of uniform
@@ -228,6 +234,16 @@ class Random<gpu, DType> {
     status = curandDestroyGenerator(gen_);
     utils::Check(status == CURAND_STATUS_SUCCESS,
                  "Destory CURAND Gen failed");
+  }
+  /*!
+   * \brief set the stream of computation
+   * \param stream computation stream
+   */
+  inline void SetStream(Stream<gpu> *stream) {
+    curandStatus_t status;
+    status = curandSetStream(gen_, Stream<gpu>::GetStream(stream));
+    utils::Check(status == CURAND_STATUS_SUCCESS,
+                 "SetStream CURAND failed");
   }
   /*!
    * \brief seed random number generator using this seed
