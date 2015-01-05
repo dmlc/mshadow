@@ -335,6 +335,7 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
     shape_ = exp.shape_;
     stride_ = exp.stride_;
     stream_ = exp.stream_;
+    return *this;
   }
   /*!\brief functions to fit expression template */
   template<typename E, int etype>
@@ -391,7 +392,8 @@ struct Tensor<Device, 1, DType>:
     dptr_ = exp.dptr;
     shape_ = exp.shape_;
     stride_ = exp.stride_;
-    stream_ = exp.stream_;    
+    stream_ = exp.stream_;
+    return *this;
   }
   template<typename E, int etype>
   inline Tensor<Device, 1, DType> &
@@ -584,6 +586,7 @@ inline void MapReduceKeepHighDim(TRValue<R, gpu, 1, DType> *dst,
                                  DType scale = 1);
 }  // namespace mshadow
 // include headers
+#include "./stream_gpu-inl.h"
 #include "./expr_engine-inl.h"
 #include "./extension.h"
 #include "./tensor_cpu-inl.h"

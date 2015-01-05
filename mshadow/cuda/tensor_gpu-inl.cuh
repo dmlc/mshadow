@@ -247,7 +247,7 @@ inline void Softmax(Tensor<gpu, 2, DType> &dst,
   CheckLaunchParam(dimGrid, dimBlock, "Softmax");
   cudaStream_t stream = Stream<gpu>::GetStream(dst.stream_);
   SoftmaxKernel<kBaseThreadBits, DType>
-      <<<dimGrid, dimBlock, 0 stream>>>
+      <<<dimGrid, dimBlock, 0, stream>>>
       (expr::MakePlan(dst),
        expr::MakePlan(src),
        dst.size(1));

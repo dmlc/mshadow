@@ -1,7 +1,7 @@
 /*!
  *  Copyright (c) 2014 by Contributors
- * \file tensor_cpu-inl.h
- * \brief implementation of CPU host code
+ * \file tensor_gpu-inl.h
+ * \brief implementation of GPU host code
  * \author Bing Xu, Tianqi Chen
  */
 #ifndef MSHADOW_TENSOR_GPU_INL_H_
@@ -17,55 +17,6 @@ inline void InitTensorEngine(int dev_id) {
 inline void ShutdownTensorEngine(void) {
 }
 #else
-// Stream alocation
-// actual implementation of GPU stream in CUDA
-template<>
-struct Stream<gpu> {
-  /*! \brief cudaStream */
-  cudaStream_t stream_;
-  /*!
-   * \brief wait for all the computation associated
-   *  with this stream to complete
-   */
-  inline void Wait(void) {
-    cudaError_t err = cudaStreamSynchronize(stream_);
-    utils::Check(err == cudaSuccess, cudaGetErrorString(err));
-  }
-  /*!
-   * \brief query whether the the stream is idle
-   * \return true if the stream is idle and all the job have been completed
-   */  
-  inline bool CheckIdle(void) {
-    cudaError_t err = cudaStreamQuery(stream_);
-    if (err == cudaSuccess) return true;
-    if (err == cudaErrorNotReady) return false;
-    utils::Error(cudaGetErrorString(err));
-    return false;
-  }
-  /*!
-   * \brief returns actual cudaStream_t given an input GPU stream pointer
-   * \param stream pointer to GPU stream
-   */
-  inline static cudaStream_t GetStream(Stream<gpu> *stream) {
-    if (stream == NULL) return 0;
-    else return stream->stream_;
-  }
-};
-
-template<>
-inline Stream<gpu> *NewStream<gpu>(void) {
-  Stream<gpu> *st = new Stream<gpu>();
-  cudaError_t err = cudaStreamCreate(&st->stream_);
-  utils::Check(err == cudaSuccess, cudaGetErrorString(err));
-  return st;
-}
-template<>
-inline void DeleteStream<gpu>(Stream<gpu> *stream) {
-  cudaError_t err = cudaStreamDestroy(stream->stream_);
-  utils::Check(err == cudaSuccess, cudaGetErrorString(err));
-  delete stream;
-}
-
 #if (MSHADOW_USE_NVML)
 inline int AutoSelectDevice(int device_count) {
   // TODO(bing): nvml device id and cuda device id are not consistent
@@ -178,7 +129,7 @@ inline void MapExp(TRValue<R, gpu, dim, DType> *dst,
   cuda::MapPlan<Saver>(MakePlan(dst->self()),
                        MakePlan(exp.self()),
                        dshape.FlatTo2D(),
-                       Stream<gpu>::GetStream(StreamInfo<gpu, R>::Get(dst->self())));
+                       Stream<gpu>::GetStream(expr::StreamInfo<gpu, R>::Get(dst->self())));
 }
 
 template<typename Saver, typename Reducer,
@@ -196,7 +147,7 @@ inline void MapReduceKeepLowest(TRValue<R, gpu, 1, DType> *dst,
   utils::Check(eshape[0] != 0, "can not reduce over empty tensor");
   cuda::MapReduceKeepLowest<Saver, Reducer>
       (MakePlan(dst->self()), MakePlan(exp.self()), scale, eshape,
-       StreamInfo<gpu, R>::Get(dst->self()));
+       Stream<gpu>::GetStream(expr::StreamInfo<gpu, R>::Get(dst->self())));
 }
 
 template<typename Saver, typename Reducer, int dimkeep,
@@ -220,12 +171,12 @@ inline void MapReduceKeepHighDim(TRValue<R, gpu, 1, DType> *dst,
   // call equavalent map red dim 2
   cuda::MapReduceKeepDim1<Saver, Reducer>
       (MakePlan(dst->self()), MakePlan(exp.self()), scale, pshape,
-       Stream<gpu>::GetStream(StreamInfo<gpu, R>::Get(dst->self())));
+       Stream<gpu>::GetStream(expr::StreamInfo<gpu, R>::Get(dst->self())));
 }
 template<typename DType>
 inline void Softmax(Tensor<gpu, 2, DType> dst,
                     const Tensor<gpu, 2, DType>& src) {
-  cuda::Softmax(dst, src, stream);
+  cuda::Softmax(dst, src);
 }
 }  // namespace mshadow
 #endif  // __CUDACC__
