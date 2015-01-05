@@ -11,34 +11,35 @@ namespace expr {
  * \tparam RhsExp right expression
  * \tparam DType the type of elements
  * \tparam srcdim dimension of src
+ * \tparam dimsrc_m_cat dimsrc - dimcat
  */
 template<typename LhsExp, typename RhsExp,
-         typename Device, typename DType, int srcdim>
+         typename Device, typename DType,
+         int srcdim, int dimsrc_m_cat>
 struct ConcatExp : public TRValue<ConcatExp<LhsExp, RhsExp,
-                                            Device, DType, srcdim>,
+                                            Device, DType,
+                                            srcdim, dimsrc_m_cat>,
                                   Device, srcdim, DType> {
+  static const int dimcat = srcdim - dimsrc_m_cat;
   const LhsExp &src1_;
   const RhsExp &src2_;
-  index_t height_;
-  index_t width_;
-  index_t ch_src1_;
-  index_t ch_src2_;
+  index_t dcat_src1_;
+  index_t dcat_src2_;
   Shape<4> shape_;
   ConcatExp(const LhsExp &src1, const RhsExp &src2) : src1_(src1), src2_(src2) {
     Shape<srcdim> sshape1 = ShapeCheck<srcdim, LhsExp>::Check(src1_);
     Shape<srcdim> sshape2 = ShapeCheck<srcdim, RhsExp>::Check(src2_);
-    utils::Check(sshape1[srcdim - 2] == sshape2[srcdim - 2],
-                 "ConcatExp: height requirement not met");
-    utils::Check(sshape1[srcdim - 1] == sshape2[srcdim - 1],
-                 "ConcatExp: width requirement not met");
-    utils::Check(sshape1[0] == sshape2[0],
-                 "ConcatExp: batch requirement not met");
+    #pragma unroll
+    for (int i = 0; i < srcdim; ++i) {
+      if (i != dimcat) {
+        utils::Check(sshape1[i] == sshape2[i],
+                     "ConcatExp: shape mismatch");    
+      }
+    }
     this->shape_ = sshape1;
-    this->shape_[1] = sshape1[1] + sshape2[1];
-    this->ch_src1_ = sshape1[1];
-    this->ch_src2_ = sshape2[1];
-    this->height_ = sshape1[2];
-    this->width_ = sshape1[3];
+    this->shape_[dimcat] = sshape1[dimcat] + sshape2[dimcat];
+    this->dcat_src1_ = sshape1[dimcat];
+    this->dcat_src2_ = sshape2[dimcat];
   }
   template<typename E, int etype>
   inline void
@@ -55,20 +56,21 @@ struct ConcatExp : public TRValue<ConcatExp<LhsExp, RhsExp,
  * \param src1 source tensor1
  * \param src2 source tensor2
  * \return concated 4D tensor
+ * \tparam cdim the dimension to concatnate on
  * \tparam SrcExp source expression
  * \tparam DType the type of elements
  * \tparam etype type of expression
  */
-template<typename LhsExp, typename RhsExp,
+template<int cdim, typename LhsExp, typename RhsExp,
          typename Device, typename DType, int srcdim>
-inline ConcatExp<LhsExp, RhsExp, Device, DType, ExpInfo<LhsExp>::kDim>
+inline ConcatExp<LhsExp, RhsExp, Device, DType, srcdim, srcdim - cdim>
 concat(const TRValue<LhsExp, Device, srcdim, DType> &src1,
        const TRValue<RhsExp, Device, srcdim, DType> &src2) {
-  TypeCheckPass<ExpInfo<LhsExp>::kDim == 4>
+  TypeCheckPass<ExpInfo<LhsExp>::kDim == ExpInfo<RhsExp>::kDim>
       ::Error_Expression_Does_Not_Meet_Dimension_Req();
-  TypeCheckPass<ExpInfo<RhsExp>::kDim == 4>
-      ::Error_Expression_Does_Not_Meet_Dimension_Req();
-  return ConcatExp<LhsExp, RhsExp, Device, DType, ExpInfo<LhsExp>::kDim>
+  TypeCheckPass<cdim < srcdim && ExpInfo<LhsExp>::kDim == srcdim>
+      ::Error_Expression_Does_Not_Meet_Dimension_Req();  
+  return ConcatExp<LhsExp, RhsExp, Device, DType, srcdim, srcdim - cdim>
       (src1.self(), src2.self());
 }
 //------------------------
@@ -76,16 +78,19 @@ concat(const TRValue<LhsExp, Device, srcdim, DType> &src1,
 //------------------------
 // runtime shapecheck
 template<typename LhsExp, typename RhsExp,
-         typename Device, typename DType, int srcdim>
-struct ShapeCheck<srcdim, ConcatExp<LhsExp, RhsExp, Device, DType, srcdim> >{
-  inline static Shape<srcdim> Check(const ConcatExp<LhsExp, RhsExp, Device, DType, srcdim> &t) {
+         typename Device, typename DType,
+         int srcdim, int dimsrc_m_cat>
+struct ShapeCheck<srcdim, ConcatExp<LhsExp, RhsExp, Device, DType, srcdim, dimsrc_m_cat> >{
+  inline static Shape<srcdim> Check(const ConcatExp<LhsExp, RhsExp, Device, DType, srcdim, dimsrc_m_cat> &t) {
     return t.shape_;
   }
 };
 template<typename LhsExp, typename RhsExp,
-         typename Device, typename DType, int srcdim>
-struct StreamInfo<Device, ConcatExp<LhsExp, RhsExp, Device, DType, srcdim> >{
-  inline static Stream<Device> *Get(const ConcatExp<LhsExp, RhsExp, Device, DType, srcdim> &t) {
+         typename Device, typename DType,
+         int srcdim, int dimsrc_m_cat>
+struct StreamInfo<Device, ConcatExp<LhsExp, RhsExp, Device, DType, srcdim, dimsrc_m_cat> >{
+  inline static Stream<Device> *
+  Get(const ConcatExp<LhsExp, RhsExp, Device, DType, srcdim, dimsrc_m_cat> &t) {
     Stream<Device> *lhs = StreamInfo<Device, LhsExp>::Get(t.src1_);
     Stream<Device> *rhs = StreamInfo<Device, RhsExp>::Get(t.src2_);
     if (lhs != rhs) return NULL;
@@ -94,8 +99,9 @@ struct StreamInfo<Device, ConcatExp<LhsExp, RhsExp, Device, DType, srcdim> >{
 };
 // static typecheck
 template<typename LhsExp, typename RhsExp,
-         typename Device, typename DType, int srcdim>
-struct ExpInfo<ConcatExp<LhsExp, RhsExp, Device, DType, srcdim> >{
+         typename Device, typename DType,
+         int srcdim, int dimsrc_m_cat>
+struct ExpInfo<ConcatExp<LhsExp, RhsExp, Device, DType, srcdim, dimsrc_m_cat> >{
   static const int kDimLhs = ExpInfo<LhsExp>::kDim;
   static const int kDimRhs = ExpInfo<RhsExp>::kDim;
   // copy from binarymap
@@ -109,13 +115,15 @@ struct ExpInfo<ConcatExp<LhsExp, RhsExp, Device, DType, srcdim> >{
 // Execution plan
 //---------------------
 template<typename LhsExp, typename RhsExp,
-         typename Device, typename DType, int srcdim>
-struct Plan<ConcatExp<LhsExp, RhsExp, Device, DType, srcdim>, DType> {
+         typename Device, typename DType,
+         int srcdim, int dimsrc_m_cat>
+struct Plan<ConcatExp<LhsExp, RhsExp, Device, DType, srcdim, dimsrc_m_cat>, DType> {
  public:
-  explicit Plan(const ConcatExp<LhsExp, RhsExp, Device, DType, srcdim> &e) :
-      src1_(MakePlan(e.src1_)), src2_(MakePlan(e.src2_)),
-      height_(e.height_), width_(e.width_),
-      ch_src1_(e.ch_src1_), ch_src2_(e.ch_src2_), ch_(e.ch_src1_ + e.ch_src2_) {}
+  static const int dimcat = srcdim - dimsrc_m_cat;  
+  explicit Plan(const ConcatExp<LhsExp, RhsExp, Device, DType, srcdim, dimsrc_m_cat> &e)
+      : src1_(MakePlan(e.src1_)), src2_(MakePlan(e.src2_)),
+        height_(e.shape_.ProdShape(dimcat + 1, srcdim - 1)),
+        ch_src1_(e.dcat_src1_), ch_src2_(e.dcat_src2_), ch_(e.shape_[dimcat]) {}
   MSHADOW_XINLINE DType Eval(index_t i, index_t j) const {
     const index_t y = i % height_;
     i /= height_;
@@ -134,12 +142,36 @@ struct Plan<ConcatExp<LhsExp, RhsExp, Device, DType, srcdim>, DType> {
     if (c < ch_src1_) return src1_.REval((b * ch_src1_ + c) * height_ + y, x);
     else return src2_.REval((b * ch_src2_ + c - ch_src1_) * height_ + y, x);
   }
+
  private:
   Plan<LhsExp, DType> src1_;
   Plan<RhsExp, DType> src2_;
-  const index_t height_, width_, ch_src1_, ch_src2_, ch_;
+  const index_t height_, ch_src1_, ch_src2_, ch_;
 }; // struct Plan
 
+// specialize for concat in x
+template<typename LhsExp, typename RhsExp,
+         typename Device, typename DType,
+         int srcdim>
+struct Plan<ConcatExp<LhsExp, RhsExp, Device, DType, srcdim, 1>, DType> {  
+ public:
+  explicit Plan(const ConcatExp<LhsExp, RhsExp, Device, DType, srcdim, 1> &e)
+      : src1_(MakePlan(e.src1_)), src2_(MakePlan(e.src2_)),
+        width_src1_(e.dcat_src1_) {}
+  MSHADOW_XINLINE DType Eval(index_t y, index_t x) const {
+    if (x < width_src1_) return src1_.Eval(y, x);
+    else return src2_.Eval(y, x - width_src1_);
+  }
+  MSHADOW_XINLINE DType &REval(index_t y, index_t x) {
+    if (x < width_src1_) return src1_.REval(y, x);
+    else return src2_.REval(y, x - width_src1_);
+  }
+
+ private:
+  Plan<LhsExp, DType> src1_;
+  Plan<RhsExp, DType> src2_;
+  const index_t width_src1_;
+};
 }// namespace expr
 } // namespace mshadow
 #endif // MSHADOW_EXTENSION_CONCAT_H_
