@@ -78,6 +78,16 @@ struct ShapeCheck<srcdim, ConcatExp<LhsExp, RhsExp, Device, DType, srcdim> >{
     return t.shape_;
   }
 };
+template<typename LhsExp, typename RhsExp,
+         typename Device, typename DType, int srcdim>
+struct StreamInfo<Device, ConcatExp<LhsExp, RhsExp, Device, DType, srcdim> >{
+  inline static Stream<Device> *Get(const ConcatExp<LhsExp, RhsExp, Device, DType, srcdim> &t) {
+    Stream<Device> *lhs = StreamInfo<Device, LhsExp>::Get(t.src1_);
+    Stream<Device> *rhs = StreamInfo<Device, RhsExp>::Get(t.src2_);
+    if (lhs != rhs) return NULL;
+    return lhs;
+  }
+};
 // static typecheck
 template<typename LhsExp, typename RhsExp,
          typename Device, typename DType, int srcdim>

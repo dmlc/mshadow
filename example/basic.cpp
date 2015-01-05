@@ -23,7 +23,6 @@ int main(void) {
   ts.stream_ = NewStream<cpu>();
   DeleteStream(ts.stream_);
 
-  
   mat2 = rnd.uniform(mat2.shape_);
   // shape of matrix, note shape order is different from numpy
   // shape[i] indicate the shape of i-th dimension
