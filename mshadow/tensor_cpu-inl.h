@@ -69,7 +69,7 @@ inline void MapPlan(TRValue<R, cpu, dim, DType> *dst,
   for (index_t y = 0; y < shape[0]; ++y) {
     for (index_t x = 0; x < shape[1]; ++x) {
       // trust your compiler! -_- they will optimize it
-      Saver::Save(dplan.Eval(y, x), plan.Eval(y, x));
+      Saver::Save(dplan.REval(y, x), plan.Eval(y, x));
     }
   }
 }
@@ -139,7 +139,7 @@ inline void MapReduceKeepLowest(TRValue<R, cpu, 1, DType> *dst,
     for (index_t y = 1; y < eshape[0]; ++y) {
       Reducer::Reduce(res, splan.Eval(y, x));
     }
-    Saver::Save(dplan.Eval(0, x), res * scale);
+    Saver::Save(dplan.REval(0, x), res * scale);
   }
 }
 
@@ -176,7 +176,7 @@ inline void MapReduceKeepHighDim(TRValue<R, cpu, 1, DType> *dst,
       }
       Reducer::Reduce(res, tres);
     }
-    Saver::Save(dplan.Eval(0, c), res * scale);
+    Saver::Save(dplan.REval(0, c), res * scale);
   }
 }
 
