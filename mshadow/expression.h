@@ -159,23 +159,13 @@ class RValueExp: public Exp<Container, DType, type::kRValue> {
     return *(this->ptrself());
   }
   /*! \brief  we can not define container = container */
-  template<typename E>
-  inline Container &__assign(const Exp<E, DType, type::kMapper> &exp) {
+  template<typename E, int etype>
+  inline Container &__assign(const Exp<E, DType, etype> &exp) {
     ExpEngine<sv::saveto, Container, DType>::Eval(this->ptrself(), exp.self());
     return *(this->ptrself());
   }
-  /*! \brief we can not define conatiner = container */
-  template<typename E>
-  inline Container &__assign(const Exp<E, DType, type::kChainer> &exp) {
-    ExpEngine<sv::saveto, Container, DType>::Eval(this->ptrself(), exp.self());
-    return *(this->ptrself());
-  }
-  /*! \brief we can not define container = container */
-  template<typename E>
-  inline Container &__assign(const Exp<E, DType, type::kComplex> &exp) {
-    ExpEngine<sv::saveto, Container, DType>::Eval(this->ptrself(), exp.self());
-    return *(this->ptrself());
-  }
+  // declar but not implement the assign to self type
+  inline Container &__assign(const Exp<Container, DType, type::kRValue> &exp);
   /*! \brief implementation of operator+= */
   template<typename E, int etype>
   inline Container &operator+=(const Exp<E, DType, etype> &exp) {

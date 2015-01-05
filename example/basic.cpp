@@ -13,6 +13,7 @@ int main(void) {
   double data[20];
   // create a 2 x 5 x 2 tensor, from existing space
   Tensor<cpu, 3, double> ts(data, Shape3(2,5,2));
+  Tensor<cpu, 4, double> ts4(data, Shape4(2,2,2,2));
   // take first subscript of the tensor
   Tensor<cpu, 2, double> mat = ts[0];
   // Tensor object is only a handle, assignment means they have same data content
@@ -22,7 +23,8 @@ int main(void) {
   ts.stream_ = NewStream<cpu>();
   DeleteStream(ts.stream_);
 
-  mat2[1] = 10;
+  concat(ts4, ts4) = ts4;
+  
   mat2 = rnd.uniform(mat2.shape_);
   // shape of matrix, note shape order is different from numpy
   // shape[i] indicate the shape of i-th dimension

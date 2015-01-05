@@ -327,22 +327,19 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
     return Tensor<Device, dimension, DType>(dptr_ + this->MemSize<1>() * begin,
                                             s, stride_);
   }
-  /*!\brief functions to fit expression template */
-  template<typename E>
+  /*!\brief implement the assignment of same type */
+  template<typename E, int etype>
   inline Tensor<Device, dimension, DType> &
-  operator=(const expr::Exp<E, DType, expr::type::kMapper> &exp) {
-    return this->__assign(exp);
+  operator=(const Tensor<Device, dimension, DType> &exp) {
+    dptr_ = exp.dptr;
+    shape_ = exp.shape_;
+    stride_ = exp.stride_;
+    stream_ = exp.stream_;
   }
   /*!\brief functions to fit expression template */
-  template<typename E>
+  template<typename E, int etype>
   inline Tensor<Device, dimension, DType> &
-  operator=(const expr::Exp<E, DType, expr::type::kChainer> &exp) {
-    return this->__assign(exp);
-  }
-  /*!\brief functions to fit expression template */
-  template<typename E>
-  inline Tensor<Device, dimension, DType> &
-  operator=(const expr::Exp<E, DType, expr::type::kComplex> &exp) {
+  operator=(const expr::Exp<E, DType, etype> &exp) {
     return this->__assign(exp);
   }
   inline Tensor<Device, dimension, DType> &operator=(const DType &exp) {
@@ -387,19 +384,18 @@ struct Tensor<Device, 1, DType>:
   MSHADOW_XINLINE const DType &operator[](index_t idx) const {
     return dptr_[idx];
   }
-  template<typename E>
+  /*!\brief implement the assignment of same type */
+  template<typename E, int etype>
   inline Tensor<Device, 1, DType> &
-  operator=(const expr::Exp<E, DType, expr::type::kMapper> &exp) {
-    return this->__assign(exp);
+  operator=(const Tensor<Device, 1, DType> &exp) {
+    dptr_ = exp.dptr;
+    shape_ = exp.shape_;
+    stride_ = exp.stride_;
+    stream_ = exp.stream_;    
   }
-  template<typename E>
+  template<typename E, int etype>
   inline Tensor<Device, 1, DType> &
-  operator=(const expr::Exp<E, DType, expr::type::kChainer> &exp) {
-    return this->__assign(exp);
-  }
-  template<typename E>
-  inline Tensor<Device, 1, DType> &
-  operator=(const expr::Exp<E, DType, expr::type::kComplex> &exp) {
+  operator=(const expr::Exp<E, DType, etype> &exp) {
     return this->__assign(exp);
   }
   inline Tensor<Device, 1, DType> &operator=(const DType &exp) {

@@ -20,5 +20,6 @@
 #include "./extension/pad.h"
 #include "./extension/crop.h"
 #include "./extension/mirror.h"
+#include "./extension/concat.h"
 #endif
 
