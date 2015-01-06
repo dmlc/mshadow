@@ -362,7 +362,7 @@ struct Tensor<Device, 1, DType>:
   // constructor
   MSHADOW_XINLINE Tensor(void) : stream_(NULL) {}
   MSHADOW_XINLINE Tensor(const Shape<1> &shape)
-      : shape_(shape), stream(NULL) {}
+      : shape_(shape), stream_(NULL) {}
   MSHADOW_XINLINE Tensor(DType *dptr, Shape<1> shape)
       : dptr_(dptr), shape_(shape), stride_(shape[0]), stream_(NULL) {}
   MSHADOW_XINLINE Tensor(DType *dptr, Shape<1> shape, index_t stride)
