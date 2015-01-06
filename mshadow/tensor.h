@@ -5,7 +5,7 @@
  *  This lib requires explicit memory allocation and de-allocation
  *  all the data structure Tensor<cpu,1>, Tensor<gpu,1> are like handles(pointers),
  *  no memory allocation is happening during calculation
- *   
+ *
  *  For STL style tensor, see tensor_container.h
  * \author Bing Xu, Tianqi Chen
  */
@@ -206,7 +206,7 @@ struct Stream {
   /*!
    * \brief query whether the the stream is idle
    * \return true if the stream is idle and all the job have been completed
-   */  
+   */
   inline bool CheckIdle(void) {
     return true;
   }
@@ -218,7 +218,7 @@ struct Stream {
  * \tparam dimension dimension of the tensor
  * \tparam DType the type of elements in the tensor
  */
-template<typename Container, typename Device, int dimension, typename DType> 
+template<typename Container, typename Device, int dimension, typename DType>
 struct TRValue: public expr::RValueExp<Container, DType> {
 };
 // more compact template
@@ -252,8 +252,8 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
    *    this is used to deal with pitch allocation in gpu or sse(align x dimension to 64bit) for efficiency
    */
   index_t stride_;
-  /*! 
-   * \brief stream where the computation lies 
+  /*!
+   * \brief stream where the computation lies
    * stream is a device dependency concept where each computation
    */
   Stream<Device> *stream_;
@@ -263,7 +263,7 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
   /*! \brief default constructor */
   MSHADOW_XINLINE Tensor(void) : stream_(NULL) {}
   /*! \brief constructor from shape  */
-  MSHADOW_XINLINE Tensor(const Shape<dimension> &shape) 
+  MSHADOW_XINLINE Tensor(const Shape<dimension> &shape)
       : shape_(shape), stream_(NULL) {}
   /*! \brief constructor from data pointer and shape, without stride */
   MSHADOW_XINLINE Tensor(DType *dptr, const Shape<dimension> &shape)
@@ -273,7 +273,7 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
                          const Shape<dimension> &shape, index_t stride)
       : dptr_(dptr), shape_(shape), stride_(stride), stream_(NULL) {}
   /*!
-   * \return memory cost of the tensor, including the aligned x dimension 
+   * \return memory cost of the tensor, including the aligned x dimension
    * \tparam startdim the starting dimension
    */
   template<int startdim>
@@ -286,7 +286,7 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
     return memsz;
   }
   /*!
-   * \return memory cost of the tensor, including the aligned x dimension 
+   * \return memory cost of the tensor, including the aligned x dimension
    */
   MSHADOW_XINLINE size_t MSize(void) const {
     return this->MemSize<0>();
@@ -362,7 +362,7 @@ struct Tensor<Device, 1, DType>:
   // constructor
   MSHADOW_XINLINE Tensor(void) : stream_(NULL) {}
   MSHADOW_XINLINE Tensor(const Shape<1> &shape)
-      : shape_(shape), stream(NULL) {}
+      : shape_(shape), stream_(NULL) {}
   MSHADOW_XINLINE Tensor(DType *dptr, Shape<1> shape)
       : dptr_(dptr), shape_(shape), stride_(shape[0]), stream_(NULL) {}
   MSHADOW_XINLINE Tensor(DType *dptr, Shape<1> shape, index_t stride)
