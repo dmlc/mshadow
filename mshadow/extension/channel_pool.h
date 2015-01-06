@@ -30,19 +30,22 @@ struct ChannelPoolingExp:
   index_t stride_;
   /*! \brief pad of pooling of each side */
   index_t pad_;
+  index_t src_channel_;
   /*! \brief constructor */
   ChannelPoolingExp(const SrcExp &src, index_t nsize, index_t stride, index_t pad)
       : src_(src), nsize_(nsize), stride_(stride), pad_(pad) {
     this->shape_ = ShapeCheck<srcdim, SrcExp>::Check(src_);
+    this->src_channel_ = this->shape_[srcdim - 3];
     utils::Check(this->shape_[srcdim - 3] >= nsize_,
                  "chpool: local size must be smaller than nchannels");
+    this->shape_[srcdim - 3] = (this->src_channel_ - nsize + pad * 2 + 1) / stride;
   }
 };
 /*!
  * \brief  channel pooling, do reduction over (local nearby) channels,
  *         used to implement local response normalization
- * \param src source data 
- * \param nsize neighbor size 
+ * \param src source data
+ * \param nsize neighbor size
  * \return expression of pooled result
  * \tparam Reducer reducer type
  * \tparam SrcExp source expression
@@ -78,7 +81,8 @@ struct Plan<ChannelPoolingExp<Reducer, SrcExp, DType, srcdim>, DType> {
   explicit Plan(const ChannelPoolingExp<Reducer, SrcExp, DType, srcdim> &e)
       : src_(MakePlan(e.src_)), channel_(e.shape_[srcdim - 3]),
         height_(e.shape_[srcdim - 2]), width_(e.shape_[srcdim - 1]),
-        hnsize_(e.nsize_), stride_(e.stride_), pad_(e.pad_){}
+        hnsize_(e.nsize_), stride_(e.stride_), pad_(e.pad_),
+        src_channel_(e.src_channel_){}
   MSHADOW_XINLINE DType Eval(index_t i, index_t j) const {
     using namespace std;
     const index_t y = i % height_;
@@ -86,17 +90,17 @@ struct Plan<ChannelPoolingExp<Reducer, SrcExp, DType, srcdim>, DType> {
     const index_t c = i % channel_;
     const index_t n = i / channel_;
     const index_t x = j;
-    const index_t cstart = c * stride_ - pad_ < 0 ? 0  : c * stride_ - pad_;
+    const index_t cstart = c * stride_ < pad_ ? 0  : c * stride_ - pad_;
     const index_t cend   = min(cstart + hnsize_, channel_);
     DType res; Reducer::SetInitValue(res);
     for (index_t cc = cstart; cc < cend; ++cc) {
-      Reducer::Reduce(res, src_.Eval((n * channel_ + cc) * height_ + y, x));
+      Reducer::Reduce(res, src_.Eval((n * src_channel_ + cc) * height_ + y, x));
     }
     return res;
   }
  private:
   Plan<SrcExp, DType> src_;
-  const index_t channel_, height_, width_, hnsize_, stride_, pad_;
+  const index_t channel_, height_, width_, hnsize_, stride_, pad_, src_channel_;
 };
 }  // namespace expr
 }  // namespace mshadow
