@@ -261,9 +261,10 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
   // functions
   //--------------------------------
   /*! \brief default constructor */
-  MSHADOW_XINLINE Tensor(void) {}
+  MSHADOW_XINLINE Tensor(void) : stream_(NULL) {}
   /*! \brief constructor from shape  */
-  MSHADOW_XINLINE Tensor(const Shape<dimension> &shape) : shape_(shape) {}
+  MSHADOW_XINLINE Tensor(const Shape<dimension> &shape) 
+      : shape_(shape), stream_(NULL) {}
   /*! \brief constructor from data pointer and shape, without stride */
   MSHADOW_XINLINE Tensor(DType *dptr, const Shape<dimension> &shape)
       : dptr_(dptr), shape_(shape), stride_(shape[kSubdim]), stream_(NULL) {}
@@ -359,8 +360,9 @@ struct Tensor<Device, 1, DType>:
   index_t stride_;
   Stream<Device> *stream_;
   // constructor
-  MSHADOW_XINLINE Tensor(void) {}
-  MSHADOW_XINLINE Tensor(const Shape<1> &shape): shape_(shape) {}
+  MSHADOW_XINLINE Tensor(void) : stream_(NULL) {}
+  MSHADOW_XINLINE Tensor(const Shape<1> &shape)
+      : shape_(shape), stream(NULL) {}
   MSHADOW_XINLINE Tensor(DType *dptr, Shape<1> shape)
       : dptr_(dptr), shape_(shape), stride_(shape[0]), stream_(NULL) {}
   MSHADOW_XINLINE Tensor(DType *dptr, Shape<1> shape, index_t stride)
