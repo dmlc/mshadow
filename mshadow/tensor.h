@@ -270,8 +270,16 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
       : dptr_(dptr), shape_(shape), stride_(shape[kSubdim]), stream_(NULL) {}
   /*! \brief constructor from data pointer and shape  */
   MSHADOW_XINLINE Tensor(DType *dptr,
-                         const Shape<dimension> &shape, index_t stride)
-      : dptr_(dptr), shape_(shape), stride_(stride), stream_(NULL) {}
+                         const Shape<dimension> &shape,
+                         index_t stride, Stream<Device> *stream)
+      : dptr_(dptr), shape_(shape), stride_(stride), stream_(stream) {}
+  /*!
+   * \brief set the stream to do computation of current tensor
+   * \param stream the computation stream
+   */
+  inline void set_stream(Stream<Device> *stream) {
+    this->stream_ = stream;
+  }
   /*!
    * \return memory cost of the tensor, including the aligned x dimension
    * \tparam startdim the starting dimension
@@ -304,7 +312,7 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
    * \return tensor after flatten
    */
   MSHADOW_XINLINE Tensor<Device, 2, DType> FlatTo2D(void) const {
-    return Tensor<Device, 2, DType>(dptr_, shape_.FlatTo2D(), stride_);
+    return Tensor<Device, 2, DType>(dptr_, shape_.FlatTo2D(), stride_, stream_);
   }
   /*!
    * \brief get a element of dimension - 1
@@ -313,7 +321,7 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
    */
   MSHADOW_XINLINE Tensor<Device, kSubdim, DType> operator[](index_t idx) const {
     return Tensor<Device, kSubdim, DType>(dptr_ + this->MemSize<1>() * idx,
-                                          shape_.SubShape(), stride_);
+                                          shape_.SubShape(), stride_, stream_);
   }
   /*!
    * \brief slice the tensor in highest dimension [begin,end)
@@ -326,7 +334,7 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
     Shape<dimension> s = this->shape_;
     s[0] = end - begin;
     return Tensor<Device, dimension, DType>(dptr_ + this->MemSize<1>() * begin,
-                                            s, stride_);
+                                            s, stride_, stream_);
   }
   /*!\brief implement the assignment of same type */
   template<typename E, int etype>
@@ -365,15 +373,19 @@ struct Tensor<Device, 1, DType>:
       : shape_(shape), stream_(NULL) {}
   MSHADOW_XINLINE Tensor(DType *dptr, Shape<1> shape)
       : dptr_(dptr), shape_(shape), stride_(shape[0]), stream_(NULL) {}
-  MSHADOW_XINLINE Tensor(DType *dptr, Shape<1> shape, index_t stride)
-      : dptr_(dptr), shape_(shape), stride_(stride), stream_(NULL) {}
+  MSHADOW_XINLINE Tensor(DType *dptr, Shape<1> shape,
+                         index_t stride, Stream<Device> *stream)
+      : dptr_(dptr), shape_(shape), stride_(stride), stream_(stream) {}
+  inline void set_stream(Stream<Device> *stream) {
+    this->stream_ = stream;
+  }
   MSHADOW_XINLINE Tensor<Device, 2, DType> FlatTo2D(void) const {
-    return Tensor<Device, 2, DType>(dptr_, shape_.FlatTo2D(), stride_);
+    return Tensor<Device, 2, DType>(dptr_, shape_.FlatTo2D(), stride_, stream_);
   }
   MSHADOW_XINLINE Tensor<Device, 1, DType> Slice(index_t begin, index_t end) const {
     Shape<1> s;
     s[0] = end  - begin;
-    return Tensor<Device, 1, DType>(dptr_ + begin, s);
+    return Tensor<Device, 1, DType>(dptr_ + begin, s, s[0], stream_);
   }
   MSHADOW_XINLINE size_t MSize(void) const {
     return shape_[0];
