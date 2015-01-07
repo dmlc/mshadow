@@ -3,7 +3,7 @@
  * \file ps_local-inl.h
  * \brief local multi-threading implementation of PS abstraction
  *
- * \author Tianqi Chen
+ * \author Tianqi Chen, Mu Li
  */
 #ifndef MSHADOW_PS_LOCAL_INL_H_
 #define MSHADOW_PS_LOCAL_INL_H_

@@ -16,6 +16,11 @@
 #endif  // C++11
 #include "../mshadow/tensor.h"
 
+/*! \brief whether to adapt distributed PS from parameter-server */
+#ifndef MSHADOW_DIST_PS_
+#define MSHADOW_DIST_PS_ 1
+#endif
+
 namespace mshadow {
 namespace ps {
 /*!
@@ -168,6 +173,7 @@ class IParamServer {
 }  // namespace mshadow
 
 #include "./ps_local-inl.h"
+#include "./ps_dist-inl.h"
 namespace mshadow {
 namespace ps {
 /*!
@@ -176,7 +182,10 @@ namespace ps {
  */
 template<typename xpu, typename DType>
 inline IParamServer<xpu, DType> *Create(const char *type) {
-  if (!strcmp("local", type)) return new LocalServer<xpu, DType>(); 
+  if (!strcmp("local", type)) return new LocalServer<xpu, DType>();
+#if MSHADOW_DIST_PS_
+  if (!strcmp("dist", type)) return new DistServer<xpu, DType>();
+#endif
   utils::Error("unknown server type %s\n", type);
   return NULL;
 }
