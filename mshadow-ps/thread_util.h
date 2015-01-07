@@ -88,8 +88,9 @@ class ThreadPQueue {
   // lock for accessing the queue
   utils::Mutex lock_;
   // counter to count number of push tasks
-  utils::Semaphore counter_;  
+  utils::Semaphore counter_;
 };
+
 // naive implementation of threadsafe map
 template<typename TValue>
 class ThreadSafeMap {

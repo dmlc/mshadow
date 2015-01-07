@@ -28,17 +28,35 @@ class LocalServer : public IParamServer<xpu, DType> {
     push_queue.Abort(1);
     pull_queue.Abort(1);
     thread_push_handler.Join();
-    thread_pull_handler.Join();
+    thread_pull_handler.Join();    
     push_queue.Destroy();
+    pull_queue.Destroy();
     pull_map.Destroy();
+    request_lock.Destroy();
+    wait_lock.Destroy();
+    wait_cond.Destroy();
   }
   virtual void PullWait(int key, int devid) {
-    
+    const int wid = GetWorkIndex(devid);
+    PullEntry &e = pull_map.GetRef(key);
+    // wake up waiters if any
+    utils::Assert(e.wait.size() == devices.size(),
+                  "must initialize the key");
+    PullWaitRecord &w = e.wait[wid];
+    if (!w.finished) {
+      wait_lock.Lock();
+      w.nwait += 1;
+      while (!w.finished) {
+        wait_cond.Wait(&wait_lock);
+      }
+      w.nwait -= 1;
+      utils::Assert(w.nwait >= 0, "boundary check");
+      wait_lock.Unlock();
+    }
   }
   virtual void Init(const std::vector<int> &devices) {
     utils::Check(devices.size() != 0,
                  "LocalServer.Init: must at least contain 1 devices");
-    push_queue.Init();
     this->devices = devices;
     // initialize device id to local index
     dev2index.clear();
@@ -50,13 +68,21 @@ class LocalServer : public IParamServer<xpu, DType> {
       }
       dev2index[devid] = static_cast<int>(i);
     }
+    // initialize all the thread related things
+    push_queue.Init();
+    pull_queue.Init();
+    pull_map.Init();
+    request_lock.Init();
+    wait_lock.Init();
+    wait_cond.Init();
     // initialize the thread
     thread_push_handler.Start(PushHandlerThread, this);
+    thread_pull_handler.Start(PullHandlerThread, this);
   }
  protected:
   virtual void Push_(Tensor<xpu, 2, DType> data,
                      int key, int devid, int priority) {
-    this->InitPullMap(key);    
+    this->InitPullMap(key, devid);    
     push_queue.Push(PullTask(data, key, devid), priority);
   }
   virtual void PullReq_(Tensor<xpu, 2, DType> data,
@@ -66,12 +92,19 @@ class LocalServer : public IParamServer<xpu, DType> {
     PullEntry &e = pull_map.GetRef(key);
     utils::Assert(e.req.size() == devices.size(),
                   "must initialize the key");
+    utils::Assert(e.wait.size() == devices.size(),
+                  "must initialize the key");
     const int wid = GetWorkIndex(devid);
     PullReqRecord &r = e.req[wid];
     r.dest = data;
     r.priority = priority;
     r.callback = callback;
-    r.callback_arg = callback_arg;    
+    r.callback_arg = callback_arg;
+    // reset pull request finish mark
+    wait_lock.Lock();
+    e.wait[wid].finished = false;
+    wait_lock.Unlock();
+    // check ready event    
     request_lock.Lock();
     utils::Check(!r.pending,
                  "cannot send duplicate pull request before it finishes");
@@ -162,16 +195,25 @@ class LocalServer : public IParamServer<xpu, DType> {
     PullReqRecord(void) : pending(false) {
     }
   };
+  // a record to help handle pullwait
+  struct PullWaitRecord {
+    // number of thread that waits for the request to finish
+    int nwait;
+    // the request was finished
+    bool finished;
+    PullWaitRecord(void) : nwait(0), finished(false) {
+    }
+  };
   /*! \brief data structure to hold pull request */
   struct PullEntry {
     // data to be pulled back
-    Tensor<cpu, 2, DType> data;      
+    Tensor<cpu, 2, DType> src;
     // whether the data is ready
     bool ready;
     // pullrequest record
-    std::vector<PullReqRecord> req;
+    std::vector<PullReqRecord> req;    
     // whether there is thread waiting on this event
-    std::vector<bool> wait;
+    std::vector<PullWaitRecord> wait;
     PullEntry(void)
         : ready(false) {
     }
@@ -203,7 +245,9 @@ class LocalServer : public IParamServer<xpu, DType> {
   // lock to lock request field
   utils::Mutex request_lock;
   // lock to lock wait field
-  utils::Mutex wait_lock;  
+  utils::Mutex wait_lock;
+  // conditional variable to do waiting
+  utils::ConditionVariable wait_cond;
   // push handler
   inline void PushHandler(void) {
     // allocate stream resources
@@ -240,7 +284,7 @@ class LocalServer : public IParamServer<xpu, DType> {
     // free resources
     for (size_t i = 0; i < devices.size(); ++i) {
       SetDevice<xpu>(devices[i]);
-      DeleteStream(push_stream[dev2index[devices[i]]]);
+      DeleteStream(push_stream[i]);
     }
     for (typename std::map<int, PushEntry*>::iterator
              it = push_buffer.begin(); it != push_buffer.end(); ++it) {
@@ -254,6 +298,61 @@ class LocalServer : public IParamServer<xpu, DType> {
     utils::ThreadExit(NULL);
     return NULL;
   }
+
+  // push handler
+  inline void PullHandler(void) {
+    // allocate stream resources
+    for (size_t i = 0; i < devices.size(); ++i) {
+      SetDevice<xpu>(devices[i]);
+      pull_stream.push_back(NewStream<xpu>());
+    }
+    while (!destroy_signal) {
+      std::pair<int, int> tsk;
+      if (pull_queue.Pop(&tsk)) {
+        const int key = tsk.first;
+        const int devid = tsk.second;
+        const int wid = GetWorkIndex(devid);
+        PullEntry &e = pull_map.GetRef(key);
+        {
+          // handle request
+          utils::Assert(e.req.size() == devices.size(),
+                        "must initialize the key");
+          PullReqRecord &r = e.req[wid];
+          SetDevice<xpu>(devid);
+          Copy(r.dest, e.src, pull_stream[wid]);
+          // callback, if any
+          if (r.callback != NULL) {
+            (*r.callback)(pull_stream[wid], r.callback_arg);
+          }
+        }
+        {
+          // wake up waiters if any
+          utils::Assert(e.wait.size() == devices.size(),
+                        "must initialize the key");
+          PullWaitRecord &w = e.wait[wid];
+          wait_lock.Lock();
+          w.finished = true;
+          if(w.nwait != 0) {
+            wait_cond.Broadcast();
+          }
+          wait_lock.Unlock();
+        }
+      } else {
+        utils::Assert(destroy_signal, "abort but not destroy");        
+      }
+    }
+    // free resources
+    for (size_t i = 0; i < devices.size(); ++i) {
+      SetDevice<xpu>(devices[i]);
+      DeleteStream(pull_stream[i]);
+    }
+  }
+  /*!\brief entry point of loader thread */
+  inline static MSHADOW_THREAD_PREFIX PullHandlerThread(void *pthread) {
+    static_cast<LocalServer*>(pthread)->PullHandler();
+    utils::ThreadExit(NULL);
+    return NULL;
+  }
   // get internal index of device
   inline int GetWorkIndex(int devid) const {
     utils::Check(devid >= 0 &&
@@ -263,24 +362,24 @@ class LocalServer : public IParamServer<xpu, DType> {
     return dev2index[devid];
   }  
   // functions to handle pull
-  inline void InitPullMap(int key) {
+  inline void InitPullMap(int key, int devid) {
     pull_map.Init(key);
     PullEntry &e = pull_map.GetRef(key);
+    request_lock.Lock();
+    // must recheck after lock
     if (e.req.size() == 0) {
-      request_lock.Lock();
-      // must recheck after lock
-      if (e.req.size() == 0) {
-        e.req.resize(devices.size(), PullReqRecord());
-      }
-      request_lock.Unlock();      
+      e.req.resize(devices.size(), PullReqRecord());
     }
+    e.ready = false;
+    request_lock.Unlock();
+    // check wait map
     if (e.wait.size() == 0) {
       wait_lock.Lock();
       // must recheck after lock
       if (e.wait.size() == 0) {
-        e.wait.resize(devices.size(), false);
+        e.wait.resize(devices.size(), PullWaitRecord());
       }
-      wait_lock.Unlock();      
+      wait_lock.Unlock();
     }
   }
 };

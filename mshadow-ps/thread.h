@@ -134,8 +134,36 @@ class Mutex {
   inline void Destroy(void) {
     pthread_mutex_destroy(&mutex);
   }
+
  private:
+  friend class ConditionVariable;
   pthread_mutex_t mutex;
+};
+
+// conditional variable that uses pthread
+class ConditionVariable {  
+ public:
+  // initialize conditional variable
+  inline void Init(void) {
+    pthread_cond_init(&cond, NULL);
+  }
+  // destroy the thread
+  inline void Destroy(void) {
+    pthread_cond_destroy(&cond);
+  }
+  // wait on the conditional variable
+  inline void Wait(Mutex *mutex) {
+    pthread_cond_wait(&cond, &(mutex->mutex));
+  }
+  inline void Broadcast(void) {
+    pthread_cond_broadcast(&cond);
+  }
+  inline void Signal(void) {
+    pthread_cond_signal(&cond);
+  }
+
+ private:
+  pthread_cond_t cond;
 };
 
 /*!\brief simple thread class */
