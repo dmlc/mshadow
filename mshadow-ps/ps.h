@@ -120,7 +120,10 @@ class IParamServer {
                       int devid, 
                       int priority,
                       std::function<void(Stream<xpu> *stream)> callback) {
-    this->PullReq(data, key, devid, priority, InvokeLambda_, &callback);
+    // need to allocate space, because callback can happen latter..
+    auto calbk = new std::function<void(Stream<xpu> *stream)>();
+    *calbk = callback;
+    this->PullReq(data, key, devid, priority, InvokeLambda_, calbk);
   }
 #endif  // C++11
  protected:
@@ -165,7 +168,9 @@ class IParamServer {
 #if __cplusplus >= 201103L
   /*! \brief hack function to convert lambda to callback function */
   inline static void InvokeLambda_(Stream<xpu> *stream, void *fun) {
-    (*static_cast<std::function<void(Stream<xpu> *stream)>*>(fun))(stream);
+    auto *fp = static_cast<std::function<void(Stream<xpu> *stream)>*>(fun);
+    (*fp)(stream);
+    delete fp;
   }
 #endif  // C++11
 };

@@ -29,7 +29,12 @@ int main(int argc, char *argv[]) {
   ps->Init(devs);
   for (int i = 0; i < ndev; ++i) {
     ps->Push(ts[i], 3, i);
-    ps->PullReq(res[i], 3, i);
+    int a = i;
+    ps->PullReq(res[i], 3, i, 0, [&](Stream<cpu> *stream) {
+        printf("hello i=%d, a=%d,remember during callback, do not take local varaible.. \n", i, a);
+        ts += 1.0f;
+      }
+      );
   }
   for (int i = 0; i < ndev; ++i) {
     ps->PullWait(3, i);
