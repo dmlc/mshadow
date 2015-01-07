@@ -126,6 +126,7 @@ class LocalServer : public IParamServer<xpu, DType> {
                   "must initialize the key");
     request_lock.Lock();
     e.ready = true;
+    e.src = data;
     for (int i = 0; i < e.req.size(); ++i) {
       if (e.req[i].pending) {
         pull_queue.Push(std::make_pair(key, devices[i]));

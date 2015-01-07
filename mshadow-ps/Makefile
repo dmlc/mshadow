@@ -2,7 +2,7 @@
 export CC  = gcc
 export CXX = clang++
 export NVCC =nvcc
-export CFLAGS = -Wall -O3 -msse3 -Wno-unknown-pragmas -funroll-loops -I../ -DMSHADOW_STAND_ALONE=1
+export CFLAGS = -Wall -O3 -msse3 -Wno-unknown-pragmas -funroll-loops -I../ -DMSHADOW_STAND_ALONE=1 -std=c++11
 export LDFLAGS= -lm -lpthread
 export NVCCFLAGS = -O3 --use_fast_math -ccbin $(CXX)
 

@@ -111,7 +111,7 @@ class IParamServer {
                       CallbackFunction callback = NULL,
                       void *callback_arg = NULL) {
     this->PullReq_(data.FlatTo2D(), key,
-                   devid, priority, callback);
+                   devid, priority, callback, callback_arg);
   }
 #if __cplusplus >= 201103L
   template<int dim>
@@ -164,7 +164,7 @@ class IParamServer {
 // C++11 support for lambda prepare function
 #if __cplusplus >= 201103L
   /*! \brief hack function to convert lambda to callback function */
-  inline void InvokeLambda_(Stream<xpu> *stream, void *fun) {
+  inline static void InvokeLambda_(Stream<xpu> *stream, void *fun) {
     (*static_cast<std::function<void(Stream<xpu> *stream)>*>(fun))(stream);
   }
 #endif  // C++11
