@@ -42,7 +42,7 @@ void HandlePrint(const char *msg);
 #endif
 
 /*! \brief assert an condition is true, use this to handle debug information */
-inline void AssertX(bool exp, const char *fmt, ...) {
+inline void Assert(bool exp, const char *fmt, ...) {
   if (!exp) {
     std::string msg(kPrintBuffer, '\0');
     va_list args;

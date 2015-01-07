@@ -423,6 +423,12 @@ inline void InitTensorEngine(int device_id = 0);
  */
 inline void ShutdownTensorEngine(void);
 /*!
+ * \brief set the device of current thread to work on
+ * \param devid the device id
+ */
+template<typename Device>
+inline void SetDevice(int devid);
+/*!
  * \brief create a new stream from system
  * \return a pointer to the created stream
  */

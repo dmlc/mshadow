@@ -9,6 +9,11 @@
  */
 #ifndef MSHADOW_PS_H_
 #define MSHADOW_PS_H_
+#include <vector>
+// optionally support of lambda function in C++11, if available
+#if __cplusplus >= 201103L
+#include <functional>
+#endif  // C++11
 #include "../mshadow/tensor.h"
 
 namespace mshadow {
@@ -21,6 +26,15 @@ namespace ps {
 template<typename xpu,
          typename DType MSHADOW_DEFAULT_DTYPE>
 class IParamServer {
+ public:
+  /*!
+   * \brief callback function that will be executed when pull request finishes
+   *        before calling the callback, the thread context is already switched
+   *        to the device of pullrequest
+   * \param stream the stream of callback thread, it is recommended to operate using this stream
+   * \param arg the argument of callback function
+   */
+  typedef void (CallbackFunction) (Stream<xpu> *stream, void *arg);
   /*! \brief virtual destructor */
   virtual ~IParamServer(void) {}
   /*!
@@ -31,20 +45,26 @@ class IParamServer {
   virtual void SetParam(const char *name, const char *val) {}
   /*!
    * \brief initialize the paramerver server client 
-   * \param num_device number of parallel device
-   *        we want to support in current process
-   *        in the future, the device id must be in [0, num_device)
+   * \param devices specifies the possible device id
+   *   to be input from Push and Pull,
    */
-  virtual void Init(int num_device = 1) {}
+  virtual void Init(const std::vector<int> &devices) {}
+  /*!
+   * \brief initialize the paramerver server client 
+   * without specifying the devices, only device 0 is allowed
+   */  
+  inline void Init(void) {
+    std::vector<int> dev;
+    dev.push_back(0);
+    this->Init(dev);
+  }
   /*!
    * \brief wait until the pull event finishes
-   *
-   * \param devid the device id this tensor lies in
    * \param key the unique key to indicate the tensor
    *        this is unique per device
-   * \param data the data 
+   * \param devid the device id this tensor lies in
    */
-  virtual void PullWait(int devid, int key) = 0;
+  virtual void PullWait(int key, int devid = 0) = 0;
   /*!
    * \brief push out a tensor to parameter server
    *  this call is asynchronize and returns immediately
@@ -53,11 +73,15 @@ class IParamServer {
    * \param key the unique key to indicate the tensor
    *        this is unique per device
    * \param devid the device id this tensor lies in
+   * \param priority the priority of this operation,
+   *   the bigger the number is the higher the priority will be
    */
   template<int dim>
-  inline void Push(mshadow::Tensor<xpu, dim, DType> data, 
-                   int key, int devid = 0) {
-    this->Push_(data.FlatTo2D(), key, devid);
+  inline void Push(Tensor<xpu, dim, DType> data, 
+                   int key,
+                   int devid = 0,
+                   int priority = 0) {
+    this->Push_(data.FlatTo2D(), key, devid, priority);
   }
   /*!
    * \brief send a pull request, to pull parameter into data
@@ -68,13 +92,32 @@ class IParamServer {
    * \param key the unique key to indicate the tensor,
    *        this is unique per device
    * \param devid the device id this tensor lies in
+   * \param priority the priority of this operation,
+   *   the bigger the number is the higher the priority will be
+   * \param callback the callback function that will
+   *                 be invoked when the request finishes
+   * \param callback_arg the argument to pass to callback
    */
   template<int dim>
-  inline void PullReq(mshadow::Tensor<xpu, dim, DType> data, 
-                   int key, int devid = 0) {
-    this->PullReq_(data, key, devid);
+  inline void PullReq(Tensor<xpu, dim, DType> data, 
+                      int key,
+                      int devid = 0,
+                      int priority = 0,
+                      CallbackFunction callback = NULL,
+                      void *callback_arg = NULL) {
+    this->PullReq_(data.FlatTo2D(), key,
+                   devid, priority, callback);
   }
-
+#if __cplusplus >= 201103L
+  template<int dim>
+  inline void PullReq(Tensor<xpu, dim, DType> data, 
+                      int key,
+                      int devid, 
+                      int priority,
+                      std::function<void(Stream<xpu> *stream)> callback) {
+    this->PullReq(data, key, devid, priority, InvokeLambda_, &callback);
+  }
+#endif  // C++11
  protected:
   /*!
    * \brief push out a tensor to parameter server
@@ -84,9 +127,13 @@ class IParamServer {
    * \param key the unique key to indicate the tensor
    *        this is unique per device
    * \param devid the device id this tensor lies in
+   * \param priority the priority of this operation,
+   *   the bigger the number is the higher the priority will be
    */
-  virtual void Push_(mshadow::Tensor<xpu, 2, DType> data,
-                     int key, int devid = 0) = 0;                    
+  virtual void Push_(Tensor<xpu, 2, DType> data,
+                     int key,
+                     int devid = 0,
+                     int priority = 0) = 0;
   /*!
    * \brief send a pull request, to pull parameter into data
    *  this call is asynchronize and returns immediately
@@ -96,16 +143,43 @@ class IParamServer {
    * \param key the unique key to indicate the tensor,
    *        this is unique per device
    * \param devid the device id this tensor lies in
+   * \param priority the priority of this operation,
+   *   the bigger the number is the higher the priority will be
+   * \param callback the callback function that will
+   *                 be invoked when the request finishes
+   * \param callback_arg the argument to pass to callback
    */
-  virtual void PullReq_(mshadow::Tensor<xpu, 2, DType> data,
-                        int key, int devid = 0) = 0;
+  virtual void PullReq_(Tensor<xpu, 2, DType> data,
+                        int key,
+                        int devid,
+                        int priority,
+                        CallbackFunction callback,
+                        void *callback_arg) = 0;
+ private:
+// C++11 support for lambda prepare function
+#if __cplusplus >= 201103L
+  /*! \brief hack function to convert lambda to callback function */
+  inline void InvokeLambda_(Stream<xpu> *stream, void *fun) {
+    (*static_cast<std::function<void(Stream<xpu> *stream)>*>(fun))(stream);
+  }
+#endif  // C++11
 };
-/*! 
+}  // namespace ps
+}  // namespace mshadow
+
+#include "./ps_local-inl.h"
+namespace mshadow {
+namespace ps {
+/*!
  * \brief create a parameter server implementation
  * \param type the type of paramerver server
  */
 template<typename xpu, typename DType>
-inline IParamServer<xpu, DType> *Create(const char *type);
+inline IParamServer<xpu, DType> *Create(const char *type) {
+  if (!strcmp("local", type)) return new LocalServer<xpu, DType>(); 
+  utils::Error("unknown server type %s\n", type);
+  return NULL;
+}
 }  // namespace ps
 }  // namespace mshadow
 #endif

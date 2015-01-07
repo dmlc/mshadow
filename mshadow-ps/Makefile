@@ -3,7 +3,7 @@ export CC  = gcc
 export CXX = clang++
 export NVCC =nvcc
 export CFLAGS = -Wall -O3 -msse3 -Wno-unknown-pragmas -funroll-loops -I../ -DMSHADOW_STAND_ALONE=1
-export LDFLAGS= -lm 
+export LDFLAGS= -lm -lpthread
 export NVCCFLAGS = -O3 --use_fast_math -ccbin $(CXX)
 
 # specify tensor path
@@ -15,7 +15,7 @@ CUBIN =
 
 all: $(BIN) $(OBJ) $(CUBIN) $(CUOBJ)
 
-test: test.cpp
+test: test.cpp *.h
 
 $(BIN) :
 	$(CXX) $(CFLAGS) -o $@ $(filter %.cpp %.o %.c, $^)  $(LDFLAGS)

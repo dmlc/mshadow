@@ -13,6 +13,9 @@
 
 namespace mshadow {
 template<>
+inline void SetDevice<cpu>(int devid) {
+}
+template<>
 inline Stream<cpu> *NewStream<cpu>(void) {
   return new Stream<cpu>();
 }

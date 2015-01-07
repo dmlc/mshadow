@@ -1,5 +1,5 @@
-#ifndef MSHADOW_UTILS_THREAD_H_
-#define MSHADOW_UTILS_THREAD_H_
+#ifndef MSHADOW_PS_THREAD_H_
+#define MSHADOW_PS_THREAD_H_
 /*!
  * \file thread.h
  * \brief this header include the minimum necessary resource for multi-threading that can be compiled in windows, linux, mac
@@ -161,4 +161,4 @@ inline void ThreadExit(void *status) {
 }  // namespace mshadow
 #define MSHADOW_THREAD_PREFIX void *
 #endif  // Linux
-#endif  // MSHADOW_UTILS_THREAD_H_
+#endif  // MSHADOW_PS_THREAD_H_

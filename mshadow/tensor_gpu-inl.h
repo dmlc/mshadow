@@ -46,7 +46,10 @@ inline void InitTensorEngine(int dev_id) {
 inline void ShutdownTensorEngine(void) {
   cublasShutdown();
 }
-
+template<>
+inline void SetDevice<gpu>(int devid) {
+  utils::Check(cudaSetDevice(devid) == cudaSuccess, "cannot set device"); 
+}
 template<int dim, typename DType>
 inline void AllocSpace(Tensor<gpu, dim, DType> *obj, bool pad) {
   size_t pitch;
