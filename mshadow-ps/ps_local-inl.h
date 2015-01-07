@@ -270,6 +270,8 @@ class LocalServer : public IParamServer<xpu, DType> {
         // start copy
         SetDevice<xpu>(tsk.devid);
         Copy(e.data[wid], tsk.data, push_stream[wid]);
+        // wait till the copy finishes
+        push_stream[wid]->Wait();
         // mark copied
         e.copied[wid] = true;
         e.num_copied += 1;
@@ -325,6 +327,8 @@ class LocalServer : public IParamServer<xpu, DType> {
           if (r.callback != NULL) {
             (*r.callback)(pull_stream[wid], r.callback_arg);
           }
+          // wait till the operation finishes
+          pull_stream[wid]->Wait();
         }
         {
           // wake up waiters if any
