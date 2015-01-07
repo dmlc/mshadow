@@ -1,9 +1,9 @@
 # set LD_LIBRARY_PATH
 export CC  = gcc
-export CXX = clang++
+export CXX = g++
 export NVCC =nvcc
-export CFLAGS = -Wall -O3 -msse3 -Wno-unknown-pragmas -funroll-loops -I../ -DMSHADOW_STAND_ALONE=1
-export LDFLAGS= -lm 
+export CFLAGS = -Wall -O3 -msse3 -Wno-unknown-pragmas -funroll-loops -I../ -I/opt/intel/mkl/include -I/usr/local/cuda-6.0/include/ -L/opt/intel/mkl/lib/intel64 -L/opt/intel/lib/intel64 -L/usr/local/cuda-6.0/lib64 
+export LDFLAGS= -lm  -lcurand -lcublas
 export NVCCFLAGS = -O3 --use_fast_math -ccbin $(CXX)
 
 # specify tensor path
@@ -18,7 +18,7 @@ all: $(BIN) $(OBJ) $(CUBIN) $(CUOBJ)
 basic: basic.cpp
 concat: concat.cpp
 defop: defop.cpp
-basicx: basic.cu
+basicx: basic_gpu.cu
 
 $(BIN) :
 	$(CXX) $(CFLAGS) -o $@ $(filter %.cpp %.o %.c, $^)  $(LDFLAGS)
