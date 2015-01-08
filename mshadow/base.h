@@ -42,6 +42,14 @@
   #define MSHADOW_USE_CUDA  0
 #endif
 
+/*!
+ * \brief force user to use GPU stream during computation
+ *  error will be shot when default stream NULL is used
+ */
+#ifndef MSHADOW_FORCE_STREAM
+#define MSHADOW_FORCE_STREAM 0
+#endif
+
 /*! \brief use CBLAS for CBLAS */
 #ifndef MSHADOW_USE_CBLAS
   #define MSHADOW_USE_CBLAS 0

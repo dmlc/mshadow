@@ -54,7 +54,7 @@ class Random<cpu, DType> {
    * \brief set the stream of computation
    * \param stream computation stream
    */
-  inline void SetStream(Stream<cpu> *stream) {    
+  inline void set_stream(Stream<cpu> *stream) {    
   }
   /*!
    * \brief generate data from uniform [a,b)
@@ -239,11 +239,11 @@ class Random<gpu, DType> {
    * \brief set the stream of computation
    * \param stream computation stream
    */
-  inline void SetStream(Stream<gpu> *stream) {
+  inline void set_stream(Stream<gpu> *stream) {
     curandStatus_t status;
-    status = curandSetStream(gen_, Stream<gpu>::GetStream(stream));
+    status = curandset_stream(gen_, Stream<gpu>::GetStream(stream));
     utils::Check(status == CURAND_STATUS_SUCCESS,
-                 "SetStream CURAND failed");
+                 "set_stream CURAND failed");
   }
   /*!
    * \brief seed random number generator using this seed
