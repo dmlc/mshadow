@@ -15,7 +15,7 @@
 
 namespace mshadow {
 namespace ps {
-// multi-threaded implementation of 
+// multi-threaded implementation of
 template<typename xpu, typename DType>
 class LocalServer : public IParamServer<xpu, DType> {
  public:
@@ -28,7 +28,7 @@ class LocalServer : public IParamServer<xpu, DType> {
     push_queue.Abort(1);
     pull_queue.Abort(1);
     thread_push_handler.Join();
-    thread_pull_handler.Join();    
+    thread_pull_handler.Join();
     push_queue.Destroy();
     pull_queue.Destroy();
     pull_map.Destroy();
@@ -82,7 +82,7 @@ class LocalServer : public IParamServer<xpu, DType> {
  protected:
   virtual void Push_(Tensor<xpu, 2, DType> data,
                      int key, int devid, int priority) {
-    this->InitPullMap(key, devid);    
+    this->InitPullMap(key, devid);
     push_queue.Push(PullTask(data, key, devid), priority);
   }
   virtual void PullReq_(Tensor<xpu, 2, DType> data,
@@ -104,7 +104,7 @@ class LocalServer : public IParamServer<xpu, DType> {
     wait_lock.Lock();
     e.wait[wid].finished = false;
     wait_lock.Unlock();
-    // check ready event    
+    // check ready event
     request_lock.Lock();
     utils::Check(!r.pending,
                  "cannot send duplicate pull request before it finishes");
@@ -127,7 +127,7 @@ class LocalServer : public IParamServer<xpu, DType> {
     request_lock.Lock();
     e.ready = true;
     e.src = data;
-    for (int i = 0; i < e.req.size(); ++i) {
+    for (index_t i = 0; i < e.req.size(); ++i) {
       if (e.req[i].pending) {
         pull_queue.Push(std::make_pair(key, devices[i]));
         e.req[i].pending = false;
@@ -140,16 +140,16 @@ class LocalServer : public IParamServer<xpu, DType> {
    *  called when all the data with same key comes in
    * \param data the buffer holds the data in all devices
    * \param key the key of the data
-   */  
+   */
   virtual void HandlePushFinish(Tensor<cpu, 3, DType> data, int key) {
     for (index_t i = 1; i < data.size(0); ++i) {
       data[0] += data[i];
     }
     this->PullReady(data[0], key);
   }
-  
+
  private:
-  /*! \brief task running */    
+  /*! \brief task running */
   struct PullTask {
     /*! \brief the task data source */
     Tensor<xpu, 2, DType> data;
@@ -187,7 +187,7 @@ class LocalServer : public IParamServer<xpu, DType> {
     bool pending;
     // the destination to pull data into
     Tensor<xpu, 2, DType> dest;
-    // the priority of the 
+    // the priority of the
     int priority;
     // callback function
     CallbackFunction *callback;
@@ -213,7 +213,7 @@ class LocalServer : public IParamServer<xpu, DType> {
     // whether the data is ready
     bool ready;
     // pullrequest record
-    std::vector<PullReqRecord> req;    
+    std::vector<PullReqRecord> req;
     // whether there is thread waiting on this event
     std::vector<PullWaitRecord> wait;
     PullEntry(void)
@@ -344,7 +344,7 @@ class LocalServer : public IParamServer<xpu, DType> {
           wait_lock.Unlock();
         }
       } else {
-        utils::Assert(destroy_signal, "abort but not destroy");        
+        utils::Assert(destroy_signal, "abort but not destroy");
       }
     }
     // free resources
@@ -366,7 +366,7 @@ class LocalServer : public IParamServer<xpu, DType> {
                  dev2index[devid] >= 0,
                  "Push: invalid devid");
     return dev2index[devid];
-  }  
+  }
   // functions to handle pull
   inline void InitPullMap(int key, int devid) {
     pull_map.Init(key);
