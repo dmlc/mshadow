@@ -65,6 +65,7 @@ class IParamServer {
   }
   /*!
    * \brief wait until the pull event finishes
+   * if there was no pull request, wait will directly returns
    * \param key the unique key to indicate the tensor
    *        this is unique per device
    * \param devid the device id this tensor lies in

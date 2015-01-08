@@ -18,6 +18,7 @@ template<>
 struct Stream<gpu> {
   /*! \brief cudaStream */
   cudaStream_t stream_;
+  Stream(void) : stream_(0) {}
   /*!
    * \brief wait for all the computation associated
    *  with this stream to complete
@@ -41,7 +42,7 @@ struct Stream<gpu> {
    * \brief returns actual cudaStream_t given an input GPU stream pointer
    * \param stream pointer to GPU stream
    */
-  inline static cudaStream_t GetStream(Stream<gpu> *stream) {    
+  inline static cudaStream_t GetStream(Stream<gpu> *stream) {
     if (stream == NULL) {
 #if MSHADOW_FORCE_STREAM
       utils::Error("Default GPU stream was used when MSHADOW_FORCE_STREAM was on");

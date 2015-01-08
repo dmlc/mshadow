@@ -202,7 +202,8 @@ class LocalServer : public IParamServer<xpu, DType> {
     int nwait;
     // the request was finished
     bool finished;
-    PullWaitRecord(void) : nwait(0), finished(false) {
+    PullWaitRecord(void) : nwait(0), finished(true) {
+      // set finished to true so pull without pull request returns
     }
   };
   /*! \brief data structure to hold pull request */

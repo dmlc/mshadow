@@ -80,7 +80,8 @@ inline void SaveBinary(TStream &fo, const Tensor<gpu, dim, DType> &src) {
   // copy to CPU, then save
   Tensor<cpu, dim, DType> tmp(src.shape_);
   AllocSpace(&tmp);
-  Copy(tmp, src);
+  Stream<gpu> stream;
+  Copy(tmp, src, &stream);
   SaveBinary(fo, tmp);
   FreeSpace(&tmp);
 }
@@ -113,7 +114,8 @@ inline void LoadBinary(TStream &fi,
   } else {
     dst->shape = tmp.shape; AllocSpace(dst);
   }
-  Copy(*dst, tmp);
+  Stream<gpu> stream;
+  Copy(*dst, tmp, &stream);
   FreeSpace(&tmp);
 }
 }  // namespace mshadow
