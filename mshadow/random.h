@@ -241,7 +241,7 @@ class Random<gpu, DType> {
    */
   inline void set_stream(Stream<gpu> *stream) {
     curandStatus_t status;
-    status = curandset_stream(gen_, Stream<gpu>::GetStream(stream));
+    status = curandSetStream(gen_, Stream<gpu>::GetStream(stream));
     utils::Check(status == CURAND_STATUS_SUCCESS,
                  "set_stream CURAND failed");
   }
