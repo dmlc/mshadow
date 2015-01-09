@@ -105,7 +105,8 @@ class TensorContainer: public Tensor<Device, dimension, DType> {
     Tensor<cpu, dimension, DType> tmp;
     mshadow::LoadBinary(fi, &tmp, false);
     this->Resize(tmp.shape_);
-    Copy(*this, tmp);
+    Stream<Device> stream;
+    Copy(*this, tmp, &stream);
     mshadow::FreeSpace(&tmp);
   }
   // functions to fit exp template
