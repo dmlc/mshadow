@@ -38,7 +38,9 @@ class LocalServer : public IParamServer<xpu, DType> {
   }
   virtual void PullWait(int key, int devid) {
     const int wid = GetWorkIndex(devid);
-    PullEntry &e = pull_map.GetRef(key);
+    PullEntry *p = pull_map.Get(key);
+    if (p == NULL) return;
+    PullEntry &e = *p;
     // wake up waiters if any
     utils::Assert(e.wait.size() == devices.size(),
                   "must initialize the key");
@@ -107,7 +109,8 @@ class LocalServer : public IParamServer<xpu, DType> {
     // check ready event
     request_lock.Lock();
     utils::Check(!r.pending,
-                 "cannot send duplicate pull request before it finishes");
+                 "key = %d, cannot send duplicate pull request before it finishes",
+                 key);
     if (e.ready) {
       pull_queue.Push(std::make_pair(key, devid));
     } else {
