@@ -62,7 +62,7 @@ inline __device__ void ReduceX(volatile DType  buf[], int tid) {
   // in warp optimization
   if (x_bits >= 5) {
     if (tid < 16) Reducer::Reduce(buf[tid] , buf[tid + 16]);
-    __syncthreads();
+    __MSHADOW_EMUSYNC__;
   }
   if (x_bits >= 4) {
     if (tid < 8) Reducer::Reduce(buf[tid] , buf[tid + 8]);

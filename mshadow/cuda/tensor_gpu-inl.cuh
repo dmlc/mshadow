@@ -12,18 +12,16 @@
 namespace mshadow {
 namespace cuda {
 /*! \brief seems CUDAARCH is deprecated in future NVCC */
-#ifndef __CUDA_ARCH__
-#warning "__CUDA_ARCH__ is not defined, I will assume compiling with CUDA verion greater than 2.0"
+#ifndef MSHADOW_OLD_CUDA
+#define MSHADOW_OLD_CUDA 0
 #endif
 /* load unit for memory access, if CUDAARCH not defined, this is advanced nvcc */
-#if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 200
-const int kMemUnitBits = 5;
-const int kMaxThreadsPerBlock = 1024;
-#define MSHADOW_MEM_UNIT_BITS 5
-#else
+#if MSHADOW_OLD_CUDA > 0
 const int kMemUnitBits = 4;
 const int kMaxThreadsPerBlock = 512;
-#define MSHADOW_MEM_UNIT_BITS 4
+#else
+const int kMemUnitBits = 5;
+const int kMaxThreadsPerBlock = 1024;
 #endif
 /*! \brief number of units that can do synchronized update, half warp size */
 const int kMemUnit = 1 << kMemUnitBits;
@@ -145,7 +143,7 @@ inline void MapReduceKeepLowest(expr::Plan<DstExp, DType> dst,
   dim3 dimBlock(kMemUnit, kMemUnit);
   dim3 dimGrid((eshape[1] + kMemUnit - 1) >> kMemUnitBits);
   CheckLaunchParam(dimGrid, dimBlock, "MapRedKeepLowestKernel");
-  MapRedKeepLowestKernel<Saver, Reducer, MSHADOW_MEM_UNIT_BITS, DType,
+  MapRedKeepLowestKernel<Saver, Reducer, kMemUnitBits, DType,
                          expr::Plan<DstExp, DType>,
                          expr::Plan<E, DType> >
       <<<dimGrid, dimBlock, 0, stream>>>(dst, plan, scale, eshape);
