@@ -65,6 +65,15 @@
 #ifndef MSHADOW_USE_CUDA
   #define MSHADOW_USE_CUDA   1
 #endif
+
+/*!
+ * \brief seems CUDAARCH is deprecated in future NVCC
+ * set this to 1 if you want to use CUDA version smaller than 2.0
+ */
+#ifndef MSHADOW_OLD_CUDA
+#define MSHADOW_OLD_CUDA 0
+#endif
+
 /*! \brief use single precition float */
 #ifndef MSHADOW_SINGLE_PRECISION
   #define MSHADOW_SINGLE_PRECISION 1

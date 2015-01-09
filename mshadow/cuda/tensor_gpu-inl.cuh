@@ -11,12 +11,8 @@
 
 namespace mshadow {
 namespace cuda {
-/*! \brief seems CUDAARCH is deprecated in future NVCC */
-#ifndef MSHADOW_OLD_CUDA
-#define MSHADOW_OLD_CUDA 0
-#endif
 /* load unit for memory access, if CUDAARCH not defined, this is advanced nvcc */
-#if MSHADOW_OLD_CUDA > 0
+#if MSHADOW_OLD_CUDA
 const int kMemUnitBits = 4;
 const int kMaxThreadsPerBlock = 512;
 #else

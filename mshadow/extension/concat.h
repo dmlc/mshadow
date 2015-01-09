@@ -1,7 +1,7 @@
 #ifndef MSHADOW_EXTENSION_CONCAT_H_
 #define MSHADOW_EXTENSION_CONCAT_H_
 
-#include "mshadow/extension.h"
+#include "../extension.h"
 
 namespace mshadow {
 namespace expr {
