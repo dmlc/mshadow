@@ -24,10 +24,13 @@ class DistServer : public LocalServer<xpu, DType> {
   virtual ~DistServer(void) {
   }
   // override this function, to use parameter server
-  virtual void HandlePushFinish(Tensor<cpu, 3, DType> data, int key) {
+  virtual void HandlePushFinish(Tensor<cpu, 3, DType> data,
+                                Tensor<cpu, 2, DType> result_buffer,
+                                int key) {
+    Copy(result_buffer, data[0]);
     for (index_t i = 1; i < data.size(0); ++i) {
-      data[0] += data[i];
-    }    
+      result_buffer += data[i];
+    }
     // something like
     //auto callback = [&]() {
     // receive data into dptr

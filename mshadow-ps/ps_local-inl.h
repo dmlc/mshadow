@@ -39,11 +39,11 @@ class LocalServer : public IParamServer<xpu, DType> {
   virtual void PullWait(int key, int devid) {
     const int wid = GetWorkIndex(devid);
     PullEntry *p = pull_map.Get(key);
-    if (p == NULL) return;
+    if (p == NULL || p->wait.size() == 0) return;
     PullEntry &e = *p;
     // wake up waiters if any
     utils::Assert(e.wait.size() == devices.size(),
-                  "must initialize the key");
+                  "PullWait: must initialize the wait");
     PullWaitRecord &w = e.wait[wid];
     if (!w.finished) {
       wait_lock.Lock();
@@ -93,9 +93,9 @@ class LocalServer : public IParamServer<xpu, DType> {
                         void *callback_arg) {
     PullEntry &e = pull_map.GetRef(key);
     utils::Assert(e.req.size() == devices.size(),
-                  "must initialize the key");
+                  "PullReq: must initialize the key, req");
     utils::Assert(e.wait.size() == devices.size(),
-                  "must initialize the key");
+                  "PullReq: must initialize the key, wait");
     const int wid = GetWorkIndex(devid);
     PullReqRecord &r = e.req[wid];
     r.dest = data;
@@ -111,7 +111,7 @@ class LocalServer : public IParamServer<xpu, DType> {
     utils::Check(!r.pending,
                  "key = %d, cannot send duplicate pull request before it finishes",
                  key);
-    if (e.ready) {
+    if (e.req[wid].ready) {
       pull_queue.Push(std::make_pair(key, devid));
     } else {
       r.pending = true;
@@ -126,11 +126,11 @@ class LocalServer : public IParamServer<xpu, DType> {
   virtual void PullReady(Tensor<cpu, 2> data, int key) {
     PullEntry &e = pull_map.GetRef(key);
     utils::Assert(e.req.size() == devices.size(),
-                  "must initialize the key");
+                  "PullReady: must initialize the key, req");
     request_lock.Lock();
-    e.ready = true;
     e.src = data;
     for (index_t i = 0; i < e.req.size(); ++i) {
+      e.req[i].ready = true;
       if (e.req[i].pending) {
         pull_queue.Push(std::make_pair(key, devices[i]));
         e.req[i].pending = false;
@@ -140,15 +140,19 @@ class LocalServer : public IParamServer<xpu, DType> {
   }
   /*!
    * \brief event handler for push finish
-   *  called when all the data with same key comes in
+   *  called when all the data with same key comes int
    * \param data the buffer holds the data in all devices
+   * \param result_buffer temporal buffer to hold the reduction result
    * \param key the key of the data
    */
-  virtual void HandlePushFinish(Tensor<cpu, 3, DType> data, int key) {
+  virtual void HandlePushFinish(Tensor<cpu, 3, DType> data,
+                                Tensor<cpu, 2, DType> result_buffer,
+                                int key) {
+    Copy(result_buffer, data[0]);
     for (index_t i = 1; i < data.size(0); ++i) {
-      data[0] += data[i];
+      result_buffer += data[i];
     }
-    this->PullReady(data[0], key);
+    this->PullReady(result_buffer, key);
   }
 
  private:
@@ -171,14 +175,17 @@ class LocalServer : public IParamServer<xpu, DType> {
   struct PushEntry {
     // temporal space to hold input data
     TensorContainer<cpu, 3, DType> data;
+    // temporal space to hold to copy back
+    TensorContainer<cpu, 2, DType> result_buffer;
     // indicator whether the certain devices is already copied in
     std::vector<bool> copied;
     // number of data copied in
     int num_copied;
     // constructor
     explicit PushEntry(int ndevice, Shape<2> shape)
-        : data(false) {
+        : data(false), result_buffer(false) {
       data.Resize(Shape3(ndevice, shape[0], shape[1]));
+      result_buffer.Resize(shape);
       num_copied = 0;
       copied.resize(ndevice, false);
     }
@@ -186,6 +193,8 @@ class LocalServer : public IParamServer<xpu, DType> {
   // a record to remember things related to pull request
   struct PullReqRecord {
     // whether this record contains a pending request
+    // whether pull is ready to go
+    bool ready;
     // waiting for pull ready
     bool pending;
     // the destination to pull data into
@@ -196,7 +205,7 @@ class LocalServer : public IParamServer<xpu, DType> {
     CallbackFunction *callback;
     // argument for callback
     void *callback_arg;
-    PullReqRecord(void) : pending(false) {
+    PullReqRecord(void) : ready(false), pending(false) {
     }
   };
   // a record to help handle pullwait
@@ -213,14 +222,11 @@ class LocalServer : public IParamServer<xpu, DType> {
   struct PullEntry {
     // data to be pulled back
     Tensor<cpu, 2, DType> src;
-    // whether the data is ready
-    bool ready;
     // pullrequest record
     std::vector<PullReqRecord> req;
     // whether there is thread waiting on this event
     std::vector<PullWaitRecord> wait;
-    PullEntry(void)
-        : ready(false) {
+    PullEntry(void) {
     }
   };
   // signal to notify all the thread about class destruction
@@ -280,7 +286,7 @@ class LocalServer : public IParamServer<xpu, DType> {
         e.copied[wid] = true;
         e.num_copied += 1;
         if (e.num_copied >= static_cast<int>(devices.size())) {
-          this->HandlePushFinish(e.data, tsk.key);
+          this->HandlePushFinish(e.data, e.result_buffer, tsk.key);
           std::fill(e.copied.begin(), e.copied.end(), false);
           e.num_copied = 0;
         }
@@ -323,7 +329,7 @@ class LocalServer : public IParamServer<xpu, DType> {
         {
           // handle request
           utils::Assert(e.req.size() == devices.size(),
-                        "must initialize the key");
+                        "PullHandler: must initialize the key, req");
           PullReqRecord &r = e.req[wid];
           SetDevice<xpu>(devid);
           Copy(r.dest, e.src, pull_stream[wid]);
@@ -337,7 +343,7 @@ class LocalServer : public IParamServer<xpu, DType> {
         {
           // wake up waiters if any
           utils::Assert(e.wait.size() == devices.size(),
-                        "must initialize the key");
+                        "PullHandler, must initialize the key, req");
           PullWaitRecord &w = e.wait[wid];
           wait_lock.Lock();
           w.finished = true;
@@ -379,8 +385,8 @@ class LocalServer : public IParamServer<xpu, DType> {
     if (e.req.size() == 0) {
       e.req.resize(devices.size(), PullReqRecord());
     }
-    e.ready = false;
     request_lock.Unlock();
+    e.req[GetWorkIndex(devid)].ready = false;
     // check wait map
     if (e.wait.size() == 0) {
       wait_lock.Lock();
