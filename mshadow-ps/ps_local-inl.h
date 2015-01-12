@@ -146,13 +146,11 @@ class LocalServer : public IParamServer<xpu, DType> {
    * \param key the key of the data
    */
   virtual void HandlePushFinish(Tensor<cpu, 3, DType> data,
-                                Tensor<cpu, 2, DType> result_buffer,
                                 int key) {
-    Copy(result_buffer, data[0]);
     for (index_t i = 1; i < data.size(0); ++i) {
-      result_buffer += data[i];
+      data[0] += data[i];
     }
-    this->PullReady(result_buffer, key);
+    this->PullReady(data[0], key);
   }
 
  private:
@@ -174,18 +172,17 @@ class LocalServer : public IParamServer<xpu, DType> {
   /*! \brief data structure to hold temporal push result */
   struct PushEntry {
     // temporal space to hold input data
-    TensorContainer<cpu, 3, DType> data;
-    // temporal space to hold to copy back
-    TensorContainer<cpu, 2, DType> result_buffer;
+    TensorContainer<cpu, 4, DType> data;
     // indicator whether the certain devices is already copied in
     std::vector<bool> copied;
     // number of data copied in
     int num_copied;
+    // version number of data used to hold incomming data in push
+    int copyin_version;
     // constructor
     explicit PushEntry(int ndevice, Shape<2> shape)
-        : data(false), result_buffer(false) {
-      data.Resize(Shape3(ndevice, shape[0], shape[1]));
-      result_buffer.Resize(shape);
+        : data(false), copyin_version(0) {
+      data.Resize(Shape4(2, ndevice, shape[0], shape[1]));
       num_copied = 0;
       copied.resize(ndevice, false);
     }
@@ -274,19 +271,21 @@ class LocalServer : public IParamServer<xpu, DType> {
         }
         const int wid = GetWorkIndex(tsk.devid);
         PushEntry &e = *push_buffer[tsk.key];
-        utils::Check(e.data[0].shape_ == tsk.data.shape_,
+        utils::Check(e.data[0][0].shape_ == tsk.data.shape_,
                      "Tensor with same key must share same shape");
         utils::Assert(!e.copied[wid], "data inconsistency");
         // start copy
         SetDevice<xpu>(tsk.devid);
-        Copy(e.data[wid], tsk.data, push_stream[wid]);
+        Copy(e.data[e.copyin_version][wid], tsk.data, push_stream[wid]);
         // wait till the copy finishes
         push_stream[wid]->Wait();
         // mark copied
         e.copied[wid] = true;
         e.num_copied += 1;
         if (e.num_copied >= static_cast<int>(devices.size())) {
-          this->HandlePushFinish(e.data, e.result_buffer, tsk.key);
+          this->HandlePushFinish(e.data[e.copyin_version], tsk.key);
+          // switch version
+          e.copyin_version = (e.copyin_version + 1) % e.data.size(0);
           std::fill(e.copied.begin(), e.copied.end(), false);
           e.num_copied = 0;
         }
