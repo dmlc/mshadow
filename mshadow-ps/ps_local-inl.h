@@ -36,6 +36,18 @@ class LocalServer : public IParamServer<xpu, DType> {
     wait_lock.Destroy();
     wait_cond.Destroy();
   }
+  virtual void SetParam(const char *name, const char *val) {
+    int key;
+    if (sscanf(name, "push_op[%d]", &key) == 1) {
+      if (!strcmp(val, "gather")) {
+        push_operation[key] = kGather; return;
+      }
+      if (!strcmp(val, "sum")) {
+        push_operation[key] = kSum; return;
+      }
+      utils::Error("unknown push operation %s", val);
+    }
+  }
   virtual void PullWait(int key, int devid) {
     const int wid = GetWorkIndex(devid);
     PullEntry *p = pull_map.Get(key);
@@ -82,6 +94,16 @@ class LocalServer : public IParamServer<xpu, DType> {
     thread_pull_handler.Start(PullHandlerThread, this);
   }
  protected:
+  /*! \brief operation performed locally in PS */
+  enum LocalOp {
+    /*! \brief take sum of all devices over the same key */
+    kSum = 0,
+    /*!
+     * \brief concatenate(gather),
+     *  the tensors in all devices with same key
+     */
+    kGather = 1
+  };
   virtual void Push_(Tensor<xpu, 2, DType> data,
                      int key, int devid, int priority) {
     this->InitPullMap(key, devid);
@@ -147,10 +169,26 @@ class LocalServer : public IParamServer<xpu, DType> {
    */
   virtual void HandlePushFinish(Tensor<cpu, 3, DType> data,
                                 int key) {
-    for (index_t i = 1; i < data.size(0); ++i) {
-      data[0] += data[i];
+    LocalOp op = kSum;
+    typename std::map<int, LocalOp>::const_iterator
+        it = push_operation.find(key);
+    if (it != push_operation.end() && it->first == key) {
+      op = it->second;
     }
-    this->PullReady(data[0], key);
+    switch (op) {
+      case kSum: {
+        for (index_t i = 1; i < data.size(0); ++i) {
+          data[0] += data[i];
+        }
+        this->PullReady(data[0], key);
+        return;
+      }
+      case kGather: {
+        this->PullReady(data.FlatTo2D(), key);
+        return;       
+      }
+      default: utils::Error("unknown LocalOp");
+    }
   }
 
  private:
@@ -241,6 +279,8 @@ class LocalServer : public IParamServer<xpu, DType> {
   utils::Thread thread_push_handler;
   // the map of push buffer
   std::map<int, PushEntry*> push_buffer;
+  // customized local reduction operation
+  std::map<int, LocalOp> push_operation;
   //----- data structure used to support pull ----
   // the queue used for pull task
   utils::ThreadPQueue<std::pair<int, int> > pull_queue;
