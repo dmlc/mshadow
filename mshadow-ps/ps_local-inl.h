@@ -40,6 +40,8 @@ class LocalServer : public IParamServer<xpu, DType> {
         thread_pull_handler[i].Join();
       }
       push_queue.Destroy();
+      push_map.Destroy();
+      push_lock.Destroy();
       for (size_t i = 0; i < pull_queues.size(); ++i) {
         pull_queues[i].Destroy();
       }
@@ -114,6 +116,8 @@ class LocalServer : public IParamServer<xpu, DType> {
     pull_stream.resize(devices.size());
     // initialize all the thread related things
     push_queue.Init();
+    push_map.Init();
+    push_lock.Init();
     pull_map.Init();
     request_lock.Init();
     wait_lock.Init();
@@ -158,6 +162,7 @@ class LocalServer : public IParamServer<xpu, DType> {
   virtual void Push_(Tensor<xpu, 2, DType> data,
                      int key, int devid, int priority) {
     this->InitPullMap(key, devid);
+    this->InitPushMap(key, data.shape_);
     push_queue.Push(PullTask(data, key, devid), priority);
   }
   virtual void PullReq_(Tensor<xpu, 2, DType> data,
@@ -277,8 +282,10 @@ class LocalServer : public IParamServer<xpu, DType> {
     // version number of data used to hold incomming data in push
     int copyin_version;
     // constructor
-    explicit PushEntry(int ndevice, Shape<2> shape)
-        : data(false), copyin_version(0) {
+    PushEntry(void)
+        : data(false), copyin_version(0) {}
+    // constructor
+    inline void Init(int ndevice, Shape<2> shape) {
       data.Resize(Shape4(2, ndevice, shape[0], shape[1]));
       num_copied = 0;
       copied.resize(ndevice, false);
@@ -336,8 +343,10 @@ class LocalServer : public IParamServer<xpu, DType> {
   utils::ThreadPQueue<PullTask> push_queue;
   // thread to handle push task
   utils::Thread thread_push_handler;
+  // lock to lock push field
+  utils::Mutex push_lock;
   // the map of push buffer
-  std::map<int, PushEntry*> push_buffer;
+  utils::ThreadSafeMap<PushEntry> push_map;
   // customized local reduction operation
   std::map<int, LocalOp> push_operation;
   //----- data structure used to support pull ----
@@ -369,11 +378,8 @@ class LocalServer : public IParamServer<xpu, DType> {
     while (!destroy_signal) {
       PullTask tsk;
       if (push_queue.Pop(&tsk)) {
-        if (push_buffer.count(tsk.key) == 0) {
-          push_buffer[tsk.key] = new PushEntry(devices.size(), tsk.data.shape_);
-        }
         const int wid = GetWorkIndex(tsk.devid);
-        PushEntry &e = *push_buffer[tsk.key];
+        PushEntry &e = push_map.GetRef(tsk.key);
         utils::Check(e.data[0][0].shape_ == tsk.data.shape_,
                      "Tensor with same key must share same shape");
         utils::Assert(!e.copied[wid], "data inconsistency");
@@ -384,13 +390,19 @@ class LocalServer : public IParamServer<xpu, DType> {
         push_stream[wid]->Wait();
         // mark copied
         e.copied[wid] = true;
+        push_lock.Lock();
         e.num_copied += 1;
-        if (e.num_copied >= static_cast<int>(devices.size())) {
-          this->HandlePushFinish(e.data[e.copyin_version], tsk.key);
+        int cp_version = e.copyin_version;
+        bool push_finish = e.num_copied >= static_cast<int>(devices.size());
+        if (push_finish) {
           // switch version
           e.copyin_version = (e.copyin_version + 1) % e.data.size(0);
           std::fill(e.copied.begin(), e.copied.end(), false);
           e.num_copied = 0;
+        }
+        push_lock.Unlock();
+        if (push_finish) {
+          this->HandlePushFinish(e.data[cp_version], tsk.key);
         }
       } else {
         utils::Assert(destroy_signal, "abort but not destroy");
@@ -401,11 +413,6 @@ class LocalServer : public IParamServer<xpu, DType> {
       SetDevice<xpu>(devices[i]);
       DeleteStream(push_stream[i]);
     }
-    for (typename std::map<int, PushEntry*>::iterator
-             it = push_buffer.begin(); it != push_buffer.end(); ++it) {
-      delete it->second;
-    }
-    push_buffer.clear();
   }
   /*!\brief entry point of loader thread */
   inline static MSHADOW_THREAD_PREFIX PushHandlerThread(void *pthread) {
@@ -519,6 +526,18 @@ class LocalServer : public IParamServer<xpu, DType> {
         e.wait.resize(devices.size(), PullWaitRecord());
       }
       wait_lock.Unlock();
+    }
+  }
+  // functions to handle pull
+  inline void InitPushMap(int key, Shape<2> shape) {
+    push_map.Init(key);
+    PushEntry &e = push_map.GetRef(key);
+    if (e.copied.size() == 0) {
+      push_lock.Lock();
+      if (e.copied.size() == 0) {
+        e.Init(devices.size(), shape);
+      }
+      push_lock.Unlock();
     }
   }
 };
