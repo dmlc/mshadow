@@ -22,10 +22,10 @@ class LocalServer : public IParamServer<xpu, DType> {
   // redefine callback function
   typedef typename IParamServer<xpu, DType>::CallbackFunction
   CallbackFunction;
-  
+  // constructor
   LocalServer(void) {
     init_end = 0;
-    perdev_pull_thread = 0;
+    perdev_pull_thread = 1;
   }
   // destructor
   virtual ~LocalServer(void) {
@@ -62,6 +62,16 @@ class LocalServer : public IParamServer<xpu, DType> {
         push_operation[key] = kSum; return;
       }
       utils::Error("unknown push operation %s", val);
+    }
+    if (!strcmp(name, "pull_thread")) {
+      if (!strcmp(val, "ndev")) {
+        perdev_pull_thread = 1;
+      } else if (!strcmp(val, "one")) {
+        perdev_pull_thread = 0;
+      } else {
+        utils::Error("invalid value for parameter pull_thread,"\
+                     " can only be ndev or one");
+      }
     }
   }
   virtual void PullWait(int key, int devid) {
@@ -125,7 +135,7 @@ class LocalServer : public IParamServer<xpu, DType> {
         std::pair<LocalServer*, size_t> *p
             = new std::pair<LocalServer*, size_t>();
         *p = std::make_pair(this, i);
-        thread_pull_handler[i].Start(PullGlobalThread, p);
+        thread_pull_handler[i].Start(PullLocalThread, p);
       } 
     } else {
       thread_pull_handler.resize(1);      
@@ -403,7 +413,6 @@ class LocalServer : public IParamServer<xpu, DType> {
     utils::ThreadExit(NULL);
     return NULL;
   }
-
   // push handler procedure
   inline void PullProc(utils::ThreadPQueue<std::pair<int, int> > *queue) {
     while (!destroy_signal) {
