@@ -22,19 +22,32 @@ class LocalServer : public IParamServer<xpu, DType> {
   // redefine callback function
   typedef typename IParamServer<xpu, DType>::CallbackFunction
   CallbackFunction;
+  
+  LocalServer(void) {
+    init_end = 0;
+    perdev_pull_thread = 0;
+  }
   // destructor
   virtual ~LocalServer(void) {
-    destroy_signal = true;
-    push_queue.Abort(1);
-    pull_queue.Abort(1);
-    thread_push_handler.Join();
-    thread_pull_handler.Join();
-    push_queue.Destroy();
-    pull_queue.Destroy();
-    pull_map.Destroy();
-    request_lock.Destroy();
-    wait_lock.Destroy();
-    wait_cond.Destroy();
+    if (init_end != 0) {
+      destroy_signal = true;
+      push_queue.Abort(1);
+      for (size_t i = 0; i < pull_queues.size(); ++i) {
+        pull_queues[i].Abort(1);
+      }
+      thread_push_handler.Join();
+      for (size_t i = 0; i < thread_pull_handler.size(); ++i) {
+        thread_pull_handler[i].Join();
+      }
+      push_queue.Destroy();
+      for (size_t i = 0; i < pull_queues.size(); ++i) {
+        pull_queues[i].Destroy();
+      }
+      pull_map.Destroy();
+      request_lock.Destroy();
+      wait_lock.Destroy();
+      wait_cond.Destroy();
+    }
   }
   virtual void PullWait(int key, int devid) {
     const int wid = GetWorkIndex(devid);
@@ -57,6 +70,8 @@ class LocalServer : public IParamServer<xpu, DType> {
     }
   }
   virtual void Init(const std::vector<int> &devices) {
+    utils::Check(init_end == 0,
+                 "LocalServer.Init can only call Init once");
     utils::Check(devices.size() != 0,
                  "LocalServer.Init: must at least contain 1 devices");
     this->devices = devices;
@@ -70,17 +85,40 @@ class LocalServer : public IParamServer<xpu, DType> {
       }
       dev2index[devid] = static_cast<int>(i);
     }
+    // allocate space
+    pull_stream.resize(devices.size());
     // initialize all the thread related things
     push_queue.Init();
-    pull_queue.Init();
     pull_map.Init();
     request_lock.Init();
     wait_lock.Init();
     wait_cond.Init();
+    if (perdev_pull_thread != 0) {
+      pull_queues.resize(devices.size());
+    } else {
+      pull_queues.resize(1);
+    }
+    for (size_t i = 0; i < pull_queues.size(); ++i) {
+      pull_queues[i].Init();
+    }
     // initialize the thread
     thread_push_handler.Start(PushHandlerThread, this);
-    thread_pull_handler.Start(PullHandlerThread, this);
+    // initialize pull handler
+    if (perdev_pull_thread != 0) {
+      thread_pull_handler.resize(devices.size());
+      for (size_t i = 0; i < devices.size(); ++i) {
+        std::pair<LocalServer*, size_t> *p
+            = new std::pair<LocalServer*, size_t>();
+        *p = std::make_pair(this, i);
+        thread_pull_handler[i].Start(PullGlobalThread, p);
+      } 
+    } else {
+      thread_pull_handler.resize(1);      
+      thread_pull_handler[0].Start(PullGlobalThread, this);
+    }    
+    this->init_end = 0;
   }
+
  protected:
   virtual void Push_(Tensor<xpu, 2, DType> data,
                      int key, int devid, int priority) {
@@ -112,7 +150,11 @@ class LocalServer : public IParamServer<xpu, DType> {
                  "key = %d, cannot send duplicate pull request before it finishes",
                  key);
     if (e.req[wid].ready) {
-      pull_queue.Push(std::make_pair(key, devid));
+      if (perdev_pull_thread != 0) {
+        pull_queues[wid].Push(std::make_pair(key, devid));        
+      } else {
+        pull_queues[0].Push(std::make_pair(key, devid));
+      }
     } else {
       r.pending = true;
     }
@@ -132,7 +174,11 @@ class LocalServer : public IParamServer<xpu, DType> {
     for (index_t i = 0; i < e.req.size(); ++i) {
       e.req[i].ready = true;
       if (e.req[i].pending) {
-        pull_queue.Push(std::make_pair(key, devices[i]));
+        if (perdev_pull_thread != 0) {
+          pull_queues[i].Push(std::make_pair(key, devices[i]));
+        } else {
+          pull_queues[0].Push(std::make_pair(key, devices[i]));
+        }
         e.req[i].pending = false;
       }
     }
@@ -243,19 +289,23 @@ class LocalServer : public IParamServer<xpu, DType> {
   std::map<int, PushEntry*> push_buffer;
   //----- data structure used to support pull ----
   // the queue used for pull task
-  utils::ThreadPQueue<std::pair<int, int> > pull_queue;
+  std::vector<utils::ThreadPQueue<std::pair<int, int> > > pull_queues;
   // stream used by pull thread each device for memcpy
   std::vector<Stream<xpu>*> pull_stream;
   // the map to store pull status
   utils::ThreadSafeMap<PullEntry> pull_map;
   // thread to handle pull task
-  utils::Thread thread_pull_handler;
+  std::vector<utils::Thread> thread_pull_handler;
   // lock to lock request field
   utils::Mutex request_lock;
   // lock to lock wait field
   utils::Mutex wait_lock;
   // conditional variable to do waiting
   utils::ConditionVariable wait_cond;
+  //---------configurations of server-------
+  int init_end;
+  // whether use pull thread per device
+  int perdev_pull_thread;
   // push handler
   inline void PushHandler(void) {
     // allocate stream resources
@@ -311,16 +361,11 @@ class LocalServer : public IParamServer<xpu, DType> {
     return NULL;
   }
 
-  // push handler
-  inline void PullHandler(void) {
-    // allocate stream resources
-    for (size_t i = 0; i < devices.size(); ++i) {
-      SetDevice<xpu>(devices[i]);
-      pull_stream.push_back(NewStream<xpu>());
-    }
+  // push handler procedure
+  inline void PullProc(utils::ThreadPQueue<std::pair<int, int> > *queue) {
     while (!destroy_signal) {
       std::pair<int, int> tsk;
-      if (pull_queue.Pop(&tsk)) {
+      if (queue->Pop(&tsk)) {
         const int key = tsk.first;
         const int devid = tsk.second;
         const int wid = GetWorkIndex(devid);
@@ -355,15 +400,43 @@ class LocalServer : public IParamServer<xpu, DType> {
         utils::Assert(destroy_signal, "abort but not destroy");
       }
     }
+  }
+  // use one thread for all pull actions
+  inline void PullHandlerGlobal(void) {
+    // allocate stream resources
+    for (size_t i = 0; i < devices.size(); ++i) {
+      SetDevice<xpu>(devices[i]);
+      pull_stream[i] = NewStream<xpu>();
+    }
+    this->PullProc(&pull_queues[0]);
     // free resources
     for (size_t i = 0; i < devices.size(); ++i) {
       SetDevice<xpu>(devices[i]);
       DeleteStream(pull_stream[i]);
     }
   }
-  /*!\brief entry point of loader thread */
-  inline static MSHADOW_THREAD_PREFIX PullHandlerThread(void *pthread) {
-    static_cast<LocalServer*>(pthread)->PullHandler();
+  inline void PullHandlerLocal(size_t tid) {
+    utils::Assert(tid < devices.size(), "threadid exceed boundary");
+    utils::Assert(pull_queues.size() == devices.size(),
+                  "must have one pull_queue per device");
+    // allocate stream resources
+    SetDevice<xpu>(devices[tid]);
+    pull_stream[tid] = NewStream<xpu>();
+    this->PullProc(&pull_queues[tid]);
+    SetDevice<xpu>(devices[tid]);
+    DeleteStream(pull_stream[tid]);
+  }
+  /*!\brief entry point of pull thread, one thread for all devices */
+  inline static MSHADOW_THREAD_PREFIX PullGlobalThread(void *arg) {
+    static_cast<LocalServer*>(arg)->PullHandlerGlobal();
+    utils::ThreadExit(NULL);
+    return NULL;
+  }
+  inline static MSHADOW_THREAD_PREFIX PullLocalThread(void *arg) {
+    std::pair<LocalServer*, size_t> *p
+        = static_cast<std::pair<LocalServer*, size_t>*>(arg);
+    p->first->PullHandlerLocal(p->second);
+    delete p;
     utils::ThreadExit(NULL);
     return NULL;
   }
