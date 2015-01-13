@@ -40,7 +40,10 @@ class LocalServer : public IParamServer<xpu, DType> {
     int key;
     if (sscanf(name, "push_op[%d]", &key) == 1) {
       if (!strcmp(val, "gather")) {
-        push_operation[key] = kGather; return;
+        request_lock.Lock();
+        push_operation[key] = kGather;
+        request_lock.Unlock();
+        return;
       }
       if (!strcmp(val, "sum")) {
         push_operation[key] = kSum; return;
