@@ -26,7 +26,7 @@ class LocalServer : public IParamServer<xpu, DType> {
   LocalServer(void) {
     init_end = 0;
     perdev_pull_thread = 1;
-    perdev_push_thread = 0;
+    perdev_push_thread = 1;
   }
   // destructor
   virtual ~LocalServer(void) {
