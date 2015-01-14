@@ -294,6 +294,13 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
     return memsz;
   }
   /*!
+   * \return whether the tensor's memory is continuous
+   * x dimension same as stride
+   */
+  MSHADOW_XINLINE bool CheckContiguous(void) const {
+    return this->shape_[dimension - 1] == stride_;
+  }
+  /*!
    * \return memory cost of the tensor, including the aligned x dimension
    */
   MSHADOW_XINLINE size_t MSize(void) const {
@@ -386,6 +393,9 @@ struct Tensor<Device, 1, DType>:
     Shape<1> s;
     s[0] = end  - begin;
     return Tensor<Device, 1, DType>(dptr_ + begin, s, s[0], stream_);
+  }
+  MSHADOW_XINLINE bool CheckContiguous(void) const {
+    return true;
   }
   MSHADOW_XINLINE size_t MSize(void) const {
     return shape_[0];
