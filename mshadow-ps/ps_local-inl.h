@@ -26,20 +26,27 @@ class LocalServer : public IParamServer<xpu, DType> {
   LocalServer(void) {
     init_end = 0;
     perdev_pull_thread = 1;
+    perdev_push_thread = 0;
   }
   // destructor
   virtual ~LocalServer(void) {
     if (init_end != 0) {
       destroy_signal = true;
-      push_queue.Abort(1);
+      for (size_t i = 0; i < push_queues.size(); ++i) {
+        push_queues[i].Abort(1);
+      }
       for (size_t i = 0; i < pull_queues.size(); ++i) {
         pull_queues[i].Abort(1);
       }
-      thread_push_handler.Join();
+      for (size_t i = 0; i < thread_push_handler.size(); ++i) {
+        thread_push_handler[i].Join();
+      }
       for (size_t i = 0; i < thread_pull_handler.size(); ++i) {
         thread_pull_handler[i].Join();
       }
-      push_queue.Destroy();
+      for (size_t i = 0; i < push_queues.size(); ++i) {
+        push_queues[i].Destroy();
+      }
       push_map.Destroy();
       push_lock.Destroy();
       for (size_t i = 0; i < pull_queues.size(); ++i) {
@@ -72,6 +79,16 @@ class LocalServer : public IParamServer<xpu, DType> {
         perdev_pull_thread = 0;
       } else {
         utils::Error("invalid value for parameter pull_thread,"\
+                     " can only be ndev or one");
+      }
+    }
+    if (!strcmp(name, "push_thread")) {
+      if (!strcmp(val, "ndev")) {
+        perdev_push_thread = 1;
+      } else if (!strcmp(val, "one")) {
+        perdev_push_thread = 0;
+      } else {
+        utils::Error("invalid value for parameter push_thread,"\
                      " can only be ndev or one");
       }
     }
@@ -114,8 +131,16 @@ class LocalServer : public IParamServer<xpu, DType> {
     }
     // allocate space
     pull_stream.resize(devices.size());
+    push_stream.resize(devices.size());
     // initialize all the thread related things
-    push_queue.Init();
+    if (perdev_push_thread != 0) {
+      push_queues.resize(devices.size());
+    } else {
+      push_queues.resize(1);
+    }
+    for (size_t i = 0; i < push_queues.size(); ++i) {
+      push_queues[i].Init();
+    }
     push_map.Init();
     push_lock.Init();
     pull_map.Init();
@@ -131,7 +156,18 @@ class LocalServer : public IParamServer<xpu, DType> {
       pull_queues[i].Init();
     }
     // initialize the thread
-    thread_push_handler.Start(PushHandlerThread, this);
+    if (perdev_push_thread != 0) {
+      thread_push_handler.resize(devices.size());
+      for (size_t i = 0; i < devices.size(); ++i) {
+        std::pair<LocalServer*, size_t> *p
+            = new std::pair<LocalServer*, size_t>();
+        *p = std::make_pair(this, i);
+        thread_push_handler[i].Start(PushLocalThread, p);
+      }
+    } else {
+      thread_push_handler.resize(1);
+      thread_push_handler[0].Start(PushGlobalThread, this);
+    }
     // initialize pull handler
     if (perdev_pull_thread != 0) {
       thread_pull_handler.resize(devices.size());
@@ -163,7 +199,12 @@ class LocalServer : public IParamServer<xpu, DType> {
                      int key, int devid, int priority) {
     this->InitPullMap(key, devid);
     this->InitPushMap(key, data.shape_);
-    push_queue.Push(PullTask(data, key, devid), priority);
+    if (perdev_push_thread != 0) {
+      int wid = GetWorkIndex(devid);
+      push_queues[wid].Push(PullTask(data, key, devid), priority);
+    } else {
+      push_queues[0].Push(PullTask(data, key, devid), priority);
+    }
   }
   virtual void PullReq_(Tensor<xpu, 2, DType> data,
                         int key, int devid, int priority,
@@ -340,9 +381,9 @@ class LocalServer : public IParamServer<xpu, DType> {
   // stream used by push thread each device for memcpy
   std::vector<Stream<xpu>*> push_stream;
   // the queue used for push task
-  utils::ThreadPQueue<PullTask> push_queue;
+  std::vector<utils::ThreadPQueue<PullTask> > push_queues;
   // thread to handle push task
-  utils::Thread thread_push_handler;
+  std::vector<utils::Thread> thread_push_handler;
   // lock to lock push field
   utils::Mutex push_lock;
   // the map of push buffer
@@ -368,16 +409,13 @@ class LocalServer : public IParamServer<xpu, DType> {
   int init_end;
   // whether use pull thread per device
   int perdev_pull_thread;
+  // whether use push thread per device
+  int perdev_push_thread;
   // push handler
-  inline void PushHandler(void) {
-    // allocate stream resources
-    for (size_t i = 0; i < devices.size(); ++i) {
-      SetDevice<xpu>(devices[i]);
-      push_stream.push_back(NewStream<xpu>());
-    }
+  inline void PushProc(utils::ThreadPQueue<PullTask> *queue) {
     while (!destroy_signal) {
       PullTask tsk;
-      if (push_queue.Pop(&tsk)) {
+      if (queue->Pop(&tsk)) {
         const int wid = GetWorkIndex(tsk.devid);
         PushEntry &e = push_map.GetRef(tsk.key);
         utils::Check(e.data[0][0].shape_ == tsk.data.shape_,
@@ -408,15 +446,42 @@ class LocalServer : public IParamServer<xpu, DType> {
         utils::Assert(destroy_signal, "abort but not destroy");
       }
     }
+  }
+  inline void PushHandlerGlobal(void) {
+    // allocate stream resources
+    for (size_t i = 0; i < devices.size(); ++i) {
+      SetDevice<xpu>(devices[i]);
+      push_stream[i] = NewStream<xpu>();
+    }
+    this->PushProc(&push_queues[0]);
     // free resources
     for (size_t i = 0; i < devices.size(); ++i) {
       SetDevice<xpu>(devices[i]);
       DeleteStream(push_stream[i]);
-    }
+    }    
   }
+  inline void PushHandlerLocal(size_t tid) {
+    utils::Assert(tid < devices.size(), "threadid exceed boundary");
+    utils::Assert(push_queues.size() == devices.size(),
+                  "must have one pull_queue per device");
+    // allocate stream resources
+    SetDevice<xpu>(devices[tid]);
+    push_stream[tid] = NewStream<xpu>();
+    this->PushProc(&push_queues[tid]);
+    SetDevice<xpu>(devices[tid]);
+    DeleteStream(push_stream[tid]);
+  }  
   /*!\brief entry point of loader thread */
-  inline static MSHADOW_THREAD_PREFIX PushHandlerThread(void *pthread) {
-    static_cast<LocalServer*>(pthread)->PushHandler();
+  inline static MSHADOW_THREAD_PREFIX PushGlobalThread(void *pthread) {
+    static_cast<LocalServer*>(pthread)->PushHandlerGlobal();
+    utils::ThreadExit(NULL);
+    return NULL;
+  }
+  inline static MSHADOW_THREAD_PREFIX PushLocalThread(void *arg) {
+    std::pair<LocalServer*, size_t> *p
+        = static_cast<std::pair<LocalServer*, size_t>*>(arg);
+    p->first->PushHandlerLocal(p->second);
+    delete p;
     utils::ThreadExit(NULL);
     return NULL;
   }
