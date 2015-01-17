@@ -27,6 +27,7 @@ class LocalServer : public IParamServer<xpu, DType> {
     init_end = 0;
     perdev_pull_thread = 1;
     perdev_push_thread = 1;
+    destroy_signal = false;
   }
   // destructor
   virtual ~LocalServer(void) {
@@ -119,6 +120,7 @@ class LocalServer : public IParamServer<xpu, DType> {
     utils::Check(devices.size() != 0,
                  "LocalServer.Init: must at least contain 1 devices");
     this->devices = devices;
+    destroy_signal = false;
     // initialize device id to local index
     dev2index.clear();
     for (size_t i = 0; i < devices.size(); ++i) {
@@ -514,8 +516,8 @@ class LocalServer : public IParamServer<xpu, DType> {
                         "PullHandler, must initialize the key, req");
           PullWaitRecord &w = e.wait[wid];
           wait_lock.Lock();
-          w.finished = true;
-          if(w.nwait != 0) {
+          w.finished = true;         
+          if (w.nwait != 0) {
             wait_cond.Broadcast();
           }
           wait_lock.Unlock();
