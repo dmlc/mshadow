@@ -33,8 +33,7 @@ int main(int argc, char *argv[]) {
   for (int i = 0; i < ndev; ++i) {
     ps->Push(ts[i], 3, i);
     ps->PullWait(3, i);
-    ps->PullReq(res[i], 3, i, 0,
-                );
+    ps->PullReq(res[i], 3, i, 0);
   }
   for (int i = 0; i < ndev; ++i) {
     ps->PullWait(3, i);
