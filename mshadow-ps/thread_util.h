@@ -50,7 +50,7 @@ class ThreadPQueue {
     lock_.Lock();
     queue_.push(Entry(data, priority));
     lock_.Unlock();
-    counter_.Post();
+    counter_.Post();    
   }
   /*!
    * \brief pop an element from the queue
@@ -65,6 +65,7 @@ class ThreadPQueue {
     if (queue_.size() == 0) {
       lock_.Unlock(); return false;
     }
+    utils::Assert(queue_.size() != 0, "Queue.Pop");
     *data_out = queue_.top().data;
     queue_.pop();
     lock_.Unlock();

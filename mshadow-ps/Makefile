@@ -2,7 +2,11 @@
 export CC  = gcc
 export CXX = g++
 export NVCC =nvcc
+<<<<<<< HEAD
 export CFLAGS = -Wall -O3 -msse3 -Wno-unknown-pragmas -funroll-loops -I../ -DMSHADOW_STAND_ALONE=1 -std=c++11 -fopenmp
+=======
+export CFLAGS = -Wall -O3 -msse3 -Wno-unknown-pragmas -funroll-loops -I../ 
+>>>>>>> e68e816ea997f30aaac8ea6a8fa5450acbea9848
 export LDFLAGS= -lm -lpthread
 export NVCCFLAGS = -O3 --use_fast_math -ccbin $(CXX)
 
@@ -10,12 +14,13 @@ export NVCCFLAGS = -O3 --use_fast_math -ccbin $(CXX)
 BIN = test
 OBJ =
 CUOBJ =
-CUBIN = 
+CUBIN = cutest
 .PHONY: clean all
 
-all: $(BIN) $(OBJ) $(CUBIN) $(CUOBJ)
+all: $(BIN) $(OBJ) 
 
 test: test.cpp *.h
+cutest: test.cu *.h
 
 $(BIN) :
 	$(CXX) $(CFLAGS) -o $@ $(filter %.cpp %.o %.c, $^)  $(LDFLAGS)

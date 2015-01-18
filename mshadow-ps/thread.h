@@ -55,6 +55,7 @@ inline void ThreadExit(void *status) {
 // thread interface using g++     
 #include <semaphore.h>
 #include <pthread.h>
+#include <errno.h>
 namespace mshadow {
 namespace utils {
 /*!\brief semaphore class */
@@ -105,16 +106,24 @@ class Semaphore {
   sem_t sem;
  public:
   inline void Init(int init_val) {
-    sem_init(&sem, 0, init_val);
+    if (sem_init(&sem, 0, init_val) != 0) {
+      utils::Error("Semaphore.Init:%s", strerror(errno));
+    }
   }
   inline void Destroy(void) {
-    sem_destroy(&sem);
+    if (sem_destroy(&sem) != 0) {
+      utils::Error("Semaphore.Destroy:%s", strerror(errno));
+    }
   }
   inline void Wait(void) {
-    sem_wait(&sem);
+    if (sem_wait(&sem) != 0) {
+      utils::Error("Semaphore.Wait:%s", strerror(errno));
+    }
   }
   inline void Post(void) {
-    sem_post(&sem);
+    if (sem_post(&sem) != 0) {
+      utils::Error("Semaphore.Post:%s", strerror(errno));
+    }
   }
   #endif  
 };
