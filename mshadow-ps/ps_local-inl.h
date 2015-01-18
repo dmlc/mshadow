@@ -38,6 +38,7 @@ class LocalServer : public IParamServer<xpu, DType> {
     perdev_push_thread = 1;
     bigarray_bound = 1000 * 1000;
     nthread_reduction = 8;
+    use_pin_memory = 1;
     destroy_signal = false;
   }
   // destructor
@@ -86,6 +87,9 @@ class LocalServer : public IParamServer<xpu, DType> {
     }
     if (!strcmp(name, "reduce_thread")) {
       nthread_reduction = atoi(val);
+    }
+    if (!strcmp(name, "use_pin_memory")) {
+      use_pin_memory = atoi(val);
     }
     if (!strcmp(name, "bigarray_bound")) {
       bigarray_bound = static_cast<size_t>(atol(val));
@@ -339,18 +343,30 @@ class LocalServer : public IParamServer<xpu, DType> {
     int num_copied;
     // version number of data used to hold incomming data in push
     int copyin_version;
+    // use pinned memory
+    bool pin_memory;
     // constructor
     PushEntry(void)
         : copyin_version(0) {}
     ~PushEntry(void) {
       if (data.dptr_ != NULL) {
-        mshadow::FreeHost<xpu>(&data);
+        if (pin_memory) {
+          mshadow::FreeHost<xpu>(&data);
+        } else {
+          mshadow::FreeSpace(&data);
+        }
       }
     }
     // constructor
-    inline void Init(int ndevice, Shape<2> shape) {
+    inline void Init(int ndevice, Shape<2> shape, bool pin_memory) {
+      this->pin_memory = pin_memory;
       data.shape_ = Shape4(2, ndevice, shape[0], shape[1]);
-      mshadow::AllocHost<xpu>(&data);
+      if (pin_memory) {
+        mshadow::AllocHost<xpu>(&data);
+      } else {
+        mshadow::AllocSpace(&data, false);
+      }
+      utils::Assert(data.CheckContiguous(), "Init");
       num_copied = 0;
       copied.resize(ndevice, false);
     }    
@@ -430,6 +446,8 @@ class LocalServer : public IParamServer<xpu, DType> {
   utils::ConditionVariable wait_cond;
   //---------configurations of server-------
   int init_end;
+  // use pinned memory
+  int use_pin_memory;
   // number of reduction thread
   int nthread_reduction;
   // the threshold for big array
@@ -647,7 +665,7 @@ class LocalServer : public IParamServer<xpu, DType> {
     if (e.copied.size() == 0) {
       push_lock.Lock();
       if (e.copied.size() == 0) {
-        e.Init(devices.size(), shape);
+        e.Init(devices.size(), shape, use_pin_memory != 0);
       }
       push_lock.Unlock();
     }
