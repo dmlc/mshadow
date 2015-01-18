@@ -9,6 +9,15 @@
 #define MSHADOW_PS_LOCAL_INL_H_
 #include <map>
 #include <utility>
+#if defined(_OPENMP)
+#include <omp.h>
+#ifdef _MSC_VER
+typedef int ms_omp_uint;
+#else
+typedef unsigned ms_omp_uint;
+#endif
+#endif
+
 #include "./thread.h"
 #include "./thread_util.h"
 #include "./ps.h"
@@ -27,6 +36,8 @@ class LocalServer : public IParamServer<xpu, DType> {
     init_end = 0;
     perdev_pull_thread = 1;
     perdev_push_thread = 1;
+    bigarray_bound = 1000 * 1000;
+    nthread_reduction = 8;
   }
   // destructor
   virtual ~LocalServer(void) {
@@ -71,6 +82,12 @@ class LocalServer : public IParamServer<xpu, DType> {
         push_operation[key] = kSum; return;
       }
       utils::Error("unknown push operation %s", val);
+    }
+    if (!strcmp(name, "reduce_thread")) {
+      nthread_reduction = atoi(val);
+    }
+    if (!strcmp(name, "bigarray_bound")) {
+      bigarray_bound = static_cast<size_t>(atol(val));
     }
     if (!strcmp(name, "pull_thread")) {
       if (!strcmp(val, "ndev")) {
@@ -282,9 +299,7 @@ class LocalServer : public IParamServer<xpu, DType> {
     }
     switch (op) {
       case kSum: {
-        for (index_t i = 1; i < data.size(0); ++i) {
-          data[0] += data[i];
-        }
+        this->ReduceSum(data);
         this->PullReady(data[0], key);
         return;
       }
@@ -315,7 +330,7 @@ class LocalServer : public IParamServer<xpu, DType> {
   /*! \brief data structure to hold temporal push result */
   struct PushEntry {
     // temporal space to hold input data
-    TensorContainer<cpu, 4, DType> data;
+    Tensor<cpu, 4, DType> data;
     // indicator whether the certain devices is already copied in
     std::vector<bool> copied;
     // number of data copied in
@@ -324,13 +339,19 @@ class LocalServer : public IParamServer<xpu, DType> {
     int copyin_version;
     // constructor
     PushEntry(void)
-        : data(false), copyin_version(0) {}
+        : copyin_version(0) {}
+    ~PushEntry(void) {
+      if (data.dptr_ != NULL) {
+        mshadow::FreeHost<xpu>(&data);
+      }
+    }
     // constructor
     inline void Init(int ndevice, Shape<2> shape) {
-      data.Resize(Shape4(2, ndevice, shape[0], shape[1]));
+      data.shape_ = Shape4(2, ndevice, shape[0], shape[1]);
+      mshadow::AllocHost<xpu>(&data);
       num_copied = 0;
       copied.resize(ndevice, false);
-    }
+    }    
   };
   // a record to remember things related to pull request
   struct PullReqRecord {
@@ -407,10 +428,34 @@ class LocalServer : public IParamServer<xpu, DType> {
   utils::ConditionVariable wait_cond;
   //---------configurations of server-------
   int init_end;
+  // number of reduction thread
+  int nthread_reduction;
+  // the threshold for big array
+  size_t bigarray_bound;
   // whether use pull thread per device
   int perdev_pull_thread;
   // whether use push thread per device
   int perdev_push_thread;
+  // perform sum reduction
+  inline void ReduceSum(Tensor<cpu, 3, DType> data) {
+    #if defined(_OPENMP)
+    if (data[0].MSize() >= bigarray_bound &&
+        nthread_reduction != 0) {
+      ms_omp_uint ntask = static_cast<ms_omp_uint>(data.size(1)); 
+      #pragma omp parallel for schedule(static) num_threads(nthread_reduction)     
+      for (ms_omp_uint j = 0; j < ntask; ++j) {
+        for (index_t i = 1; i < data.size(0); ++i) {
+          data[0][j] += data[i][j];
+        }
+      }
+    } else 
+      #endif    
+    {
+      for (index_t i = 1; i < data.size(0); ++i) {
+        data[0] += data[i];
+      }
+    }
+  }  
   // push handler
   inline void PushProc(utils::ThreadPQueue<PullTask> *queue) {
     while (!destroy_signal) {

@@ -1,8 +1,8 @@
 # set LD_LIBRARY_PATH
 export CC  = gcc
-export CXX = clang++
+export CXX = g++
 export NVCC =nvcc
-export CFLAGS = -Wall -O3 -msse3 -Wno-unknown-pragmas -funroll-loops -I../ -DMSHADOW_STAND_ALONE=1 -std=c++11
+export CFLAGS = -Wall -O3 -msse3 -Wno-unknown-pragmas -funroll-loops -I../ -DMSHADOW_STAND_ALONE=1 -std=c++11 -fopenmp
 export LDFLAGS= -lm -lpthread
 export NVCCFLAGS = -O3 --use_fast_math -ccbin $(CXX)
 

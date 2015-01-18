@@ -24,6 +24,50 @@ inline void DeleteStream<cpu>(Stream<cpu> *stream) {
   delete stream;
 }
 
+template<typename xpu>
+inline void *AllocHost_(size_t size);
+template<typename xpu>
+inline void FreeHost_(void * dptr);
+
+#ifdef __CUDACC__
+template<>
+inline void *AllocHost_<gpu>(size_t size) {
+  void *dptr;
+  utils::Check(cudaMallocHost(&dptr, size,
+                 cudaHostAllocPortable) == cudaSuccess,               
+               "AllocHost");
+  return dptr;
+}
+template<>
+inline void FreeHost_<gpu>(void *dptr) {
+  cudaFreeHost(dptr);  
+}
+#endif
+
+template<>
+inline void *AllocHost_<cpu>(size_t size) {
+  size_t pitch;
+  return sse2::AlignedMallocPitch(&pitch, size, 1);  
+}
+template<>
+inline void FreeHost_<cpu>(void *dptr) {
+  sse2::AlignedFree(dptr);
+}
+
+template<typename xpu, int dim, typename DType>
+inline void AllocHost(Tensor<cpu, dim, DType> *obj) {
+  obj->stride_ = obj->size(dim - 1);
+  utils::Assert(obj->CheckContiguous(), "AllocHost");
+  void *dptr = AllocHost_<xpu>(obj->MSize() * sizeof(DType));
+  obj->dptr_ = reinterpret_cast<DType*>(dptr);
+}
+template<typename xpu, int dim, typename DType>
+inline void FreeHost(Tensor<cpu, dim, DType> *obj) {
+  utils::Assert(obj->dptr_ != NULL, "FreeHost:: double free");
+  FreeHost_<xpu>(obj->dptr_);
+  obj->dptr_ = NULL;
+}
+
 template<int dim, typename DType>
 inline void AllocSpace(Tensor<cpu, dim, DType> *obj, bool pad) {
   size_t pitch;
