@@ -235,8 +235,10 @@ class LocalServer : public IParamServer<xpu, DType> {
   };
   virtual void InitKey_(Shape<2> shape, 
                         int key, int devid) {
-    this->InitPullMap(key);
-    this->InitPushMap(key, shape);
+    if (devid == devices[0]) { 
+      this->InitPullMap(key);
+      this->InitPushMap(key, shape);
+    }
   }
   
   virtual void Push_(Tensor<xpu, 2, DType> data,
@@ -637,7 +639,7 @@ class LocalServer : public IParamServer<xpu, DType> {
                         "PullHandler, must initialize the key, req");
           PullWaitRecord &w = e.wait[wid];
           wait_lock.Lock();
-          w.finished = true;         
+          w.finished = true;
           if (w.nwait != 0) {
             wait_cond.Broadcast();
           }
@@ -706,28 +708,24 @@ class LocalServer : public IParamServer<xpu, DType> {
     }
     request_lock.Unlock();
     // check wait map
+    wait_lock.Lock();
+    // must recheck after lock
     if (e.wait.size() == 0) {
-      wait_lock.Lock();
-      // must recheck after lock
-      if (e.wait.size() == 0) {
-        e.wait.resize(devices.size(), PullWaitRecord());        
-      }
-      wait_lock.Unlock();
+      e.wait.resize(devices.size(), PullWaitRecord());
     }
+    wait_lock.Unlock();
   }
   // functions to handle pull
   inline void InitPushMap(int key, Shape<2> shape) {
     push_map.Init(key);
     PushEntry &e = push_map.GetRef(key);
+    push_lock.Lock();
     if (e.copied.size() == 0) {
-      push_lock.Lock();
-      if (e.copied.size() == 0) {
-        e.Init(devices.size(), shape,
-               use_pin_memory != 0, update_on_server);
-      }
-      this->ServerInitKey(e.weight, key);
-      push_lock.Unlock();
+      e.Init(devices.size(), shape,
+             use_pin_memory != 0, update_on_server != 0);
     }
+    this->ServerInitKey(e.weight, key);
+    push_lock.Unlock();
   }
 };
 }  // namespace ps
