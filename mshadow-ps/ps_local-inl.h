@@ -115,10 +115,12 @@ class LocalServer : public IParamServer<xpu, DType> {
         utils::Error("invalid value for parameter push_thread,"\
                      " can only be ndev or one");
       }
-    }
+    }    
     if (!strcmp(name, "update_on_server")) {
-      update_on_server = 1;
+      update_on_server = atoi(val);
     }
+    cfgvec.push_back(std::make_pair(std::string(name),
+                                    std::string(val)));
   }
   virtual void PullWait(int key, int devid) {
     const int wid = GetWorkIndex(devid);
@@ -209,8 +211,13 @@ class LocalServer : public IParamServer<xpu, DType> {
       thread_pull_handler.resize(1);      
       thread_pull_handler[0].Start(PullGlobalThread, this);
     }
-    if (update_on_server != 0) {
+    if (update_on_server != 0) {      
       custom_server = CreateServer<DType>();
+      for (size_t j = 0; j < cfgvec.size(); ++j) {
+        custom_server->SetParam(cfgvec[j].first.c_str(),
+                                cfgvec[j].second.c_str());
+      }
+      custom_server->Init(0, std::string());
     }
     this->init_end = 1;
   }
@@ -229,7 +236,7 @@ class LocalServer : public IParamServer<xpu, DType> {
   virtual void InitKey_(Shape<2> shape, 
                         int key, int devid) {
     this->InitPullMap(key);
-    this->InitPushMap(key, shape);    
+    this->InitPushMap(key, shape);
   }
   
   virtual void Push_(Tensor<xpu, 2, DType> data,
@@ -505,6 +512,8 @@ class LocalServer : public IParamServer<xpu, DType> {
   int perdev_pull_thread;
   // whether use push thread per device
   int perdev_push_thread;
+  /*! \brief history of configurations */
+  std::vector< std::pair<std::string, std::string> > cfgvec;
   // perform sum reduction
   inline void ReduceSum(Tensor<cpu, 3, DType> data) {
     #if defined(_OPENMP)
