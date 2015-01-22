@@ -40,6 +40,7 @@ class LocalServer : public IParamServer<xpu, DType> {
     nthread_reduction = 8;
     use_pin_memory = 1;
     destroy_signal = false;
+    custom_server = NULL;
   }
   // destructor
   virtual ~LocalServer(void) {
@@ -70,6 +71,7 @@ class LocalServer : public IParamServer<xpu, DType> {
       wait_lock.Destroy();
       wait_cond.Destroy();
     }
+    if (custom_server != NULL) delete custom_server;
   }
   virtual void SetParam(const char *name, const char *val) {
     int key;
@@ -113,6 +115,9 @@ class LocalServer : public IParamServer<xpu, DType> {
         utils::Error("invalid value for parameter push_thread,"\
                      " can only be ndev or one");
       }
+    }
+    if (!strcmp(name, "update_on_server")) {
+      update_on_server = 1;
     }
   }
   virtual void PullWait(int key, int devid) {
@@ -203,8 +208,11 @@ class LocalServer : public IParamServer<xpu, DType> {
     } else {
       thread_pull_handler.resize(1);      
       thread_pull_handler[0].Start(PullGlobalThread, this);
-    }    
-    this->init_end = 0;
+    }
+    if (update_on_server != 0) {
+      custom_server = CreateServer<DType>();
+    }
+    this->init_end = 1;
   }
 
  protected:
@@ -218,10 +226,16 @@ class LocalServer : public IParamServer<xpu, DType> {
      */
     kGather = 1
   };
+  virtual void InitKey_(Shape<2> shape, 
+                        int key, int devid) {
+    this->InitPullMap(key);
+    this->InitPushMap(key, shape);    
+  }
+  
   virtual void Push_(Tensor<xpu, 2, DType> data,
                      int key, int devid, int priority) {
-    this->InitPullMap(key, devid);
-    this->InitPushMap(key, data.shape_);
+    PullEntry &e = pull_map.GetRef(key);
+    e.req[GetWorkIndex(devid)].ready = false;
     if (perdev_push_thread != 0) {
       int wid = GetWorkIndex(devid);
       push_queues[wid].Push(PullTask(data, key, devid), priority);
@@ -288,6 +302,13 @@ class LocalServer : public IParamServer<xpu, DType> {
     }
     request_lock.Unlock();
   }
+  virtual void ServerInitKey(Tensor<cpu, 2> weight, int key) {
+    if (custom_server != NULL) {
+      // intialize server, and ready for pullback
+      custom_server->InitKey(key, weight.dptr_, weight.MSize());
+      this->PullReady(weight, key);
+    }
+  }
   /*!
    * \brief event handler for push finish
    *  called when all the data with same key comes int
@@ -302,6 +323,14 @@ class LocalServer : public IParamServer<xpu, DType> {
         it = push_operation.find(key);
     if (it != push_operation.end() && it->first == key) {
       op = it->second;
+    }
+    // customized server
+    if (custom_server != NULL) {
+      this->ReduceSum(data);
+      custom_server->Update(key, data[0].dptr_, data[0].MSize());
+      PushEntry &e = push_map.GetRef(key);
+      this->PullReady(e.weight, key);
+      return;
     }
     switch (op) {
       case kSum: {
@@ -337,6 +366,8 @@ class LocalServer : public IParamServer<xpu, DType> {
   struct PushEntry {
     // temporal space to hold input data
     Tensor<cpu, 4, DType> data;
+    // temporal space to hold weight, if needed
+    Tensor<cpu, 2, DType> weight;
     // indicator whether the certain devices is already copied in
     std::vector<bool> copied;
     // number of data copied in
@@ -347,26 +378,39 @@ class LocalServer : public IParamServer<xpu, DType> {
     bool pin_memory;
     // constructor
     PushEntry(void)
-        : copyin_version(0) {}
+        : copyin_version(0) {
+      weight.dptr_ = NULL;
+    }
     ~PushEntry(void) {
       if (data.dptr_ != NULL) {
         if (pin_memory) {
           mshadow::FreeHost<xpu>(&data);
+          if (weight.dptr_ != NULL) {
+            mshadow::FreeHost<xpu>(&weight);
+          } 
         } else {
           mshadow::FreeSpace(&data);
+          if (weight.dptr_ != NULL) {
+            mshadow::FreeSpace(&weight);
+          }
         }
       }
     }
     // constructor
-    inline void Init(int ndevice, Shape<2> shape, bool pin_memory) {
+    inline void Init(int ndevice, Shape<2> shape,
+                     bool pin_memory, bool need_weight) {
       this->pin_memory = pin_memory;
       data.shape_ = Shape4(2, ndevice, shape[0], shape[1]);
+      weight.shape_ = shape;
       if (pin_memory) {
         mshadow::AllocHost<xpu>(&data);
+        if (need_weight) mshadow::AllocHost<xpu>(&weight);
       } else {
         mshadow::AllocSpace(&data, false);
+        if (need_weight) mshadow::AllocSpace(&weight);
       }
       utils::Assert(data.CheckContiguous(), "Init");
+      utils::Assert(!need_weight || weight.CheckContiguous(), "Init");
       num_copied = 0;
       copied.resize(ndevice, false);
     }    
@@ -395,7 +439,8 @@ class LocalServer : public IParamServer<xpu, DType> {
     int nwait;
     // the request was finished
     bool finished;
-    PullWaitRecord(void) : nwait(0), finished(true) {
+    PullWaitRecord(void)
+        : nwait(0), finished(true) {
       // set finished to true so pull without pull request returns
     }
   };
@@ -443,9 +488,13 @@ class LocalServer : public IParamServer<xpu, DType> {
   // lock to lock wait field
   utils::Mutex wait_lock;
   // conditional variable to do waiting
-  utils::ConditionVariable wait_cond;
-  //---------configurations of server-------
+  utils::ConditionVariable wait_cond;  
+  // customized server
+  ICustomServer<DType> *custom_server;
+  //---------configurations of server-------  
   int init_end;
+  // whether perform update on serverside
+  int update_on_server;
   // use pinned memory
   int use_pin_memory;
   // number of reduction thread
@@ -638,7 +687,7 @@ class LocalServer : public IParamServer<xpu, DType> {
     return dev2index[devid];
   }
   // functions to handle pull
-  inline void InitPullMap(int key, int devid) {
+  inline void InitPullMap(int key) {
     pull_map.Init(key);
     PullEntry &e = pull_map.GetRef(key);
     request_lock.Lock();
@@ -647,13 +696,12 @@ class LocalServer : public IParamServer<xpu, DType> {
       e.req.resize(devices.size(), PullReqRecord());
     }
     request_lock.Unlock();
-    e.req[GetWorkIndex(devid)].ready = false;
     // check wait map
     if (e.wait.size() == 0) {
       wait_lock.Lock();
       // must recheck after lock
       if (e.wait.size() == 0) {
-        e.wait.resize(devices.size(), PullWaitRecord());
+        e.wait.resize(devices.size(), PullWaitRecord());        
       }
       wait_lock.Unlock();
     }
@@ -665,8 +713,10 @@ class LocalServer : public IParamServer<xpu, DType> {
     if (e.copied.size() == 0) {
       push_lock.Lock();
       if (e.copied.size() == 0) {
-        e.Init(devices.size(), shape, use_pin_memory != 0);
+        e.Init(devices.size(), shape,
+               use_pin_memory != 0, update_on_server);
       }
+      this->ServerInitKey(e.weight, key);
       push_lock.Unlock();
     }
   }

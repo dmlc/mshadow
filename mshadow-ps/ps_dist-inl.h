@@ -31,9 +31,15 @@ class DistServer : public LocalServer<xpu, DType> {
     CHECK(!name_.empty());
     CHECK(!parent_name_.empty());
     shared_model_ = new PS::KVArray<DType>(name_, parent_name_);
+    if (this->custom_server != NULL) {
+      delete this->custom_server;
+      this->custom_server = NULL;
+    }
   }
   virtual ~DistServer(void) {
   }
+  // remove custom
+  virtual void ServerInitKey(Tensor<cpu, 2> weight, int key) {}
   // override this function, to use parameter server
   virtual void HandlePushFinish(Tensor<cpu, 3, DType> data,
                                 int key) {

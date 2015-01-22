@@ -64,6 +64,18 @@ class IParamServer {
     this->Init(dev);
   }
   /*!
+   * \brief initialize a key with certain shape
+   * \param shape the shape content of the key
+   * \param key the unique key to indicate the tensor
+   *        this is unique per device
+   * \param devid the device id this tensor lies in
+   */
+  template<int dim>
+  inline void InitKey(Shape<dim> shape, 
+                      int key, int devid) {
+    this->InitKey_(shape.FlatTo2D(), key, devid);
+  }
+  /*!
    * \brief wait until the pull event finishes
    * if there was no pull request, wait will directly returns
    * \param key the unique key to indicate the tensor
@@ -129,6 +141,15 @@ class IParamServer {
 #endif  // C++11
  protected:
   /*!
+   * \brief initialize a key with certain shape
+   * \param shape the shape content of the key
+   * \param key the unique key to indicate the tensor
+   *        this is unique per device
+   * \param devid the device id this tensor lies in
+   */
+  virtual void InitKey_(Shape<2> shape, 
+                        int key, int devid) = 0;
+  /*!
    * \brief push out a tensor to parameter server
    *  this call is asynchronize and returns immediately
    *
@@ -164,6 +185,7 @@ class IParamServer {
                         int priority,
                         CallbackFunction callback,
                         void *callback_arg) = 0;
+  
  private:
 // C++11 support for lambda prepare function
 #if __cplusplus >= 201103L
@@ -175,6 +197,44 @@ class IParamServer {
   }
 #endif  // C++11
 };
+/*! \brief interface for customized mshadow server */
+template<typename DType>
+class ICustomServer {
+ public:
+  virtual ~ICustomServer(void) {}
+  /*!
+   * \brief set parameters from outside
+   * \param name name of parameter
+   * \param val value of parameter
+   */
+  virtual void SetParam(const char *name, const char *val) = 0;
+  /*!
+   * \brief init the server
+   * \param rank the rank of the node
+   * \param conf configuration
+   */
+  virtual void Init(int rank, const std::string &conf) = 0;
+  /*!
+   * \brief initialize the key
+   * \param key the key of data we point to
+   * \param dptr the data pointer
+   * \param size size of the parameter key
+   */
+  virtual void InitKey(int key, DType *dptr, size_t size) = 0;
+  /*!
+   * \param key the key of data we point to
+   * \param dptr the data pointer
+   * \param size size of the parameter key
+   */
+  virtual void Update(int key, DType *dptr, size_t size) = 0;  
+};
+/*! 
+ * \brief create customized server 
+ * this is a server defined by user
+ * \return new server
+ */
+template<typename DType>
+ICustomServer<DType> *CreateServer(void);
 }  // namespace ps
 }  // namespace mshadow
 
