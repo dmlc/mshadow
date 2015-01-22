@@ -11,10 +11,8 @@
 #include "./ps_local-inl.h"
 #if MSHADOW_DIST_PS_
 #include "./kv_array.h"
-#endif
 namespace mshadow {
 namespace ps {
-#if MSHADOW_DIST_PS_
 template<typename xpu, typename DType>
 class DistServer : public LocalServer<xpu, DType> {
  public:
@@ -38,7 +36,7 @@ class DistServer : public LocalServer<xpu, DType> {
   }
   virtual ~DistServer(void) {
   }
-  // remove custom
+  // remove custom, leave it empty
   virtual void ServerInitKey(Tensor<cpu, 2> weight, int key) {}
   // override this function, to use parameter server
   virtual void HandlePushFinish(Tensor<cpu, 3, DType> data,
@@ -78,7 +76,36 @@ class DistServer : public LocalServer<xpu, DType> {
   std::string parent_name_;
   PS::KVArray<DType>* shared_model_ = nullptr;
 };
-#endif
+
+template<typename DType>
+class MShadowServer : public PS::App {
+ public:
+  MShadowerver(const std::string &conf) : App() {
+    server = CreateServer<DType>();
+    server.Init(myRank(), conf);
+  }
+  virtual ~HelloServer() { 
+    delete server;
+  }
+  void init() {
+    
+  }
+  void init_key(int key, DType *dptr, size_t size) {
+    server->InitKey(key, dptr, size);
+    auto callback = [server](DType *data, size_t sz) {
+      server->Update(key, data, sz);
+    };
+    // register callback of update function
+  }
+ private:
+  // internal server
+  ICustomServer<DType> *server;
+};
+//
+// NOTE: do not add PS::CreateServer here
+// add it in the program that uses mshadow-ps
 }  // namespace ps
 }  // namespace msahdow
+#endif
+} // namespace PS
 #endif
