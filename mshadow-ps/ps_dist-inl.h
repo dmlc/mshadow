@@ -107,5 +107,4 @@ class MShadowServer : public PS::App {
 }  // namespace ps
 }  // namespace msahdow
 #endif
-} // namespace PS
 #endif
