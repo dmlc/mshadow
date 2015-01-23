@@ -36,6 +36,11 @@ class DistServer : public LocalServer<xpu, DType> {
   }
   virtual ~DistServer(void) {
   }
+  
+ protected:
+  // do nothing
+  virtual void InitCustomServer(void) {
+  }
   virtual void ServerInitKey(Tensor<cpu, 2> weight, int key) {
     // this is called when key get initialized for the first time
     // weight can be used to hold the model that pulled back
