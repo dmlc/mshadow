@@ -49,15 +49,15 @@ class IParamServer {
    */
   virtual void SetParam(const char *name, const char *val) {}
   /*!
-   * \brief initialize the paramerver server client 
+   * \brief initialize the paramerver server client
    * \param devices specifies the possible device id
    *   to be input from Push and Pull,
    */
   virtual void Init(const std::vector<int> &devices) {}
   /*!
-   * \brief initialize the paramerver server client 
+   * \brief initialize the paramerver server client
    * without specifying the devices, only device 0 is allowed
-   */  
+   */
   inline void Init(void) {
     std::vector<int> dev;
     dev.push_back(0);
@@ -71,7 +71,7 @@ class IParamServer {
    * \param devid the device id this tensor lies in
    */
   template<int dim>
-  inline void InitKey(Shape<dim> shape, 
+  inline void InitKey(Shape<dim> shape,
                       int key, int devid) {
     this->InitKey_(shape.FlatTo2D(), key, devid);
   }
@@ -95,7 +95,7 @@ class IParamServer {
    *   the bigger the number is the higher the priority will be
    */
   template<int dim>
-  inline void Push(Tensor<xpu, dim, DType> data, 
+  inline void Push(Tensor<xpu, dim, DType> data,
                    int key,
                    int devid = 0,
                    int priority = 0) {
@@ -117,7 +117,7 @@ class IParamServer {
    * \param callback_arg the argument to pass to callback
    */
   template<int dim>
-  inline void PullReq(Tensor<xpu, dim, DType> data, 
+  inline void PullReq(Tensor<xpu, dim, DType> data,
                       int key,
                       int devid = 0,
                       int priority = 0,
@@ -128,9 +128,9 @@ class IParamServer {
   }
 #if __cplusplus >= 201103L
   template<int dim>
-  inline void PullReq(Tensor<xpu, dim, DType> data, 
+  inline void PullReq(Tensor<xpu, dim, DType> data,
                       int key,
-                      int devid, 
+                      int devid,
                       int priority,
                       std::function<void(Stream<xpu> *stream)> callback) {
     // need to allocate space, because callback can happen latter..
@@ -147,7 +147,7 @@ class IParamServer {
    *        this is unique per device
    * \param devid the device id this tensor lies in
    */
-  virtual void InitKey_(Shape<2> shape, 
+  virtual void InitKey_(Shape<2> shape,
                         int key, int devid) = 0;
   /*!
    * \brief push out a tensor to parameter server
@@ -185,7 +185,7 @@ class IParamServer {
                         int priority,
                         CallbackFunction callback,
                         void *callback_arg) = 0;
-  
+
  private:
 // C++11 support for lambda prepare function
 #if __cplusplus >= 201103L
@@ -226,10 +226,10 @@ class ICustomServer {
    * \param dptr the data pointer
    * \param size size of the parameter key
    */
-  virtual void Update(int key, DType *dptr, size_t size) = 0;  
+  virtual void Update(int key, DType *dptr, size_t size) = 0;
 };
-/*! 
- * \brief create customized server 
+/*!
+ * \brief create customized server
  * this is a server defined by user
  * \return new server
  */
@@ -248,6 +248,7 @@ namespace ps {
  */
 template<typename xpu, typename DType>
 inline IParamServer<xpu, DType> *Create(const char *type) {
+  printf("%s", type);
   if (!strcmp("local", type)) return new LocalServer<xpu, DType>();
 #if MSHADOW_DIST_PS_
   if (!strcmp("dist", type)) return new DistServer<xpu, DType>();

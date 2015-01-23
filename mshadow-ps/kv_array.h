@@ -8,8 +8,8 @@ DECLARE_string(app_name);
 template <typename V>
 class KVArray : public SharedParameter<Key> {
  public:
-  KVArray(const string& my_name = FLAGS_app_name,
-          const string& parent_name = FLAGS_app_name + "_model") :
+  KVArray(const string& my_name = FLAGS_app_name + "_model",
+          const string& parent_name = FLAGS_app_name) :
       SharedParameter<Key>(my_name, parent_name) { }
   virtual ~KVArray() { }
 
