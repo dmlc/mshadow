@@ -9,8 +9,10 @@
 #define MSHADOW_PS_DIST_INL_H_
 #include "./ps.h"
 #include "./ps_local-inl.h"
+
 #if MSHADOW_DIST_PS_
 #include "./kv_array.h"
+#include "system/app.h"
 namespace mshadow {
 namespace ps {
 template<typename xpu, typename DType>
@@ -18,17 +20,15 @@ class DistServer : public LocalServer<xpu, DType> {
  public:
   // parent type
   typedef LocalServer<xpu, DType> Parent;
-  virtual void SetParam(const char *name, const char *val) {
-    Parent::SetParam(name, val);
-    if (!strcmp(name, "name")) name_ = val;
-    if (!strcmp(name, "parent_name")) parent_name_ = val;
-  }
+
+  // virtual void SetParam(const char *name, const char *val) {
+  //   Parent::SetParam(name, val);
+  // }
+
   // initialize the parameter server
   virtual void Init(const std::vector<int> &devices) {
     Parent::Init(devices);
-    CHECK(!name_.empty());
-    CHECK(!parent_name_.empty());
-    shared_model_ = new PS::KVArray<DType>(name_, parent_name_);
+    shared_model_ = new PS::KVArray<DType>();
     if (this->custom_server != NULL) {
       delete this->custom_server;
       this->custom_server = NULL;
@@ -36,6 +36,7 @@ class DistServer : public LocalServer<xpu, DType> {
   }
   virtual ~DistServer(void) {
   }
+
   // remove custom, leave it empty
   virtual void ServerInitKey(Tensor<cpu, 2> weight, int key) {}
   // override this function, to use parameter server
@@ -72,38 +73,31 @@ class DistServer : public LocalServer<xpu, DType> {
   }
 
  private:
-  std::string name_;
-  std::string parent_name_;
   PS::KVArray<DType>* shared_model_ = nullptr;
 };
 
 template<typename DType>
 class MShadowServer : public PS::App {
  public:
-  MShadowerver(const std::string &conf) : App() {
-    server = CreateServer<DType>();
-    server.Init(myRank(), conf);
+  // conf: get from the flag -app_conf
+  MShadowServer(const std::string &conf) : App() {
+    updater_ = CreateUpdater_<DType>();
+    updater_->Init(myRank(), conf);
+    shared_model_ = new PS::KVArray<DType>();
+    shared_model_->setUpdater(updater_);
   }
-  virtual ~HelloServer() { 
-    delete server;
-  }
-  void init() {
-    
-  }
-  void init_key(int key, DType *dptr, size_t size) {
-    server->InitKey(key, dptr, size);
-    auto callback = [server](DType *data, size_t sz) {
-      server->Update(key, data, sz);
-    };
-    // register callback of update function
+  virtual ~MShadowUpdater_() {
+    delete updater_;
+    delete shared_model_;
   }
  private:
-  // internal server
-  ICustomServer<DType> *server;
+  ICustomUpdater_<DType> *updater_;
+  PS::KVArray<DType>* shared_model_;
 };
-//
-// NOTE: do not add PS::CreateServer here
-// add it in the program that uses mshadow-ps
+
+// NOTE: do not add PS::CreateServer here add it in the program that uses
+// mshadow-ps
+
 }  // namespace ps
 }  // namespace msahdow
 #endif

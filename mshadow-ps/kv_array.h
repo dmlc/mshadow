@@ -1,17 +1,25 @@
 #pragma once
 #include "parameter/shared_parameter.h"
+#include "ps.h"
 namespace PS {
+
+DECLARE_string(app_name);
 
 template <typename V>
 class KVArray : public SharedParameter<Key> {
  public:
-  KVArray(const string& my_name, const string& parent_name) :
+  KVArray(const string& my_name = FLAGS_app_name,
+          const string& parent_name = FLAGS_app_name + "_model") :
       SharedParameter<Key>(my_name, parent_name) { }
   virtual ~KVArray() { }
 
   void setArray(int key, V* data, size_t size) {
     val_[key] = SArray<V>(data, size, false);
   }
+  void setUpdater(ICustomServer<V>* updater) {
+    updater_ = updater;
+  }
+
   // SArray<V>& array(int key) { return val_[key]; }
 
   // funcs will be called by the system
@@ -22,6 +30,8 @@ class KVArray : public SharedParameter<Key> {
   std::unordered_map<int, SArray<V>> val_;
   // an array is place into multiple servers only if its length > min_slice_size
   size_t min_slice_size_ = 1000;
+
+  ICustomServer<V>* updater_ = nullptr;
  private:
 };
 
@@ -32,23 +42,25 @@ void KVArray<V>::setValue(const MessagePtr& msg) {
   SArray<V> recv_data(msg->value[0]);
   Range<Key> kr(msg->task.key_range());
   CHECK_EQ(kr.size(), recv_data.size());
-  auto& my_val = val_[msg->task.key_channel()];
+  int key = msg->task.key_channel();
+  auto& my_val = val_[key];
 
-  if (IamWorker()) {
+  if (isWorker()) {
     if (my_val.empty()) my_val.resize(kr.size(), 0);
     CHECK_GE(my_val.size(), kr.end());
     my_val.segment(kr).copyFrom(recv_data);
-  } else if (IamServer()) {
+  } else if (isServer()) {
     // TODO this server can do flexible consistency control here
 
     if (my_val.empty()) {
-      // TODO user-defined intiailizer
+      // initialize weight
       my_val.resize(kr.size(), 0);
+      CHECK_NOTNULL(updater_)->InitKey(key, my_val.data(), my_val.size());
     }
 
-    // TODO user-defined updater
-    CHECK_GE(my_val.size(), kr.end());
-    my_val.segment(kr).eigenArray() += recv_data.eigenArray();
+    // update weight
+    CHECK_GE(my_val.size(), kr.size());
+    CHECK_NOTNULL(updater_)->Update(key, recv_data.data(), recv_data.size());
   }
 }
 
@@ -71,7 +83,7 @@ MessagePtrList KVArray<V>::slice(const MessagePtr& msg, const KeyRangeList& krs)
   size_t n = krs.size();
   MessagePtrList ret(n);
   Range<Key> kr(msg->task.key_range());
-  for (int i = 0; i < n; ++i) {
+  for (size_t i = 0; i < n; ++i) {
     ret[i] = MessagePtr(new Message());
     ret[i]->miniCopyFrom(*msg);
     ret[i]->valid = true;
@@ -91,10 +103,10 @@ MessagePtrList KVArray<V>::slice(const MessagePtr& msg, const KeyRangeList& krs)
   }
 
   // divide the data
-  for (int i = 0; i < msg->value.size(); ++i) {
+  for (size_t i = 0; i < msg->value.size(); ++i) {
     SArray<V> data(msg->value[i]);
     CHECK_EQ(data.size(), kr.size());
-    for (int j = 0; j < n; ++j) {
+    for (size_t j = 0; j < n; ++j) {
       if (ret[j]->valid) {
         Range<Key> kr(ret[i]->task.key_range());
         ret[i]->addValue(data.segment(kr));

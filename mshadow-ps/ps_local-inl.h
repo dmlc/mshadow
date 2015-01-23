@@ -115,7 +115,7 @@ class LocalServer : public IParamServer<xpu, DType> {
         utils::Error("invalid value for parameter push_thread,"\
                      " can only be ndev or one");
       }
-    }    
+    }
     if (!strcmp(name, "update_on_server")) {
       update_on_server = atoi(val);
     }
@@ -206,12 +206,12 @@ class LocalServer : public IParamServer<xpu, DType> {
             = new std::pair<LocalServer*, size_t>();
         *p = std::make_pair(this, i);
         thread_pull_handler[i].Start(PullLocalThread, p);
-      } 
+      }
     } else {
-      thread_pull_handler.resize(1);      
+      thread_pull_handler.resize(1);
       thread_pull_handler[0].Start(PullGlobalThread, this);
     }
-    if (update_on_server != 0) {      
+    if (update_on_server != 0) {
       custom_server = CreateServer<DType>();
       for (size_t j = 0; j < cfgvec.size(); ++j) {
         custom_server->SetParam(cfgvec[j].first.c_str(),
@@ -233,14 +233,14 @@ class LocalServer : public IParamServer<xpu, DType> {
      */
     kGather = 1
   };
-  virtual void InitKey_(Shape<2> shape, 
+  virtual void InitKey_(Shape<2> shape,
                         int key, int devid) {
-    if (devid == devices[0]) { 
+    if (devid == devices[0]) {
       this->InitPullMap(key);
       this->InitPushMap(key, shape);
     }
   }
-  
+
   virtual void Push_(Tensor<xpu, 2, DType> data,
                      int key, int devid, int priority) {
     PullEntry &e = pull_map.GetRef(key);
@@ -278,7 +278,7 @@ class LocalServer : public IParamServer<xpu, DType> {
                  key);
     if (e.req[wid].ready) {
       if (perdev_pull_thread != 0) {
-        pull_queues[wid].Push(std::make_pair(key, devid));        
+        pull_queues[wid].Push(std::make_pair(key, devid));
       } else {
         pull_queues[0].Push(std::make_pair(key, devid));
       }
@@ -349,12 +349,15 @@ class LocalServer : public IParamServer<xpu, DType> {
       }
       case kGather: {
         this->PullReady(data.FlatTo2D(), key);
-        return;       
+        return;
       }
       default: utils::Error("unknown LocalOp");
     }
   }
 
+ protected:
+  // customized server
+  ICustomServer<DType> *custom_server;
  private:
   /*! \brief task running */
   struct PullTask {
@@ -396,7 +399,7 @@ class LocalServer : public IParamServer<xpu, DType> {
           mshadow::FreeHost<xpu>(&data);
           if (weight.dptr_ != NULL) {
             mshadow::FreeHost<xpu>(&weight);
-          } 
+          }
         } else {
           mshadow::FreeSpace(&data);
           if (weight.dptr_ != NULL) {
@@ -422,7 +425,7 @@ class LocalServer : public IParamServer<xpu, DType> {
       utils::Assert(!need_weight || weight.CheckContiguous(), "Init");
       num_copied = 0;
       copied.resize(ndevice, false);
-    }    
+    }
   };
   // a record to remember things related to pull request
   struct PullReqRecord {
@@ -497,10 +500,8 @@ class LocalServer : public IParamServer<xpu, DType> {
   // lock to lock wait field
   utils::Mutex wait_lock;
   // conditional variable to do waiting
-  utils::ConditionVariable wait_cond;  
-  // customized server
-  ICustomServer<DType> *custom_server;
-  //---------configurations of server-------  
+  utils::ConditionVariable wait_cond;
+  //---------configurations of server-------
   int init_end;
   // whether perform update on serverside
   int update_on_server;
@@ -521,21 +522,21 @@ class LocalServer : public IParamServer<xpu, DType> {
     #if defined(_OPENMP)
     if (data[0].MSize() >= bigarray_bound &&
         nthread_reduction != 0) {
-      ms_omp_uint ntask = static_cast<ms_omp_uint>(data.size(1)); 
-      #pragma omp parallel for schedule(static) num_threads(nthread_reduction)     
+      ms_omp_uint ntask = static_cast<ms_omp_uint>(data.size(1));
+      #pragma omp parallel for schedule(static) num_threads(nthread_reduction)
       for (ms_omp_uint j = 0; j < ntask; ++j) {
         for (index_t i = 1; i < data.size(0); ++i) {
           data[0][j] += data[i][j];
         }
       }
-    } else 
-      #endif    
+    } else
+      #endif
     {
       for (index_t i = 1; i < data.size(0); ++i) {
         data[0] += data[i];
       }
     }
-  }  
+  }
   // push handler
   inline void PushProc(utils::ThreadPQueue<PullTask> *queue) {
     while (!destroy_signal) {
@@ -583,7 +584,7 @@ class LocalServer : public IParamServer<xpu, DType> {
     for (size_t i = 0; i < devices.size(); ++i) {
       SetDevice<xpu>(devices[i]);
       DeleteStream(push_stream[i]);
-    }    
+    }
   }
   inline void PushHandlerLocal(size_t tid) {
     utils::Assert(tid < devices.size(), "threadid exceed boundary");
@@ -595,7 +596,7 @@ class LocalServer : public IParamServer<xpu, DType> {
     this->PushProc(&push_queues[tid]);
     SetDevice<xpu>(devices[tid]);
     DeleteStream(push_stream[tid]);
-  }  
+  }
   /*!\brief entry point of loader thread */
   inline static MSHADOW_THREAD_PREFIX PushGlobalThread(void *pthread) {
     static_cast<LocalServer*>(pthread)->PushHandlerGlobal();
