@@ -16,7 +16,7 @@ class KVArray : public SharedParameter<Key> {
   void setArray(int key, V* data, size_t size) {
     val_[key] = SArray<V>(data, size, false);
   }
-  void setUpdater(ICustomServer<V>* updater) {
+  void setUpdater(mshadow::ps::ICustomServer<V>* updater) {
     updater_ = updater;
   }
 
@@ -28,11 +28,9 @@ class KVArray : public SharedParameter<Key> {
   void setValue(const MessagePtr& msg);
  protected:
   std::unordered_map<int, SArray<V>> val_;
-  // an array is place into multiple servers only if its length > min_slice_size
+  // an array is placed into multiple servers only if its length > min_slice_size
   size_t min_slice_size_ = 1000;
-
-  ICustomServer<V>* updater_ = nullptr;
- private:
+  mshadow::ps::ICustomServer<V>* updater_ = nullptr;
 };
 
 

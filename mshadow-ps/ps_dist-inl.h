@@ -81,17 +81,17 @@ class MShadowServer : public PS::App {
  public:
   // conf: get from the flag -app_conf
   MShadowServer(const std::string &conf) : App() {
-    updater_ = CreateUpdater_<DType>();
+    updater_ = CreateServer<DType>();
     updater_->Init(myRank(), conf);
     shared_model_ = new PS::KVArray<DType>();
     shared_model_->setUpdater(updater_);
   }
-  virtual ~MShadowUpdater_() {
+  virtual ~MShadowServer() {
     delete updater_;
     delete shared_model_;
   }
  private:
-  ICustomUpdater_<DType> *updater_;
+  ICustomServer<DType> *updater_;
   PS::KVArray<DType>* shared_model_;
 };
 
