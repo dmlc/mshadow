@@ -17,8 +17,8 @@
 #include "../mshadow/tensor.h"
 
 /*! \brief whether to adapt distributed PS from parameter-server */
-#ifndef MSHADOW_DIST_PS_
-#define MSHADOW_DIST_PS_ 1
+#ifndef MSHADOW_DIST_PS
+#define MSHADOW_DIST_PS 1
 #endif
 
 namespace mshadow {

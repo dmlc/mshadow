@@ -6,7 +6,6 @@ using namespace mshadow;
 using namespace mshadow::expr;
 
 int main(void) {
-
   // intialize tensor engine before using tensor operation, needed for CuBLAS
   InitTensorEngine();
   // create a 2 x 5 tensor, from existing space

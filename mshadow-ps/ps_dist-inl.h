@@ -10,7 +10,7 @@
 #include "./ps.h"
 #include "./ps_local-inl.h"
 
-#if MSHADOW_DIST_PS_
+#if MSHADOW_DIST_PS
 #include "./kv_array.h"
 #include "system/app.h"
 namespace mshadow {
@@ -34,9 +34,9 @@ class DistServer : public LocalServer<xpu, DType> {
   }
 
  protected:
+  // do nothing
   virtual void InitCustomerServer(void) {
   }
-  // remove custom, leave it empty
   virtual void ServerInitKey(Tensor<cpu, 2> weight, int key) {
     // this is called when key get initialized for the first time
     // weight can be used to hold the model that pulled back
@@ -52,7 +52,6 @@ class DistServer : public LocalServer<xpu, DType> {
     };
     shared_model_->pull(pull_msg);
   }
-
   // override this function, to use parameter server
   virtual void HandlePushFinish(Tensor<cpu, 3, DType> data,
                                 int key) {

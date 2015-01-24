@@ -6,9 +6,8 @@ using namespace mshadow;
 using namespace mshadow::expr;
 
 int main(void) {
-
   // intialize tensor engine before using tensor operation, needed for CuBLAS
-  //InitTensorEngine();
+  InitTensorEngine(0);
   // assume we have a float space
   double data[20];
   // create a 2 x 5 x 2 tensor, from existing space
@@ -59,6 +58,6 @@ int main(void) {
     printf("\n");
   }
   // shutdown tensor enigne after usage
-  //ShutdownTensorEngine();
+  ShutdownTensorEngine();
   return 0;
 }
