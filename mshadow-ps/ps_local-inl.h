@@ -20,7 +20,6 @@ typedef unsigned ms_omp_uint;
 
 #include "./thread.h"
 #include "./thread_util.h"
-#include "./ps.h"
 
 namespace mshadow {
 namespace ps {
@@ -211,14 +210,7 @@ class LocalServer : public IParamServer<xpu, DType> {
       thread_pull_handler.resize(1);
       thread_pull_handler[0].Start(PullGlobalThread, this);
     }
-    if (update_on_server != 0) {
-      custom_server = CreateServer<DType>();
-      for (size_t j = 0; j < cfgvec.size(); ++j) {
-        custom_server->SetParam(cfgvec[j].first.c_str(),
-                                cfgvec[j].second.c_str());
-      }
-      custom_server->Init(0, std::string());
-    }
+    this->InitCustomerServer();
     this->init_end = 1;
   }
 
@@ -355,6 +347,16 @@ class LocalServer : public IParamServer<xpu, DType> {
     }
   }
 
+  virtual void InitCustomerServer(void) {
+    if (update_on_server != 0) {
+      custom_server = CreateServer<DType>();
+      for (size_t j = 0; j < cfgvec.size(); ++j) {
+        custom_server->SetParam(cfgvec[j].first.c_str(),
+                                cfgvec[j].second.c_str());
+      }
+      custom_server->Init(0, std::string());
+    }
+  }
  protected:
   // customized server
   ICustomServer<DType> *custom_server;

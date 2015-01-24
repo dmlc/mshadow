@@ -248,7 +248,6 @@ namespace ps {
  */
 template<typename xpu, typename DType>
 inline IParamServer<xpu, DType> *Create(const char *type) {
-  printf("%s", type);
   if (!strcmp("local", type)) return new LocalServer<xpu, DType>();
 #if MSHADOW_DIST_PS_
   if (!strcmp("dist", type)) return new DistServer<xpu, DType>();

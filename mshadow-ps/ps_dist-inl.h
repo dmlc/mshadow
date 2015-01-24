@@ -21,10 +21,6 @@ class DistServer : public LocalServer<xpu, DType> {
   // parent type
   typedef LocalServer<xpu, DType> Parent;
 
-  // virtual void SetParam(const char *name, const char *val) {
-  //   Parent::SetParam(name, val);
-  // }
-
   // initialize the parameter server
   virtual void Init(const std::vector<int> &devices) {
     Parent::Init(devices);
@@ -37,8 +33,26 @@ class DistServer : public LocalServer<xpu, DType> {
   virtual ~DistServer(void) {
   }
 
+ protected:
+  virtual void InitCustomerServer(void) {
+  }
   // remove custom, leave it empty
-  virtual void ServerInitKey(Tensor<cpu, 2> weight, int key) {}
+  virtual void ServerInitKey(Tensor<cpu, 2> weight, int key) {
+    // this is called when key get initialized for the first time
+    // weight can be used to hold the model that pulled back
+    // use this to initialize the key on serverside
+    using namespace PS;
+    MessagePtr pull_msg(new Message(kServerGroup));
+    pull_msg->task.set_key_channel(key);
+    Range<Key>(0, weight.MSize()).to(pull_msg->task.mutable_key_range());
+    shared_model_->setArray(key, weight.dptr_, weight.MSize());
+    pull_msg->fin_handle = [this, weight, key]() {
+      // call PullReady to notify LocalServer pulling is ready
+      this->PullReady(weight, key);
+    };
+    shared_model_->pull(pull_msg);
+  }
+
   // override this function, to use parameter server
   virtual void HandlePushFinish(Tensor<cpu, 3, DType> data,
                                 int key) {
@@ -51,11 +65,10 @@ class DistServer : public LocalServer<xpu, DType> {
     Tensor<cpu, 2> sendrecv = data[0];
     using namespace PS;
     utils::Assert(data[0].CheckContiguous(), "data must be contiguous");
-    // TODO the zero copy version
-    // SArray<DType> val(data.dptr_, data.MSize(), false);
     SArray<DType> val; val.copyFrom(sendrecv.dptr_, sendrecv.MSize());
     MessagePtr push_msg(new Message(kServerGroup));
     push_msg->addValue(val);
+    // LL << val;
     push_msg->task.set_key_channel(key);
     Range<Key>(0, val.size()).to(push_msg->task.mutable_key_range());
     int push_time = CHECK_NOTNULL(shared_model_)->push(push_msg);
@@ -82,6 +95,7 @@ class MShadowServer : public PS::App {
   // conf: get from the flag -app_conf
   MShadowServer(const std::string &conf) : App() {
     updater_ = CreateServer<DType>();
+
     updater_->Init(myRank(), conf);
     shared_model_ = new PS::KVArray<DType>();
     shared_model_->setUpdater(updater_);

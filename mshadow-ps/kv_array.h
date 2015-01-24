@@ -67,9 +67,16 @@ template <typename V>
 void KVArray<V>::getValue(const MessagePtr& msg) {
   auto& my_val = val_[msg->task.key_channel()];
   Range<Key> kr(msg->task.key_range());
-  CHECK_GE(my_val.size(), kr.end());
+  if (my_val.empty()) {
+    // initialize weight
+    my_val.resize(kr.size(), 0);
+    CHECK_NOTNULL(updater_)->InitKey(msg->task.key_channel(), my_val.data(), my_val.size());
+  }
+
+  // TODO store the kr in memory
+  CHECK_EQ(my_val.size(), kr.size());
   SArray<V> send_data(kr.size());
-  send_data.copyFrom(my_val.segment(kr));
+  send_data.copyFrom(my_val);
   msg->addValue(send_data);
 }
 
@@ -106,8 +113,8 @@ MessagePtrList KVArray<V>::slice(const MessagePtr& msg, const KeyRangeList& krs)
     CHECK_EQ(data.size(), kr.size());
     for (size_t j = 0; j < n; ++j) {
       if (ret[j]->valid) {
-        Range<Key> kr(ret[i]->task.key_range());
-        ret[i]->addValue(data.segment(kr));
+        Range<Key> kr(ret[j]->task.key_range());
+        ret[j]->addValue(data.segment(kr));
       }
     }
   }
