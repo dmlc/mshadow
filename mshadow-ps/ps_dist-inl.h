@@ -10,7 +10,7 @@
 #include "./ps.h"
 #include "./ps_local-inl.h"
 
-#if MSHADOW_DIST_PS_
+#if MSHADOW_DIST_PS
 #include "./kv_array.h"
 #include "system/app.h"
 namespace mshadow {
