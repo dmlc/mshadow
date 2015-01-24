@@ -25,13 +25,13 @@ namespace mshadow {
 namespace ps {
 // multi-threaded implementation of
 template<typename xpu, typename DType>
-class LocalServer : public IParamServer<xpu, DType> {
+class LocalModel : public ISharedModel<xpu, DType> {
  public:
   // redefine callback function
-  typedef typename IParamServer<xpu, DType>::CallbackFunction
+  typedef typename ISharedModel<xpu, DType>::CallbackFunction
   CallbackFunction;
   // constructor
-  LocalServer(void) {
+  LocalModel(void) {
     init_end = 0;
     perdev_pull_thread = 1;
     perdev_push_thread = 1;
@@ -42,7 +42,7 @@ class LocalServer : public IParamServer<xpu, DType> {
     custom_server = NULL;
   }
   // destructor
-  virtual ~LocalServer(void) {
+  virtual ~LocalModel(void) {
     if (init_end != 0) {
       destroy_signal = true;
       for (size_t i = 0; i < push_queues.size(); ++i) {
@@ -188,8 +188,8 @@ class LocalServer : public IParamServer<xpu, DType> {
     if (perdev_push_thread != 0) {
       thread_push_handler.resize(devices.size());
       for (size_t i = 0; i < devices.size(); ++i) {
-        std::pair<LocalServer*, size_t> *p
-            = new std::pair<LocalServer*, size_t>();
+        std::pair<LocalModel*, size_t> *p
+            = new std::pair<LocalModel*, size_t>();
         *p = std::make_pair(this, i);
         thread_push_handler[i].Start(PushLocalThread, p);
       }
@@ -201,8 +201,8 @@ class LocalServer : public IParamServer<xpu, DType> {
     if (perdev_pull_thread != 0) {
       thread_pull_handler.resize(devices.size());
       for (size_t i = 0; i < devices.size(); ++i) {
-        std::pair<LocalServer*, size_t> *p
-            = new std::pair<LocalServer*, size_t>();
+        std::pair<LocalModel*, size_t> *p
+            = new std::pair<LocalModel*, size_t>();
         *p = std::make_pair(this, i);
         thread_pull_handler[i].Start(PullLocalThread, p);
       }
@@ -349,7 +349,7 @@ class LocalServer : public IParamServer<xpu, DType> {
 
   virtual void InitCustomerServer(void) {
     if (update_on_server != 0) {
-      custom_server = CreateServer<DType>();
+      custom_server = CreateModelUpdater<DType>();
       for (size_t j = 0; j < cfgvec.size(); ++j) {
         custom_server->SetParam(cfgvec[j].first.c_str(),
                                 cfgvec[j].second.c_str());
@@ -359,7 +359,7 @@ class LocalServer : public IParamServer<xpu, DType> {
   }
  protected:
   // customized server
-  ICustomServer<DType> *custom_server;
+  IModelUpdater<DType> *custom_server;
  private:
   /*! \brief task running */
   struct PullTask {
@@ -601,13 +601,13 @@ class LocalServer : public IParamServer<xpu, DType> {
   }
   /*!\brief entry point of loader thread */
   inline static MSHADOW_THREAD_PREFIX PushGlobalThread(void *pthread) {
-    static_cast<LocalServer*>(pthread)->PushHandlerGlobal();
+    static_cast<LocalModel*>(pthread)->PushHandlerGlobal();
     utils::ThreadExit(NULL);
     return NULL;
   }
   inline static MSHADOW_THREAD_PREFIX PushLocalThread(void *arg) {
-    std::pair<LocalServer*, size_t> *p
-        = static_cast<std::pair<LocalServer*, size_t>*>(arg);
+    std::pair<LocalModel*, size_t> *p
+        = static_cast<std::pair<LocalModel*, size_t>*>(arg);
     p->first->PushHandlerLocal(p->second);
     delete p;
     utils::ThreadExit(NULL);
@@ -680,13 +680,13 @@ class LocalServer : public IParamServer<xpu, DType> {
   }
   /*!\brief entry point of pull thread, one thread for all devices */
   inline static MSHADOW_THREAD_PREFIX PullGlobalThread(void *arg) {
-    static_cast<LocalServer*>(arg)->PullHandlerGlobal();
+    static_cast<LocalModel*>(arg)->PullHandlerGlobal();
     utils::ThreadExit(NULL);
     return NULL;
   }
   inline static MSHADOW_THREAD_PREFIX PullLocalThread(void *arg) {
-    std::pair<LocalServer*, size_t> *p
-        = static_cast<std::pair<LocalServer*, size_t>*>(arg);
+    std::pair<LocalModel*, size_t> *p
+        = static_cast<std::pair<LocalModel*, size_t>*>(arg);
     p->first->PullHandlerLocal(p->second);
     delete p;
     utils::ThreadExit(NULL);

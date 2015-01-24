@@ -16,10 +16,10 @@
 namespace mshadow {
 namespace ps {
 template<typename xpu, typename DType>
-class DistServer : public LocalServer<xpu, DType> {
+class DistModel : public LocalModel<xpu, DType> {
  public:
   // parent type
-  typedef LocalServer<xpu, DType> Parent;
+  typedef LocalModel<xpu, DType> Parent;
 
   // initialize the parameter server
   virtual void Init(const std::vector<int> &devices) {
@@ -30,7 +30,7 @@ class DistServer : public LocalServer<xpu, DType> {
       this->custom_server = NULL;
     }
   }
-  virtual ~DistServer(void) {
+  virtual ~DistModel(void) {
   }
 
  protected:
@@ -89,22 +89,22 @@ class DistServer : public LocalServer<xpu, DType> {
 };
 
 template<typename DType>
-class MShadowServer : public PS::App {
+class MShadowServerNode : public PS::App {
  public:
   // conf: get from the flag -app_conf
-  MShadowServer(const std::string &conf) : App() {
-    updater_ = CreateServer<DType>();
+  MShadowServerNode(const std::string &conf) : App() {
+    updater_ = CreateModelUpdater<DType>();
 
     updater_->Init(myRank(), conf);
     shared_model_ = new PS::KVArray<DType>();
     shared_model_->setUpdater(updater_);
   }
-  virtual ~MShadowServer() {
+  virtual ~MShadowServerNode() {
     delete updater_;
     delete shared_model_;
   }
  private:
-  ICustomServer<DType> *updater_;
+  IModelUpdater<DType> *updater_;
   PS::KVArray<DType>* shared_model_;
 };
 

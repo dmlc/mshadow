@@ -16,9 +16,9 @@ void Print2DTensor(Tensor<cpu, 2, float> const &ts) {
 int main(int argc, char *argv[]) {
   if (argc < 2) {
     printf("Usage:<ndev>\n"); return 0;
-  } 
+  }
   int ndev = atoi(argv[1]);
-  ps::IParamServer<cpu, float> *ps = ps::Create<cpu, float>("local");
+  ps::ISharedModel<cpu, float> *ps = ps::CreateSharedModel<cpu, float>("local");
   TensorContainer<cpu, 3, float> ts(Shape3(ndev,5,2));
   TensorContainer<cpu, 3, float> res(Shape3(ndev,5,2));
   std::vector<int> devs;

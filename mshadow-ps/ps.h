@@ -30,7 +30,7 @@ namespace ps {
  */
 template<typename xpu,
          typename DType MSHADOW_DEFAULT_DTYPE>
-class IParamServer {
+class ISharedModel {
  public:
   /*!
    * \brief callback function that will be executed when pull request finishes
@@ -41,7 +41,7 @@ class IParamServer {
    */
   typedef void (CallbackFunction) (Stream<xpu> *stream, void *arg);
   /*! \brief virtual destructor */
-  virtual ~IParamServer(void) {}
+  virtual ~ISharedModel(void) {}
   /*!
    * \brief Set param for the layer from string
    * \param name parameter name
@@ -199,9 +199,9 @@ class IParamServer {
 };
 /*! \brief interface for customized mshadow server */
 template<typename DType>
-class ICustomServer {
+class IModelUpdater {
  public:
-  virtual ~ICustomServer(void) {}
+  virtual ~IModelUpdater(void) {}
   /*!
    * \brief set parameters from outside
    * \param name name of parameter
@@ -234,7 +234,7 @@ class ICustomServer {
  * \return new server
  */
 template<typename DType>
-ICustomServer<DType> *CreateServer(void);
+IModelUpdater<DType> *CreateModelUpdater(void);
 }  // namespace ps
 }  // namespace mshadow
 
@@ -247,10 +247,10 @@ namespace ps {
  * \param type the type of paramerver server
  */
 template<typename xpu, typename DType>
-inline IParamServer<xpu, DType> *Create(const char *type) {
-  if (!strcmp("local", type)) return new LocalServer<xpu, DType>();
-#if MSHADOW_DIST_PS_
-  if (!strcmp("dist", type)) return new DistServer<xpu, DType>();
+inline ISharedModel<xpu, DType> *CreateSharedModel(const char *type) {
+  if (!strcmp("local", type)) return new LocalModel<xpu, DType>();
+#if MSHADOW_DIST_PS
+  if (!strcmp("dist", type)) return new DistModel<xpu, DType>();
 #endif
   utils::Error("unknown server type %s\n", type);
   return NULL;
