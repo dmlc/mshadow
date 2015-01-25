@@ -7,6 +7,11 @@
  */
 #ifndef MSHADOW_BASE_H_
 #define MSHADOW_BASE_H_
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_DEPRECATE
+#define NOMINMAX
+#endif
 #include <cmath>
 #include <cstdio>
 #include <cfloat>
@@ -116,13 +121,19 @@ extern "C" {
 #ifdef MSHADOW_XINLINE
   #error "MSHADOW_XINLINE must not be defined"
 #endif
-#ifdef __CUDACC__
-  #define MSHADOW_XINLINE inline __attribute__((always_inline)) __device__ __host__
+#ifdef _MSC_VER
+#define MSHADOW_FORCE_INLINE __forceinline
+#pragma warning( disable : 4068 )
 #else
-  #define MSHADOW_XINLINE inline __attribute__((always_inline))
+#define MSHADOW_FORCE_INLINE inline __attribute__((always_inline)) 
+#endif
+#ifdef __CUDACC__
+  #define MSHADOW_XINLINE MSHADOW_FORCE_INLINE __device__ __host__
+#else
+  #define MSHADOW_XINLINE MSHADOW_FORCE_INLINE
 #endif
 /*! \brief cpu force inline */
-#define MSHADOW_CINLINE inline __attribute__((always_inline))
+#define MSHADOW_CINLINE MSHADOW_FORCE_INLINE
 
 #if defined(__GXX_EXPERIMENTAL_CXX0X) ||\
     defined(__GXX_EXPERIMENTAL_CXX0X__) || __cplusplus >= 201103L

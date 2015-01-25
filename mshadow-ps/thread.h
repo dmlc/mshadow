@@ -30,6 +30,26 @@ class Semaphore {
  private:
   HANDLE sem;
 };
+/*! \brief mutex under windows */
+class Mutex {
+ public:
+  inline void Init(void) {
+    pthread_mutex_init(&mutex, NULL);
+  }
+  inline void Lock(void) {
+    pthread_mutex_lock(&mutex);
+  }
+  inline void Unlock(void) {
+    pthread_mutex_unlock(&mutex);
+  }
+  inline void Destroy(void) {
+    pthread_mutex_destroy(&mutex);
+  }
+
+ private:
+  friend class ConditionVariable;
+  pthread_mutex_t mutex;
+};
 /*! \brief simple thread that wraps windows thread */
 class Thread {
  private:

@@ -1,3 +1,9 @@
+#define MSHADOW_STAND_ALONE 1
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_DEPRECATE
+#define NOMINMAX
+#endif
 #include "./ps.h"
 using namespace mshadow;
 void Print1DTensor(Tensor<cpu, 1, float> const &ts) {
