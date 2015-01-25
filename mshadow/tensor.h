@@ -344,10 +344,9 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
                                             s, stride_, stream_);
   }
   /*!\brief implement the assignment of same type */
-  template<typename E, int etype>
   inline Tensor<Device, dimension, DType> &
   operator=(const Tensor<Device, dimension, DType> &exp) {
-    dptr_ = exp.dptr;
+    dptr_ = exp.dptr_;
     shape_ = exp.shape_;
     stride_ = exp.stride_;
     stream_ = exp.stream_;
@@ -410,7 +409,6 @@ struct Tensor<Device, 1, DType>:
     return dptr_[idx];
   }
   /*!\brief implement the assignment of same type */
-  template<typename E, int etype>
   inline Tensor<Device, 1, DType> &
   operator=(const Tensor<Device, 1, DType> &exp) {
     dptr_ = exp.dptr;

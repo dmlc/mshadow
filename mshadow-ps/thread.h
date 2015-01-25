@@ -25,31 +25,61 @@ class Semaphore {
     utils::Check(WaitForSingleObject(sem, INFINITE) == WAIT_OBJECT_0, "WaitForSingleObject error");
   }
   inline void Post(void) {
-    utils::Check(ReleaseSemaphore(sem, 1, NULL)  != 0, "ReleaseSemaphore error");
+    utils::Check(ReleaseSemaphore(sem, 1, NULL) != 0, "ReleaseSemaphore error");
   }
  private:
   HANDLE sem;
 };
+
 /*! \brief mutex under windows */
 class Mutex {
  public:
   inline void Init(void) {
-    pthread_mutex_init(&mutex, NULL);
+    utils::Check(InitializeCriticalSectionAndSpinCount(&mutex, 0x00000400) != 0,
+				 "Mutex::Init fail");
   }
   inline void Lock(void) {
-    pthread_mutex_lock(&mutex);
+	EnterCriticalSection(&mutex);
   }
   inline void Unlock(void) {
-    pthread_mutex_unlock(&mutex);
+	LeaveCriticalSection(&mutex);
   }
   inline void Destroy(void) {
-    pthread_mutex_destroy(&mutex);
+	DeleteCriticalSection(&mutex);
   }
 
  private:
   friend class ConditionVariable;
-  pthread_mutex_t mutex;
+  CRITICAL_SECTION mutex;
 };
+
+// conditional variable that uses pthread
+class ConditionVariable {  
+ public:
+  // initialize conditional variable
+  inline void Init(void) {
+    InitializeConditionVariable(&cond);
+  }
+  // destroy the thread
+  inline void Destroy(void) {
+    //DeleteConditionVariable(&cond);
+  }
+  // wait on the conditional variable
+  inline void Wait(Mutex *mutex) {
+    utils::Check(SleepConditionVariableCS(&cond, &(mutex->mutex), INFINITE) != 0,
+	             "ConditionVariable:Wait fail");
+  }
+  inline void Broadcast(void) {
+    WakeAllConditionVariable(&cond);
+  }
+  inline void Signal(void) {
+    WakeConditionVariable(&cond);
+  }
+
+ private:
+	CONDITION_VARIABLE cond;
+};
+
 /*! \brief simple thread that wraps windows thread */
 class Thread {
  private:
