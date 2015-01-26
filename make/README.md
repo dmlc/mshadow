@@ -1,10 +1,11 @@
 Makefile Configuration of MShadow
 =====
-This folder contains Makefile configuration of mshadow. MShadow is a template library,
-you only need to include mshadow to use it.
+MShadow is a template library, you only need to include mshadow to use it. So this folder is not used to build mshadow library file.
 
-You can compile mshadow with different mode, for example, with or without CUDA. There are different compile flags
-that you might need to set in your own configuration, and this folder provides a Makefile script to help you do that.
+However, mshadow is a flexible library that allows you to compile with different configurations. For example,
+you can compile mshadow without CUDA, and specify your own choice of BLAS.
+There are different compile flags that you might need to set in your own configuration.
+This folder provides a Makefile script to help you do that.
 
 Usage
 =====
