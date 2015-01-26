@@ -1,7 +1,10 @@
 Tutorial of mshadow
 =====
 This is a beginner's tutorial of mshadow. If you like mshadow and have ideas to improve this tutorial, you are more than welcomed:)
-Please send a pull-request if you would like to share your experience,
+Please send a pull-request if you would like to share your experience.
+
+
+See also [Expression Template Tutorial][exp-template]
 
 **List of Topics**
 * [Tensor Data Structure](#tensor-data-structure)
