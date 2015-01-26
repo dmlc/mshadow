@@ -3,7 +3,7 @@ Expression Template Tutorial
 This page explains how mshadow works. The main trick behind mshadow is called [Expression Template](http://en.wikipedia.org/wiki/Expression_templates).
 We will explain how it will affect the performance of compiled code. Expression template is the major trick behind the C++ matrix libraries such as Eigen, GSL, boost.uBLAS.
 
-How to write efficient update rule for machine learning
+How to write efficient machine learning code
 ====
 Before we start, let us think of the question above. Assume we want to write down the update rule
 ```c++
