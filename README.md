@@ -6,6 +6,7 @@ MShadow is a lightweight CPU/GPU Matrix/Tensor Template Library in C++/CUDA. The
 
 * [Contributors](https://github.com/tqchen/mshadow/graphs/contributors)
 * [Tutorial](guide)
+* [Documentation](doc)
 
 Features
 =====
