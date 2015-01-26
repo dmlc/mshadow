@@ -2,12 +2,14 @@
 export CC  = gcc
 export CXX = g++
 export NVCC =nvcc
-export CFLAGS = -Wall -O3 -msse3 -Wno-unknown-pragmas -funroll-loops -I../
-export LDFLAGS= -lm 
-export NVCCFLAGS = -O3 --use_fast_math -ccbin $(CXX)
+include config.mk
+include ../make/mshadow.mk
+export CFLAGS = -Wall -O3 -I../ $(MSHADOW_CFLAGS)
+export LDFLAGS= -lm $(MSHADOW_LDFLAGS)
+export NVCCFLAGS = -O3 --use_fast_math -ccbin $(CXX) $(MSHADOW_NVCCFLAGS)
 
 # specify tensor path
-BIN = basic defop concat
+BIN = basic defop
 OBJ =
 CUOBJ =
 CUBIN = 
@@ -16,7 +18,6 @@ CUBIN =
 all: $(BIN) $(OBJ) $(CUBIN) $(CUOBJ)
 
 basic: basic.cpp
-concat: concat.cpp
 defop: defop.cpp
 
 $(BIN) :

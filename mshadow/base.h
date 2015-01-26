@@ -79,10 +79,6 @@
 #define MSHADOW_OLD_CUDA 0
 #endif
 
-/*! \brief use single precition float */
-#ifndef MSHADOW_SINGLE_PRECISION
-  #define MSHADOW_SINGLE_PRECISION 1
-#endif
 /*! \brief whether use SSE */
 #ifndef MSHADOW_USE_SSE
   #define MSHADOW_USE_SSE 1
