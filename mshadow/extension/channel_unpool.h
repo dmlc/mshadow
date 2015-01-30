@@ -61,8 +61,8 @@ struct ChannelUnpoolingExp:
 };
 /*!
  * \brief  channel unpooling, do unroll over (local nearby) channels
- * \param src source data 
- * \param nsize neighbor size 
+ * \param src source data
+ * \param nsize neighbor size
  * \param stride stride of the pooling
  * \param pad number of padding at each side
  * \return expression of pooled result
@@ -102,7 +102,7 @@ struct Plan<ChannelUnpoolingExp<Reducer, SrcExp, DType, srcdim>, DType> {
       : data_src_(e.data_src_), data_pooled_(e.data_pooled_),
         grad_pooled_(e.grad_pooled_), channel_(e.shape_[srcdim - 3]),
         height_(e.shape_[srcdim - 2]), pchannel_(e.pchannel_),
-        hnsize_(e.nsize_), stride_(e.stride_), pad_(e.pad_){}
+        hnsize_(e.nsize_), stride_(e.kstride_), pad_(e.pad_){}
   MSHADOW_XINLINE DType Eval(index_t i, index_t j) const {
     using namespace std;
     const DType vsrc = data_src_.Eval(i, j);
@@ -117,8 +117,8 @@ struct Plan<ChannelUnpoolingExp<Reducer, SrcExp, DType, srcdim>, DType> {
     DType val = static_cast<DType>(0);
     for (index_t cc = cstart; cc < cend; ++cc) {
       val += Reducer::PartialGrad(vsrc,
-                                  data_pooled_.Eval((n * pchannel_ + cc) * height_ + y, x) *
-                                  grad_pooled_.Eval((n * pchannel_ + cc) * height_ + y, x) );
+                                  data_pooled_.Eval((n * pchannel_ + cc) * height_ + y, x)) *
+                                  grad_pooled_.Eval((n * pchannel_ + cc) * height_ + y, x);
     }
     return val;
   }
