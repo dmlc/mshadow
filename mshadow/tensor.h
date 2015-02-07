@@ -411,7 +411,7 @@ struct Tensor<Device, 1, DType>:
   /*!\brief implement the assignment of same type */
   inline Tensor<Device, 1, DType> &
   operator=(const Tensor<Device, 1, DType> &exp) {
-    dptr_ = exp.dptr;
+    dptr_ = exp.dptr_;
     shape_ = exp.shape_;
     stride_ = exp.stride_;
     stream_ = exp.stream_;
