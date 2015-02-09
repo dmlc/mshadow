@@ -9,7 +9,7 @@
 #----------------------------------------------------------------------------------------
 
 MSHADOW_CFLAGS = -msse3 -funroll-loops -Wno-unused-parameter -Wno-unknown-pragmas
-MSHADOW_LDFLAGS = -lm 
+MSHADOW_LDFLAGS = -lm
 MSHADOW_NVCCFLAGS = 
 
 ifeq ($(USE_CUDA), 0)
@@ -38,6 +38,9 @@ else ifeq ($(USE_BLAS), atlas)
 	MSHADOW_LDFLAGS += -lcblas
 else ifeq ($(USE_BLAS), blas)
 	MSHADOW_LDFLAGS += -lblas
+else ifeq ($(USE_BLAS), apple)
+	MSHADOW_CFLAGS += -I/System/Library/Frameworks/Accelerate.framework/Versions/Current/Frameworks/vecLib.framework/Versions/Current/Headers/
+	MSHADOW_LDFLAGS += -framework Accelerate
 endif
 
 ifeq ($(PS_PATH), NONE)
