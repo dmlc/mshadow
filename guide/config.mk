@@ -21,10 +21,10 @@ USE_CUDA_PATH = NONE
 
 #
 # choose the version of blas you want to use
-# can be: mkl, blas, atlas, openblas
+# can be: mkl, blas, atlas, openblas, apple
 USE_BLAS = blas
 #
-# add path to intel libary, you may need it
+# add path to intel library, you may need it
 # for MKL, if you did not add the path to enviroment variable
 # 
 USE_INTEL_PATH = NONE
