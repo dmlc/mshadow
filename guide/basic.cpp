@@ -17,10 +17,11 @@ int main(void) {
   // Tensor object is only a handle, assignment means they have same data content
   // we can specify content type of a Tensor, if not specified, it is float bydefault
   Tensor<cpu, 2, float> mat2 = mat;
-  
+  mat = Tensor<cpu, 1>(data, Shape1(10)).FlatTo2D();
+
   // shaape of matrix, note size order is same as numpy
-  printf("%u X %u matrix\n", mat.size(1), mat.size(1));
-  
+  printf("%u X %u matrix\n", mat.size(0), mat.size(1));
+  return 0;
   // initialize all element to zero
   mat = 0.0f;
   // assign some values
