@@ -53,7 +53,7 @@ void KVArray<V>::setValue(const MessagePtr& msg) {
     if (my_val.empty()) {
       // initialize weight
       my_val.resize(kr.size(), 0);
-      CHECK_NOTNULL(updater_)->InitKey(key, my_val.data(), my_val.size());
+      CHECK_NOTNULL(updater_)->InitModel(key, my_val.data(), my_val.size());
     }
 
     // update weight
@@ -70,7 +70,7 @@ void KVArray<V>::getValue(const MessagePtr& msg) {
   if (my_val.empty()) {
     // initialize weight
     my_val.resize(kr.size(), 0);
-    CHECK_NOTNULL(updater_)->InitKey(msg->task.key_channel(), my_val.data(), my_val.size());
+    CHECK_NOTNULL(updater_)->InitModel(msg->task.key_channel(), my_val.data(), my_val.size());
   }
 
   // TODO store the kr in memory

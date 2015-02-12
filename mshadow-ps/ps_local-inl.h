@@ -306,7 +306,7 @@ class LocalModel : public ISharedModel<xpu, DType> {
   virtual void ServerInitKey(Tensor<cpu, 2> weight, int key) {
     if (custom_server != NULL) {
       // intialize server, and ready for pullback
-      custom_server->InitKey(key, weight.dptr_, weight.MSize());
+      custom_server->InitModel(key, weight.dptr_, weight.MSize());
       this->PullReady(weight, key);
     }
   }
@@ -354,7 +354,7 @@ class LocalModel : public ISharedModel<xpu, DType> {
         custom_server->SetParam(cfgvec[j].first.c_str(),
                                 cfgvec[j].second.c_str());
       }
-      custom_server->Init(0, std::string());
+      custom_server->InitUpdater(0, std::string());
     }
   }
  protected:

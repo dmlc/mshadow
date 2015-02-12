@@ -207,26 +207,52 @@ class IModelUpdater {
    * \param name name of parameter
    * \param val value of parameter
    */
-  virtual void SetParam(const char *name, const char *val) = 0;
+  virtual void SetParam(const char *name, const char *val) {}
   /*!
-   * \brief init the server
+   * \brief init the model updater
    * \param rank the rank of the node
    * \param conf configuration
    */
-  virtual void Init(int rank, const std::string &conf) = 0;
+  virtual void InitUpdater(int rank, const std::string &conf) {}
   /*!
-   * \brief initialize the key
+   * \brief initialize the model
    * \param key the key of data we point to
    * \param dptr the data pointer
    * \param size size of the parameter key
    */
-  virtual void InitKey(int key, DType *dptr, size_t size) = 0;
+  virtual void InitModel(int key, DType *dptr, size_t size) {
+    this->InitModel_(key, Tensor<cpu, 1, DType>(dptr, Shape1(size)));
+  }
   /*!
+   * update the model
    * \param key the key of data we point to
    * \param dptr the data pointer
    * \param size size of the parameter key
    */
-  virtual void Update(int key, DType *dptr, size_t size) = 0;
+  virtual void Update(int key, DType *dptr, size_t size) {
+    this->Update_(key, Tensor<cpu, 1, DType>(dptr, Shape1(size)));    
+  }
+
+ protected:
+  /*!
+   * \brief initialize the model, user can implement this one
+   *   to take advantage of tensor operations
+   * \param key the key of data we point to
+   * \param data the tensor data corresponding to the data we want to initialize
+   */
+  virtual void InitModel_(int key, Tensor<cpu, 1, DType> data) {
+    utils::Error("InitModel: not implemented");
+  }
+  /*!
+   * \brief update the model, user can implement this one
+   *    to take advantage of tensor operations
+   * \param key the key of data we point to
+   * \param dptr the data pointer
+   * \param size size of the parameter key
+   */
+  virtual void Update_(int key, Tensor<cpu, 1, DType> data) {
+    utils::Error("InitModel: not implemented");
+  }  
 };
 /*!
  * \brief create customized server
