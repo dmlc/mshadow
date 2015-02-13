@@ -227,10 +227,8 @@ class LocalModel : public ISharedModel<xpu, DType> {
   };
   virtual void InitKey_(Shape<2> shape,
                         int key, int devid) {
-    if (devid == devices[0]) {
-      this->InitPullMap(key);
-      this->InitPushMap(key, shape);
-    }
+    this->InitPullMap(key);
+    this->InitPushMap(key, shape);
   }
 
   virtual void Push_(Tensor<xpu, 2, DType> data,

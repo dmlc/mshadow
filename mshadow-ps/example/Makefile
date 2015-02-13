@@ -2,21 +2,23 @@
 export CC  = gcc
 export CXX = g++
 export NVCC =nvcc
-export CFLAGS = -Wall -O3 -msse3 -Wno-unknown-pragmas -funroll-loops -I../ -DMSHADOW_STAND_ALONE=1 -std=c++11 -fopenmp
-export LDFLAGS= -lm -lpthread
-export NVCCFLAGS = -O3 --use_fast_math -ccbin $(CXX)
+include config.mk
+include ../../make/mshadow.mk
+export CFLAGS = -Wall -O3 -fopenmp -I../../ $(MSHADOW_CFLAGS)
+export LDFLAGS= -lm $(MSHADOW_LDFLAGS)
+export NVCCFLAGS = -O3 --use_fast_math -ccbin $(CXX) $(MSHADOW_NVCCFLAGS)
 
 # specify tensor path
-BIN = test
+BIN = local_sum.cpu 
 OBJ =
 CUOBJ =
-CUBIN = cutest
+CUBIN = local_sum.gpu
 .PHONY: clean all
 
-all: $(BIN) $(OBJ) 
+all: $(BIN) $(CUBIN) 
 
-test: test.cpp *.h
-cutest: test.cu *.h
+local_sum.cpu: local_sum.cpp
+local_sum.gpu: local_sum.cu
 
 $(BIN) :
 	$(CXX) $(CFLAGS) -o $@ $(filter %.cpp %.o %.c, $^)  $(LDFLAGS)

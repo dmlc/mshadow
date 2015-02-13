@@ -65,6 +65,8 @@ class ISharedModel {
   }
   /*!
    * \brief initialize a key with certain shape
+   *  must be called before using Push/PullReq/PullWait
+   *  on the corresponding key
    * \param shape the shape content of the key
    * \param key the unique key to indicate the tensor
    *        this is unique per device
