@@ -109,20 +109,23 @@ class TensorContainer: public Tensor<Device, dimension, DType> {
     Copy(*this, tmp, &stream);
     mshadow::FreeSpace(&tmp);
   }
-  // functions to fit exp template
+  /*!\brief functions to fit expression template */
   inline Tensor<Device, dimension, DType> &operator=(DType s) {
     return this->__assign(s);
   }
+  /*!\brief functions to fit expression template */
   template<typename E>
   inline Tensor<Device, dimension, DType> &
   operator=(const expr::Exp<E, DType, expr::type::kMapper> &exp) {
     return this->__assign(exp);
   }
+  /*!\brief functions to fit expression template */
   template<typename E>
   inline Tensor<Device, dimension, DType> &
   operator=(const expr::Exp<E, DType, expr::type::kChainer> &exp) {
     return this->__assign(exp);
   }
+  /*!\brief functions to fit expression template */
   template<typename E>
   inline Tensor<Device, dimension, DType> &
   operator=(const expr::Exp<E, DType, expr::type::kComplex> &exp) {

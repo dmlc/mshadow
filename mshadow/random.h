@@ -97,6 +97,7 @@ class Random<cpu, DType> {
    *           since second call of gaussian(s2) makes gaussian(s1) invalid
    *           A = gaussian(s1)*B+C; is correct; use one gaussian/uniform in each expression
    * \param shape shape of the tensor
+   * \return a temporal expression storing standard gaussian random variables
    * \tparam dim dimension of tensor
    */
   template<int dim>
@@ -114,6 +115,7 @@ class Random<cpu, DType> {
    *           since second call of gaussian(s2) makes gaussian(s1) invalid
    *           A = gaussian(s1)*B+C; is correct; use one gaussian/uniform in each expression
    * \param shape shape of the tensor
+   * \return a temporal expression storing standard uniform [0,1)
    * \tparam dim dimension of tensor
    */
   template<int dim>
@@ -293,6 +295,7 @@ class Random<gpu, DType> {
    * \param shape shape of the tensor
    * \param mu mean
    * \param sigma variance
+   * \return a temporal expression storing standard gaussian random variables
    * \tparam dim dimension of tensor
    */
   template<int dim>
@@ -313,6 +316,7 @@ class Random<gpu, DType> {
    *           since second call of gaussian(s2) makes gaussian(s1) invalid
    *           A = gaussian(s1)*B+C; is correct; use one gaussian/uniform in each expression
    * \param shape shape of the tensor
+   * \return a temporal expression storing standard uniform [0,1)
    * \tparam dim dimension of tensor
    */
   template<int dim>

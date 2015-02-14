@@ -69,7 +69,10 @@ struct Shape {
   MSHADOW_XINLINE const index_t &operator[](index_t idx) const {
     return shape_[idx];
   }
-  /*! \return whether two shape equals */
+  /*!
+   * \return whether two shape equals 
+   * \param s the shape to compare against
+   */
   MSHADOW_XINLINE bool operator==(const Shape<kDimension> &s) const {
     #pragma unroll
     for (int i = 0; i < kDimension; ++i) {
@@ -308,11 +311,11 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
   }
   /*!
    * \brief return size of i-th dimension, start counting from highest dimension
-   * \param the dimension count from the highest dimensin
+   * \param idx the dimension count from the highest dimensin
    * \return the size
    */
-  MSHADOW_XINLINE index_t size(index_t i) const {
-    return shape_[i];
+  MSHADOW_XINLINE index_t size(index_t idx) const {
+    return shape_[idx];
   }
   /*!
    * \brief flatten the tensor to 2 dimension, collapse the higher dimensions together
@@ -358,6 +361,7 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
   operator=(const expr::Exp<E, DType, etype> &exp) {
     return this->__assign(exp);
   }
+  /*!\brief functions to fit expression template */
   inline Tensor<Device, dimension, DType> &operator=(const DType &exp) {
     return this->__assign(exp);
   }

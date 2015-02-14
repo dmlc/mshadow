@@ -5,7 +5,7 @@ This is the documentation for mshadow: A Lightweight CPU/GPU Matrix/Tensor Templ
 ### Links to Topics
 
 * [Tutorial](../guide)
-* API Documentation
+* [API Documentation](http://homes.cs.washington.edu/~tqchen/mshadow/doc)
   - You can run ```./mkdoc.sh``` to make the document locally
 * [Tutorial about Expression Template](../guide/exp-template)
 * [Writing Multi-GPU and Distributed ML](../guide/mshadow-ps)

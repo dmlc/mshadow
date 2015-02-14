@@ -283,6 +283,30 @@ struct divto {
 }  // namespace sv
 /*! \brief namespace for potential reducer operations */
 namespace red {
+namespace limits {
+/*!
+ * \brief minimum value of certain types 
+ * \tparam DType data type
+ */
+template<typename DType>
+MSHADOW_XINLINE DType MinValue(void);
+/*! \brief minimum value of float */
+template<>
+MSHADOW_XINLINE float MinValue<float>(void) {
+  return -FLT_MAX;
+}
+/*! \brief minimum value of double */
+template<>
+MSHADOW_XINLINE double MinValue<double>(void) {
+  return -DBL_MAX;
+}
+/*! \brief minimum value of int */
+template<>
+MSHADOW_XINLINE int MinValue<int>(void) {
+  return INT_MIN;
+}
+}  // namespace limits
+
 /*! \brief sum reducer */
 struct sum {
   /*! \brief do reduction into dst */
@@ -298,28 +322,14 @@ struct sum {
   MSHADOW_XINLINE static DType PartialGrad(DType redres, DType redsrc) {
     return 1;
   }
+  /*!
+   *\brief set the initial value during reduction
+   */  
   template<typename DType>
   MSHADOW_XINLINE static void SetInitValue(DType &initv) {
     initv = 0;
   }
 };
-/*! \brief helper namespace to get the limits */
-namespace limits {
-  template<typename DType>
-  MSHADOW_XINLINE DType MinValue(void);
-  template<>
-  MSHADOW_XINLINE float MinValue<float>(void) {
-    return -FLT_MAX;
-  }
-  template<>
-  MSHADOW_XINLINE double MinValue<double>(void) {
-    return -DBL_MAX;
-  }
-  template<>
-  MSHADOW_XINLINE int MinValue<int>(void) {
-    return INT_MIN;
-  }
-}  // namespace limits
 /*! \brief maximum reducer */
 struct maximum {
   /*! \brief do reduction into dst */
@@ -336,6 +346,9 @@ struct maximum {
   MSHADOW_XINLINE static DType PartialGrad(DType redres, DType redsrc) {
     return redres == redsrc ? 1: 0;
   }
+  /*!
+   *\brief set the initial value during reduction
+   */  
   template<typename DType>
   MSHADOW_XINLINE static void SetInitValue(DType &initv) {
     initv = limits::MinValue<DType>();

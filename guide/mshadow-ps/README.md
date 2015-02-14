@@ -7,6 +7,7 @@ This allows you to do ***multi-GPU*** and ***disrtibuted*** (deep) learning in
 an ***easy*** and ***unified*** way.
 
 ####List of Resources
+* [API Documentation](http://homes.cs.washington.edu/~tqchen/mshadow/doc/namespacemshadow_1_1ps.html)
 * [Library Interface Header](../../mshadow-ps/ps.h)
 * Tutorial in this page
 

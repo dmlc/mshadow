@@ -96,6 +96,7 @@ template<typename DstDType, typename SrcDType, typename EType, int etype>
 struct TypecastExp:
       public Exp<TypecastExp<DstDType, SrcDType, EType, etype>,
                  DstDType, etype> {
+  /*! \brief expression to be typecasted */
   const EType &exp;
   /*! \brief constructor */
   explicit TypecastExp(const EType &e) : exp(e) {}
@@ -141,14 +142,17 @@ class RValueExp: public Exp<Container, DType, type::kRValue> {
     ExpEngine<sv::plusto, Container, DType>::Eval(this->ptrself(), scalar<DType>(s));
     return *(this->ptrself());
   }
+  /*! \brief operator overload */
   inline Container &operator-=(DType s) {
     ExpEngine<sv::minusto, Container, DType>::Eval(this->ptrself(), scalar<DType>(s));
     return *(this->ptrself());
   }
+  /*! \brief operator overload */
   inline Container &operator*=(DType s) {
     ExpEngine<sv::multo, Container, DType>::Eval(this->ptrself(), scalar<DType>(s));
     return *(this->ptrself());
   }
+  /*! \brief operator overload */
   inline Container &operator/=(DType s) {
     ExpEngine<sv::divto, Container, DType>::Eval(this->ptrself(), scalar<DType>(s));
     return *(this->ptrself());
@@ -164,7 +168,7 @@ class RValueExp: public Exp<Container, DType, type::kRValue> {
     ExpEngine<sv::saveto, Container, DType>::Eval(this->ptrself(), exp.self());
     return *(this->ptrself());
   }
-  // declar but not implement the assign to self type
+  /*! \brief operator overload, assign */
   inline Container &__assign(const Exp<Container, DType, type::kRValue> &exp);
   /*! \brief implementation of operator+= */
   template<typename E, int etype>
@@ -266,10 +270,11 @@ MakeExp(const Exp<TA, DType, ta> &lhs, const Exp<TB, DType, tb> &rhs) {
   return BinaryMapExp<OP, TA, TB, DType,
                       (ta|tb|type::kMapper)>(lhs.self(), rhs.self());
 }
-/*! 
+/*!
  * \brief short hand for MakeExp, usage F<op>(lhs, rhs). create a binary operation expression 
  * \param lhs left operand
  * \param rhs right operand
+ * \return the result expression
  * \tparam binary operator 
  * \tparam TA lhs expression
  * \tparam ta lhs expression type
@@ -334,6 +339,7 @@ MakeExp(const Exp<TA, DType, ta> &src) {
 /*! 
  * \brief short hand for MakeExp, usage F<op>(src), create a unary operation expression 
  * \param src source expression
+ * \return the result expression
  * \tparam operator 
  * \tparam TA source expression
  * \tparam ta source expression type

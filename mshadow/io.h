@@ -1,6 +1,6 @@
 /*!
  *  Copyright (c) 2014 by Contributors
- * \file tensor_io.h
+ * \file io.h
  * \brief definitions of I/O functions for mshadow tensor
  * \author Tianqi Chen
  */

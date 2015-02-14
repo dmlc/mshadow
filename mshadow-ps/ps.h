@@ -22,6 +22,7 @@
 #endif
 
 namespace mshadow {
+/*! \brief namespace of mshadow-ps */
 namespace ps {
 /*!
  * \brief interface of parameter server
@@ -129,7 +130,20 @@ class ISharedModel {
                    devid, priority, callback, callback_arg);
   }
 #if __cplusplus >= 201103L
-  template<int dim>
+  /*!
+   * \brief send a pull request, to pull parameter into data
+   *  this call is asynchronize and returns immediately
+   *  use PullWait to wait the event of copy finish
+   *  this is the c++11 version that allows lambda function as callback
+   * \param data the data
+   * \param key the unique key to indicate the tensor,
+   *        this is unique per device
+   * \param devid the device id this tensor lies in
+   * \param priority the priority of this operation,
+   *   the bigger the number is the higher the priority will be
+   * \param callback the callback function 
+   */
+  template<int dim>  
   inline void PullReq(Tensor<xpu, dim, DType> data,
                       int key,
                       int devid,
@@ -249,8 +263,7 @@ class IModelUpdater {
    * \brief update the model, user can implement this one
    *    to take advantage of tensor operations
    * \param key the key of data we point to
-   * \param dptr the data pointer
-   * \param size size of the parameter key
+   * \param data the tensor data corresponding to the data we want to initialize
    */
   virtual void Update_(int key, Tensor<cpu, 1, DType> data) {
     utils::Error("InitModel: not implemented");
@@ -273,6 +286,8 @@ namespace ps {
 /*!
  * \brief create a parameter server implementation
  * \param type the type of paramerver server
+ *     can either be "local" or "dist"
+ * \return the ISharedModel that can be used to synchronize weights
  */
 template<typename xpu, typename DType>
 inline ISharedModel<xpu, DType> *CreateSharedModel(const char *type) {
