@@ -1,4 +1,7 @@
-// this implements a simple two layer neural net
+// this implements a simple two layer Multi-GPU neural net
+// this implementation uses mshadow-ps to get gradient aggregation
+// between cards
+// this code is modified from nnet.cu
 #include <vector>
 #include <cmath>
 #include <omp.h>
@@ -22,7 +25,8 @@ struct sigmoid {
 /*! \brief interface for nnet, interfacd allows use to use GPU/CPU implementation in a unified way */
 class INNet{
  public:
-  virtual void Forward(const Tensor<cpu, 2, real_t>& inbatch, Tensor<cpu, 2, real_t> &oubatch) = 0;
+  virtual void Forward(const Tensor<cpu, 2, real_t>& inbatch,
+                       Tensor<cpu, 2, real_t> &oubatch) = 0;
   virtual void Backprop(const Tensor<cpu, 2, real_t>& gradout) = 0;
   virtual ~INNet() {}
 };

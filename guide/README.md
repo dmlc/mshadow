@@ -3,8 +3,9 @@ Tutorial of mshadow
 This is a beginner's tutorial of mshadow. If you like mshadow and have ideas to improve this tutorial, you are more than welcomed:)
 Please send a pull-request if you would like to share your experience.
 
-
-See also [Expression Template Tutorial](exp-template)
+See also other related materials about mshadow
+* [Expression Template Tutorial](exp-template)
+* [Writing Multi-GPU and Distributed ML](mshadow-ps)
 
 **List of Topics**
 * [Tensor Data Structure](#tensor-data-structure)
@@ -184,7 +185,7 @@ using namespace mshadow::expr;
 
 int main(void) {
   // intialize tensor engine before using tensor operation, needed for CuBLAS
-  InitTensorEngine();
+  InitTensorEngine<cpu>();
   // assume we have a float space
   float data[20];
   // create a 2 x 5 x 2 tensor, from existing space
@@ -213,7 +214,7 @@ int main(void) {
     printf("\n");
   }
   // shutdown tensor enigne after usage
-  ShutdownTensorEngine();
+  ShutdownTensorEngine<cpu>();
   return 0;
 }
 ```
