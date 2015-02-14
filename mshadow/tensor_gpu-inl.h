@@ -10,20 +10,9 @@
 #include "./tensor.h"
 
 namespace mshadow {
-#if !(MSHADOW_USE_CUDA)
-// do nothing if no GPU operation is involved
-inline void InitTensorEngine(int dev_id) {
-}
-inline void ShutdownTensorEngine(void) {
-}
-#else
-#if (MSHADOW_USE_NVML)
-inline int AutoSelectDevice(int device_count) {
-  // TODO(bing): nvml device id and cuda device id are not consistent
-  return 0;
-}
-#endif
-inline void InitTensorEngine(int dev_id) {
+#if MSHADOW_USE_CUDA
+template<>
+inline void InitTensorEngine<gpu>(int dev_id) {
   cudaDeviceProp prop;
   int device_id = 0;
   int device_count = 0;
@@ -31,9 +20,7 @@ inline void InitTensorEngine(int dev_id) {
   utils::Check(device_count > 0,
                "Cannot find CUDA device. Please check CUDA-Configuration");
   if (dev_id < 0) {
-#if (MSHADOW_USE_NVML)
-    device_id = AutoSelectDevice(device_count);
-#endif
+    device_id = 0;
   } else {
     device_id = dev_id;
   }
@@ -43,7 +30,8 @@ inline void InitTensorEngine(int dev_id) {
   printf("Use CUDA Device %d: %s\n", device_id, prop.name);
   cublasInit();
 }
-inline void ShutdownTensorEngine(void) {
+template<>
+inline void ShutdownTensorEngine<gpu>(void) {
   cublasShutdown();
 }
 template<>

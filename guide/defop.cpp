@@ -26,7 +26,7 @@ struct maxoftwo {
 
 int main(void) {
   // intialize tensor engine before using tensor operation, needed for CuBLAS
-  InitTensorEngine();
+  InitTensorEngine<cpu>();
   // take first subscript of the tensor
   Tensor<cpu,2, float> mat = NewTensor<cpu>(Shape2(2,3), 0.0f);
   Tensor<cpu,2, float> mat2= NewTensor<cpu>(Shape2(2,3), 0.0f);
@@ -42,6 +42,6 @@ int main(void) {
   }
   FreeSpace(&mat); FreeSpace(&mat2);
   // shutdown tensor enigne after usage
-  ShutdownTensorEngine();
+  ShutdownTensorEngine<cpu>();
   return 0;
 }

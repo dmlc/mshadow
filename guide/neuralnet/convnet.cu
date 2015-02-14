@@ -193,9 +193,7 @@ int main(int argc, char *argv[]) {
   if(argc < 2) {
     printf("Usage: cpu or gpu\n"); return 0;
   }
-  srand(0);
-  InitTensorEngine();
-  
+  srand(0); 
   // settings
   int batch_size = 100;
   int insize = 28;
@@ -207,9 +205,11 @@ int main(int argc, char *argv[]) {
   
   // choose which version to use
   INNet *net;
-  if(!strcmp(argv[1], "gpu")) {
+  if (!strcmp(argv[1], "gpu")) {
+    InitTensorEngine<gpu>();
     net = new ConvNet<gpu>(batch_size, insize, nchannel, ksize, kstride, psize, num_out);
-  }else{
+  } else {
+    InitTensorEngine<cpu>();
     net = new ConvNet<cpu>(batch_size, insize, nchannel, ksize, kstride, psize, num_out);
   }
   
@@ -227,7 +227,7 @@ int main(int argc, char *argv[]) {
   TensorContainer<cpu, 4, real_t> xtrain(Shape4(xtrain_.size(0), 1, insize, insize));
   TensorContainer<cpu, 4, real_t> xtest(Shape4(xtest_.size(0),  1, insize, insize));
   xtrain = reshape(xtrain_, xtrain.shape_);
-  xtest  = reshape(xtest_, xtest.shape_);
+  xtest = reshape(xtest_, xtest.shape_);
   
   int num_iter = 20;
   
@@ -257,6 +257,11 @@ int main(int argc, char *argv[]) {
     printf("round %d: test-err=%f\n", i, (float)nerr/xtest.size(0));
   }    
   delete net;
-  ShutdownTensorEngine();
+  
+  if (!strcmp(argv[1], "gpu")) {
+    ShutdownTensorEngine<gpu>();
+  } else {
+    ShutdownTensorEngine<cpu>();
+  }
   return 0;
 }

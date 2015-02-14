@@ -13,6 +13,13 @@
 
 namespace mshadow {
 template<>
+inline void InitTensorEngine<cpu>(int dev_id) {
+}
+template<>
+inline void ShutdownTensorEngine<cpu>(void) {
+}
+
+template<>
 inline void SetDevice<cpu>(int devid) {
 }
 template<>

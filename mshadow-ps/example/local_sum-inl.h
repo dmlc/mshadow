@@ -67,6 +67,7 @@ inline void RunWorkerThread(int devid,
   // print normally since Copy will block
   Print(data);
   printf("====================\n");
+  mshadow::DeleteStream(stream);
 }
 
 namespace mshadow {
@@ -86,7 +87,7 @@ inline int Run(int argc, char *argv[]) {
   if (argc < 2) {
     printf("Usage: device list\n"\
            "\tfor CPU the device list can be arbitrary\n"\
-           "\tfor GPU the device list can be arbitrary\n");
+           "\tfor GPU the device list need to be actual device index\n");
     return 0;
   }
   // list of device ids

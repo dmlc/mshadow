@@ -2,31 +2,27 @@
 export CC  = gcc
 export CXX = g++
 export NVCC =nvcc
-export CFLAGS = -Wall -O3 -msse3 -Wno-unknown-pragmas -funroll-loops -I../../
-
-
-ifeq ($(blas),1)
-	LDFLAGS= -lcblas -lm -lcudart -lcublas -lcurand 
-	CFLAGS+= -DMSHADOW_USE_MKL=0 -DMSHADOW_USE_CBLAS=1
-else
-	LDFLAGS=  -lm -lcudart -lcublas -lcurand  -lmkl_core -lmkl_intel_lp64 -lmkl_intel_thread -liomp5 -lpthread 
-endif
-export NVCCFLAGS = -O3 --use_fast_math -ccbin $(CXX)
+include config.mk
+include ../../make/mshadow.mk
+export CFLAGS = -Wall -O3 -I../../ -fopenmp $(MSHADOW_CFLAGS)
+export LDFLAGS= -lm $(MSHADOW_LDFLAGS)
+export NVCCFLAGS = -O3 --use_fast_math -ccbin $(CXX) $(MSHADOW_NVCCFLAGS)
 
 # specify tensor path
 BIN =
 OBJ =
 CUOBJ =
-CUBIN = nnet convnet
+CUBIN = nnet convnet nnet_ps
 .PHONY: clean all
 
 all: $(BIN) $(OBJ) $(CUBIN) $(CUOBJ)
 
 nnet: nnet.cu
+nnet_ps: nnet_ps.cu
 convnet: convnet.cu
 
 $(BIN) :
-	$(CXX) $(CFLAGS) -o $@ $(filter %.cpp %.o %.c, $^) $(LDFLAGS) 
+	$(CXX) $(CFLAGS) -o $@ $(filter %.cpp %.o %.c, $^)  $(LDFLAGS)
 
 $(OBJ) :
 	$(CXX) -c $(CFLAGS) -o $@ $(firstword $(filter %.cpp %.c, $^) )
@@ -39,3 +35,4 @@ $(CUBIN) :
 
 clean:
 	$(RM) $(OBJ) $(BIN) $(CUBIN) $(CUOBJ) *~
+

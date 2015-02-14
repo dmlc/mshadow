@@ -123,7 +123,6 @@ int main(int argc, char *argv[]) {
     printf("Usage: cpu or gpu\n"); return 0;
   }
   srand(0);
-  InitTensorEngine();
   
   // settings
   int batch_size = 100;
@@ -132,9 +131,11 @@ int main(int argc, char *argv[]) {
   int num_out = 10;  
   // choose which version to use
   INNet *net;
-  if(!strcmp(argv[1], "gpu")) {
+  if (!strcmp(argv[1], "gpu")) {
+    InitTensorEngine<gpu>();
     net = new NNet<gpu>(batch_size, num_in, num_hidden, num_out);
-  }else{
+  } else {
+    InitTensorEngine<cpu>();
     net = new NNet<cpu>(batch_size, num_in, num_hidden, num_out);
   }
   
@@ -178,6 +179,10 @@ int main(int argc, char *argv[]) {
     printf("round %d: test-err=%f\n", i, (float)nerr/xtest.size(0));
   }
   delete net;
-  ShutdownTensorEngine();
+  if (!strcmp(argv[1], "gpu")) {
+    ShutdownTensorEngine<gpu>();
+  } else {
+    ShutdownTensorEngine<cpu>();
+  }
   return 0;
 }

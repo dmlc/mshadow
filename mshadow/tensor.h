@@ -434,23 +434,29 @@ struct Tensor<Device, 1, DType>:
  *        this function should be called before all GPU tensor operations,
  *        for using tensors in CPU, this call is actually not needed
  * \param device_id GPU device id to be choosed
+ * \tparam Device the device type
  */
+template<typename Device>
 inline void InitTensorEngine(int device_id = 0);
 /*!
- * \brief Shutdown tensor engine,
- *        this function should be called after all GPU tensor operations,
- *        for using tensors in CPU, this call is actually not needed
+ * \brief Shutdown tensor engine on current device
+ *     this function should be called after all GPU tensor operations,
+ *     for using tensors in CPU, this call is actually not needed
+ * \tparam Device the device type
  */
+template<typename Device>
 inline void ShutdownTensorEngine(void);
 /*!
  * \brief set the device of current thread to work on
  * \param devid the device id
+ * \tparam Device the device type
  */
 template<typename Device>
 inline void SetDevice(int devid);
 /*!
  * \brief create a new stream from system
  * \return a pointer to the created stream
+ * \tparam Device the device type
  */
 template<typename Device>
 inline Stream<Device> *NewStream(void);
