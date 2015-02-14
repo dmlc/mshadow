@@ -95,7 +95,7 @@ class MShadowServerNode : public PS::App {
   MShadowServerNode(const std::string &conf) : App() {
     updater_ = CreateModelUpdater<DType>();
 
-    updater_->InitServer(myRank(), conf);
+    updater_->InitUpdater(myRank(), conf);
     shared_model_ = new PS::KVArray<DType>();
     shared_model_->setUpdater(updater_);
   }
