@@ -24,8 +24,14 @@ endif
 
 ifeq ($(USE_BLAS), mkl)
 ifneq ($(USE_INTEL_PATH), NONE)
-	MSHADOW_LDFLAGS += -L$(USE_INTEL_PATH)/mkl/lib/intel64
-	MSHADOW_LDFLAGS += -L$(USE_INTEL_PATH)/lib/intel64
+	UNAME_S := $(shell uname -s)
+	ifeq ($(UNAME_S),Darwin)
+		MSHADOW_LDFLAGS += -L$(USE_INTEL_PATH)/mkl/lib
+		MSHADOW_LDFLAGS += -L$(USE_INTEL_PATH)/lib
+	else
+		MSHADOW_LDFLAGS += -L$(USE_INTEL_PATH)/mkl/lib/intel64
+		MSHADOW_LDFLAGS += -L$(USE_INTEL_PATH)/lib/intel64
+	endif
 	MSHADOW_CFLAGS += -I$(USE_INTEL_PATH)/mkl/include
 endif
 	MSHADOW_LDFLAGS += -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5
