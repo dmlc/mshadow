@@ -23,6 +23,13 @@ Features
 * Extendable: user can write simple functions that plugs into mshadow and run on GPU/CPU, no experience in CUDA is required.
 * MultiGPU and Distributed ML: mshadow-ps interface allows user to write efficient MultiGPU and distributed programs in an unified way.
 
+Version
+======
+* This version mshadow-2.x, there are a lot of changes in the interface and it is not backward compatible with mshadow-1.0
+  - If you use older version of cxxnet, you will need to use the legacy mshadow code
+* For legacy code, refer to [Here](https://github.com/tqchen/mshadow/releases/tag/v1.1)
+* Change log in [CHANGES.md](CHANGES.md)
+
 Related Projects
 =====
 * [CXXNET: large-scale deep learning backed by mshadow](https://github.com/antinucleon/cxxnet)
