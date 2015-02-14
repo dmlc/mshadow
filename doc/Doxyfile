@@ -8,7 +8,7 @@ PROJECT_NAME           = "mshadow"
 PROJECT_NUMBER         =
 PROJECT_BRIEF          =
 PROJECT_LOGO           =
-OUTPUT_DIRECTORY       = ../doc
+OUTPUT_DIRECTORY       = doc
 CREATE_SUBDIRS         = NO
 OUTPUT_LANGUAGE        = English
 BRIEF_MEMBER_DESC      = YES
@@ -95,13 +95,13 @@ WARN_LOGFILE           =
 #---------------------------------------------------------------------------
 # configuration options related to the input files
 #---------------------------------------------------------------------------
-INPUT                  =
+INPUT                  = mshadow mshadow-ps
 INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          =
 RECURSIVE              = NO
 EXCLUDE                =
 EXCLUDE_SYMLINKS       = NO
-EXCLUDE_PATTERNS       = *-inl.hpp 
+EXCLUDE_PATTERNS       = *-inl.* utils.h thread_util.h thread.h kv_array.h
 EXCLUDE_SYMBOLS        = mshadow::expr::Plan* mshadow::expr::*Engine* 
 EXAMPLE_PATH           =
 EXAMPLE_PATTERNS       =
