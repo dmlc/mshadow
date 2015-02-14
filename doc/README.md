@@ -8,6 +8,7 @@ This is the documentation for mshadow: A Lightweight CPU/GPU Matrix/Tensor Templ
 * API Documentation
   - You can run ```./mkdoc.sh``` to make the document locally
 * [Tutorial about Expression Template](../guide/exp-template)
+* [Writing Multi-GPU and Distributed ML](../guide/mshadow-ps)
 * [Compile Configuration script](../make)
 * [Expression API](#expression-api)
   - Expression api introduces the concept of expression in mshadow

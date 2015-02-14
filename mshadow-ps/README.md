@@ -1,19 +1,4 @@
 mshadow-ps
 ====
-### Parameter Server Interface for GPU Tensor
+This folder contains mshadow-ps parameter server interface for mshadow GPU/CPU Tensor. See [guide on mshadow-ps](../guide/mshadow-ps) for introduction of the interface.
 
-mshadow-ps provides asynchronize parameter server interface for mshadow GPU/CPU Tensor.
-This allows you to do ***multi-GPU*** and ***disrtibuted*** (deep) learning in
-an ***easy*** and ***unified*** way.
-
-Introduction
-====
-
-The interface of mshadow-ps is [ps.h](ps.h), 
-
-
-#### Getting Sum from Multiple GPUs
-
-
-
-#### A MultiGPU Neural Net
