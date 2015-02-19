@@ -49,7 +49,7 @@ class TensorContainer: public Tensor<Device, dimension, DType> {
    */
   explicit TensorContainer(const Shape<dimension> &shape, DType initv) {
     this->pad_ = MSHADOW_ALLOC_PAD;
-    data_.dptr = NULL;
+    data_.dptr_ = NULL;
     this->AllocByShape(shape);
     (*this) = initv;
   }
