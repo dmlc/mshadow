@@ -38,6 +38,7 @@ class LocalModel : public ISharedModel<xpu, DType> {
     bigarray_bound = 1000 * 1000;
     nthread_reduction = 8;
     use_pin_memory = 1;
+    test_on_server = 0;
     destroy_signal = false;
     custom_server = NULL;
   }
@@ -117,6 +118,9 @@ class LocalModel : public ISharedModel<xpu, DType> {
     }
     if (!strcmp(name, "update_on_server")) {
       update_on_server = atoi(val);
+    }
+    if (!strcmp(name, "test_on_server")) {
+      test_on_server = atoi(val);
     }
     cfgvec.push_back(std::make_pair(std::string(name),
                                     std::string(val)));
@@ -214,6 +218,51 @@ class LocalModel : public ISharedModel<xpu, DType> {
     this->init_end = 1;
   }
 
+  // set weight
+  virtual void SetWeight_(Tensor<xpu, 2, DType> data,
+                          int key,
+                          int devid) {
+    utils::Check(test_on_server != 0,
+                 "must be in pair debug mode");
+    PushEntry &e = push_map.GetRef(key);
+    Stream<xpu> s;
+    push_lock.Lock();    
+    mshadow::Copy(e.weight, data, &s);
+    push_lock.Unlock();
+  }
+  virtual void CheckWeight_(Tensor<xpu, 2, DType> data,
+                            int key,
+                            int devid) {
+    utils::Check(test_on_server != 0,
+                 "must be in pair debug mode");
+    PushEntry &e = push_map.GetRef(key);
+    mshadow::TensorContainer<cpu, 2, DType> tmp(false);
+    tmp.Resize(data.shape_);
+    Stream<xpu> s;
+    push_lock.Lock();
+    // copy data
+    mshadow::Copy(tmp, data, &s);
+    index_t count = tmp.shape_.Size();
+    double diff = 0.0, ssum = 0.0, maxdiff = 0.0;
+    index_t mxidx = 0;
+    for (index_t i = 0; i < count; ++i) {
+      double d = std::abs(tmp.dptr_[i] - e.weight.dptr_[i]);
+      if (d > maxdiff) {
+        maxdiff = d; mxidx = i;
+      }
+      diff += d;
+      ssum += std::abs(tmp.dptr_[i]);
+    }
+    push_lock.Unlock();
+    // relative absolute error
+    double rerr = diff / ssum;
+    if (rerr > 1e-5 || diff != diff) {
+      fprintf(stderr, "PSLocal:key=%d,dev=%d: err=%f, maxd[%u]=%f, diff=%f, ssum=%f\n",
+              key, devid, rerr, mxidx, maxdiff, diff, ssum);
+    } else {
+      fprintf(stderr, "PSLocal:key=%d,dev=%d:check pass\n", key, devid);
+    }
+  }
  protected:
   /*! \brief operation performed locally in PS */
   enum LocalOp {
@@ -230,7 +279,6 @@ class LocalModel : public ISharedModel<xpu, DType> {
     this->InitPullMap(key);
     this->InitPushMap(key, shape);
   }
-
   virtual void Push_(Tensor<xpu, 2, DType> data,
                      int key, int devid, int priority) {
     PullEntry &e = pull_map.GetRef(key);
@@ -305,7 +353,9 @@ class LocalModel : public ISharedModel<xpu, DType> {
     if (custom_server != NULL) {
       // intialize server, and ready for pullback
       custom_server->InitModel(key, weight.dptr_, weight.MSize());
-      this->PullReady(weight, key);
+      if (update_on_server != 0) {
+        this->PullReady(weight, key);
+      }
     }
   }
   /*!
@@ -327,8 +377,13 @@ class LocalModel : public ISharedModel<xpu, DType> {
     if (custom_server != NULL) {
       this->ReduceSum(data);
       custom_server->Update(key, data[0].dptr_, data[0].MSize());
-      PushEntry &e = push_map.GetRef(key);
-      this->PullReady(e.weight, key);
+      if (update_on_server != 0) {
+        PushEntry &e = push_map.GetRef(key);      
+        this->PullReady(e.weight, key);
+      } else {
+        utils::Assert(test_on_server != 0, "test mode");
+        this->PullReady(data[0], key);        
+      }
       return;
     }
     switch (op) {
@@ -346,7 +401,7 @@ class LocalModel : public ISharedModel<xpu, DType> {
   }
 
   virtual void InitCustomerServer(void) {
-    if (update_on_server != 0) {
+    if (update_on_server != 0 || test_on_server != 0) {
       custom_server = CreateModelUpdater<DType>();
       for (size_t j = 0; j < cfgvec.size(); ++j) {
         custom_server->SetParam(cfgvec[j].first.c_str(),
@@ -505,6 +560,8 @@ class LocalModel : public ISharedModel<xpu, DType> {
   int init_end;
   // whether perform update on serverside
   int update_on_server;
+  // debug option
+  int test_on_server;
   // use pinned memory
   int use_pin_memory;
   // number of reduction thread
@@ -723,7 +780,8 @@ class LocalModel : public ISharedModel<xpu, DType> {
     push_lock.Lock();
     if (e.copied.size() == 0) {
       e.Init(devices.size(), shape,
-             use_pin_memory != 0, update_on_server != 0);
+             use_pin_memory != 0,
+             update_on_server != 0 || test_on_server != 0);
     }
     this->ServerInitKey(e.weight, key);
     push_lock.Unlock();
