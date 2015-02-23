@@ -53,6 +53,24 @@ class TensorContainer: public Tensor<Device, dimension, DType> {
     this->AllocByShape(shape);
     (*this) = initv;
   }
+  /*! 
+   * \brief copy constructor
+   * \param src source value
+   */
+  TensorContainer
+  (const TensorContainer<Device, dimension, DType> &src)
+      : pad_(src.pad_) {
+    this->dptr_ = data_.dptr_ = NULL;
+    this->shape_[0] = 0;
+    this->stride_ = 0;
+    this->data_.stride_ = 0;
+    this->data_.shape_[0] = 0;
+    this->stream_ = src.stream_;
+    if (src.dptr_ != NULL) {
+      this->AllocByShape(src.shape_);
+      mshadow::Copy(*this, src, this->stream_);
+    }
+  }
   ~TensorContainer(void) {
     this->FreeSpace();
   }
@@ -109,10 +127,24 @@ class TensorContainer: public Tensor<Device, dimension, DType> {
     Copy(*this, tmp, &stream);
     mshadow::FreeSpace(&tmp);
   }
+  /*! 
+   * \brief assign operator from TensorContainer
+   * \param src source value
+   */
+  inline TensorContainer &operator=
+  (const TensorContainer<Device, dimension, DType> &src) {
+    this->pad_ = src.pad_;
+    this->stream_ = src.stream_;
+    if (src.dptr_ != NULL) {
+      this->Resize(src.shape_);      
+      mshadow::Copy(*this, src, this->stream_);
+    }
+    return *this;
+  }
   /*!\brief functions to fit expression template */
   inline Tensor<Device, dimension, DType> &operator=(DType s) {
     return this->__assign(s);
-  }
+  }  
   /*!\brief functions to fit expression template */
   template<typename E>
   inline Tensor<Device, dimension, DType> &

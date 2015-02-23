@@ -115,20 +115,6 @@ inline void Copy(Tensor<cpu, dim, DType> _dst,
   }
 }
 
-template<int dim, typename DType, typename SType>
-inline void Copy(Tensor<cpu, dim, DType> _dst,
-                 const Tensor<cpu, dim, SType> &_src,
-                 Stream<cpu> *stream) {
-  utils::Check(_dst.shape_ == _src.shape_, "Copy:shape mismatch");
-  Tensor<cpu, 2, DType> dst = _dst.FlatTo2D();
-  Tensor<cpu, 2, SType> src = _src.FlatTo2D();
-  for (index_t i = 0; i < dst.size(0); ++i) {
-    for (index_t j = 0; j < dst.size(1); ++j) {
-      dst[i][j] = static_cast<DType>(src[i][j]);
-    }
-  }
-}
-
 template<typename Saver, typename R, int dim,
          typename DType, typename E>
 inline void MapPlan(TRValue<R, cpu, dim, DType> *dst,
