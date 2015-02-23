@@ -222,8 +222,6 @@ class LocalModel : public ISharedModel<xpu, DType> {
   virtual void SetWeight_(Tensor<xpu, 2, DType> data,
                           int key,
                           int devid) {
-    utils::Check(test_on_server != 0,
-                 "must be in pair debug mode");
     PushEntry &e = push_map.GetRef(key);
     Stream<xpu> s;
     push_lock.Lock();    
