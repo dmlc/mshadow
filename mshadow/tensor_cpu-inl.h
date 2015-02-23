@@ -41,20 +41,20 @@ template<>
 inline void *AllocHost_<gpu>(size_t size) {
   void *dptr;
   utils::Check(cudaMallocHost(&dptr, size,
-                 cudaHostAllocPortable) == cudaSuccess,               
+                 cudaHostAllocPortable) == cudaSuccess,
                "AllocHost");
   return dptr;
 }
 template<>
 inline void FreeHost_<gpu>(void *dptr) {
-  cudaFreeHost(dptr);  
+  cudaFreeHost(dptr);
 }
 #endif
 
 template<>
 inline void *AllocHost_<cpu>(size_t size) {
   size_t pitch;
-  return sse2::AlignedMallocPitch(&pitch, size, 1);  
+  return sse2::AlignedMallocPitch(&pitch, size, 1);
 }
 template<>
 inline void FreeHost_<cpu>(void *dptr) {
@@ -114,6 +114,21 @@ inline void Copy(Tensor<cpu, dim, DType> _dst,
     memcpy(dst[y].dptr_, src[y].dptr_, sizeof(DType) * dst.size(1));
   }
 }
+
+template<int dim, typename DType, typename SType>
+inline void Copy(Tensor<cpu, dim, DType> _dst,
+                 const Tensor<cpu, dim, SType> &_src,
+                 Stream<cpu> *stream) {
+  utils::Check(_dst.shape_ == _src.shape_, "Copy:shape mismatch");
+  Tensor<cpu, 2, DType> dst = _dst.FlatTo2D();
+  Tensor<cpu, 2, SType> src = _src.FlatTo2D();
+  for (index_t i = 0; i < dst.size(0); ++i) {
+    for (index_t j = 0; j < dst.size(1); ++j) {
+      dst[i][j] = static_cast<DType>(src[i][j]);
+    }
+  }
+}
+
 template<typename Saver, typename R, int dim,
          typename DType, typename E>
 inline void MapPlan(TRValue<R, cpu, dim, DType> *dst,
@@ -181,7 +196,7 @@ inline void MapReduceKeepLowest(TRValue<R, cpu, 1, DType> *dst,
       ::Error_TypeCheck_Not_Pass_For_Reduce_Exp();
   Shape<2> eshape = expr::ShapeCheck<expr::ExpInfo<E>::kDim, E>
       ::Check(exp.self()).FlatTo2D();
-  Shape<1> dshape = expr::ShapeCheck<1, R>::Check(dst->self());  
+  Shape<1> dshape = expr::ShapeCheck<1, R>::Check(dst->self());
   utils::Check(eshape[1] == dshape[0],
                "MapReduceKeepLowest::reduction dimension do not match");
   utils::Check(eshape[0] != 0, "can not reduce over empty tensor");
@@ -207,7 +222,7 @@ inline void MapReduceKeepHighDim(TRValue<R, cpu, 1, DType> *dst,
   typedef Shape<expr::ExpInfo<E>::kDim> EShape;
   EShape eshape = expr::ShapeCheck<expr::ExpInfo<E>::kDim, E>
       ::Check(exp.self());
-  Shape<1> dshape = expr::ShapeCheck<1, R>::Check(dst->self());  
+  Shape<1> dshape = expr::ShapeCheck<1, R>::Check(dst->self());
   utils::Check(eshape[dimkeep] == dshape[0],
                "MapReduceKeepHighDim::reduction dimension do not match");
   // use equvalent form
