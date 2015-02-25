@@ -121,7 +121,7 @@ class ThreadSafeMap {
   }
   inline TValue &GetRef(int key) {
     TValue *ret = this->Get(key);
-    utils::Assert(ret != NULL, "key does not exist");
+    utils::Assert(ret != NULL, "key=%d does not exist", key);
     return *ret;
   }
   inline void Init(int key) {
@@ -129,7 +129,7 @@ class ThreadSafeMap {
     if (map_.count(key) == 0) {
       map_[key] = new TValue();
     }
-    lock_.Unlock();    
+    lock_.Unlock();
   }
 
  private:

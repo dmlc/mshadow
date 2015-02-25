@@ -85,7 +85,21 @@ class ISharedModel {
    *        this is unique per device
    * \param devid the device id this tensor lies in
    */
-  virtual void PullWait(int key, int devid = 0) = 0;
+  virtual void PullWait(int key, int devid) = 0;
+  /*!
+   * \brief check if the weight was correct on the current device
+   *
+   * \param data the data
+   * \param key the unique key to indicate the tensor
+   *        this is unique per device
+   * \param devid the device id this tensor lies in
+   */
+  template<int dim>
+  inline void CheckWeight(Tensor<xpu, dim, DType> data,
+                          int key,
+                          int devid) {
+    this->CheckWeight_(data.FlatTo2D(), key, devid);
+  }
   /*!
    * \brief push out a tensor to parameter server
    *  this call is asynchronize and returns immediately
@@ -100,7 +114,7 @@ class ISharedModel {
   template<int dim>
   inline void Push(Tensor<xpu, dim, DType> data,
                    int key,
-                   int devid = 0,
+                   int devid,
                    int priority = 0) {
     this->Push_(data.FlatTo2D(), key, devid, priority);
   }
@@ -122,7 +136,7 @@ class ISharedModel {
   template<int dim>
   inline void PullReq(Tensor<xpu, dim, DType> data,
                       int key,
-                      int devid = 0,
+                      int devid,
                       int priority = 0,
                       CallbackFunction callback = NULL,
                       void *callback_arg = NULL) {
@@ -155,6 +169,31 @@ class ISharedModel {
     this->PullReq(data, key, devid, priority, InvokeLambda_, calbk);
   }
 #endif  // C++11
+
+  /*!
+   * \brief set weight of corresponding key in server
+   *   this is a debug function that was not necessarily
+   *   implemented by the server
+   * \param shape the shape content of the key
+   * \param key the unique key to indicate the tensor
+   *        this is unique per device
+   * \param devid the device id this tensor lies in
+   */
+  virtual void SetWeight_(Tensor<xpu, 2, DType> data,
+                          int key,
+                          int devid) = 0;
+  /*!
+   * \brief check if the weight matches the server side
+   *   this is a debug function that was not necessarily
+   *   implemented by the server
+   * \param shape the shape content of the key
+   * \param key the unique key to indicate the tensor
+   *        this is unique per device
+   * \param devid the device id this tensor lies in
+   */
+  virtual void CheckWeight_(Tensor<xpu, 2, DType> data,
+                            int key,
+                            int devid) = 0;
  protected:
   /*!
    * \brief initialize a key with certain shape
@@ -178,7 +217,7 @@ class ISharedModel {
    */
   virtual void Push_(Tensor<xpu, 2, DType> data,
                      int key,
-                     int devid = 0,
+                     int devid,
                      int priority = 0) = 0;
   /*!
    * \brief send a pull request, to pull parameter into data
