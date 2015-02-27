@@ -2,7 +2,7 @@
 #  mshadow configuration script
 #
 #  include mshadow.mk after the variables are set
-#  
+#
 #  Add MSHADOW_CFLAGS to the compile flags
 #  Add MSHADOW_LDFLAGS to the linker flags
 #  Add MSHADOW_NVCCFLAGS to the nvcc compile flags
@@ -10,8 +10,8 @@
 
 MSHADOW_CFLAGS = -msse3 -funroll-loops -Wno-unused-parameter -Wno-unknown-pragmas
 MSHADOW_LDFLAGS = -lm
-MSHADOW_NVCCFLAGS = 
-
+MSHADOW_NVCCFLAGS =
+MKLROOT =
 ifeq ($(USE_CUDA), 0)
 	MSHADOW_CFLAGS += -DMSHADOW_USE_CUDA=0
 else
@@ -34,7 +34,16 @@ ifneq ($(USE_INTEL_PATH), NONE)
 	endif
 	MSHADOW_CFLAGS += -I$(USE_INTEL_PATH)/mkl/include
 endif
+ifneq ($(USE_STATIC_MKL), NONE)
+ifeq ($(USE_INTEL_PATH), NONE)
+	MKLROOT = /opt/intel/mkl
+else
+	MKLROOT = $(USE_INTEL_PATH)/mkl
+endif
+	MSHADOW_LDFLAGS +=  -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_intel_thread.a -Wl,--end-group -liomp5 -ldl -lpthread -lm
+else
 	MSHADOW_LDFLAGS += -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5
+endif
 else
 	MSHADOW_CFLAGS += -DMSHADOW_USE_CBLAS=1 -DMSHADOW_USE_MKL=0
 endif
