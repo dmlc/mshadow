@@ -39,6 +39,7 @@ class LocalModel : public ISharedModel<xpu, DType> {
     nthread_reduction = 8;
     use_pin_memory = 1;
     test_on_server = 0;
+    update_on_server = 0;
     destroy_signal = false;
     custom_server = NULL;
   }
