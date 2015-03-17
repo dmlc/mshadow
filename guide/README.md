@@ -95,6 +95,8 @@ This means ```Tensor<cpu, k>``` variable is more like a reference handle(pointer
 
 This also allows user to use mshadow in their existing project easily, simply give mshadow the pointer of the memory and you can get the benefit of all the mshadow expressions with zero cost:)
 
+We also have STL style container object called ```TensorContainer```, they behave exactly the same as Tensors, but the memory will be automatically freed during destruction.
+
 Elementwise Operations
 ====
 All the operators(+, -, *, /, += etc.) in mshadow are element-wise. Consider the following SGD update code:
