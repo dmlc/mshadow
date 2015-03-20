@@ -6,7 +6,7 @@ mshadow-ps provides asynchronize parameter server interface for mshadow GPU/CPU 
 This allows you to do ***multi-GPU*** and ***disrtibuted*** (deep) learning in
 an ***easy*** and ***unified*** way.
 
-![Arch](2-level2.png?raw=true "arch")
+![Arch](2-levels.png?raw=true "arch")
 
 ####List of Resources
 * [API Documentation](http://homes.cs.washington.edu/~tqchen/mshadow/doc/namespacemshadow_1_1ps.html)
