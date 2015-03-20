@@ -6,6 +6,23 @@ mshadow-ps provides asynchronize parameter server interface for mshadow GPU/CPU 
 This allows you to do ***multi-GPU*** and ***disrtibuted*** (deep) learning in
 an ***easy*** and ***unified*** way.
 
+mshadow-ps implemented a two-level parameter server. The architecture is shown
+in the following figure. Typically, a GPU card or a cpu core runs a worker node,
+then a level-1 server node communicates with the worker nodes on the same
+machine.  Inter-machine communication is then via the level-2 server nodes.
+
+The rational is that both the bandwidth and latency between the worker nodes in
+a single machine is usually 10x better than the inter-machine ones. By using the
+two level parameter server, we can use different consistency models at different
+level to better trade-off the algorithm efficiency and system performance. For
+example, we can use a sequential consistency model, also known as
+[BSP](http://en.wikipedia.org/wiki/Bulk_synchronous_parallel), on level 1 for
+guaranteed algorithm convergence, but use a
+[eventual consistency model](http://en.wikipedia.org/wiki/Eventual_consistency)
+on level 2 to hide the network latency. See our
+[OSDI'14 paper](https://www.usenix.org/conference/osdi14/technical-sessions/presentation/li_mu)
+for more details.
+
 ![Arch](2-levels.png?raw=true "arch")
 
 ####List of Resources
