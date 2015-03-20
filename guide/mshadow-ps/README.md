@@ -6,6 +6,8 @@ mshadow-ps provides asynchronize parameter server interface for mshadow GPU/CPU 
 This allows you to do ***multi-GPU*** and ***disrtibuted*** (deep) learning in
 an ***easy*** and ***unified*** way.
 
+![Arch](2-level2.png?raw=true "arch")
+
 ####List of Resources
 * [API Documentation](http://homes.cs.washington.edu/~tqchen/mshadow/doc/namespacemshadow_1_1ps.html)
 * [Library Interface Header](../../mshadow-ps/ps.h)
@@ -18,11 +20,11 @@ One way to do that is through data parallelism. We can launch many
 threads, with each thread compute gradient on one GPU, and aggregate
 the statistics together.
 However, the gradient synchronization step could be cost time, and in
-many cases, we can do the computation in an smarter way, so that 
+many cases, we can do the computation in an smarter way, so that
 we ***overlaps the computation with the synchronization***.
 
 mshadow-ps provides interface to do such synchronization in an easy way.
-The following documents provides a way 
+The following documents provides a way
 
 ### Getting Sum from Multiple GPUs
 We first get familiar with the interface of mshadow-ps. Through the following
@@ -74,12 +76,12 @@ inline void RunWorkerThread(int devid,
   // once computation is done
   ps->PullReq(data[0], 0, devid);
   // computation can be done here..
-  // the pull request handler will be overlapped with   
+  // the pull request handler will be overlapped with
   // similar as previous call
   ps->Push(data[1], 1, devid);
   ps->PullReq(data[1], 1, devid);
   // more computation can be done here...
-  // the computation will be overlapped 
+  // the computation will be overlapped
   // PullWait will block until these request finishes
   ps->PullWait(0, devid);
   ps->PullWait(1, devid);
@@ -110,7 +112,7 @@ inline int Run(int argc, char *argv[]) {
   mshadow::ps::ISharedModel<xpu, float>
       *ps = mshadow::ps::CreateSharedModel<xpu, float>("local");
   // intiaialize the ps
-  ps->Init(devs);  
+  ps->Init(devs);
   // use openmp to launch #devs threads
   #pragma omp parallel num_threads(devs.size())
   {
@@ -170,5 +172,5 @@ IModelUpdater<float> *CreateModelUpdater() {
 }
 }
 ```
-Before calling ISharedModel.Init, user need to call ```ps->SetParam("update_on_server", "1")``` to set the update 
+Before calling ISharedModel.Init, user need to call ```ps->SetParam("update_on_server", "1")``` to set the update
 mode on the server side. If user uses distributed shared model, user must define ModelUpdater.
