@@ -30,7 +30,7 @@ for more details.
 * [Library Interface Header](../../mshadow-ps/ps.h)
 * Tutorial in this page
 
-Tutorial
+Working with Level-1 Server
 ====
 Suppose that we are now implementing a Multi-GPU learning program.
 One way to do that is through data parallelism. We can launch many
@@ -191,3 +191,7 @@ IModelUpdater<float> *CreateModelUpdater() {
 ```
 Before calling ISharedModel.Init, user need to call ```ps->SetParam("update_on_server", "1")``` to set the update
 mode on the server side. If user uses distributed shared model, user must define ModelUpdater.
+
+Working with Level-2 Server
+====
+Coming soon.
