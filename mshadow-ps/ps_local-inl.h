@@ -225,7 +225,7 @@ class LocalModel : public ISharedModel<xpu, DType> {
                           int devid) {
     PushEntry &e = push_map.GetRef(key);
     Stream<xpu> s;
-    push_lock.Lock();    
+    push_lock.Lock();
     mshadow::Copy(e.weight, data, &s);
     push_lock.Unlock();
   }
@@ -377,11 +377,11 @@ class LocalModel : public ISharedModel<xpu, DType> {
       this->ReduceSum(data);
       custom_server->Update(key, data[0].dptr_, data[0].MSize());
       if (update_on_server != 0) {
-        PushEntry &e = push_map.GetRef(key);      
+        PushEntry &e = push_map.GetRef(key);
         this->PullReady(e.weight, key);
       } else {
         utils::Assert(test_on_server != 0, "test mode");
-        this->PullReady(data[0], key);        
+        this->PullReady(data[0], key);
       }
       return;
     }

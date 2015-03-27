@@ -11,8 +11,7 @@
 #include "./ps_local-inl.h"
 
 #if MSHADOW_DIST_PS
-#include "./kv_array.h"
-#include "system/app.h"
+#include "parameter/kv_layer.h"
 namespace mshadow {
 namespace ps {
 template<typename xpu, typename DType>
@@ -24,7 +23,6 @@ class DistModel : public LocalModel<xpu, DType> {
   // initialize the parameter server
   virtual void Init(const std::vector<int> &devices) {
     Parent::Init(devices);
-    shared_model_ = new PS::KVArray<DType>();
     if (this->custom_server != NULL) {
       delete this->custom_server;
       this->custom_server = NULL;
@@ -41,51 +39,61 @@ class DistModel : public LocalModel<xpu, DType> {
     // this is called when key get initialized for the first time
     // weight can be used to hold the model that pulled back
     // use this to initialize the key on serverside
-    using namespace PS;
-    MessagePtr pull_msg(new Message(kServerGroup));
-    pull_msg->task.set_key_channel(key);
-    Range<Key>(0, weight.MSize()).to(pull_msg->task.mutable_key_range());
-    shared_model_->setArray(key, weight.dptr_, weight.MSize());
-    pull_msg->fin_handle = [this, weight, key]() {
-      // call PullReady to notify LocalServer pulling is ready
-      this->PullReady(weight, key);
-    };
-    shared_model_->pull(pull_msg);
+    shared_model_.Pull(
+        PS::Parameter::Request(key), weight.dptr_, weight.MSize(),
+        [this, weight, key]() {
+          // call PullReady to notify LocalServer pulling is ready
+          this->PullReady(weight, key);
+        });
   }
   // override this function, to use parameter server
   virtual void HandlePushFinish(Tensor<cpu, 3, DType> data,
                                 int key) {
-    // here we only use sum reduction, can change to others
-    for (index_t i = 1; i < data.size(0); ++i) {
-      data[0] += data[i];
-    }
+    // summation the data fron all devices
+    this->ReduceSum(data);
 
-    // push
+    // push and pull
     Tensor<cpu, 2> sendrecv = data[0];
-    using namespace PS;
     utils::Assert(data[0].CheckContiguous(), "data must be contiguous");
-    SArray<DType> val; val.copyFrom(sendrecv.dptr_, sendrecv.MSize());
-    MessagePtr push_msg(new Message(kServerGroup));
-    push_msg->addValue(val);
-    // LL << val;
-    push_msg->task.set_key_channel(key);
-    Range<Key>(0, val.size()).to(push_msg->task.mutable_key_range());
-    int push_time = CHECK_NOTNULL(shared_model_)->push(push_msg);
 
-    // pull
-    MessagePtr pull_msg(new Message(kServerGroup, -1, push_time));
-    pull_msg->task.set_key_channel(key);
-    Range<Key>(0, sendrecv.MSize()).to(pull_msg->task.mutable_key_range());
-    shared_model_->setArray(key, sendrecv.dptr_, sendrecv.MSize());
-    pull_msg->fin_handle = [this, sendrecv, key]() {
-      // call PullReady to notify LocalServer pulling is ready
-      this->PullReady(sendrecv, key);
-    };
-    shared_model_->pull(pull_msg);
+    int ts = shared_model_.Push(
+        PS::Parameter::Request(key), data[0].dptr_, data[0].MSize(), false);
+
+    // let this pull request wait the push finish at the server node
+    shared_model_.Pull(
+        PS::Parameter::Request(key, -1, {ts}), data[0].dptr_, data[0].MSize(),
+        [this, weight, key]() {
+          // call PullReady to notify LocalServer pulling is ready
+          this->PullReady(weight, key);
+        });
   }
 
  private:
-  PS::KVArray<DType>* shared_model_ = nullptr;
+  PS::KVLayer<DType, IModelUpdater<DType>> shared_model_;
+};
+
+/**
+ * @brief bridge IModelUpdater to KVLayerUpdater
+ */
+
+template<typename DType>
+class UpdaterWrapper {
+ public:
+  UpdaterWrapper(IModelUpdater<DType> * updater)
+      : updater_(updater) { }
+  ~UpdaterWrapper() { delete updater_; }
+
+  /// @brief initialize the data
+  void Init(int id, size_t size, V* data) {
+    updater->InitModel(id, data, size);
+  }
+
+  /// @brief update the model by using received data
+  void Update(int id, size_t size, const V* recv_data, V* data) {
+    updater->Update(id, recv_data, size);
+  }
+ private:
+  IModelUpdater<DType> *updater_;
 };
 
 template<typename DType>
@@ -93,19 +101,15 @@ class MShadowServerNode : public PS::App {
  public:
   // conf: get from the flag -app_conf
   MShadowServerNode(const std::string &conf) : App() {
-    updater_ = CreateModelUpdater<DType>();
+    IModelUpdater<DType> *updater = CreateModelUpdater<DType>();
+    updater->InitUpdater(MyRank(), conf);
 
-    updater_->InitUpdater(myRank(), conf);
-    shared_model_ = new PS::KVArray<DType>();
-    shared_model_->setUpdater(updater_);
+    UpdaterWrapper<DType> *wrapper = new UpdaterWrapper(updater);
+    shared_model_.set_updater(wrapper);
   }
-  virtual ~MShadowServerNode() {
-    delete updater_;
-    delete shared_model_;
-  }
+  virtual ~MShadowServerNode() { }
  private:
-  IModelUpdater<DType> *updater_;
-  PS::KVArray<DType>* shared_model_;
+  PS::KVLayer<DType, UpdaterWrapper<DType> > shared_model_;
 };
 
 // NOTE: do not add PS::CreateServer here add it in the program that uses

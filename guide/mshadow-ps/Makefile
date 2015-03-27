@@ -9,16 +9,19 @@ export LDFLAGS= -lm $(MSHADOW_LDFLAGS)
 export NVCCFLAGS = -O3 --use_fast_math -ccbin $(CXX) $(MSHADOW_NVCCFLAGS)
 
 # specify tensor path
-BIN = local_sum.cpu 
+BIN = local_sum.cpu dist_async_sum.cpu
 OBJ =
 CUOBJ =
 CUBIN = local_sum.gpu
 .PHONY: clean all
 
-all: $(BIN) $(CUBIN) 
+all: $(BIN) #$(CUBIN)
 
 local_sum.cpu: local_sum.cpp
 local_sum.gpu: local_sum.cu
+
+dist_async_sum.cpu: dist_async_sum.cpp dist_async_sum-inl.h
+dist_sync_sum.cpu: dist_sync_sum.cpp
 
 $(BIN) :
 	$(CXX) $(CFLAGS) -o $@ $(filter %.cpp %.o %.c, $^)  $(LDFLAGS)
