@@ -11,9 +11,14 @@
 #include "./tensor.h"
 #include "./tensor_container.h"
 
+#if _MSC_VER
+#define rand_r(x) rand()
+#endif
+
+
 namespace mshadow {
-/*! 
- * \brief random number generator 
+/*!
+ * \brief random number generator
  * \tparam Device the device of random number generator
  * \tparam DType the target data type of random number can be float for double
  */
@@ -54,7 +59,7 @@ class Random<cpu, DType> {
    * \brief set the stream of computation
    * \param stream computation stream
    */
-  inline void set_stream(Stream<cpu> *stream) {    
+  inline void set_stream(Stream<cpu> *stream) {
   }
   /*!
    * \brief generate data from uniform [a,b)
