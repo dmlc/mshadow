@@ -82,7 +82,7 @@ inline void RunWorkerThread(int devid,
 
   data[1] = devid + data[0];
 
-  LOG(ERROR) << "dev " << devid << ": before sync\n"
+  LOG(ERROR) << "node " << PS::MyNodeID() << ", dev " << devid << ": before sync\n"
              << dbstr(data);
 
   // push data[0] out, for update, or aggregation
@@ -103,7 +103,8 @@ inline void RunWorkerThread(int devid,
   // PullWait will block until these request finishes
   ps->PullWait(1, devid);
 
-  LOG(ERROR) << "dev " << devid << ": after sync\n" << dbstr(data);
+  LOG(ERROR) << "node " << PS::MyNodeID() << ", dev " << devid
+             << ": after sync\n" << dbstr(data);
 
   mshadow::DeleteStream(stream);
   mshadow::ShutdownTensorEngine<xpu>();

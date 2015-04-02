@@ -194,4 +194,34 @@ mode on the server side. If user uses distributed shared model, user must define
 
 Working with Level-2 Server
 ====
-Coming soon.
+
+First build the parameter server (replace `ps_dir` to any convenient directory)
+
+```bash
+git clone https://github.com/dmlc/parameter_server -b dev ps_dir
+cd ps_dir
+./script/install_third.sh
+make -j8
+```
+
+Next change `config.mk` to
+```bash
+USE_DIST_PS = 1
+PS_PATH = ps_dir
+```
+
+Then `make`.
+
+Next start 1 server node, 3 worker nodes with 2 devices in each worker node:
+```bash
+ps_dir/script/local.sh 1 3 ./dist_async_sum.cpu 1 2
+```
+
+The `dist_async_sum-inl.h` is similar to `local_sum-inl.h`. The main differences
+are 1) we create the server at a remote node, and set
+`update_on_server` to be true.
+```c++
+auto* ps = mshadow::ps::CreateSharedModel<xpu, float>("dist");
+ps->SetParam("update_on_server", "1");
+```
+2) we explicitly create server node and worker node at `dist_async_sum.cpp`
