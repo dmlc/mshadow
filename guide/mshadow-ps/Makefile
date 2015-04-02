@@ -5,14 +5,19 @@ export NVCC =nvcc
 include config.mk
 include ../../make/mshadow.mk
 export CFLAGS = -Wall -O3 -fopenmp -I../../ $(MSHADOW_CFLAGS)
-export LDFLAGS= -lm $(MSHADOW_LDFLAGS) -lglog
+export LDFLAGS= -lm $(MSHADOW_LDFLAGS)
 export NVCCFLAGS = -O3 --use_fast_math -ccbin $(CXX) $(MSHADOW_NVCCFLAGS)
 
-# specify tensor path
-BIN = local_sum.cpu dist_async_sum.cpu
+# specify tensor path local_sum.cpu
+BIN = local_sum.cpu
 OBJ =
 CUOBJ =
 CUBIN = local_sum.gpu
+
+ifeq ($(USE_DIST_PS),1)
+BIN = dist_async_sum.cpu
+endif
+
 .PHONY: clean all
 
 all: $(BIN) #$(CUBIN)
