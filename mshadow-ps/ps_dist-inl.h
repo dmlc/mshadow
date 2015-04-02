@@ -14,6 +14,31 @@
 #include "parameter/kv_layer.h"
 namespace mshadow {
 namespace ps {
+
+/**
+ * @brief bridge IModelUpdater to KVLayerUpdater
+ */
+template<typename DType>
+class UpdaterWrapper {
+ public:
+  UpdaterWrapper(IModelUpdater<DType> * updater)
+      : updater_(updater) { }
+  ~UpdaterWrapper() { delete updater_; }
+
+  /// @brief initialize the data
+  void Init(int id, size_t size, DType* data) {
+    updater_->InitModel(id, data, size);
+  }
+
+  /// @brief update the model by using received data
+  void Update(int id, size_t size, const DType* recv_data, DType* data) {
+    updater_->Update(id, (DType*)recv_data, size);
+  }
+ private:
+  IModelUpdater<DType> *updater_;
+};
+
+
 template<typename xpu, typename DType>
 class DistModel : public LocalModel<xpu, DType> {
  public:
@@ -50,51 +75,28 @@ class DistModel : public LocalModel<xpu, DType> {
   virtual void HandlePushFinish(Tensor<cpu, 3, DType> data,
                                 int key) {
     // summation the data fron all devices
-    this->ReduceSum(data);
+    LocalModel<xpu, DType>::ReduceSum(data);
 
     // push and pull
     Tensor<cpu, 2> sendrecv = data[0];
     utils::Assert(data[0].CheckContiguous(), "data must be contiguous");
 
     int ts = shared_model_.Push(
-        PS::Parameter::Request(key), data[0].dptr_, data[0].MSize(), false);
+        PS::Parameter::Request(key), sendrecv.dptr_, sendrecv.MSize(), false);
 
     // let this pull request wait the push finish at the server node
     shared_model_.Pull(
-        PS::Parameter::Request(key, -1, {ts}), data[0].dptr_, data[0].MSize(),
-        [this, weight, key]() {
+        PS::Parameter::Request(key, -1, {ts}), sendrecv.dptr_, sendrecv.MSize(),
+        [this, sendrecv, key]() {
           // call PullReady to notify LocalServer pulling is ready
-          this->PullReady(weight, key);
+          this->PullReady(sendrecv, key);
         });
   }
 
  private:
-  PS::KVLayer<DType, IModelUpdater<DType>> shared_model_;
+  PS::KVLayer<DType, UpdaterWrapper<DType> > shared_model_;
 };
 
-/**
- * @brief bridge IModelUpdater to KVLayerUpdater
- */
-
-template<typename DType>
-class UpdaterWrapper {
- public:
-  UpdaterWrapper(IModelUpdater<DType> * updater)
-      : updater_(updater) { }
-  ~UpdaterWrapper() { delete updater_; }
-
-  /// @brief initialize the data
-  void Init(int id, size_t size, V* data) {
-    updater->InitModel(id, data, size);
-  }
-
-  /// @brief update the model by using received data
-  void Update(int id, size_t size, const V* recv_data, V* data) {
-    updater->Update(id, recv_data, size);
-  }
- private:
-  IModelUpdater<DType> *updater_;
-};
 
 template<typename DType>
 class MShadowServerNode : public PS::App {
@@ -102,9 +104,9 @@ class MShadowServerNode : public PS::App {
   // conf: get from the flag -app_conf
   MShadowServerNode(const std::string &conf) : App() {
     IModelUpdater<DType> *updater = CreateModelUpdater<DType>();
-    updater->InitUpdater(MyRank(), conf);
+    updater->InitUpdater(PS::MyRank(), conf);
 
-    UpdaterWrapper<DType> *wrapper = new UpdaterWrapper(updater);
+    UpdaterWrapper<DType> *wrapper = new UpdaterWrapper<DType>(updater);
     shared_model_.set_updater(wrapper);
   }
   virtual ~MShadowServerNode() { }

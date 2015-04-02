@@ -5,7 +5,7 @@ export NVCC =nvcc
 include config.mk
 include ../../make/mshadow.mk
 export CFLAGS = -Wall -O3 -fopenmp -I../../ $(MSHADOW_CFLAGS)
-export LDFLAGS= -lm $(MSHADOW_LDFLAGS)
+export LDFLAGS= -lm $(MSHADOW_LDFLAGS) -lglog
 export NVCCFLAGS = -O3 --use_fast_math -ccbin $(CXX) $(MSHADOW_NVCCFLAGS)
 
 # specify tensor path
@@ -24,7 +24,7 @@ dist_async_sum.cpu: dist_async_sum.cpp dist_async_sum-inl.h
 dist_sync_sum.cpu: dist_sync_sum.cpp
 
 $(BIN) :
-	$(CXX) $(CFLAGS) -o $@ $(filter %.cpp %.o %.c, $^)  $(LDFLAGS)
+	$(CXX) $(CFLAGS) -o $@ $(filter %.cpp %.o %.c, $^)  $(LDFLAGS) $(PS_LIB)
 
 $(OBJ) :
 	$(CXX) -c $(CFLAGS) -o $@ $(firstword $(filter %.cpp %.c, $^) )

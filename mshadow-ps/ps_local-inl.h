@@ -21,6 +21,9 @@ typedef unsigned ms_omp_uint;
 #include "./thread.h"
 #include "./thread_util.h"
 
+#include "dbstr.h"
+#include "glog/logging.h"
+
 namespace mshadow {
 namespace ps {
 // multi-threaded implementation of
@@ -366,6 +369,8 @@ class LocalModel : public ISharedModel<xpu, DType> {
    */
   virtual void HandlePushFinish(Tensor<cpu, 3, DType> data,
                                 int key) {
+
+    LOG(ERROR) << dbstr(data);
     LocalOp op = kSum;
     typename std::map<int, LocalOp>::const_iterator
         it = push_operation.find(key);
@@ -412,6 +417,27 @@ class LocalModel : public ISharedModel<xpu, DType> {
  protected:
   // customized server
   IModelUpdater<DType> *custom_server;
+
+  // perform sum reduction
+  inline void ReduceSum(Tensor<cpu, 3, DType> data) {
+    #if defined(_OPENMP)
+    if (data[0].MSize() >= bigarray_bound &&
+        nthread_reduction != 0) {
+      ms_omp_uint ntask = static_cast<ms_omp_uint>(data.size(1));
+      #pragma omp parallel for schedule(static) num_threads(nthread_reduction)
+      for (ms_omp_uint j = 0; j < ntask; ++j) {
+        for (index_t i = 1; i < data.size(0); ++i) {
+          data[0][j] += data[i][j];
+        }
+      }
+    } else
+      #endif
+    {
+      for (index_t i = 1; i < data.size(0); ++i) {
+        data[0] += data[i];
+      }
+    }
+  }
  private:
   /*! \brief task running */
   struct PullTask {
@@ -573,26 +599,6 @@ class LocalModel : public ISharedModel<xpu, DType> {
   int perdev_push_thread;
   /*! \brief history of configurations */
   std::vector< std::pair<std::string, std::string> > cfgvec;
-  // perform sum reduction
-  inline void ReduceSum(Tensor<cpu, 3, DType> data) {
-    #if defined(_OPENMP)
-    if (data[0].MSize() >= bigarray_bound &&
-        nthread_reduction != 0) {
-      ms_omp_uint ntask = static_cast<ms_omp_uint>(data.size(1));
-      #pragma omp parallel for schedule(static) num_threads(nthread_reduction)
-      for (ms_omp_uint j = 0; j < ntask; ++j) {
-        for (index_t i = 1; i < data.size(0); ++i) {
-          data[0][j] += data[i][j];
-        }
-      }
-    } else
-      #endif
-    {
-      for (index_t i = 1; i < data.size(0); ++i) {
-        data[0] += data[i];
-      }
-    }
-  }
   // push handler
   inline void PushProc(utils::ThreadPQueue<PullTask> *queue) {
     while (!destroy_signal) {

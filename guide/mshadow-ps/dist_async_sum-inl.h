@@ -1,24 +1,20 @@
 /**
  * @brief  Simple test of KVLayer
  */
-// #include "ps.h"
-// #include "parameter/kv_layer.h"
+#include "ps.h"
+#include "parameter/kv_layer.h"
 #include <cstdio>
 #include <iostream>
 #include <omp.h>
 #include <map>
 #include <mshadow/tensor.h>
 #include <mshadow-ps/ps.h>
+#include "dbstr.h"
+#include "glog/logging.h"
 
 namespace mshadow {
 namespace ps {
 
-void P(mshadow::Tensor<mshadow::cpu, 1, float> ts) {
-  printf("xx: ");
-  for (mshadow::index_t i = 0; i < ts.size(0); ++i)
-    printf("%g ", ts[i]);
-  printf("\n");
-}
 
 template<typename DType>
 class Updater : public IModelUpdater<DType> {
@@ -30,7 +26,7 @@ class Updater : public IModelUpdater<DType> {
 
   void Update_(int key, Tensor<cpu, 1, DType> data) {
     data_[key] += data;
-    // P(data_[key]);
+    LOG(ERROR) << dbstr(data_[key]);
   }
   std::map<int, Tensor<cpu, 1, DType> > data_;
 };
@@ -93,18 +89,21 @@ inline void RunWorkerThread(int devid,
   // computation can be done here..
   // the pull request handler will be overlapped with
   // similar as previous call
+  ps->PullWait(0, devid);
+
   ps->Push(data[1], 1, devid);
   ps->PullReq(data[1], 1, devid);
   // more computation can be done here...
   // the computation will be overlapped
   // PullWait will block until these request finishes
-  ps->PullWait(0, devid);
   ps->PullWait(1, devid);
-  printf("dev%d: after sync, data:\n", devid);
+
+  LOG(ERROR) << "dev" << devid << " " << dbstr(data);
+  // printf("dev%d: after sync, data:\n", devid);
   // use print to show result, do not call
   // print normally since Copy will block
-  Print(data);
-  printf("====================\n");
+  // Print(data);
+  // printf("====================\n");
   mshadow::DeleteStream(stream);
   mshadow::ShutdownTensorEngine<xpu>();
 }

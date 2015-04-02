@@ -155,9 +155,9 @@ class ISharedModel {
    * \param devid the device id this tensor lies in
    * \param priority the priority of this operation,
    *   the bigger the number is the higher the priority will be
-   * \param callback the callback function 
+   * \param callback the callback function
    */
-  template<int dim>  
+  template<int dim>
   inline void PullReq(Tensor<xpu, dim, DType> data,
                       int key,
                       int devid,
@@ -285,7 +285,7 @@ class IModelUpdater {
    * \param size size of the parameter key
    */
   virtual void Update(int key, DType *dptr, size_t size) {
-    this->Update_(key, Tensor<cpu, 1, DType>(dptr, Shape1(size)));    
+    this->Update_(key, Tensor<cpu, 1, DType>(dptr, Shape1(size)));
   }
 
  protected:
@@ -306,7 +306,7 @@ class IModelUpdater {
    */
   virtual void Update_(int key, Tensor<cpu, 1, DType> data) {
     utils::Error("InitModel: not implemented");
-  }  
+  }
 };
 /*!
  * \brief create customized server
