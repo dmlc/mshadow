@@ -21,9 +21,6 @@ typedef unsigned ms_omp_uint;
 #include "./thread.h"
 #include "./thread_util.h"
 
-#include "dbstr.h"
-#include "glog/logging.h"
-
 namespace mshadow {
 namespace ps {
 // multi-threaded implementation of
