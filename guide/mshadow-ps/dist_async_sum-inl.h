@@ -26,7 +26,7 @@ class Updater : public IModelUpdater<DType> {
 
   void Update_(int key, Tensor<cpu, 1, DType> data) {
     data_[key] += data;
-    LOG(ERROR) << dbstr(data_[key]);
+    // LOG(ERROR) << dbstr(data_[key]);
   }
   std::map<int, Tensor<cpu, 1, DType> > data_;
 };
@@ -69,17 +69,22 @@ inline void RunWorkerThread(int devid,
   // this will make subsequent computation whose target is data
   // to use the stream, stream is needed for async execution in GPU
   data.set_stream(stream);
-  // assume these operations sets the content of dataient
-  data[0] = 1.0f;
-  data[1] = devid + data[0];
-  printf("dev%d: before sync, data:\n", devid);
-  // use print to show result, do not call
-  // print normally since Copy will block
-  Print(data);
-  printf("====================\n");
   // intiaialize the key, register the shape on parameter server
   ps->InitKey(data[0].shape_, 0, devid);
   ps->InitKey(data[1].shape_, 1, devid);
+
+  // first step, pull the data back from server
+  ps->PullReq(data[0], 0, devid);
+  ps->PullReq(data[1], 1, devid);
+  // PullWait will block until these request finishes
+  ps->PullWait(0, devid);
+  ps->PullWait(1, devid);
+
+  data[1] = devid + data[0];
+
+  LOG(ERROR) << "dev " << devid << ": before sync\n"
+             << dbstr(data);
+
   // push data[0] out, for update, or aggregation
   // 0 is the key of the data, devid is the current device id
   ps->Push(data[0], 0, devid);
@@ -98,12 +103,8 @@ inline void RunWorkerThread(int devid,
   // PullWait will block until these request finishes
   ps->PullWait(1, devid);
 
-  LOG(ERROR) << "dev" << devid << " " << dbstr(data);
-  // printf("dev%d: after sync, data:\n", devid);
-  // use print to show result, do not call
-  // print normally since Copy will block
-  // Print(data);
-  // printf("====================\n");
+  LOG(ERROR) << "dev " << devid << ": after sync\n" << dbstr(data);
+
   mshadow::DeleteStream(stream);
   mshadow::ShutdownTensorEngine<xpu>();
 }
@@ -124,7 +125,7 @@ inline int Run(int argc, char *argv[]) {
     devs.push_back(atoi(argv[i]));
   }
   mshadow::ps::ISharedModel<xpu, float>
-      *ps = mshadow::ps::CreateSharedModel<xpu, float>("local");
+      *ps = mshadow::ps::CreateSharedModel<xpu, float>("dist");
   // intiaialize the ps
   ps->SetParam("update_on_server", "1");
   ps->Init(devs);

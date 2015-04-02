@@ -370,7 +370,7 @@ class LocalModel : public ISharedModel<xpu, DType> {
   virtual void HandlePushFinish(Tensor<cpu, 3, DType> data,
                                 int key) {
 
-    LOG(ERROR) << dbstr(data);
+    // LOG(ERROR) << dbstr(data);
     LocalOp op = kSum;
     typename std::map<int, LocalOp>::const_iterator
         it = push_operation.find(key);
