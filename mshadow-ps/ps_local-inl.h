@@ -408,7 +408,7 @@ class LocalModel : public ISharedModel<xpu, DType> {
         custom_server->SetParam(cfgvec[j].first.c_str(),
                                 cfgvec[j].second.c_str());
       }
-      custom_server->InitUpdater(0, std::string());
+      custom_server->InitUpdater(0, 0, NULL);
     }
   }
  protected:

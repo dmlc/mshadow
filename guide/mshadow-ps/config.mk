@@ -30,6 +30,6 @@ USE_BLAS = blas
 USE_INTEL_PATH = NONE
 
 # whether compile with parameter server
-USE_DIST_PS = 0
-PS_PATH = ../../../ps
+USE_DIST_PS = 1
+PS_PATH = ../../../parameter_server/
 PS_THIRD_PATH = NONE

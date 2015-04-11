@@ -1,10 +1,9 @@
 #include "./dist_async_sum-inl.h"
 
-namespace PS {
-App* CreateServerNode(const std::string& conf) {
-  return new mshadow::ps::MShadowServerNode<float>(conf);
+int CreateServerNode(int argc, char *argv[]) {
+  mshadow::ps::MShadowServerNode<float> server(argc, argv);
+  return 0;
 }
-} // namespace PS
 
 
 int WorkerNodeMain(int argc, char *argv[]) {

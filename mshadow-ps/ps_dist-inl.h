@@ -11,8 +11,8 @@
 #include "./ps_local-inl.h"
 
 #if MSHADOW_DIST_PS
-#include "parameter/kv_layer.h"
 namespace mshadow {
+#include "parameter/kv_layer.h"
 namespace ps {
 
 /**
@@ -65,7 +65,7 @@ class DistModel : public LocalModel<xpu, DType> {
     // weight can be used to hold the model that pulled back
     // use this to initialize the key on serverside
     shared_model_.Pull(
-        PS::Parameter::Request(key), weight.dptr_, weight.MSize(),
+        ::ps::Parameter::Request(key), weight.dptr_, weight.MSize(),
         [this, weight, key]() {
           // call PullReady to notify LocalServer pulling is ready
           this->PullReady(weight, key);
@@ -82,11 +82,11 @@ class DistModel : public LocalModel<xpu, DType> {
     utils::Assert(data[0].CheckContiguous(), "data must be contiguous");
 
     int ts = shared_model_.Push(
-        PS::Parameter::Request(key), sendrecv.dptr_, sendrecv.MSize(), false);
+        ::ps::Parameter::Request(key), sendrecv.dptr_, sendrecv.MSize(), false);
 
     // let this pull request wait the push finish at the server node
     shared_model_.Pull(
-        PS::Parameter::Request(key, -1, {ts}), sendrecv.dptr_, sendrecv.MSize(),
+        ::ps::Parameter::Request(key, -1, {ts}), sendrecv.dptr_, sendrecv.MSize(),
         [this, sendrecv, key]() {
           // call PullReady to notify LocalServer pulling is ready
           this->PullReady(sendrecv, key);
@@ -94,24 +94,28 @@ class DistModel : public LocalModel<xpu, DType> {
   }
 
  private:
-  PS::KVLayer<DType, UpdaterWrapper<DType> > shared_model_;
+  ::ps::KVLayer<DType, UpdaterWrapper<DType> > shared_model_;
 };
 
 
 template<typename DType>
-class MShadowServerNode : public PS::App {
+class MShadowServerNode {
  public:
   // conf: get from the flag -app_conf
-  MShadowServerNode(const std::string &conf) : App() {
+  MShadowServerNode(int argc, char *argv[]) {
     IModelUpdater<DType> *updater = CreateModelUpdater<DType>();
-    updater->InitUpdater(PS::MyRank(), conf);
+    updater->InitUpdater(::ps::MyRank(), argc, argv);
 
     UpdaterWrapper<DType> *wrapper = new UpdaterWrapper<DType>(updater);
-    shared_model_.set_updater(wrapper);
+    typedef ::ps::KVLayer<DType, UpdaterWrapper<DType> > PSServer;
+    PSServer *shared_model_ = new PSServer();
+    shared_model_->set_updater(wrapper);
+    ::ps::Postoffice::instance().manager().TransferCustomer(
+         CHECK_NOTNULL(shared_model_));
   }
   virtual ~MShadowServerNode() { }
  private:
-  PS::KVLayer<DType, UpdaterWrapper<DType> > shared_model_;
+
 };
 
 // NOTE: do not add PS::CreateServer here add it in the program that uses

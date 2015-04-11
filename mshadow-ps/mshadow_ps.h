@@ -268,7 +268,7 @@ class IModelUpdater {
    * \param rank the rank of the node
    * \param conf configuration
    */
-  virtual void InitUpdater(int rank, const std::string &conf) {}
+  virtual void InitUpdater(int rank, int argc, char *argv[]) {}
   /*!
    * \brief initialize the model
    * \param key the key of data we point to
