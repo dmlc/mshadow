@@ -16,6 +16,7 @@ CUBIN = local_sum.gpu
 
 ifeq ($(USE_DIST_PS),1)
 BIN = dist_async_sum.cpu
+LDFLAGS += -lunwind
 endif
 
 .PHONY: clean all

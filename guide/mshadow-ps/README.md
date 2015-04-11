@@ -214,7 +214,7 @@ Then `make`.
 
 Next start 1 server node, 3 worker nodes with 2 devices in each worker node:
 ```bash
-ps_dir/script/local.sh 1 3 ./dist_async_sum.cpu 1 2
+./local.sh 1 3 ./dist_async_sum.cpu 1 2
 ```
 
 The `dist_async_sum-inl.h` is similar to `local_sum-inl.h`. The main differences
