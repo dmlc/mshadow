@@ -7,7 +7,7 @@
  */
 #ifndef MSHADOW_PS_DIST_INL_H_
 #define MSHADOW_PS_DIST_INL_H_
-#include "./ps.h"
+#include "./mshadow_ps.h"
 #include "./ps_local-inl.h"
 
 #if MSHADOW_DIST_PS
