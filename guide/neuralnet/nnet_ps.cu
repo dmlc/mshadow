@@ -7,7 +7,7 @@
 #include <omp.h>
 // header file to use mshadow
 #include <mshadow/tensor.h>
-#include <mshadow-ps/ps.h>
+#include <mshadow-ps/mshadow_ps.h>
 // helper function to load mnist dataset
 #include "./util.h"
 // this namespace contains all data structures, functions
@@ -32,7 +32,7 @@ class INNet{
 };
 
 /*!
- * \brief simple two layer neural net 
+ * \brief simple two layer neural net
  *        this implementation is device invariant
  */
 template<typename xpu>
@@ -71,7 +71,7 @@ class NNet : public INNet {
     Wi2h.Resize(Shape2(num_in, num_hidden));  g_Wi2h.Resize(Wi2h.shape_);
     Wh2o.Resize(Shape2(num_hidden, num_out)); g_Wh2o.Resize(Wh2o.shape_);
     rnd.SampleGaussian(&Wi2h, 0, 0.01f);
-    rnd.SampleGaussian(&Wh2o, 0, 0.01f);    
+    rnd.SampleGaussian(&Wh2o, 0, 0.01f);
     // initialize the key
     ps->InitKey(Wi2h.shape_, 0, devid);
     ps->InitKey(hbias.shape_, 1, devid);
@@ -96,7 +96,7 @@ class NNet : public INNet {
     // wait the pull request on hbias to complete
     ps->PullWait(1, devid);
     nhidden+= repmat(hbias, batch_size);
-    // activation, sigmloid, backup activation in nhidden 
+    // activation, sigmloid, backup activation in nhidden
     nhidden = F<sigmoid>(nhidden);
     Copy(nhiddenbak, nhidden, stream);
     // second layer fullc
@@ -120,8 +120,8 @@ class NNet : public INNet {
     // sync proc defines the synchronization step
     this->SyncProc(obias, g_obias, 3);
     // update second layer weights
-    g_Wh2o = dot(nhiddenbak.T(), nout);   
-    // backprop to layer 1 
+    g_Wh2o = dot(nhiddenbak.T(), nout);
+    // backprop to layer 1
     nhiddenbak = dot(nout, Wh2o.T());
     this->SyncProc(Wh2o, g_Wh2o, 2);
     // calculate gradient of sigmoid layer
@@ -172,7 +172,7 @@ class NNet : public INNet {
       delete e;
     }
   };
-  
+
  private:
   // computing stream
   mshadow::Stream<xpu> *stream;
@@ -187,7 +187,7 @@ class NNet : public INNet {
   // hidden bias, gradient
   TensorContainer<xpu, 1, real_t> hbias, obias, g_hbias, g_obias;
   // weight gradient
-  TensorContainer<xpu, 2, real_t> Wi2h, Wh2o, g_Wi2h, g_Wh2o;    
+  TensorContainer<xpu, 2, real_t> Wi2h, Wh2o, g_Wi2h, g_Wh2o;
 };
 
 // helper function to get the max inde
@@ -213,7 +213,7 @@ IModelUpdater<float> *CreateModelUpdater(void) {
 
 template<typename xpu>
 inline int Run(int argc, char *argv[]) {
-  srand(0);  
+  srand(0);
   // settings
   int batch_size = 100;
   int num_in = 28 * 28;
@@ -232,21 +232,21 @@ inline int Run(int argc, char *argv[]) {
   mshadow::ps::ISharedModel<xpu, real_t>
       *ps = mshadow::ps::CreateSharedModel<xpu, real_t>("local");
   ps->Init(devs);
-  
+
   std::vector<INNet *> nets(ndev);
   for (int i = 0; i < ndev; ++i) {
     mshadow::InitTensorEngine<xpu>(devs[i]);
     nets[i] = new NNet<xpu>(batch_size / ndev, num_in, num_hidden, num_out, devs[i], ps);
-  }   
-  
-  // label 
+  }
+
+  // label
   std::vector<int> ytrain, ytest;
   // data
   TensorContainer<cpu,2> xtrain, xtest;
   LoadMNIST("train-images-idx3-ubyte", "train-labels-idx1-ubyte", ytrain, xtrain, true);
-  LoadMNIST("t10k-images-idx3-ubyte", "t10k-labels-idx1-ubyte", ytest, xtest, false);  
+  LoadMNIST("t10k-images-idx3-ubyte", "t10k-labels-idx1-ubyte", ytest, xtest, false);
   int num_iter = 20;
-  
+
   for (int i = 0; i < num_iter; ++ i) {
     // mini-batch per device
     int step = batch_size / ndev;
@@ -259,7 +259,7 @@ inline int Run(int argc, char *argv[]) {
       int tid = omp_get_thread_num();
       mshadow::SetDevice<xpu>(devs[tid]);
       for (index_t j = 0; j + batch_size <= xtrain.size(0); j += batch_size) {
-        nets[tid]->Forward(xtrain.Slice(j + tid * step, j + (tid + 1) * step), pred); 
+        nets[tid]->Forward(xtrain.Slice(j + tid * step, j + (tid + 1) * step), pred);
         // set gradient into pred
         for (int k = 0; k < step; ++ k) {
           pred[k][ytrain[j + tid * step + k]] -= 1.0f;
@@ -282,14 +282,14 @@ inline int Run(int argc, char *argv[]) {
       for (index_t j = 0; j + batch_size <= xtest.size(0); j += batch_size) {
         nets[tid]->Forward(xtest.Slice(j + tid * step, j + (tid + 1) * step), pred);
         for (int k = 0; k < step; ++ k) {
-          nerr += MaxIndex(pred[k]) != ytest[j + tid * step + k];        
+          nerr += MaxIndex(pred[k]) != ytest[j + tid * step + k];
         }
       }
     }
     printf("round %d: test-err=%f\n", i, (float)nerr/xtest.size(0));
   }
-  
-  for(int i = 0; i < ndev; ++i) {    
+
+  for(int i = 0; i < ndev; ++i) {
     mshadow::SetDevice<xpu>(devs[i]);
     delete nets[i];
     ShutdownTensorEngine<xpu>();

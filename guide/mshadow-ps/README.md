@@ -26,8 +26,8 @@ for more details.
 ![Arch](2-levels.png?raw=true "arch")
 
 ####List of Resources
-* [API Documentation](http://homes.cs.washington.edu/~tqchen/mshadow/doc/namespacemshadow_1_1ps.html)
-* [Library Interface Header](../../mshadow-ps/ps.h)
+* [API Documentation](http://homes.cs.washington.edu/~tqchen/mshadow/doc/namespacemshadow_1_1mshadow_ps.html)
+* [Library Interface Header](../../mshadow-ps/mshadow_ps.h)
 * Tutorial in this page
 
 Working with Level-1 Server
@@ -44,22 +44,22 @@ mshadow-ps provides interface to do such synchronization in an easy way.
 The following documents provides a way
 
 ### Getting Sum from Multiple GPUs
-We first get familiar with the interface of mshadow-ps. Through the following
+We first get familiar with the interface of mshadow-mshadow_ps. Through the following
 program in [local_sum-inl.h](local_sum-inl.h). You can compile the program
 by setup the [config.mk](config.mk) according to your computers's enviroment, and type make.
 
 In the following program, each thread first does some computation locally, then tries to get the sum
 of ```data``` through mshadow-ps interface.
 There are four key functions in ```ISharedModel``` interface
-* [InitKey](../../mshadow-ps/ps.h#L76) allocates a key to specific tensor shape
-* [Push](../../mshadow-ps/ps.h#L100) pushes out the local data to the synchronization interface
+* [InitKey](../../mshadow-ps/mshadow_ps.h#L76) allocates a key to specific tensor shape
+* [Push](../../mshadow-ps/mshadow_ps.h#L100) pushes out the local data to the synchronization interface
   - The data pushed by different devices will be aggregated together by key
   - Push is an asynchronize call and returns immediately
-* [PullReq](../../mshadow-ps/ps.h#L122) requests the result of synchronization to be copied back
+* [PullReq](../../mshadow-ps/mshadow_ps.h#L122) requests the result of synchronization to be copied back
   - In the local default case, the synchronized result is the sum of pushed data
   - mshadow-ps also support the weight update on server side, where the result of PullReq is the updated weight instead of sum of gradient
   - PullReq is also asynchronize
-* [PullWait](../../mshadow-ps/ps.h#L87) wait until the pull request of corresponding key finishes
+* [PullWait](../../mshadow-ps/mshadow_ps.h#L87) wait until the pull request of corresponding key finishes
 
 ```c++
 // this function is runed by specific thread
@@ -148,7 +148,7 @@ simply the sum of data on each device. The key property of this interface is tha
 
 ### A MultiGPU Neural Net
 To get a more concrete understanding of the interface. We give an example of multi-GPU two layer neuralnet
-in [../neuralnet/nnet_ps.cu](../neuralnet/nnet_ps.cu). The general idea is follows
+in [../neuralnet/nnet_mshadow_ps.cu](../neuralnet/nnet_mshadow_ps.cu). The general idea is follows
 * Push and PullReq is called once we get the gradient of certain layer
 * PullWait is called before we do forward on that layer next time
 * This creates a ***time lag*** between the backprop and next forward to that layer
@@ -177,7 +177,7 @@ to the server. The communication pattern is as follows
 * Each thread call PullReq to pull back the weight from server
 
 Such update pattern is suitable under distributed setting. To do so, user need to implement an
-[IModelUpdater](../../mshadow-ps/ps.h#L202) interface. And define the following CreateModelUpdater function
+[IModelUpdater](../../mshadow-ps/mshadow_ps.h#L202) interface. And define the following CreateModelUpdater function
 in the program
 ```c++
 namespace mshadow {
