@@ -3,7 +3,7 @@
 // use openmp to launch multiple threads
 #include <omp.h>
 #include <mshadow/tensor.h>
-#include <mshadow-ps/ps.h>
+#include <mshadow-ps/mshadow_ps.h>
 
 // simple util to print result
 void Print_(mshadow::Tensor<mshadow::cpu, 2, float> ts) {
@@ -53,12 +53,12 @@ inline void RunWorkerThread(int devid,
   // once computation is done
   ps->PullReq(data[0], 0, devid);
   // computation can be done here..
-  // the pull request handler will be overlapped with   
+  // the pull request handler will be overlapped with
   // similar as previous call
   ps->Push(data[1], 1, devid);
   ps->PullReq(data[1], 1, devid);
   // more computation can be done here...
-  // the computation will be overlapped 
+  // the computation will be overlapped
   // PullWait will block until these request finishes
   ps->PullWait(0, devid);
   ps->PullWait(1, devid);
@@ -101,7 +101,7 @@ inline int Run(int argc, char *argv[]) {
   mshadow::ps::ISharedModel<xpu, float>
       *ps = mshadow::ps::CreateSharedModel<xpu, float>("local");
   // intiaialize the ps
-  ps->Init(devs);  
+  ps->Init(devs);
   // use openmp to launch #devs threads
   #pragma omp parallel num_threads(devs.size())
   {
