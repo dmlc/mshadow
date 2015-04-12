@@ -39,23 +39,6 @@ IModelUpdater<DType> *CreateModelUpdater(void) {
 }  // namespace ps
 }  // namespace mshadow
 
-// simple util to print result
-void Print_(mshadow::Tensor<mshadow::cpu, 2, float> ts) {
-  for (mshadow::index_t i = 0; i < ts.size(0); ++i) {
-    for (mshadow::index_t j = 0; j < ts.size(1); ++j) {
-      printf("%g ", ts[i][j]);
-    }
-    printf("\n");
-  }
-}
-template<typename xpu>
-inline void Print(mshadow::Tensor<xpu, 2, float> ts) {
-  mshadow::TensorContainer<mshadow::cpu, 2, float> tmp;
-  tmp.Resize(ts.shape_);
-  mshadow::Copy(tmp, ts);
-  Print_(tmp);
-}
-
 // this function is runed by specific thread
 template<typename xpu>
 inline void RunWorkerThread(int devid,
@@ -72,10 +55,10 @@ inline void RunWorkerThread(int devid,
   // intiaialize the key, register the shape on parameter server
   ps->InitKey(data[0].shape_, 0, devid);
   ps->InitKey(data[1].shape_, 1, devid);
-
   // first step, pull the data back from server
   ps->PullReq(data[0], 0, devid);
   ps->PullReq(data[1], 1, devid);
+
   // PullWait will block until these request finishes
   ps->PullWait(0, devid);
   ps->PullWait(1, devid);
