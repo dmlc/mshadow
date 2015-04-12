@@ -11,8 +11,8 @@
 #include "./ps_local-inl.h"
 
 #if MSHADOW_DIST_PS
-namespace mshadow {
 #include "parameter/kv_layer.h"
+namespace mshadow {
 namespace ps {
 
 /**
