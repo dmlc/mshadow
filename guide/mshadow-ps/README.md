@@ -148,7 +148,7 @@ simply the sum of data on each device. The key property of this interface is tha
 
 ### A MultiGPU Neural Net
 To get a more concrete understanding of the interface. We give an example of multi-GPU two layer neuralnet
-in [../neuralnet/nnet_mshadow_ps.cu](../neuralnet/nnet_mshadow_ps.cu). The general idea is follows
+in [../neuralnet/nnet_ps.cu](../neuralnet/nnet_ps.cu). The general idea is follows
 * Push and PullReq is called once we get the gradient of certain layer
 * PullWait is called before we do forward on that layer next time
 * This creates a ***time lag*** between the backprop and next forward to that layer
