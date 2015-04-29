@@ -90,8 +90,8 @@ template<typename Reducer, typename SrcExp, typename DType, int srcdim>
 struct Plan<UnPoolingExp<Reducer, SrcExp, DType, srcdim>, DType> {
  public:
   explicit Plan(const UnPoolingExp<Reducer, SrcExp, DType, srcdim> &e)
-      : data_src_(e.data_src_), data_pooled_(e.data_pooled_),
-        grad_pooled_(e.grad_pooled_), sshape_y_(e.shape_[srcdim - 2]),
+      : data_src_(MakePlan(e.data_src_)), data_pooled_(MakePlan(e.data_pooled_)),
+        grad_pooled_(MakePlan(e.grad_pooled_)), sshape_y_(e.shape_[srcdim - 2]),
         pshape_y_(e.pshape_y_),  pshape_x_(e.pshape_x_),
         ksize_y_(e.ksize_y_), ksize_x_(e.ksize_x_), kstride_(e.kstride_) {}
   MSHADOW_XINLINE DType Eval(index_t i, index_t j) const {
