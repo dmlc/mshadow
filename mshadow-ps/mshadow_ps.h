@@ -21,6 +21,11 @@
 #define MSHADOW_DIST_PS 1
 #endif
 
+/*! \brief whether to support BSP rabit API of PS*/
+#ifndef MSHADOW_RABIT_PS
+#define MSHADOW_RABIT_PS 1
+#endif
+
 namespace mshadow {
 /*! \brief namespace of mshadow-ps */
 namespace ps {
@@ -320,6 +325,7 @@ IModelUpdater<DType> *CreateModelUpdater(void);
 
 #include "./ps_local-inl.h"
 #include "./ps_dist-inl.h"
+#include "./ps_rabit-inl.h"
 namespace mshadow {
 namespace ps {
 /*!
@@ -330,7 +336,15 @@ namespace ps {
  */
 template<typename xpu, typename DType>
 inline ISharedModel<xpu, DType> *CreateSharedModel(const char *type) {
-  if (!strcmp("local", type)) return new LocalModel<xpu, DType>();
+  if (!strcmp("local", type)) {
+#if MSHADOW_RABIT_PS
+    // allreduce on one machine pays no cost
+    if (rabit::IsDistributed()) {
+      return new RabitModel<xpu, DType>();
+    }
+#endif
+    return new LocalModel<xpu, DType>();
+  }
 #if MSHADOW_DIST_PS
   if (!strcmp("dist", type)) return new DistModel<xpu, DType>();
 #endif

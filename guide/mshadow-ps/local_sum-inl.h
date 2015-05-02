@@ -91,6 +91,9 @@ inline int Run(int argc, char *argv[]) {
            "\tfor GPU the device list need to be actual device index\n");
     return 0;
   }
+#if MSHADOW_RABIT_PS
+  rabit::Init(argc, argv);
+#endif
   // list of device ids
   std::vector<int> devs;
   // initialization
@@ -109,5 +112,8 @@ inline int Run(int argc, char *argv[]) {
     RunWorkerThread<xpu>(devs[tid], ps);
   }
   delete ps;
+#if MSHADOW_RABIT_PS
+  rabit::Finalize();
+#endif
   return 0;
 }

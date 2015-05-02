@@ -1,7 +1,7 @@
 /*!
  *  Copyright (c) 2014 by Contributors
- * \file ps_local-inl.h
- * \brief local multi-threading implementation of PS abstraction
+ * \file ps_dist-inl.h
+ * \brief distributed version of PS
  *
  * \author Tianqi Chen, Mu Li
  */

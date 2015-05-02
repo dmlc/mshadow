@@ -59,10 +59,25 @@ else ifeq ($(USE_BLAS), apple)
 endif
 
 ifeq ($(PS_PATH), NONE)
-PS_PATH = ..
+	PS_PATH = ..
 endif
 ifeq ($(PS_THIRD_PATH), NONE)
-PS_THIRD_PATH = $(PS_PATH)/third_party
+	PS_THIRD_PATH = $(PS_PATH)/third_party
+endif
+
+ifndef RABIT_PATH
+	RABIT_PATH = NONE
+endif
+
+ifeq ($(RABIT_PATH), NONE)
+	RABIT_PATH = ..
+endif
+
+ifeq ($(USE_RABIT_PS),1)
+	MSHADOW_CFLAGS += -I$(RABIT_PATH)/include
+	MSHADOW_LDFLAGS += -L$(RABIT_PATH)/lib -lrabit_base
+else
+	MSHADOW_CFLAGS += -DMSHADOW_RABIT_PS=0
 endif
 
 ifeq ($(USE_DIST_PS),1)

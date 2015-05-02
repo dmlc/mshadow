@@ -32,9 +32,10 @@ class LocalModel : public ISharedModel<xpu, DType> {
   CallbackFunction;
   // constructor
   LocalModel(void) {
-    init_end = 0;
+    init_end = 0;    
     perdev_pull_thread = 1;
     perdev_push_thread = 1;
+    use_fifo_push_queue = 0;
     bigarray_bound = 1000 * 1000;
     nthread_reduction = 8;
     use_pin_memory = 1;
@@ -45,6 +46,9 @@ class LocalModel : public ISharedModel<xpu, DType> {
   }
   // destructor
   virtual ~LocalModel(void) {
+    this->Destroy();
+  }
+  inline void Destroy(void) {
     if (init_end != 0) {
       destroy_signal = true;
       for (size_t i = 0; i < push_queues.size(); ++i) {
@@ -71,8 +75,12 @@ class LocalModel : public ISharedModel<xpu, DType> {
       request_lock.Destroy();
       wait_lock.Destroy();
       wait_cond.Destroy();
+      init_end = 0;
     }
-    if (custom_server != NULL) delete custom_server;
+    if (custom_server != NULL) {
+      delete custom_server;
+      custom_server = NULL;
+    }
   }
   virtual void SetParam(const char *name, const char *val) {
     int key;
@@ -173,7 +181,7 @@ class LocalModel : public ISharedModel<xpu, DType> {
       push_queues.resize(1);
     }
     for (size_t i = 0; i < push_queues.size(); ++i) {
-      push_queues[i].Init();
+      push_queues[i].Init(use_fifo_push_queue != 0);
     }
     push_map.Init();
     push_lock.Init();
@@ -361,7 +369,6 @@ class LocalModel : public ISharedModel<xpu, DType> {
    * \brief event handler for push finish
    *  called when all the data with same key comes int
    * \param data the buffer holds the data in all devices
-   * \param result_buffer temporal buffer to hold the reduction result
    * \param key the key of the data
    */
   virtual void HandlePushFinish(Tensor<cpu, 3, DType> data,
@@ -400,7 +407,27 @@ class LocalModel : public ISharedModel<xpu, DType> {
       default: utils::Error("unknown LocalOp");
     }
   }
-
+  /*!
+   * \brief event handler for reduce finish
+   *  called when all the data with same key finishes the reduction
+   * \param data the buffer holds the reduction result
+   * \param key the key of the data
+   */
+  inline void HandleReduceFinish(Tensor<cpu, 2, DType> data,
+                                 int key) {
+    if (custom_server != NULL) {
+      custom_server->Update(key, data.dptr_, data.MSize());
+      if (update_on_server != 0) {
+        PushEntry &e = push_map.GetRef(key);
+        this->PullReady(e.weight, key);
+      } else {
+        utils::Assert(test_on_server != 0, "test mode");
+        this->PullReady(data, key);
+      }
+    } else {
+      this->PullReady(data, key);
+    }
+  }  
   virtual void InitCustomerServer(void) {
     if (update_on_server != 0 || test_on_server != 0) {
       custom_server = CreateModelUpdater<DType>();
@@ -414,6 +441,8 @@ class LocalModel : public ISharedModel<xpu, DType> {
  protected:
   // customized server
   IModelUpdater<DType> *custom_server;
+  // whether use fifo push queue
+  int use_fifo_push_queue;
 
   // perform sum reduction
   inline void ReduceSum(Tensor<cpu, 3, DType> data) {
@@ -435,6 +464,7 @@ class LocalModel : public ISharedModel<xpu, DType> {
       }
     }
   }
+  
  private:
   /*! \brief task running */
   struct PullTask {
@@ -667,7 +697,6 @@ class LocalModel : public ISharedModel<xpu, DType> {
         = static_cast<std::pair<LocalModel*, size_t>*>(arg);
     p->first->PushHandlerLocal(p->second);
     delete p;
-    utils::ThreadExit(NULL);
     return NULL;
   }
   // push handler procedure
@@ -738,7 +767,6 @@ class LocalModel : public ISharedModel<xpu, DType> {
   /*!\brief entry point of pull thread, one thread for all devices */
   inline static MSHADOW_THREAD_PREFIX PullGlobalThread(void *arg) {
     static_cast<LocalModel*>(arg)->PullHandlerGlobal();
-    utils::ThreadExit(NULL);
     return NULL;
   }
   inline static MSHADOW_THREAD_PREFIX PullLocalThread(void *arg) {
@@ -746,7 +774,6 @@ class LocalModel : public ISharedModel<xpu, DType> {
         = static_cast<std::pair<LocalModel*, size_t>*>(arg);
     p->first->PullHandlerLocal(p->second);
     delete p;
-    utils::ThreadExit(NULL);
     return NULL;
   }
   // get internal index of device

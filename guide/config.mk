@@ -33,3 +33,7 @@ USE_INTEL_PATH = NONE
 USE_DIST_PS = 0
 PS_PATH = NONE
 PS_THIRD_PATH = NONE
+
+# whether compile with rabit allreduce
+USE_RABIT_PS = 0
+RABIT_PATH = NONE

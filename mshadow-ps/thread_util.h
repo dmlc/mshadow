@@ -18,8 +18,12 @@ namespace utils {
 template<typename DType>
 class ThreadPQueue {
  public:
+  // constructor
+  ThreadPQueue() : use_fifo_(false) {
+  }
   /*! \brief intitialize the queue, must call this before use */
-  inline void Init(void) {
+  inline void Init(bool use_fifo = false) {
+    use_fifo_ = use_fifo;
     lock_.Init();
     counter_.Init(0);
   }
@@ -38,7 +42,7 @@ class ThreadPQueue {
   inline void Abort(int max_nthread = 1) {
     for (int i = 0; i < max_nthread; ++ i) {
       counter_.Post();
-    }   
+    }
   }
   /*!
    * \brief push an element to the queue
@@ -48,7 +52,11 @@ class ThreadPQueue {
    */
   inline void Push(const DType &data, int priority = 0) {
     lock_.Lock();
-    queue_.push(Entry(data, priority));
+    if (use_fifo_) {
+      fqueue_.push(data);
+    } else {
+      pqueue_.push(Entry(data, priority));
+    }
     lock_.Unlock();
     counter_.Post();    
   }
@@ -62,12 +70,24 @@ class ThreadPQueue {
   inline bool Pop(DType *data_out) {
     counter_.Wait();
     lock_.Lock();
-    if (queue_.size() == 0) {
-      lock_.Unlock(); return false;
+    if (use_fifo_) {
+      if (fqueue_.size() == 0) {
+        lock_.Unlock(); return false;
+      }
+    } else {
+      if (pqueue_.size() == 0) {
+        lock_.Unlock(); return false;
+      }
     }
-    utils::Assert(queue_.size() != 0, "Queue.Pop");
-    *data_out = queue_.top().data;
-    queue_.pop();
+    if (use_fifo_) {
+      utils::Assert(fqueue_.size() != 0, "Queue.Pop");
+      *data_out = fqueue_.front();
+      fqueue_.pop();
+    } else {
+      utils::Assert(pqueue_.size() != 0, "Queue.Pop");
+      *data_out = pqueue_.top().data;
+      pqueue_.pop();
+    }
     lock_.Unlock();
     return true;
   }
@@ -82,10 +102,13 @@ class ThreadPQueue {
     inline bool operator<(const Entry &b) const {
       return priority < b.priority;
     }
-  };
-
-  // the queue to push
-  std::priority_queue<Entry> queue_;
+  };  
+  // whether use FIFO queue
+  bool use_fifo_;
+  // a priority queue
+  std::priority_queue<Entry> pqueue_;
+  // a FIFO queue
+  std::queue<DType> fqueue_;
   // lock for accessing the queue
   utils::Mutex lock_;
   // counter to count number of push tasks
