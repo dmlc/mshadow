@@ -131,6 +131,8 @@ class LocalModel : public ISharedModel<xpu, DType> {
     if (!strcmp(name, "test_on_server")) {
       test_on_server = atoi(val);
     }
+    // ignore message parameter
+    if (!strncmp(name, "msg:", 4)) return;
     cfgvec.push_back(std::make_pair(std::string(name),
                                     std::string(val)));
   }

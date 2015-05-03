@@ -339,7 +339,7 @@ inline ISharedModel<xpu, DType> *CreateSharedModel(const char *type) {
   if (!strcmp("local", type)) {
 #if MSHADOW_RABIT_PS
     // allreduce on one machine pays no cost
-    if (rabit::IsDistributed()) {
+    if (rabit::IsDistributed()) {      
       return new RabitModel<xpu, DType>();
     }
 #endif

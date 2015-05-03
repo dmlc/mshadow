@@ -66,16 +66,17 @@ ifeq ($(PS_THIRD_PATH), NONE)
 endif
 
 ifndef RABIT_PATH
-	RABIT_PATH = NONE
+	RABIT_PATH = rabit
 endif
 
 ifeq ($(RABIT_PATH), NONE)
-	RABIT_PATH = ..
+	RABIT_PATH = rabit
 endif
 
 ifeq ($(USE_RABIT_PS),1)
 	MSHADOW_CFLAGS += -I$(RABIT_PATH)/include
 	MSHADOW_LDFLAGS += -L$(RABIT_PATH)/lib -lrabit_base
+	MSHADOW_CFLAGS += -DMSHADOW_RABIT_PS=1
 else
 	MSHADOW_CFLAGS += -DMSHADOW_RABIT_PS=0
 endif

@@ -49,11 +49,10 @@ class RabitModel : public LocalModel<xpu, DType> {
   }
   // set parameters
   virtual void SetParam(const char *name, const char *val) {
-    if (!strcmp(name, "disable_allreduce")) {
+    if (!strcmp(name, "msg:disable_allreduce")) {
       disable_allreduce_ = atoi(val);
-    } else {
-      Parent::SetParam(name, val);
     }
+    Parent::SetParam(name, val);
   }
   // override this function, to use parameter server
   virtual void HandlePushFinish(Tensor<cpu, 3, DType> data,
@@ -94,6 +93,7 @@ class RabitModel : public LocalModel<xpu, DType> {
         utils::Check(key == tsk.key, "Allreduce not concensus");
         rabit::Allreduce<rabit::op::Sum>
             (tsk.data.dptr_, tsk.data.MSize());
+        tsk.data *= 1.0f / rabit::GetWorldSize();
         utils::Check(disable_allreduce_ == 0,
                      "Allreduce disabled error");
         this->HandleReduceFinish(tsk.data, tsk.key);
