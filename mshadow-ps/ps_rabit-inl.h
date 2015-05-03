@@ -25,6 +25,7 @@ class RabitModel : public LocalModel<xpu, DType> {
     // enforce usage of fifo queue
     this->use_fifo_push_queue = 1;
     destroy_reduce_thread_ = false;
+    disable_allreduce_ = 0;
     this->init_reducer_ = 0;
   }
   virtual ~RabitModel(void) {
@@ -45,6 +46,14 @@ class RabitModel : public LocalModel<xpu, DType> {
     init_reducer_ = 1;
     // initialize other things
     Parent::Init(devices);
+  }
+  // set parameters
+  virtual void SetParam(const char *name, const char *val) {
+    if (!strcmp(name, "disable_allreduce")) {
+      disable_allreduce_ = atoi(val);
+    } else {
+      Parent::SetParam(name, val);
+    }
   }
   // override this function, to use parameter server
   virtual void HandlePushFinish(Tensor<cpu, 3, DType> data,
@@ -67,6 +76,8 @@ class RabitModel : public LocalModel<xpu, DType> {
   bool destroy_reduce_thread_;
   // whether reducer is initialized
   int init_reducer_;
+  // check disable_allreduce functionalities
+  int disable_allreduce_;
   // reduce handler thread
   utils::Thread thread_reduce_handler_;
   // queue for allreduce task
@@ -76,11 +87,15 @@ class RabitModel : public LocalModel<xpu, DType> {
     while (!destroy_reduce_thread_) {
       ReduceTask tsk;
       if (reduce_queue_.Pop(&tsk)) {
+        utils::Check(disable_allreduce_ == 0,
+                     "Allreduce disabled error");
         int key = tsk.key;
         rabit::Allreduce<rabit::op::Max>(&key, 1);
         utils::Check(key == tsk.key, "Allreduce not concensus");
         rabit::Allreduce<rabit::op::Sum>
             (tsk.data.dptr_, tsk.data.MSize());
+        utils::Check(disable_allreduce_ == 0,
+                     "Allreduce disabled error");
         this->HandleReduceFinish(tsk.data, tsk.key);
       } else {
         utils::Assert(destroy_reduce_thread_, "abort but not destroy");
