@@ -631,6 +631,7 @@ inline void MapReduceKeepHighDim(TRValue<R, gpu, 1, DType> *dst,
 #include "./tensor_gpu-inl.h"
 #include "./io.h"
 #include "./tensor_container.h"
+#include "./tensor_blob.h"
 #include "./random.h"
 // add definition of scalar related operators
 #ifdef MSAHDOW_SCALAR_
