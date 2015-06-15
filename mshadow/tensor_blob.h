@@ -18,7 +18,7 @@ namespace mshadow {
  */
 struct TShape {
   /*! \brief shape of the tensor */
-  std::vector<index_t> shape_;  
+  std::vector<index_t> shape_;
   /*! \brief return number of dimension of the tensor inside */
   inline index_t ndim(void) const {
     return static_cast<index_t>(shape_.size());
@@ -38,6 +38,14 @@ struct TShape {
    */  
   inline const index_t &operator[](index_t i) const {
     return shape_[i];
+  }
+  /*! \brief total number of elements in the tensor */
+  inline size_t Size(void) const {
+    size_t size = 1;
+    for (size_t i = 0; i < shape_.size(); ++i) {
+      size *= shape_[i];
+    }
+    return size;
   }
   /*!
    * flatten the higher dimension to second dimension, return a 2D shape
@@ -137,6 +145,18 @@ class TBlob {
   
   /*! \brief default constructor, default copy assign will work */
   TBlob(void) : dptr_(NULL), dev_mask_(cpu::kDevMask) {}
+  /*!
+   * \brief constructor that construct TBlob from contiguous memory
+   * \param dptr the pointer to the memory
+   * \param shape the shape of the data
+   * \param dev_mask the device mask, can be cpu::kDevMask or gpu::kDevMask
+   */
+  TBlob(void *dptr,
+        const TShape &shape,
+        int dev_mask)
+      : dptr_(dptr), shape_(shape),
+        stride_(shape.shape_.back()),
+        dev_mask_(dev_mask) {}
   /*!
    * \brief constructor from tensor
    * \param src source tensor
