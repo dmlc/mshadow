@@ -118,12 +118,24 @@ struct TShape {
   }
 };
 
+/*! \brief data type flag */
+template<typename DType>  
+struct DataType;
+template<>
+struct DataType<float> {
+  static const int kFlag = 0;
+};
+template<>
+struct DataType<double> {
+  static const int kFlag = 1;
+};
+
 /*!
  * \brief tensor blob class that can be used to hold tensor of any dimension,
  *  any device and any data type,
  *  This is a weak type that can be used to transfer data through interface
  *  TBlob itself do not involve any arithmentic operations,
- *  but it can be converted to tensor of fixed dimension for further operations, with fixdim
+ *  but it can be converted to tensor of fixed dimension for further operations
  *
  *  Like tensor, this data structure is like a pointer class and do not
  *  implicit allocated, de-allocate space.
@@ -141,22 +153,27 @@ class TBlob {
    */
   index_t stride_;
   /*! \brief device mask of the corresponding device */
-  int dev_mask_;
-  
+  int dev_mask_;  
+  /*! \brief type flag of the tensor blob */
+  int type_flag_;
   /*! \brief default constructor, default copy assign will work */
-  TBlob(void) : dptr_(NULL), dev_mask_(cpu::kDevMask) {}
+  TBlob(void)
+      : dptr_(NULL), dev_mask_(cpu::kDevMask),
+        type_flag_(DataType<default_real_t>::kFlag) {}
   /*!
    * \brief constructor that construct TBlob from contiguous memory
    * \param dptr the pointer to the memory
    * \param shape the shape of the data
    * \param dev_mask the device mask, can be cpu::kDevMask or gpu::kDevMask
    */
-  TBlob(void *dptr,
+  template<typename DType>
+  TBlob(DType *dptr,
         const TShape &shape,
         int dev_mask)
       : dptr_(dptr), shape_(shape),
         stride_(shape.shape_.back()),
-        dev_mask_(dev_mask) {}
+        dev_mask_(dev_mask),
+        type_flag_(DataType<DType>::kFlag) {}
   /*!
    * \brief constructor from tensor
    * \param src source tensor
@@ -182,6 +199,7 @@ class TBlob {
     shape_ = src.shape_;
     stride_ = src.stride_;
     dev_mask_ = Device::kDevMask;
+    type_flag_ = DataType<Device>::kFlag;
     return *this;
   }
   /*!
@@ -199,7 +217,7 @@ class TBlob {
    */  
   template<typename Device, typename DType>
   inline Tensor<Device, 2, DType> FlatTo2D(Stream<Device> *stream = NULL) const {
-    utils::Check(Device::kDevMask == dev_mask_,
+    utils::Check(Device::kDevMask == dev_mask_ && DataType<DType>::kFlag == type_flag_,
                  "TBlob.get: device type do not match specified type");
     return Tensor<Device, 2, DType>(static_cast<DType*>(dptr_),
                                     shape_.FlatTo2D(), stride_, stream);
@@ -227,7 +245,7 @@ class TBlob {
    */
   template<typename Device, int dim, typename DType>
   inline Tensor<Device, dim, DType> get(Stream<Device> *stream = NULL) const {
-    utils::Check(Device::kDevMask == dev_mask_,
+    utils::Check(Device::kDevMask == dev_mask_ && DataType<DType>::kFlag == type_flag_,
                  "TBlob.get: device type do not match specified type");
     return Tensor<Device, dim, DType>(static_cast<DType*>(dptr_),
                                        shape_.get<dim>(),
