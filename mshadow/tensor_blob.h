@@ -1,7 +1,7 @@
 /*!
  *  Copyright (c) 2014 by Contributors
  * \file tensor_blob.h
- * \brief TBlob class that holds common representation of 
+ * \brief TBlob class that holds common representation of
  *  arbirary dimension tensor, can be used to transformed
  *  to normal fixed dimenson tensor
  * \author Tianqi Chen
@@ -27,7 +27,7 @@ struct TShape {
    * \brief get corresponding index
    * \param idx dimension index
    * \return the corresponding dimension size
-   */  
+   */
   inline index_t &operator[](index_t i) {
     return shape_[i];
   }
@@ -35,7 +35,7 @@ struct TShape {
    * \brief get corresponding index
    * \param idx dimension index
    * \return the corresponding dimension size
-   */  
+   */
   inline const index_t &operator[](index_t i) const {
     return shape_[i];
   }
@@ -55,7 +55,7 @@ struct TShape {
     Shape<2> s;
     if (shape_.size() == 0) {
       return Shape2(0, 0);
-    } 
+    }
     s.shape_[1] = this->shape_[shape_.size()- 1];
     index_t ymax = 1;
     for (size_t i = 1; i < shape_.size(); ++i) {
@@ -89,11 +89,11 @@ struct TShape {
     shape_.resize(dim);
     for (int i = 0; i < dim; ++i) {
       this->shape_[i] = shape[i];
-    }    
+    }
     return *this;
   }
   /*!
-   * \return whether two shape equals 
+   * \return whether two shape equals
    * \param s the shape to compare against
    */
   inline bool operator==(const TShape &s) const {
@@ -119,7 +119,7 @@ struct TShape {
 };
 
 /*! \brief data type flag */
-template<typename DType>  
+template<typename DType>
 struct DataType;
 template<>
 struct DataType<float> {
@@ -153,7 +153,7 @@ class TBlob {
    */
   index_t stride_;
   /*! \brief device mask of the corresponding device */
-  int dev_mask_;  
+  int dev_mask_;
   /*! \brief type flag of the tensor blob */
   int type_flag_;
   /*! \brief default constructor, default copy assign will work */
@@ -183,7 +183,7 @@ class TBlob {
    */
   template<typename Device, int dim, typename DType>
   TBlob(const Tensor<Device, dim, DType> &src) {
-    *this = src; 
+    *this = src;
   }
   /*!
    * \brief assignment from tensor
@@ -214,7 +214,7 @@ class TBlob {
    * \tparam Device which device the tensor is on
    * \tparam DType the type of elements in the tensor
    * \return tensor after flatten
-   */  
+   */
   template<typename Device, typename DType>
   inline Tensor<Device, 2, DType> FlatTo2D(Stream<Device> *stream = NULL) const {
     utils::Check(Device::kDevMask == dev_mask_ && DataType<DType>::kFlag == type_flag_,
@@ -230,7 +230,7 @@ class TBlob {
    * \brief return size of i-th dimension, start counting from highest dimension
    * \param idx the dimension count from the highest dimensin
    * \return the size
-   */  
+   */
   inline index_t size(index_t idx) const {
     return shape_[idx];
   }
@@ -250,6 +250,29 @@ class TBlob {
     return Tensor<Device, dim, DType>(static_cast<DType*>(dptr_),
                                        shape_.get<dim>(),
                                        stride_, stream);
+  }
+  /*!
+   * \brief fetch a tensor in given shape
+   * if size do not match the stored dimension, an error will be issued
+   * \return the tensor requested
+   * \param shape the shape required
+   * \param stream the possible stream target tensor should reside on
+   * \tparam Device which device the tensor is on
+   * \tparam dim dimension of the tensor
+   * \tparam DType the type of elements in the tensor
+   */
+  template<typename Device, int dim, typename DType>
+  inline Tensor<Device, dim, DType> get_with_shape(const TShape &shape,
+                                                Stream<Device> *stream = NULL) const {
+    utils::Check(Device::kDevMask == dev_mask_ && DataType<DType>::kFlag == type_flag_,
+                 "TBlob.get_with_shape: device type do not match specified type");
+    utils::Check(this->CheckContiguous(), "TBlob.get_reshape: must be contiguous");
+    utils::Check(this->shape_.Size() == shape.Size(),
+                 "TBlob.get_with_shape: new and old shape do not match total elements");
+    return Tensor<Device, dim, DType>(static_cast<DType*>(dptr_),
+                                      shape.get<dim>(),
+                                      shape[shape.shape_.size() - 1],
+                                      stream);
   }
 };
 } // namespace mshadow
