@@ -104,9 +104,16 @@ struct TShape {
     return true;
   }
   /*!
+   * \return whether two shape not equals
+   * \param s the shape to compare against
+   */
+  inline bool operator!=(const TShape &s) const {
+    return !(*this == s);
+  }
+  /*!
    * \return whether two shape equals
    * \param s the shape to compare against
-   * \param the shape to compare against
+   * \tparam dim dimension of the shape
    */
   template<int dim>
   inline bool operator==(const Shape<dim> &s) const {
@@ -115,6 +122,15 @@ struct TShape {
       if (shape_[i] != s.shape_[i]) return false;
     }
     return true;
+  }
+  /*!
+   * \return whether two shape not equals
+   * \param s the shape to compare against
+   * \tparam dim dimension of the shape
+   */
+  template<int dim>
+  inline bool operator!=(const Shape<dim> &s) const {
+    return !(*this == s);
   }
 };
 

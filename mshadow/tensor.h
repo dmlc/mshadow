@@ -81,6 +81,13 @@ struct Shape {
     return true;
   }
   /*!
+   * \return whether two shape not equal
+   * \param s the shape to compare against
+   */
+  MSHADOW_XINLINE bool operator!=(const Shape<kDimension> &s) const {
+    return !(*this == s);
+  }
+  /*!
    * flatten the higher dimension to second dimension, return a 2D shape
    * \return the flat 2d shape
    */
