@@ -4,7 +4,8 @@ using namespace mshadow;
 
 
 int main() {
-  InitTensorEngine();
+  InitTensorEngine<cpu>();
+  InitTensorEngine<gpu>();
   Tensor<cpu, 3, float> tc = NewTensor<cpu, float>(Shape3(3, 2, 4), 0.0f);
   Tensor<gpu, 3, float> tg = NewTensor<gpu, float>(tc.shape_, 0.0f);
   // init
@@ -73,5 +74,6 @@ int main() {
   
   FreeSpace(&tc);
   FreeSpace(&tg);
-  ShutdownTensorEngine();
+  ShutdownTensorEngine<cpu>();
+  ShutdownTensorEngine<gpu>();
 }

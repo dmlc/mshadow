@@ -79,6 +79,13 @@
 #define MSHADOW_OLD_CUDA 0
 #endif
 
+/*!
+ * \brief macro to decide existence of c++11 compiler
+ */
+#ifndef MSHADOW_IN_CXX11
+#define MSHADOW_IN_CXX11 (defined(__GXX_EXPERIMENTAL_CXX0X__) || __cplusplus >= 201103L || defined(_MSC_VER))
+#endif
+
 /*! \brief whether use SSE */
 #ifndef MSHADOW_USE_SSE
   #define MSHADOW_USE_SSE 1

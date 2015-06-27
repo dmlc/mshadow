@@ -17,11 +17,97 @@ namespace mshadow {
  *   of arbirary dimension
  */
 struct TShape {
-  /*! \brief shape of the tensor */
-  std::vector<index_t> shape_;
+ public:
+  /*! \brief constructor */
+  TShape()
+      : ndim_(0),
+        num_heap_allocated_(0),
+        data_heap_(NULL) {
+  }
+  /*!
+   * \brief constructor from TShape
+   * \param s the source shape
+   */
+  TShape(const TShape &s)
+      : ndim_(s.ndim_) {
+    if (ndim_ <= kStackCache) {
+      data_heap_ = NULL;
+      num_heap_allocated_ = 0;
+      std::copy(s.data_stack_, s.data_stack_ + ndim_, data_stack_);
+    } else {
+      data_heap_ = new index_t[ndim_];
+      num_heap_allocated_ = ndim_;
+      std::copy(s.data_heap_, s.data_heap_ + ndim_, data_heap_);
+    }
+  }  
+#if MSHADOW_IN_CXX11
+  /*!
+   * \brief move constructor from TShape
+   * \param s the source shape
+   */
+  TShape(TShape &&s)
+      : ndim_(s.ndim_),
+        num_heap_allocated_(s.num_heap_allocated_),
+        data_heap_(s.data_heap_) {    
+    if (ndim_ <= kStackCache) {
+      std::copy(s.data_stack_, s.data_stack_ + ndim_, data_stack_);
+    }
+    // remove data heap space from s
+    s.data_heap_ = NULL;
+  }
+#endif
+  /*! \brief destructor */
+  ~TShape() {
+    // data_heap_ can be NULL
+    delete [] data_heap_;
+  }
+  /*!
+   * \brief assignment from shape
+   * \param shape source shape
+   * \return reference of self
+   */
+  inline TShape &operator=(const TShape &shape) {
+    this->SetDim(shape.ndim_);
+    const index_t *src = shape.data();
+    std::copy(src, src + ndim_, data());
+    return *this;
+  }
+  /*!
+   * \brief assignment from vector
+   * \param shape source shape
+   * \return reference of self
+   */
+  inline TShape &operator=(const std::vector<index_t> &shape) {
+    this->SetDim(static_cast<index_t>(shape.size()));
+    std::copy(shape.begin(), shape.end(), data());
+    return *this;
+  }
+  /*!
+   * \brief assignment from shape
+   * \param shape source shape
+   * \tparam dim shape dimension
+   * \return reference of self
+   */
+  template<int dim>
+  inline TShape &operator=(const Shape<dim> &shape) {
+    this->SetDim(dim);
+    index_t *d = dim <= kStackCache ? data_stack_ : data_heap_;
+    for (int i = 0; i < dim; ++i) {
+      d[i] = shape[i];
+    }
+    return *this;
+  }
+  /*! \return the data content of the shape */
+  inline const index_t *data() const {
+    return ndim_ <= kStackCache ? data_stack_ : data_heap_;
+  }
+  /*! \return the data content of the shape */
+  inline index_t *data() {
+    return ndim_ <= kStackCache ? data_stack_ : data_heap_;
+  }
   /*! \brief return number of dimension of the tensor inside */
   inline index_t ndim(void) const {
-    return static_cast<index_t>(shape_.size());
+    return ndim_;
   }
   /*!
    * \brief get corresponding index
@@ -29,21 +115,22 @@ struct TShape {
    * \return the corresponding dimension size
    */
   inline index_t &operator[](index_t i) {
-    return shape_[i];
+    return data()[i];
   }
   /*!
    * \brief get corresponding index
    * \param idx dimension index
    * \return the corresponding dimension size
    */
-  inline const index_t &operator[](index_t i) const {
-    return shape_[i];
+  inline const index_t &operator[](index_t i) const {    
+    return data()[i];
   }
   /*! \brief total number of elements in the tensor */
   inline size_t Size(void) const {
     size_t size = 1;
-    for (size_t i = 0; i < shape_.size(); ++i) {
-      size *= shape_[i];
+    const index_t *d = this->data();
+    for (index_t i = 0; i < ndim_; ++i) {
+      size *= d[i];
     }
     return size;
   }
@@ -53,13 +140,12 @@ struct TShape {
    */
   inline Shape<2> FlatTo2D(void) const {
     Shape<2> s;
-    if (shape_.size() == 0) {
-      return Shape2(0, 0);
-    }
-    s.shape_[1] = this->shape_[shape_.size()- 1];
+    if (ndim_ == 0) return Shape2(0, 0);
+    const index_t *d = this->data();
+    s.shape_[1] = d[ndim_ - 1];
     index_t ymax = 1;
-    for (size_t i = 1; i < shape_.size(); ++i) {
-      ymax *= this->shape_[i - 1];
+    for (index_t i = 1; i < ndim_; ++i) {
+      ymax *= d[i - 1];
     }
     s.shape_[0] = ymax;
     return s;
@@ -71,35 +157,29 @@ struct TShape {
    */
   template<int dim>
   inline Shape<dim> get(void) const {
-    utils::Check(dim == this->shape_.size(),
+    utils::Check(dim == ndim_,
                  "dimension do not match target dimension");
+    const index_t *d = this->data();
     Shape<dim> s;
     for (int i = 0; i < dim; ++i) {
-      s[i] = shape_[i];
+      s[i] = d[i];
     }
     return s;
-  }
-  /*!
-   * \brief assignment from shape
-   * \param src source shape
-   * \tparam dim shape dimension
-   */
-  template<int dim>
-  inline TShape &operator=(const Shape<dim> &shape) {
-    shape_.resize(dim);
-    for (int i = 0; i < dim; ++i) {
-      this->shape_[i] = shape[i];
-    }
-    return *this;
   }
   /*!
    * \return whether two shape equals
    * \param s the shape to compare against
    */
   inline bool operator==(const TShape &s) const {
-    if (shape_.size() != s.shape_.size()) return false;
-    for (size_t i = 0; i < shape_.size(); ++i) {
-      if (shape_[i] != s.shape_[i]) return false;
+    if (ndim_ != s.ndim_) return false;
+    if (ndim_ <= kStackCache) {
+      for (index_t i = 0; i < ndim_; ++i) {
+        if (data_stack_[i] != s.data_stack_[i]) return false;
+      }
+    } else {
+      for (index_t i = 0; i < ndim_; ++i) {
+        if (data_heap_[i] != s.data_heap_[i]) return false;
+      }
     }
     return true;
   }
@@ -117,9 +197,10 @@ struct TShape {
    */
   template<int dim>
   inline bool operator==(const Shape<dim> &s) const {
-    if (shape_.size() != dim) return false;
+    if (ndim_ != dim) return false;
+    const index_t *d = dim <= kStackCache ? data_stack_ : data_heap_;
     for (index_t i = 0; i < dim; ++i) {
-      if (shape_[i] != s.shape_[i]) return false;
+      if (d[i] != s.shape_[i]) return false;
     }
     return true;
   }
@@ -131,6 +212,34 @@ struct TShape {
   template<int dim>
   inline bool operator!=(const Shape<dim> &s) const {
     return !(*this == s);
+  }
+
+ private:
+  // the shape will be stored in data_stack_
+  // when dimension is smaller than kStackCache
+  // when it is bigger, it will be stored in data_heap_;
+  /*! \brief size of in stack space */
+  static const int kStackCache = 4;
+  /*! \brief number of dimnsion of the shape */
+  index_t ndim_;
+  /*! \brief number of cells allocated in data_heap_ */
+  index_t num_heap_allocated_;
+  /*! \brief in stack space used to store shape when it is small */
+  index_t data_stack_[kStackCache];
+  /*! \brief space to store shape when dimension is big*/
+  index_t *data_heap_;
+  /*!
+   * \brief internal function to set the dimension 
+   * \param dim the dimension of the shape
+   */
+  inline void SetDim(index_t dim) {
+    if (dim > num_heap_allocated_) {
+      // data_heap_ can be NULL
+      delete [] data_heap_;
+      data_heap_ = new index_t[dim];
+      num_heap_allocated_ = dim;
+    }
+    ndim_ = dim;
   }
 };
 
@@ -187,7 +296,7 @@ class TBlob {
         const TShape &shape,
         int dev_mask)
       : dptr_(dptr), shape_(shape),
-        stride_(shape.shape_.back()),
+        stride_(shape[shape.ndim() - 1]),
         dev_mask_(dev_mask),
         type_flag_(DataType<DType>::kFlag) {}
   /*!
@@ -215,14 +324,14 @@ class TBlob {
     shape_ = src.shape_;
     stride_ = src.stride_;
     dev_mask_ = Device::kDevMask;
-    type_flag_ = DataType<Device>::kFlag;
+    type_flag_ = DataType<DType>::kFlag;
     return *this;
   }
   /*!
    * \return whether the tensor's memory is continuous
    */
   inline bool CheckContiguous(void) const {
-    return shape_[shape_.shape_.size() - 1] == stride_;
+    return shape_[shape_.ndim() - 1] == stride_;
   }
   /*!
    * \brief flatten the tensor to 2 dimension, collapse the higher dimensions together
@@ -279,7 +388,7 @@ class TBlob {
    */
   template<typename Device, int dim, typename DType>
   inline Tensor<Device, dim, DType> get_with_shape(const TShape &shape,
-                                                Stream<Device> *stream = NULL) const {
+                                                   Stream<Device> *stream = NULL) const {
     utils::Check(Device::kDevMask == dev_mask_ && DataType<DType>::kFlag == type_flag_,
                  "TBlob.get_with_shape: device type do not match specified type");
     utils::Check(this->CheckContiguous(), "TBlob.get_reshape: must be contiguous");
@@ -287,7 +396,7 @@ class TBlob {
                  "TBlob.get_with_shape: new and old shape do not match total elements");
     return Tensor<Device, dim, DType>(static_cast<DType*>(dptr_),
                                       shape.get<dim>(),
-                                      shape[shape.shape_.size() - 1],
+                                      shape[dim - 1],
                                       stream);
   }
 };

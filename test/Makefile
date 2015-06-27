@@ -7,18 +7,20 @@ export LDFLAGS= -g -lm -lcublas -lcudart
 export NVCCFLAGS = -O3 --use_fast_math -ccbin $(CXX)
 
 # specify tensor path
-BIN =
+BIN = test_tblob
 OBJ =
 CUOBJ =
 CUBIN = test
 .PHONY: clean all
 
-all: $(CUBIN) $(OBJ)
+all: $(CUBIN) $(BIN)
 
 test: test.cu
 
+test_tblob: test_tblob.cc
+
 $(BIN) :
-	$(CXX) $(CFLAGS) -o $@ $(filter %.cpp %.o %.c, $^)  $(LDFLAGS)
+	$(CXX) $(CFLAGS) -std=c++0x -o $@ $(filter %.cpp %.o %.c %.cc, $^)  $(LDFLAGS)
 
 $(OBJ) :
 	$(CXX) -c $(CFLAGS) -o $@ $(firstword $(filter %.cpp %.c, $^) )
