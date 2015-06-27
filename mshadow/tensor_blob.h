@@ -233,7 +233,8 @@ struct TShape {
    * \param dim the dimension of the shape
    */
   inline void SetDim(index_t dim) {
-    if (dim > num_heap_allocated_) {
+    if (dim > kStackCache &&
+        dim > num_heap_allocated_) {
       // data_heap_ can be NULL
       delete [] data_heap_;
       data_heap_ = new index_t[dim];
