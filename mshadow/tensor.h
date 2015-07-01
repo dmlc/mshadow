@@ -52,7 +52,7 @@ struct Shape {
     for (int i = 0; i < kDimension; ++i) {
       this->shape_[i] = s[i];
     }
-  }  
+  }
   /*!
    * \brief get corresponding index
    * \param idx dimension index
@@ -70,7 +70,7 @@ struct Shape {
     return shape_[idx];
   }
   /*!
-   * \return whether two shape equals 
+   * \return whether two shape equals
    * \param s the shape to compare against
    */
   MSHADOW_XINLINE bool operator==(const Shape<kDimension> &s) const {
@@ -220,6 +220,8 @@ struct Stream {
   inline bool CheckIdle(void) {
     return true;
   }
+  /*! \brief create a blas handle */
+  inline void CreateBlasHandle() {}
 };
 /*!
  * \brief Tensor RValue, this is the super type of all kinds of possible tensors
