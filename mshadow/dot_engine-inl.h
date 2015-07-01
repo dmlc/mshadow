@@ -242,7 +242,7 @@ struct DotEngine<SV, xpu, 2, 1, 1, true, false, DType> {
                   "dot-ger: matrix shape mismatch");
     if (SV::BetaBLAS() == 0.0f) {
       BLASEngine<xpu>::ger
-          (dst.stream_, rhs.size(0), lhs.size(0), scale * SV::AlphaBLAS(),
+          (stream, rhs.size(0), lhs.size(0), scale * SV::AlphaBLAS(),
            rhs.dptr_, 1, lhs.dptr_, 1, dst.dptr_, dst.stride_);
     } else {
       DotEngine<SV, xpu, 2, 2, 2, true, false,
