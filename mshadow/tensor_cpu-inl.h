@@ -23,7 +23,8 @@ template<>
 inline void SetDevice<cpu>(int devid) {
 }
 template<>
-inline Stream<cpu> *NewStream<cpu>(bool create_blas_handle) {
+inline Stream<cpu> *NewStream<cpu>(bool create_blas_handle,
+                                   bool create_dnn_handle) {
   return new Stream<cpu>();
 }
 template<>
