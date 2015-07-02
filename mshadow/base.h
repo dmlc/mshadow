@@ -52,7 +52,7 @@
  *  error will be shot when default stream NULL is used
  */
 #ifndef MSHADOW_FORCE_STREAM
-#define MSHADOW_FORCE_STREAM 0
+#define MSHADOW_FORCE_STREAM 1
 #endif
 
 /*! \brief use CBLAS for CBLAS */

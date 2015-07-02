@@ -468,11 +468,17 @@ template<typename Device>
 inline void SetDevice(int devid);
 /*!
  * \brief create a new stream from system
+ * \param bool whether crate blas handle in stream
  * \return a pointer to the created stream
  * \tparam Device the device type
  */
 template<typename Device>
-inline Stream<Device> *NewStream(void);
+inline Stream<Device> *NewStream(bool);
+/*! \brief default behavior: create cublas handle */
+template<typename Device>
+inline Stream<Device> *NewStream() {
+  return NewStream<Device>(true);
+}
 /*!
  * \brief delete the computing stream
  * \param stream the stream parameter to be deleted

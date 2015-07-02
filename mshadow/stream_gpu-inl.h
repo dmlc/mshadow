@@ -20,7 +20,6 @@ struct Stream<gpu> {
   enum HandleState {
     NoHandle = 0,
     OwnHandle = 1,
-    BorrowHandle = 2
   };
   /*! \brief cudaStream */
   cudaStream_t stream_;
@@ -83,29 +82,21 @@ struct Stream<gpu> {
       utils::Check(err == CUBLAS_STATUS_SUCCESS, "Destory cublas handle failed");
     }
   }
-  /*! \brief Set cublas handle from other stream,
-             if there this stream originally own a handle, destory it,
-             and borrow a handle from source stream
-   *  \param pointer to GPU stream
-   */
-  inline void SetBlasHandle(Stream<gpu> *stream) {
-    this->DestoryBlasHandle();
-    utils::Check(stream->blas_handle_ownership_ != NoHandle,
-                 "No handle exist in source stream");
-    blas_handle_ = GetBlasHandle(stream);
-    blas_handle_ownership_ = BorrowHandle;
-  }
   /*! \brief Destory original blas handle and create a new one */
   inline void CreateBlasHandle() {
     this->DestoryBlasHandle();
     cublasStatus_t err = cublasCreate(&blas_handle_);
+    blas_handle_ownership_ = OwnHandle;
     utils::Check(err == CUBLAS_STATUS_SUCCESS, "Create cublas handle failed");
   }
 };
 template<>
-inline Stream<gpu> *NewStream<gpu>(void) {
+inline Stream<gpu> *NewStream<gpu>(bool create_blas_handle) {
   Stream<gpu> *st = new Stream<gpu>();
   cudaError_t err = cudaStreamCreate(&st->stream_);
+  if (create_blas_handle) {
+    st->CreateBlasHandle();
+  }
   utils::Check(err == cudaSuccess, cudaGetErrorString(err));
   return st;
 }

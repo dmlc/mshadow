@@ -85,10 +85,10 @@ struct BLASEngine<gpu> {
     return t ? CUBLAS_OP_T : CUBLAS_OP_N;
   }
   inline static void SetStream(Stream<gpu> *stream) {
-    if (stream == NULL) return;
     cublasStatus_t err = cublasSetStream(Stream<gpu>::GetBlasHandle(stream),
                     Stream<gpu>::GetStream(stream));
-    utils::Check(err == CUBLAS_STATUS_SUCCESS, "cublas: set stream fail");
+    utils::Check(err == CUBLAS_STATUS_SUCCESS,
+                 "cublas: set stream fail, set stream for tensor before use cublas");
   }
   inline static void gemm(Stream<gpu> *stream,
                           bool transa, bool transb,
@@ -162,13 +162,8 @@ struct DotEngine<SV, xpu, 2, 2, 2, transpose_left, transpose_right, DType> {
                           DType scale) {
     Tensor<xpu, 2, DType> &dst = *p_dst;
     // set kernel stream
-    Stream<xpu> *stream = dst.stream_;
-    // if there is no stream, create a temp stream with handle
+    // if there is no stream, crush
     BLASEngine<xpu>::SetStream(dst.stream_);
-    if (stream == NULL) {
-      stream = NewStream<xpu>();
-      stream->CreateBlasHandle();
-    }
     Shape<2> sleft = GetShape(lhs.shape_, transpose_left);
     Shape<2> sright = GetShape(rhs.shape_, transpose_right);
     utils::Check(dst.size(0) == sleft[0] && dst.size(1) == sright[1] \
@@ -176,7 +171,7 @@ struct DotEngine<SV, xpu, 2, 2, 2, transpose_left, transpose_right, DType> {
                  "dot-gemm: matrix shape mismatch");
     // use column major argument to compatible with most BLAS
     BLASEngine<xpu>::gemm
-        (stream,
+        (dst.stream_,
          transpose_right , transpose_left,
          transpose_right ? rhs.size(0) : rhs.size(1),
          transpose_left  ? lhs.size(1) : lhs.size(0),
@@ -186,9 +181,6 @@ struct DotEngine<SV, xpu, 2, 2, 2, transpose_left, transpose_right, DType> {
          lhs.dptr_, lhs.stride_,
          SV::BetaBLAS(),
          dst.dptr_, dst.stride_);
-    if (stream != dst.stream_) {
-      DeleteStream(stream);
-    }
   }
 };
 template<typename SV, typename xpu, bool transpose_right, typename DType>
@@ -199,27 +191,18 @@ struct DotEngine<SV, xpu, 1, 1, 2, false, transpose_right, DType> {
                           DType scale) {
     Tensor<xpu, 1, DType> &dst = *p_dst;
     // set kernel stream
-    Stream<xpu> *stream = dst.stream_;
-    // if there is no stream, create a temp stream with handle
-    BLASEngine<xpu>::SetStream(dst.stream_);
-    if (stream == NULL) {
-      stream = NewStream<xpu>();
-      stream->CreateBlasHandle();
-    }
+    // if there is no stream, crush
     BLASEngine<xpu>::SetStream(dst.stream_);
     Shape<2> sright = GetShape(rhs.shape, transpose_right);
     utils::Check(dst.size(0) == sright[1] && lhs.size(0) == sright[0],
                  "dot-gemv: matrix shape mismatch");
     BLASEngine<xpu>::gemv
-        (stream,
+        (dst.stream_,
          transpose_right,
          rhs.size(1), rhs.size(0), scale * SV::AlphaBLAS(),
          rhs.dptr_, rhs.stride_,
          lhs.dptr_, 1, SV::BetaBLAS(),
          dst.dptr_, 1);
-    if (stream != dst.stream_) {
-      DeleteStream(stream);
-    }
   }
 };
 template<typename SV, typename xpu, typename DType>
@@ -230,26 +213,17 @@ struct DotEngine<SV, xpu, 2, 1, 1, true, false, DType> {
                           DType scale) {
     Tensor<xpu, 2, DType> &dst = *p_dst;
     // set kernel stream
-    Stream<xpu> *stream = dst.stream_;
-    // if there is no stream, create a temp stream with handle
-    BLASEngine<xpu>::SetStream(dst.stream_);
-    if (stream == NULL) {
-      stream = NewStream<xpu>();
-      stream->CreateBlasHandle();
-    }
+    // if there is no stream, crush
     BLASEngine<xpu>::SetStream(dst.stream_);
     utils::Check(dst.size(0) == lhs.size(0) && dst.size(1) == rhs.size(0),
                   "dot-ger: matrix shape mismatch");
     if (SV::BetaBLAS() == 0.0f) {
       BLASEngine<xpu>::ger
-          (stream, rhs.size(0), lhs.size(0), scale * SV::AlphaBLAS(),
+          (dst.stream_, rhs.size(0), lhs.size(0), scale * SV::AlphaBLAS(),
            rhs.dptr_, 1, lhs.dptr_, 1, dst.dptr_, dst.stride_);
     } else {
       DotEngine<SV, xpu, 2, 2, 2, true, false,
                 DType>::Eval(dst, lhs.FlatTo2D(), rhs.FlatTo2D(), scale);
-    }
-    if (stream != dst.stream_) {
-      DeleteStream(stream);
     }
   }
 };
