@@ -74,7 +74,7 @@ for (index_t i = 0; i < ts.size(0); ++i) {
 ```
 The result ts should be a 3 * 2 matrix, where data[2], data[5], data[8] are padding cells that are ignored. If you want a continuous memory, set ```stride_=shape_[1]```.
 
-NOTICE: We decide to force use stream in default. In ```gpu``` mode, there will be fatal error if no stream is set. Check [basic_stream.cu](basic_stream.cu) for more detail.
+NOTICE: We highly recommend use stream in ```gpu``` mode, there will be an error thrown out if no stream is set. Check [basic_stream.cu](basic_stream.cu) for more detail.
 
 Memory Allocation
 ====

@@ -72,6 +72,13 @@
 #endif
 
 /*!
+ * \brief use CUDNN support, must ensure that the cudnn include path is correct
+ */
+#ifndef MSHADOW_USE_CUDNN
+  #define MSHADOW_USE_CUDNN 0
+#endif
+
+/*!
  * \brief seems CUDAARCH is deprecated in future NVCC
  * set this to 1 if you want to use CUDA version smaller than 2.0
  */
@@ -114,6 +121,12 @@ extern "C" {
 #if MSHADOW_USE_CUDA
   #include <cublas_v2.h>
   #include <curand.h>
+#endif
+
+#if MSHADOW_USE_CUDNN
+ #ifdef __CUDACC__
+  #include <cudnn.h>
+ #endif
 #endif
 
 #if MSHADOW_USE_NVML
