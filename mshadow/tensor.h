@@ -52,7 +52,7 @@ struct Shape {
     for (int i = 0; i < kDimension; ++i) {
       this->shape_[i] = s[i];
     }
-  }  
+  }
   /*!
    * \brief get corresponding index
    * \param idx dimension index
@@ -70,7 +70,7 @@ struct Shape {
     return shape_[idx];
   }
   /*!
-   * \return whether two shape equals 
+   * \return whether two shape equals
    * \param s the shape to compare against
    */
   MSHADOW_XINLINE bool operator==(const Shape<kDimension> &s) const {
@@ -220,6 +220,8 @@ struct Stream {
   inline bool CheckIdle(void) {
     return true;
   }
+  /*! \brief create a blas handle */
+  inline void CreateBlasHandle() {}
 };
 /*!
  * \brief Tensor RValue, this is the super type of all kinds of possible tensors
@@ -466,11 +468,19 @@ template<typename Device>
 inline void SetDevice(int devid);
 /*!
  * \brief create a new stream from system
+ * \param create_blas_handle whether create blas handle in stream
+ * \param create_dnn_handle whether create cudnn handle in stream
  * \return a pointer to the created stream
  * \tparam Device the device type
  */
 template<typename Device>
-inline Stream<Device> *NewStream(void);
+inline Stream<Device> *NewStream(bool create_blas_handle,
+                                 bool create_dnn_handle);
+/*! \brief default behavior: create cublas handle */
+template<typename Device>
+inline Stream<Device> *NewStream() {
+  return NewStream<Device>(true, false);
+}
 /*!
  * \brief delete the computing stream
  * \param stream the stream parameter to be deleted

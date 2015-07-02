@@ -28,15 +28,13 @@ inline void InitTensorEngine<gpu>(int dev_id) {
   utils::Check(cudaSetDevice(device_id) == cudaSuccess, "cannot set device");
   cudaGetDeviceProperties(&prop, device_id);
   printf("Use CUDA Device %d: %s\n", device_id, prop.name);
-  cublasInit();
 }
 template<>
 inline void ShutdownTensorEngine<gpu>(void) {
-  cublasShutdown();
 }
 template<>
 inline void SetDevice<gpu>(int devid) {
-  utils::Check(cudaSetDevice(devid) == cudaSuccess, "cannot set device"); 
+  utils::Check(cudaSetDevice(devid) == cudaSuccess, "cannot set device");
 }
 template<int dim, typename DType>
 inline void AllocSpace(Tensor<gpu, dim, DType> *obj, bool pad) {
@@ -132,7 +130,7 @@ inline void MapReduceKeepLowest(TRValue<R, gpu, 1, DType> *dst,
       ::Error_TypeCheck_Not_Pass_For_Reduce_Exp();
   Shape<2> eshape = expr::ShapeCheck<expr::ExpInfo<E>::kDim, E>
       ::Check(exp.self()).FlatTo2D();
-  Shape<1> dshape = expr::ShapeCheck<1, R>::Check(dst->self());  
+  Shape<1> dshape = expr::ShapeCheck<1, R>::Check(dst->self());
   utils::Check(eshape[1] == dshape[0],
                "MapReduceKeepLowest::reduction dimension do not match");
   utils::Check(eshape[0] != 0, "can not reduce over empty tensor");
@@ -151,7 +149,7 @@ inline void MapReduceKeepHighDim(TRValue<R, gpu, 1, DType> *dst,
   typedef Shape<expr::ExpInfo<E>::kDim> EShape;
   EShape eshape = expr::ShapeCheck<expr::ExpInfo<E>::kDim, E>
       ::Check(exp.self());
-    Shape<1> dshape = expr::ShapeCheck<1, R>::Check(dst->self());  
+    Shape<1> dshape = expr::ShapeCheck<1, R>::Check(dst->self());
   utils::Check(eshape[dimkeep] == dshape[0],
                "MapReduceKeepHighDim::reduction dimension do not match");
   // use equvalent form

@@ -20,7 +20,7 @@
 // macro defintiions
 /*!
  * \brief if this macro is define to be 1,
- * mshadow should compile without any of other libs 
+ * mshadow should compile without any of other libs
  */
 #ifndef MSHADOW_STAND_ALONE
 #define MSHADOW_STAND_ALONE 0
@@ -30,9 +30,9 @@
 #define MSHADOW_ALLOC_PAD true
 #endif
 /*!
- * \brief 
+ * \brief
  *  x dimension of data must be bigger pad_size * ratio to be alloced padded memory,
- *  otherwise use tide allocation 
+ *  otherwise use tide allocation
  *  for example, if pad_ratio=2, GPU memory alignement size is 32,
  *  then we will only allocate padded memory if x dimension > 64
  *  set it to 0 then we will always allocate padded memory
@@ -52,7 +52,7 @@
  *  error will be shot when default stream NULL is used
  */
 #ifndef MSHADOW_FORCE_STREAM
-#define MSHADOW_FORCE_STREAM 0
+#define MSHADOW_FORCE_STREAM 1
 #endif
 
 /*! \brief use CBLAS for CBLAS */
@@ -69,6 +69,13 @@
  */
 #ifndef MSHADOW_USE_CUDA
   #define MSHADOW_USE_CUDA   1
+#endif
+
+/*!
+ * \brief use CUDNN support, must ensure that the cudnn include path is correct
+ */
+#ifndef MSHADOW_USE_CUDNN
+  #define MSHADOW_USE_CUDNN 0
 #endif
 
 /*!
@@ -112,8 +119,14 @@ extern "C" {
 #endif
 
 #if MSHADOW_USE_CUDA
-  #include <cublas.h>
+  #include <cublas_v2.h>
   #include <curand.h>
+#endif
+
+#if MSHADOW_USE_CUDNN
+ #ifdef __CUDACC__
+  #include <cudnn.h>
+ #endif
 #endif
 
 #if MSHADOW_USE_NVML
@@ -128,7 +141,7 @@ extern "C" {
 #define MSHADOW_FORCE_INLINE __forceinline
 #pragma warning( disable : 4068 )
 #else
-#define MSHADOW_FORCE_INLINE inline __attribute__((always_inline)) 
+#define MSHADOW_FORCE_INLINE inline __attribute__((always_inline))
 #endif
 #ifdef __CUDACC__
   #define MSHADOW_XINLINE MSHADOW_FORCE_INLINE __device__ __host__
@@ -292,7 +305,7 @@ struct divto {
 namespace red {
 namespace limits {
 /*!
- * \brief minimum value of certain types 
+ * \brief minimum value of certain types
  * \tparam DType data type
  */
 template<typename DType>
@@ -321,9 +334,9 @@ struct sum {
   MSHADOW_XINLINE static void Reduce(volatile DType& dst,  volatile DType src) {
     dst += src;
   }
-  /*! 
+  /*!
    *\brief calculate gradient of redres with respect to redsrc,
-   * redres: reduced result, redsrc: one of reduction element   
+   * redres: reduced result, redsrc: one of reduction element
    */
   template<typename DType>
   MSHADOW_XINLINE static DType PartialGrad(DType redres, DType redsrc) {
@@ -331,7 +344,7 @@ struct sum {
   }
   /*!
    *\brief set the initial value during reduction
-   */  
+   */
   template<typename DType>
   MSHADOW_XINLINE static void SetInitValue(DType &initv) {
     initv = 0;
@@ -355,7 +368,7 @@ struct maximum {
   }
   /*!
    *\brief set the initial value during reduction
-   */  
+   */
   template<typename DType>
   MSHADOW_XINLINE static void SetInitValue(DType &initv) {
     initv = limits::MinValue<DType>();
