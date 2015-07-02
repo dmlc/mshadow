@@ -22,8 +22,7 @@ struct TShape {
   TShape()
       : ndim_(0),
         num_heap_allocated_(0),
-        data_heap_(NULL) {
-  }
+        data_heap_(NULL) {}
   /*!
    * \brief constructor from TShape
    * \param s the source shape
@@ -39,7 +38,21 @@ struct TShape {
       num_heap_allocated_ = ndim_;
       std::copy(s.data_heap_, s.data_heap_ + ndim_, data_heap_);
     }
-  }  
+  }
+  /*!
+   * \brief construct the TShape from content of iterator
+   * \begin the beginning of iterator
+   * \begin end the end of the iterator
+   * \tparam RandomAccessIterator iterator type
+   */
+  template<typename RandomAccessIterator>
+  TShape(RandomAccessIterator begin,
+         RandomAccessIterator end)
+      : ndim_(0),
+        num_heap_allocated_(0),
+        data_heap_(NULL) {
+    this->CopyFrom(begin, end);
+  }
 #if MSHADOW_IN_CXX11
   /*!
    * \brief move constructor from TShape
@@ -62,6 +75,18 @@ struct TShape {
     delete [] data_heap_;
   }
   /*!
+   * \brief copy shape from content betwen two iterators
+   * \begin the beginning of iterator
+   * \begin end the end of the iterator
+   * \tparam RandomAccessIterator iterator type
+   */
+  template<typename RandomAccessIterator>
+  inline void CopyFrom(RandomAccessIterator begin,
+                       RandomAccessIterator end) {
+    this->SetDim(end - begin);
+    std::copy(begin, end, data());
+  }
+  /*!
    * \brief assignment from shape
    * \param shape source shape
    * \return reference of self
@@ -78,8 +103,7 @@ struct TShape {
    * \return reference of self
    */
   inline TShape &operator=(const std::vector<index_t> &shape) {
-    this->SetDim(static_cast<index_t>(shape.size()));
-    std::copy(shape.begin(), shape.end(), data());
+    this->CopyFrom(shape.begin(), shape.end());
     return *this;
   }
   /*!
