@@ -1,12 +1,15 @@
-#ifndef MSHADOW_PS_THREAD_UTIL_H_
-#define MSHADOW_PS_THREAD_UTIL_H_
 /*!
+ * Copyright by Contributors
  * \file thread_util.h
  * \brief data structures for multi-threading communication
  * \author Tianqi Chen
  */
+#ifndef MSHADOW_PS_THREAD_UTIL_H_  // NOLINT(*)
+#define MSHADOW_PS_THREAD_UTIL_H_  // NOLINT(*)
+
 #include <utility>
 #include <queue>
+#include <map>
 #include "./thread.h"
 namespace mshadow {
 namespace utils {
@@ -40,7 +43,7 @@ class ThreadPQueue {
    *  could be waiting on the queue
    */
   inline void Abort(int max_nthread = 1) {
-    for (int i = 0; i < max_nthread; ++ i) {
+    for (int i = 0; i < max_nthread; ++i) {
       counter_.Post();
     }
   }
@@ -58,7 +61,7 @@ class ThreadPQueue {
       pqueue_.push(Entry(data, priority));
     }
     lock_.Unlock();
-    counter_.Post();    
+    counter_.Post();
   }
   /*!
    * \brief pop an element from the queue
@@ -102,7 +105,7 @@ class ThreadPQueue {
     inline bool operator<(const Entry &b) const {
       return priority < b.priority;
     }
-  };  
+  };
   // whether use FIFO queue
   bool use_fifo_;
   // a priority queue
@@ -132,7 +135,7 @@ class ThreadSafeMap {
   inline TValue *Get(int key) {
     TValue *ret;
     lock_.Lock();
-    typename std::map<int, TValue*>::const_iterator 
+    typename std::map<int, TValue*>::const_iterator
         it = map_.find(key);
     if (it == map_.end() || it->first != key) {
       ret = NULL;

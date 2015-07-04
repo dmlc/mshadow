@@ -82,7 +82,7 @@ struct Plan<ChannelPoolingExp<Reducer, SrcExp, DType, srcdim>, DType> {
       : src_(MakePlan(e.src_)), channel_(e.shape_[srcdim - 3]),
         height_(e.shape_[srcdim - 2]), width_(e.shape_[srcdim - 1]),
         hnsize_(e.nsize_), stride_(e.stride_), pad_(e.pad_),
-        src_channel_(e.src_channel_){}
+        src_channel_(e.src_channel_) {}
   MSHADOW_XINLINE DType Eval(index_t i, index_t j) const {
     using namespace std;
     const index_t y = i % height_;
@@ -98,6 +98,7 @@ struct Plan<ChannelPoolingExp<Reducer, SrcExp, DType, srcdim>, DType> {
     }
     return res;
   }
+
  private:
   Plan<SrcExp, DType> src_;
   const index_t channel_, height_, width_, hnsize_, stride_, pad_, src_channel_;

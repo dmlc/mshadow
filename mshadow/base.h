@@ -90,7 +90,8 @@
  * \brief macro to decide existence of c++11 compiler
  */
 #ifndef MSHADOW_IN_CXX11
-#define MSHADOW_IN_CXX11 (defined(__GXX_EXPERIMENTAL_CXX0X__) || __cplusplus >= 201103L || defined(_MSC_VER))
+#define MSHADOW_IN_CXX11 (defined(__GXX_EXPERIMENTAL_CXX0X__) ||\
+                          __cplusplus >= 201103L || defined(_MSC_VER))
 #endif
 
 /*! \brief whether use SSE */
@@ -124,9 +125,9 @@ extern "C" {
 #endif
 
 #if MSHADOW_USE_CUDNN
- #ifdef __CUDACC__
-  #include <cudnn.h>
- #endif
+  #ifdef __CUDACC__
+    #include <cudnn.h>
+  #endif
 #endif
 
 #if MSHADOW_USE_NVML
@@ -139,7 +140,7 @@ extern "C" {
 #endif
 #ifdef _MSC_VER
 #define MSHADOW_FORCE_INLINE __forceinline
-#pragma warning( disable : 4068 )
+#pragma warning(disable : 4068)
 #else
 #define MSHADOW_FORCE_INLINE inline __attribute__((always_inline))
 #endif
@@ -166,7 +167,6 @@ extern "C" {
  */
 #ifndef MSHADOW_DEFAULT_DTYPE
 #define MSHADOW_DEFAULT_DTYPE = default_real_t
-//#define MSHADOW_DEFAULT_DTYPE
 #endif
 
 /*! \brief namespace for mshadow */
@@ -242,7 +242,7 @@ namespace sv {
 struct saveto {
   /*! \brief save b to a using save method */
   template<typename DType>
-  MSHADOW_XINLINE static void Save(DType &a, DType b) {
+  MSHADOW_XINLINE static void Save(DType &a, DType b) { // NOLINT(*)
     a = b;
   }
   /*! \brief helper constant to use BLAS, alpha */
@@ -256,7 +256,7 @@ struct saveto {
 struct plusto {
   /*! \brief save b to a using save method */
   template<typename DType>
-  MSHADOW_XINLINE static void Save(DType &a, DType b) {
+  MSHADOW_XINLINE static void Save(DType &a, DType b) { // NOLINT(*)
     a += b;
   }
   /*! \brief helper constant to use BLAS, alpha */
@@ -270,7 +270,7 @@ struct plusto {
 struct minusto {
   /*! \brief save b to a using save method */
   template<typename DType>
-  MSHADOW_XINLINE static void Save(DType &a, DType b) {
+  MSHADOW_XINLINE static void Save(DType &a, DType b) { // NOLINT(*)
     a -= b;
   }
   /*! \brief helper constant to use BLAS, alpha */
@@ -284,7 +284,7 @@ struct minusto {
 struct multo {
   /*! \brief save b to a using save method */
   template<typename DType>
-  MSHADOW_XINLINE static void Save(DType &a, DType b) {
+  MSHADOW_XINLINE static void Save(DType &a, DType b) { // NOLINT(*)
     a *= b;
   }
   /*! \brief corresponding binary operator type */
@@ -294,7 +294,7 @@ struct multo {
 struct divto {
   /*! \brief save b to a using save method */
   template<typename DType>
-  MSHADOW_XINLINE static void Save(DType& a, DType b) {
+  MSHADOW_XINLINE static void Save(DType& a, DType b) { // NOLINT(*)
     a /= b;
   }
   /*! \brief corresponding binary operator type */
@@ -331,7 +331,7 @@ MSHADOW_XINLINE int MinValue<int>(void) {
 struct sum {
   /*! \brief do reduction into dst */
   template<typename DType>
-  MSHADOW_XINLINE static void Reduce(volatile DType& dst,  volatile DType src) {
+  MSHADOW_XINLINE static void Reduce(volatile DType& dst,  volatile DType src) { // NOLINT(*)
     dst += src;
   }
   /*!
@@ -346,7 +346,7 @@ struct sum {
    *\brief set the initial value during reduction
    */
   template<typename DType>
-  MSHADOW_XINLINE static void SetInitValue(DType &initv) {
+  MSHADOW_XINLINE static void SetInitValue(DType &initv) { // NOLINT(*)
     initv = 0;
   }
 };
@@ -354,7 +354,7 @@ struct sum {
 struct maximum {
   /*! \brief do reduction into dst */
   template<typename DType>
-  MSHADOW_XINLINE static void Reduce(volatile DType& dst,  volatile DType src) {
+  MSHADOW_XINLINE static void Reduce(volatile DType& dst,  volatile DType src) { // NOLINT(*)
     using namespace std;
     dst = max(dst, src);
   }
@@ -370,7 +370,7 @@ struct maximum {
    *\brief set the initial value during reduction
    */
   template<typename DType>
-  MSHADOW_XINLINE static void SetInitValue(DType &initv) {
+  MSHADOW_XINLINE static void SetInitValue(DType &initv) { // NOLINT(*)
     initv = limits::MinValue<DType>();
   }
 };

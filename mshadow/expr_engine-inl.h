@@ -14,7 +14,7 @@
 
 namespace mshadow {
 namespace expr {
-/*! 
+/*!
  * \brief a general class that allows extension that makes tensors of some shape
  * \tparam SubType type of subclass
  * \tparam SrcExp source expression of the MakeTensorExp, the source of operation
@@ -205,8 +205,8 @@ MakePlan(const BinaryMapExp<OP, TA, TB, DType, etype> &e) {
 // Static Type inference and Type Checking
 //----------------------------------------------------------------
 /*!
- * \brief static type inference template, 
- *        used to get the dimension of each expression, 
+ * \brief static type inference template,
+ *        used to get the dimension of each expression,
  *        if ExpInfo<E>::kDim == -1, this means here are mismatch in expression
  *        if (ExpInfo<E>::kDevMask & cpu::kDevMask) != 0, this means this expression can be assigned to cpu
  * \tparam E expression
@@ -229,7 +229,7 @@ struct ExpInfo<TransposeExp<E, DType> > {
 template<typename DstDType, typename SrcDType, typename EType, int etype>
 struct ExpInfo<TypecastExp<DstDType, SrcDType, EType, etype> > {
   static const int kDim = ExpInfo<EType>::kDim;
-  static const int kDevMask = ExpInfo<EType>::kDevMask;  
+  static const int kDevMask = ExpInfo<EType>::kDevMask;
 };
 template<typename Device, int dim, typename DType>
 struct ExpInfo<Tensor<Device, dim, DType> > {

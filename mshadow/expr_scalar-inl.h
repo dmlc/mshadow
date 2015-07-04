@@ -7,6 +7,12 @@
  * DO NOT add pragma once or macro guard
  * \author Tianqi Chen, Bing Xu
  */
+// macro guard is harmful, used to pass the cpplint
+#ifndef MSHADOW_EXPR_SCALAR_INL_H_
+#define MSHADOW_EXPR_SCALAR_INL_H_
+// undef the guard so it can be included multiple times
+#undef MSHADOW_EXPR_SCALAR_INL_H_
+
 namespace mshadow {
 namespace expr {
 // DotExp
@@ -34,7 +40,7 @@ operator*(const ReduceTo1DExp<E, DType, R, d> &e, MSHADOW_SCALAR_ scale) {
   return ReduceTo1DExp<E, DType, R, d>(e.src_, e.scale_ * scale);
 }
 /*! \brief operator overload */
-template<typename E, typename DType, typename R,int d>
+template<typename E, typename DType, typename R, int d>
 inline ReduceTo1DExp<E, DType, R, d>
 operator*(MSHADOW_SCALAR_ scale, const ReduceTo1DExp<E, DType, R, d> &e) {
   return ReduceTo1DExp<E, DType, R, d>(e.src_, e.scale_ * scale);
@@ -121,3 +127,4 @@ operator/(const ScalarExp<MSHADOW_SCALAR_> &lhs, const Exp<TB, MSHADOW_SCALAR_, 
 }
 }  // namespace expr
 }  // namespace mshadow
+#endif  // MSHADOW_EXPR_SCALAR_INL_H_

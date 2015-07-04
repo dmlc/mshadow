@@ -62,7 +62,7 @@ sum_rows(const Exp<SrcExp, DType, etype> &exp) {
 template<typename SV, typename Device, typename DType,
          typename SrcExp, typename Reducer, int m_dimkeep>
 struct ExpComplexEngine<SV,
-                        Tensor<Device, 1, DType>,                        
+                        Tensor<Device, 1, DType>,
                         ReduceTo1DExp<SrcExp, DType, Reducer, m_dimkeep>,
                         DType> {
   static const int dimkeep = ExpInfo<SrcExp>::kDim - m_dimkeep;

@@ -501,7 +501,17 @@ inline void DeleteStream(Stream<Device> *stream);
 template<int dim, typename DType>
 inline void AllocSpace(Tensor<cpu, dim, DType> *obj,
                        bool pad = MSHADOW_ALLOC_PAD);
-/*! \brief refer to comment of cpu ver \sa AllocSpace */
+/*!
+ * \brief CPU/CPU: allocate space for CTensor, according to the shape in the obj
+ *        this function is responsible to set the stride_ in each obj.shape
+ * \param obj the tensor object, with shape specified
+ * \param pad whether padding dimension 0, to make last dimension aligned,
+ *            padding may help improve efficiency of matrix multiplications
+ *            if true, will allocate space with stride_ that may not equals shape[0]
+ *            if false, will allocate continuous space
+ * \tparam dim specify the dim of tensor
+ * \tparam DType type of element in tensor
+ */
 template<int dim, typename DType>
 inline void AllocSpace(Tensor<gpu, dim, DType> *obj,
                        bool pad = MSHADOW_ALLOC_PAD);
@@ -513,7 +523,12 @@ inline void AllocSpace(Tensor<gpu, dim, DType> *obj,
  */
 template<int dim, typename DType>
 inline void FreeSpace(Tensor<cpu, dim, DType> *obj);
-/*! \brief refer to comment of cpu ver \sa FreeSpace */
+/*!
+ * \brief CPU/GPU: free the space of tensor, will set obj.dptr to NULL
+ * \param obj the tensor object
+ * \tparam dim specify the dim of tensor
+ * \tparam DType type of element in tensor
+ */
 template<int dim, typename DType>
 inline void FreeSpace(Tensor<gpu, dim, DType> *obj);
 /*!
@@ -524,6 +539,7 @@ inline void FreeSpace(Tensor<gpu, dim, DType> *obj);
  * \tparam Device device of tensor
  * \tparam DType type of element in tensor
  * \tparam dim dimention of tensor
+ * \return a new allocated tensor
  * \sa AllocSpace
  */
 template<typename Device, typename DType, int dim>
@@ -542,17 +558,38 @@ template<int dim, typename DType>
 inline void Copy(Tensor<cpu, dim, DType> dst,
                  const Tensor<cpu, dim, DType> &src,
                  Stream<cpu> *stream = NULL);
-/*! \brief refer to comment of cpu ver \sa Copy */
+/*!
+ * \brief copy data from one tensor to another, with same shape
+ * \param dst target tensor
+ * \param src source tensor
+ * \param stream the stream, when specified, the copy can exhibit asynchronize behavior
+ * \tparam dim specify the dim of tensor
+ * \tparam DType type of element in tensor
+ */
 template<int dim, typename DType>
 inline void Copy(Tensor<cpu, dim, DType> dst,
                  const Tensor<gpu, dim, DType> &src,
                  Stream<gpu> *stream = NULL);
-/*! \brief refer to comment of cpu ver \sa Copy */
+/*!
+ * \brief copy data from one tensor to another, with same shape
+ * \param dst target tensor
+ * \param src source tensor
+ * \param stream the stream, when specified, the copy can exhibit asynchronize behavior
+ * \tparam dim specify the dim of tensor
+ * \tparam DType type of element in tensor
+ */
 template<int dim, typename DType>
 inline void Copy(Tensor<gpu, dim, DType> dst,
                  const Tensor<cpu, dim, DType> &src,
                  Stream<gpu> *stream = NULL);
-/*! \brief refer to comment of cpu ver \sa Copy */
+/*!
+ * \brief copy data from one tensor to another, with same shape
+ * \param dst target tensor
+ * \param src source tensor
+ * \param stream the stream, when specified, the copy can exhibit asynchronize behavior
+ * \tparam dim specify the dim of tensor
+ * \tparam DType type of element in tensor
+ */
 template<int dim, typename DType>
 inline void Copy(Tensor<gpu, dim, DType> dst,
                  const Tensor<gpu, dim, DType> &src,
@@ -564,7 +601,11 @@ inline void Copy(Tensor<gpu, dim, DType> dst,
  */
 template<typename DType>
 inline void Softmax(Tensor<cpu, 2, DType> dst, const Tensor<cpu, 2, DType> &energy);
-/*! \brief refer to comment of cpu ver \sa Softmax */
+/*!
+ * \brief CPU/GPU: normalize softmax: dst[i][j] = exp(energy[i][j]) /(sum_j exp(energy[i][j]))
+ * \param dst destination
+ * \param energy input energy
+ */
 template<typename DType>
 inline void Softmax(Tensor<gpu, 2, DType> dst, const Tensor<gpu, 2, DType> &energy);
 // function declarations to support expression, no need to understand them
@@ -585,7 +626,18 @@ template<typename Saver, typename R, int dim,
          typename DType, typename E, int etype>
 inline void MapExp(TRValue<R, cpu, dim, DType> *dst,
                    const expr::Exp<E, DType, etype> &exp);
-/*! \brief refer to comment of cpu ver \sa MapExp */
+/*!
+ * \brief CPU/GPU: map a expression to a tensor, this function calls MapPlan
+ * \tparam Saver specify storage method
+ * \tparam R specifies the storage type of the tensor
+ * \tparam dim dim of the tensor, during usage, there is no need to specify this parameter
+ * \tparam DType the type of elements in the tensor
+ * \tparam E specifies the expression type, not need to specify this parameter during usage
+ * \tparam etype expression type
+ * \param dst destination
+ * \param exp expression
+ * \sa namespace mshadow:sv, mshadow::op, mshadow::expr
+ */
 template<typename Saver, typename R, int dim,
          typename DType, typename E, int etype>
 inline void MapExp(TRValue<R, gpu, dim, DType> *dst,
@@ -608,7 +660,19 @@ template<typename Saver, typename Reducer,
 inline void MapReduceKeepLowest(TRValue<R, cpu, 1, DType> *dst,
                                 const expr::Exp<E, DType, etype> &exp,
                                 DType scale = 1);
-/*! \brief refer to comment of cpu ver \sa MapReduceKeepLowest */
+/*!
+ * \brief CPU/GPU: map a expression, do reduction to 1D Tensor in lowest dimension (dimension 0)
+ * \tparam Saver specify storage method
+ * \tparam Reducer specify a reducer method
+ * \tparam R specifies the storage type of the tensor
+ * \tparam DType the type of elements in the tensor
+ * \tparam E specifies the expression type, not need to specify this parameter during usage
+ * \tparam etype expression type
+ * \param dst destination
+ * \param exp expression
+ * \param scale scale the result before save
+ * \sa namespace mshadow:sv, mshadow::op, mshadow::red, mshadow::expr
+ */
 template<typename Saver, typename Reducer, typename R,
          typename DType, typename E, int etype>
 inline void MapReduceKeepLowest(TRValue<R, gpu, 1, DType> *dst,
@@ -633,7 +697,20 @@ template<typename Saver, typename Reducer, int dimkeep,
 inline void MapReduceKeepHighDim(TRValue<R, cpu, 1, DType> *dst,
                                  const expr::Exp<E, DType, etype> &exp,
                                  DType scale = 1);
-/*! \brief refer to comment of cpu ver \sa MapReduceKeepHighDim */
+/*!
+ * \brief CPU/GPU: map a expression, do reduction to 1D Tensor in third dimension (dimension 2)
+ * \tparam Saver specify storage method
+ * \tparam Reducer specify a reducer method
+ * \tparam R specifies the storage type of the tensor
+ * \tparam DType the type of elements in the tensor
+ * \tparam dimkeep the target dimension to be kept, should be larger than 0, for 0, use MapReduceKeepLowest
+ * \tparam E specifies the expression type, not need to specify this parameter during usage
+ * \tparam etype expression type
+ * \param dst destination
+ * \param exp expression
+ * \param scale scale the result before save
+ * \sa namespace mshadow:sv, mshadow::op, mshadow::red, mshadow::expr
+ */
 template<typename Saver, typename Reducer, int dimkeep,
          typename R, typename DType, typename E, int etype>
 inline void MapReduceKeepHighDim(TRValue<R, gpu, 1, DType> *dst,

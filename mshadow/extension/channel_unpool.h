@@ -49,7 +49,7 @@ struct ChannelUnpoolingExp:
                  "ChannelUnPoolingExp: data and grad shape mismatch");
     Shape<srcdim> sshape = ShapeCheck<srcdim, SrcExp>::Check(data_src);
     for (int k = 0; k < srcdim; ++k) {
-      if (k == 1){
+      if (k == 1) {
         continue;
       }
       utils::Check(pshape[k] == sshape[k],
@@ -102,7 +102,7 @@ struct Plan<ChannelUnpoolingExp<Reducer, SrcExp, DType, srcdim>, DType> {
       : data_src_(e.data_src_), data_pooled_(e.data_pooled_),
         grad_pooled_(e.grad_pooled_), channel_(e.shape_[srcdim - 3]),
         height_(e.shape_[srcdim - 2]), pchannel_(e.pchannel_),
-        hnsize_(e.nsize_), stride_(e.kstride_), pad_(e.pad_){}
+        hnsize_(e.nsize_), stride_(e.kstride_), pad_(e.pad_) {}
   MSHADOW_XINLINE DType Eval(index_t i, index_t j) const {
     using namespace std;
     const DType vsrc = data_src_.Eval(i, j);
@@ -122,11 +122,12 @@ struct Plan<ChannelUnpoolingExp<Reducer, SrcExp, DType, srcdim>, DType> {
     }
     return val;
   }
+
  private:
   Plan<SrcExp, DType> data_src_, data_pooled_, grad_pooled_;
   const index_t channel_, height_, pchannel_, hnsize_, stride_, pad_;
 };
 }  // namespace expr
 }  // namespace mshadow
-#endif  // MSHADOW_EXTENSION_CHANNEL_POOL_H_
+#endif  // MSHADOW_EXTENSION_CHANNEL_UNPOOL_H_
 

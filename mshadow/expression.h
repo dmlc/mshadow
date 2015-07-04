@@ -49,8 +49,8 @@ const int kComplex = 7;
 template<typename Saver, typename RValue, typename DType>
 struct ExpEngine;
 /*! \brief defines how expression exp can be evaluated and stored into dst */
-//template<typename EType>
-//inline static void Eval(RValue *dst, const EType &exp);
+// template<typename EType>
+// inline static void Eval(RValue *dst, const EType &exp);
 /*!
  * \brief base class for expression
  * \tparam SubType inheritated class must put their type into this parameter
@@ -78,7 +78,7 @@ struct ScalarExp: public Exp<ScalarExp<DType>, DType, type::kMapper> {
   /*! \brief scalar value */
   DType scalar_;
   /*! \brief implicit constructor, MUST NOT BE explicit */
-  ScalarExp(DType scalar) : scalar_(scalar) {}
+  ScalarExp(DType scalar) : scalar_(scalar) {}  // NOLINT(*)
 };
 /*! \brief create an scalar expression */
 template<typename DType>

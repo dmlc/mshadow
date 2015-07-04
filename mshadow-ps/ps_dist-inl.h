@@ -5,8 +5,10 @@
  *
  * \author Tianqi Chen, Mu Li
  */
-#ifndef MSHADOW_PS_DIST_INL_H_
-#define MSHADOW_PS_DIST_INL_H_
+#ifndef MSHADOW_PS_DIST_INL_H_ // NOLINT(*)
+#define MSHADOW_PS_DIST_INL_H_ // NOLINT(*)
+
+#include <vector>
 #include "./mshadow_ps.h"
 #include "./ps_local-inl.h"
 
@@ -21,7 +23,7 @@ namespace ps {
 template<typename DType>
 class UpdaterWrapper {
  public:
-  UpdaterWrapper(IModelUpdater<DType> * updater)
+  explicit UpdaterWrapper(IModelUpdater<DType> * updater)
       : updater_(updater) { }
   ~UpdaterWrapper() { delete updater_; }
 
@@ -32,7 +34,7 @@ class UpdaterWrapper {
 
   /// @brief update the model by using received data
   void Update(int id, size_t size, const DType* recv_data, DType* data) {
-    updater_->Update(id, (DType*)recv_data, size);
+    updater_->Update(id, (DType*)recv_data, size);  // NOLINT(*)
   }
  private:
   IModelUpdater<DType> *updater_;
@@ -114,14 +116,11 @@ class MShadowServerNode {
          CHECK_NOTNULL(shared_model_));
   }
   virtual ~MShadowServerNode() { }
- private:
-
 };
 
 // NOTE: do not add PS::CreateServer here add it in the program that uses
 // mshadow-ps
-
 }  // namespace ps
-}  // namespace msahdow
+}  // namespace mshadow
 #endif
-#endif
+#endif  // MSHADOW_PS_DIST_INL_H_  NOLINT(*)

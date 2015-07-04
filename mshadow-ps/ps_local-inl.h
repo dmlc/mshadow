@@ -5,10 +5,12 @@
  *
  * \author Tianqi Chen, Mu Li
  */
-#ifndef MSHADOW_PS_LOCAL_INL_H_
-#define MSHADOW_PS_LOCAL_INL_H_
+#ifndef MSHADOW_PS_LOCAL_INL_H_  // NOLINT(*)
+#define MSHADOW_PS_LOCAL_INL_H_  // NOLINT(*)
 #include <map>
 #include <utility>
+#include <string>
+#include <vector>
 #if defined(_OPENMP)
 #include <omp.h>
 #ifdef _MSC_VER
@@ -32,7 +34,7 @@ class LocalModel : public ISharedModel<xpu, DType> {
   CallbackFunction;
   // constructor
   LocalModel(void) {
-    init_end = 0;    
+    init_end = 0;
     perdev_pull_thread = 1;
     perdev_push_thread = 1;
     use_fifo_push_queue = 0;
@@ -272,6 +274,7 @@ class LocalModel : public ISharedModel<xpu, DType> {
       fprintf(stderr, "PSLocal:key=%d,dev=%d:check pass\n", key, devid);
     }
   }
+
  protected:
   /*! \brief operation performed locally in PS */
   enum LocalOp {
@@ -375,7 +378,6 @@ class LocalModel : public ISharedModel<xpu, DType> {
    */
   virtual void HandlePushFinish(Tensor<cpu, 3, DType> data,
                                 int key) {
-
     // LOG(ERROR) << dbstr(data);
     LocalOp op = kSum;
     typename std::map<int, LocalOp>::const_iterator
@@ -429,7 +431,7 @@ class LocalModel : public ISharedModel<xpu, DType> {
     } else {
       this->PullReady(data, key);
     }
-  }  
+  }
   virtual void InitCustomerServer(void) {
     if (update_on_server != 0 || test_on_server != 0) {
       custom_server = CreateModelUpdater<DType>();
@@ -440,6 +442,7 @@ class LocalModel : public ISharedModel<xpu, DType> {
       custom_server->InitUpdater(0, 0, NULL);
     }
   }
+
  protected:
   // customized server
   IModelUpdater<DType> *custom_server;
@@ -458,7 +461,7 @@ class LocalModel : public ISharedModel<xpu, DType> {
           data[0][j] += data[i][j];
         }
       }
-    } else
+    } else  //NOLINT(*)
       #endif
     {
       for (index_t i = 1; i < data.size(0); ++i) {
@@ -466,7 +469,7 @@ class LocalModel : public ISharedModel<xpu, DType> {
       }
     }
   }
-  
+
  private:
   /*! \brief task running */
   struct PullTask {
@@ -610,7 +613,7 @@ class LocalModel : public ISharedModel<xpu, DType> {
   utils::Mutex wait_lock;
   // conditional variable to do waiting
   utils::ConditionVariable wait_cond;
-  //---------configurations of server-------
+  // ---------configurations of server-------
   int init_end;
   // whether perform update on serverside
   int update_on_server;
@@ -820,4 +823,4 @@ class LocalModel : public ISharedModel<xpu, DType> {
 };
 }  // namespace ps
 }  // namespace mshadow
-#endif // MSHADOW_PS_LOCAL_INL_H_
+#endif // MSHADOW_PS_LOCAL_INL_H_  NOLINT(*)

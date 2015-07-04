@@ -5,8 +5,9 @@
  *     synchronization in the backend
  * \author Tianqi Chen, Mu Li
  */
-#ifndef MSHADOW_PS_RABIT_INL_H_
-#define MSHADOW_PS_RABIT_INL_H_
+#ifndef MSHADOW_PS_RABIT_INL_H_ // NOLINT(*)
+#define MSHADOW_PS_RABIT_INL_H_ // NOLINT(*)
+#include <vector>
 #include "./mshadow_ps.h"
 #include "./ps_local-inl.h"
 
@@ -42,7 +43,7 @@ class RabitModel : public LocalModel<xpu, DType> {
     this->use_fifo_push_queue = 1;
     // use fifo
     reduce_queue_.Init(true);
-    thread_reduce_handler_.Start(ReduceGlobalThread, this);    
+    thread_reduce_handler_.Start(ReduceGlobalThread, this);
     init_reducer_ = 1;
     // initialize other things
     Parent::Init(devices);
@@ -59,12 +60,12 @@ class RabitModel : public LocalModel<xpu, DType> {
                                 int key) {
     // summation the data fron all devices
     LocalModel<xpu, DType>::ReduceSum(data);
-    utils::Assert(data[0].CheckContiguous(), "data must be contiguous");    
+    utils::Assert(data[0].CheckContiguous(), "data must be contiguous");
     ReduceTask tsk;
     tsk.data = data[0]; tsk.key = key;
     reduce_queue_.Push(tsk, 0);
   }
-  
+
  private:
   // reduce task
   struct ReduceTask {
@@ -106,9 +107,9 @@ class RabitModel : public LocalModel<xpu, DType> {
   inline static MSHADOW_THREAD_PREFIX ReduceGlobalThread(void *pthread) {
     static_cast<RabitModel*>(pthread)->ReduceHandler();
     return NULL;
-  }  
+  }
 };
 }  // namespace ps
 }  // namespace mshadow
 #endif  // MSHADOW_RABIT_PS
-#endif  // MSHADOW_PS_RABIT_INL_H_
+#endif  // MSHADOW_PS_RABIT_INL_H_ // NOLINT(*)

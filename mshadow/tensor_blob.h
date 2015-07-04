@@ -9,6 +9,7 @@
 #ifndef MSHADOW_TENSOR_BLOB_H_
 #define MSHADOW_TENSOR_BLOB_H_
 #include <vector>
+#include <algorithm>
 #include "./tensor.h"
 
 namespace mshadow {
@@ -41,8 +42,8 @@ struct TShape {
   }
   /*!
    * \brief construct the TShape from content of iterator
-   * \begin the beginning of iterator
-   * \begin end the end of the iterator
+   * \param begin the beginning of iterator
+   * \param end end the end of the iterator
    * \tparam RandomAccessIterator iterator type
    */
   template<typename RandomAccessIterator>
@@ -61,7 +62,7 @@ struct TShape {
   TShape(TShape &&s)
       : ndim_(s.ndim_),
         num_heap_allocated_(s.num_heap_allocated_),
-        data_heap_(s.data_heap_) {    
+        data_heap_(s.data_heap_) {
     if (ndim_ <= kStackCache) {
       std::copy(s.data_stack_, s.data_stack_ + ndim_, data_stack_);
     }
@@ -76,8 +77,8 @@ struct TShape {
   }
   /*!
    * \brief copy shape from content betwen two iterators
-   * \begin the beginning of iterator
-   * \begin end the end of the iterator
+   * \param begin the beginning of iterator
+   * \param end the end of the iterator
    * \tparam RandomAccessIterator iterator type
    */
   template<typename RandomAccessIterator>
@@ -135,7 +136,7 @@ struct TShape {
   }
   /*!
    * \brief get corresponding index
-   * \param idx dimension index
+   * \param i dimension index
    * \return the corresponding dimension size
    */
   inline index_t &operator[](index_t i) {
@@ -143,10 +144,10 @@ struct TShape {
   }
   /*!
    * \brief get corresponding index
-   * \param idx dimension index
+   * \param i dimension index
    * \return the corresponding dimension size
    */
-  inline const index_t &operator[](index_t i) const {    
+  inline const index_t &operator[](index_t i) const {
     return data()[i];
   }
   /*! \brief total number of elements in the tensor */
@@ -253,7 +254,7 @@ struct TShape {
   /*! \brief space to store shape when dimension is big*/
   index_t *data_heap_;
   /*!
-   * \brief internal function to set the dimension 
+   * \brief internal function to set the dimension
    * \param dim the dimension of the shape
    */
   inline void SetDim(index_t dim) {
@@ -332,7 +333,7 @@ class TBlob {
    * \tparam DType the type of elements in the tensor
    */
   template<typename Device, int dim, typename DType>
-  TBlob(const Tensor<Device, dim, DType> &src) {
+  TBlob(const Tensor<Device, dim, DType> &src) {  // NOLINT(*)
     *this = src;
   }
   /*!
@@ -341,6 +342,7 @@ class TBlob {
    * \tparam Device which device the tensor is on
    * \tparam dim tensor dimension
    * \tparam DType the type of elements in the tensor
+   * \return reference of self
    */
   template<typename Device, int dim, typename DType>
   inline TBlob
@@ -425,5 +427,5 @@ class TBlob {
                                       stream);
   }
 };
-} // namespace mshadow
+}  // namespace mshadow
 #endif  // MSHADOW_TENSOR_BLOB_H_

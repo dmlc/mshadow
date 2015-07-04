@@ -11,7 +11,7 @@
 #include "./utils.h"
 
 namespace mshadow {
-#if MSHADOW_USE_CUDA==1
+#if MSHADOW_USE_CUDA == 1
 // Stream alocation
 // actual implementation of GPU stream in CUDA
 template<>
@@ -65,8 +65,9 @@ struct Stream<gpu> {
       utils::Error("Default GPU stream was used when MSHADOW_FORCE_STREAM was on");
 #endif
       return 0;
+    } else {
+      return stream->stream_;
     }
-    else return stream->stream_;
   }
   /*!
    * \brief return actual cublasHandle
@@ -148,5 +149,5 @@ inline void DeleteStream<gpu>(Stream<gpu> *stream) {
   delete stream;
 }
 #endif
-}
+}  // namespace mshadow
 #endif  // MSHADOW_STREAM_GPU_INL_H_
