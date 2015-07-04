@@ -4,13 +4,13 @@ if [ ${TASK} == "lint" ]; then
 fi
 
 if [ ${TASK} == "doc" ]; then
-    make doc 2>log.txt
+    doxygen doc/Doxyfile 2>log.txt
     (cat log.txt|grep -v ENABLE_PREPROCESSING |grep warning) && exit -1
 fi
 
 if [ ${TASK} == "build" ]; then
     cd guide
-    echo "USE_BLAS=atlas" >> config.mk
+    echo "USE_BLAS=blas" >> config.mk
     make all || exit -1
     cd mshadow-ps
     echo "USE_BLAS=atlas" >> config.mk
