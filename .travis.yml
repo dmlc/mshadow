@@ -15,7 +15,7 @@ addons:
       - doxygen
       - wget
       - unzip
-      - libatlas-dev
+      - libblas-dev
 
 before_install:
   - git clone https://github.com/dmlc/dmlc-core
