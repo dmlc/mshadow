@@ -244,7 +244,7 @@ struct TShape {
   // when dimension is smaller than kStackCache
   // when it is bigger, it will be stored in data_heap_;
   /*! \brief size of in stack space */
-  static const int kStackCache = 4;
+  static const index_t kStackCache = 4;
   /*! \brief number of dimnsion of the shape */
   index_t ndim_;
   /*! \brief number of cells allocated in data_heap_ */
