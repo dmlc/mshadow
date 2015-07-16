@@ -1,5 +1,5 @@
 /*!
- * 
+ * Copyright by Contributors
  * \file extension.h
  * \brief some extension of expressions, 
  *  used to support something beyond elementwise op
@@ -22,5 +22,4 @@
 #include "./extension/crop.h"
 #include "./extension/mirror.h"
 #include "./extension/concat.h"
-#endif
-
+#endif  // MSHADOW_EXTENSION_H_

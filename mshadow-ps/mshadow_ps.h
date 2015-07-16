@@ -1,14 +1,14 @@
 /*!
  *  Copyright (c) 2014 by Contributors
- * \file ps.h
+ * \file mshadow_ps.h
  * \brief parameter server abstraction for mshadow tensor
  *  this is a plugin of mshadow that can be used to syncrhonize
  *  parameters across device and machines
  *
  * \author Tianqi Chen, Mu Li
  */
-#ifndef MSHADOW_PS_H_
-#define MSHADOW_PS_H_
+#ifndef MSHADOW_PS_H_  // NOLINT(*)
+#define MSHADOW_PS_H_  // NOLINT(*)
 #include <vector>
 // optionally support of lambda function in C++11, if available
 #if __cplusplus >= 201103L
@@ -179,7 +179,7 @@ class ISharedModel {
    * \brief set weight of corresponding key in server
    *   this is a debug function that was not necessarily
    *   implemented by the server
-   * \param shape the shape content of the key
+   * \param data the data to set
    * \param key the unique key to indicate the tensor
    *        this is unique per device
    * \param devid the device id this tensor lies in
@@ -191,7 +191,7 @@ class ISharedModel {
    * \brief check if the weight matches the server side
    *   this is a debug function that was not necessarily
    *   implemented by the server
-   * \param shape the shape content of the key
+   * \param data the data to set
    * \param key the unique key to indicate the tensor
    *        this is unique per device
    * \param devid the device id this tensor lies in
@@ -199,6 +199,7 @@ class ISharedModel {
   virtual void CheckWeight_(Tensor<xpu, 2, DType> data,
                             int key,
                             int devid) = 0;
+
  protected:
   /*!
    * \brief initialize a key with certain shape
@@ -271,7 +272,8 @@ class IModelUpdater {
   /*!
    * \brief init the model updater
    * \param rank the rank of the node
-   * \param conf configuration
+   * \param argc number of arguments
+   * \param argv arguments
    */
   virtual void InitUpdater(int rank, int argc, char *argv[]) {}
   /*!
@@ -339,7 +341,7 @@ inline ISharedModel<xpu, DType> *CreateSharedModel(const char *type) {
   if (!strcmp("local", type)) {
 #if MSHADOW_RABIT_PS
     // allreduce on one machine pays no cost
-    if (rabit::IsDistributed()) {      
+    if (rabit::IsDistributed()) {
       return new RabitModel<xpu, DType>();
     }
 #endif
@@ -353,4 +355,4 @@ inline ISharedModel<xpu, DType> *CreateSharedModel(const char *type) {
 }
 }  // namespace ps
 }  // namespace mshadow
-#endif
+#endif  // MSHADOW_PS_H_  NOLINT(*)

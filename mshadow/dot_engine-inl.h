@@ -30,40 +30,46 @@ struct BLASEngine<cpu> {
   }
   inline static void SetStream(Stream<cpu> *stream) {
   }
-  inline static void gemm(bool transa, bool transb,
+  inline static void gemm(Stream<cpu> *stream,
+                          bool transa, bool transb,
                           int m, int n, int k, float alpha,
                           const float *A, int lda, const float *B, int ldb,
                           float beta, float *C, int ldc) {
     cblas_sgemm(CblasColMajor, GetT(transa), GetT(transb),
                 m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
   }
-  inline static void gemm(bool transa, bool transb,
+  inline static void gemm(Stream<cpu> *stream,
+                          bool transa, bool transb,
                           int m, int n, int k, double alpha,
                           const double *A, int lda, const double *B, int ldb,
                           double beta, double *C, int ldc) {
     cblas_dgemm(CblasColMajor, GetT(transa), GetT(transb),
                 m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
   }
-  inline static void gemv(bool trans, int m, int n,
+  inline static void gemv(Stream<cpu> *stream,
+                          bool trans, int m, int n,
                           float alpha, const float *A, int lda,
                           const float *X, int incX,
                           float beta, float *Y, int incY) {
     cblas_sgemv(CblasColMajor, GetT(trans), m, n, alpha,
                 A, lda, X, incX, beta, Y, incY);
   }
-  inline static void gemv(bool trans, int m, int n, double alpha,
+  inline static void gemv(Stream<cpu> *stream,
+                          bool trans, int m, int n, double alpha,
                           const double *A, int lda,
                           const double *X, int incX,
                           double beta, double *Y, int incY) {
     cblas_dgemv(CblasColMajor, GetT(trans), m, n, alpha,
                 A, lda, X, incX, beta, Y, incY);
   }
-  inline static void ger(int m, int n, float alpha,
+  inline static void ger(Stream<cpu> *stream,
+                         int m, int n, float alpha,
                          const float *X, int incX,
                          const float *Y, int incY, float *A, int lda) {
     cblas_sger(CblasColMajor, m, n, alpha, X, incX, Y, incY, A, lda);
   }
-  inline static void ger(int m, int n, double alpha,
+  inline static void ger(Stream<cpu> *stream,
+                         int m, int n, double alpha,
                          const double *X, int incX,
                          const double *Y, int incY, double *A, int lda) {
     cblas_dger(CblasColMajor, m, n, alpha, X, incX, Y, incY, A, lda);
@@ -75,49 +81,70 @@ struct BLASEngine<cpu> {
 // All CuBLAS goes to here, use legacy API: not threadsafe
 template<>
 struct BLASEngine<gpu> {
-  inline static char GetT(bool t) {
-    return t ? 'T' : 'N';
+  inline static cublasOperation_t GetT(bool t) {
+    return t ? CUBLAS_OP_T : CUBLAS_OP_N;
   }
   inline static void SetStream(Stream<gpu> *stream) {
-    cublasSetKernelStream(Stream<gpu>::GetStream(stream));
+    cublasStatus_t err = cublasSetStream(Stream<gpu>::GetBlasHandle(stream),
+                    Stream<gpu>::GetStream(stream));
+    utils::Check(err == CUBLAS_STATUS_SUCCESS,
+                 "cublas: set stream fail, set stream for tensor before use cublas");
   }
-  inline static void gemm(bool transa, bool transb,
+  inline static void gemm(Stream<gpu> *stream,
+                          bool transa, bool transb,
                           int m, int n, int k, float alpha,
                           const float *A, int lda,
                           const float *B, int ldb, float beta,
                           float *C, int ldc) {
-    cublasSgemm(GetT(transa), GetT(transb), m, n, k, alpha,
-                A, lda, B, ldb, beta, C, ldc);
+    cublasStatus_t err = cublasSgemm(Stream<gpu>::GetBlasHandle(stream),
+                GetT(transa), GetT(transb), m, n, k, &alpha,
+                A, lda, B, ldb, &beta, C, ldc);
+    utils::Check(err == CUBLAS_STATUS_SUCCESS, "cublas: Sgemm fail");
   }
-  inline static void gemm(bool transa, bool transb,
+  inline static void gemm(Stream<gpu> *stream,
+                          bool transa, bool transb,
                           int m, int n, int k, double alpha,
                           const double *A, int lda,
                           const double *B, int ldb,
                           double beta, double *C, int ldc) {
-    cublasDgemm(GetT(transa), GetT(transb), m, n, k, alpha,
-                A, lda, B, ldb, beta, C, ldc);
+    cublasStatus_t err = cublasDgemm(Stream<gpu>::GetBlasHandle(stream),
+                GetT(transa), GetT(transb), m, n, k, &alpha,
+                A, lda, B, ldb, &beta, C, ldc);
+    utils::Check(err == CUBLAS_STATUS_SUCCESS, "cublas: Dgemm fail");
   }
-  inline static void gemv(bool trans, int m, int n, float alpha,
+  inline static void gemv(Stream<gpu> *stream,
+                          bool trans, int m, int n, float alpha,
                           const float *A, int lda,
                           const float *X, int incX, float beta,
                           float *Y, int incY) {
-    cublasSgemv(GetT(trans), m, n, alpha, A, lda, X, incX, beta, Y, incY);
+    cublasStatus_t err = cublasSgemv(Stream<gpu>::GetBlasHandle(stream),
+                GetT(trans), m, n, &alpha, A, lda, X, incX, &beta, Y, incY);
+    utils::Check(err == CUBLAS_STATUS_SUCCESS, "cublas: Sgemv fail");
   }
-  inline static void gemv(bool trans, int m, int n, double alpha,
+  inline static void gemv(Stream<gpu> *stream,
+                          bool trans, int m, int n, double alpha,
                           const double *A, int lda,
                           const double *X, int incX,
                           double beta, double *Y, int incY) {
-    cublasDgemv(GetT(trans), m, n, alpha, A, lda, X, incX, beta, Y, incY);
+    cublasStatus_t err = cublasDgemv(Stream<gpu>::GetBlasHandle(stream),
+                GetT(trans), m, n, &alpha, A, lda, X, incX, &beta, Y, incY);
+    utils::Check(err == CUBLAS_STATUS_SUCCESS, "cublas: Dgemv fail");
   }
-  inline static void ger(int m, int n, float alpha,
+  inline static void ger(Stream<gpu> *stream,
+                         int m, int n, float alpha,
                          const float *X, int incX,
                          const float *Y, int incY, float *A, int lda) {
-    cublasSger(m, n, alpha, X, incX, Y, incY, A, lda);
+    cublasStatus_t err = cublasSger(Stream<gpu>::GetBlasHandle(stream),
+               m, n, &alpha, X, incX, Y, incY, A, lda);
+    utils::Check(err == CUBLAS_STATUS_SUCCESS, "cublas: Sger fail");
   }
-  inline static void ger(int m, int n, double alpha,
+  inline static void ger(Stream<gpu> *stream,
+                         int m, int n, double alpha,
                          const double *X, int incX,
                          const double *Y, int incY, double *A, int lda) {
-    cublasDger(m, n, alpha, X, incX, Y, incY, A, lda);
+    cublasStatus_t err = cublasDger(Stream<gpu>::GetBlasHandle(stream),
+               m, n, &alpha, X, incX, Y, incY, A, lda);
+    utils::Check(err == CUBLAS_STATUS_SUCCESS, "cublas: Dger fail");
   }
 };
 #endif  // MSHADOW_USE_CUDA
@@ -135,6 +162,7 @@ struct DotEngine<SV, xpu, 2, 2, 2, transpose_left, transpose_right, DType> {
                           DType scale) {
     Tensor<xpu, 2, DType> &dst = *p_dst;
     // set kernel stream
+    // if there is no stream, crush
     BLASEngine<xpu>::SetStream(dst.stream_);
     Shape<2> sleft = GetShape(lhs.shape_, transpose_left);
     Shape<2> sright = GetShape(rhs.shape_, transpose_right);
@@ -143,7 +171,8 @@ struct DotEngine<SV, xpu, 2, 2, 2, transpose_left, transpose_right, DType> {
                  "dot-gemm: matrix shape mismatch");
     // use column major argument to compatible with most BLAS
     BLASEngine<xpu>::gemm
-        (transpose_right , transpose_left,
+        (dst.stream_,
+         transpose_right , transpose_left,
          transpose_right ? rhs.size(0) : rhs.size(1),
          transpose_left  ? lhs.size(1) : lhs.size(0),
          transpose_right ? rhs.size(1) : rhs.size(0),
@@ -162,12 +191,14 @@ struct DotEngine<SV, xpu, 1, 1, 2, false, transpose_right, DType> {
                           DType scale) {
     Tensor<xpu, 1, DType> &dst = *p_dst;
     // set kernel stream
+    // if there is no stream, crush
     BLASEngine<xpu>::SetStream(dst.stream_);
     Shape<2> sright = GetShape(rhs.shape, transpose_right);
     utils::Check(dst.size(0) == sright[1] && lhs.size(0) == sright[0],
                  "dot-gemv: matrix shape mismatch");
     BLASEngine<xpu>::gemv
-        (transpose_right,
+        (dst.stream_,
+         transpose_right,
          rhs.size(1), rhs.size(0), scale * SV::AlphaBLAS(),
          rhs.dptr_, rhs.stride_,
          lhs.dptr_, 1, SV::BetaBLAS(),
@@ -182,12 +213,13 @@ struct DotEngine<SV, xpu, 2, 1, 1, true, false, DType> {
                           DType scale) {
     Tensor<xpu, 2, DType> &dst = *p_dst;
     // set kernel stream
+    // if there is no stream, crush
     BLASEngine<xpu>::SetStream(dst.stream_);
     utils::Check(dst.size(0) == lhs.size(0) && dst.size(1) == rhs.size(0),
                   "dot-ger: matrix shape mismatch");
-    if (SV::kBetaBLAS == 0.0f) {
+    if (SV::BetaBLAS() == 0.0f) {
       BLASEngine<xpu>::ger
-          (rhs.size(0), lhs.size(0), scale * SV::AlphaBLAS(),
+          (dst.stream_, rhs.size(0), lhs.size(0), scale * SV::AlphaBLAS(),
            rhs.dptr_, 1, lhs.dptr_, 1, dst.dptr_, dst.stride_);
     } else {
       DotEngine<SV, xpu, 2, 2, 2, true, false,

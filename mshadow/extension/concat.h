@@ -1,3 +1,8 @@
+/*!
+ *  Copyright (c) 2014 by Contributors
+ * \file concat.h
+ * \brief support for concatenation
+ */
 #ifndef MSHADOW_EXTENSION_CONCAT_H_
 #define MSHADOW_EXTENSION_CONCAT_H_
 
@@ -33,7 +38,7 @@ struct ConcatExp : public TRValue<ConcatExp<LhsExp, RhsExp,
     for (int i = 0; i < srcdim; ++i) {
       if (i != dimcat) {
         utils::Check(sshape1[i] == sshape2[i],
-                     "ConcatExp: shape mismatch");    
+                     "ConcatExp: shape mismatch");
       }
     }
     this->shape_ = sshape1;
@@ -50,7 +55,7 @@ struct ConcatExp : public TRValue<ConcatExp<LhsExp, RhsExp,
   operator=(const DType &exp) {
     this->__assign(exp);
   }
-}; // struct ConcatExp
+};  // struct ConcatExp
 /*!
  * \brief concat two 4D tensor
  * \param src1 source tensor1
@@ -69,7 +74,7 @@ concat(const TRValue<LhsExp, Device, srcdim, DType> &src1,
   TypeCheckPass<ExpInfo<LhsExp>::kDim == ExpInfo<RhsExp>::kDim>
       ::Error_Expression_Does_Not_Meet_Dimension_Req();
   TypeCheckPass<cdim < srcdim && ExpInfo<LhsExp>::kDim == srcdim>
-      ::Error_Expression_Does_Not_Meet_Dimension_Req();  
+      ::Error_Expression_Does_Not_Meet_Dimension_Req();
   return ConcatExp<LhsExp, RhsExp, Device, DType, srcdim, srcdim - cdim>
       (src1.self(), src2.self());
 }
@@ -81,7 +86,8 @@ template<typename LhsExp, typename RhsExp,
          typename Device, typename DType,
          int srcdim, int dimsrc_m_cat>
 struct ShapeCheck<srcdim, ConcatExp<LhsExp, RhsExp, Device, DType, srcdim, dimsrc_m_cat> >{
-  inline static Shape<srcdim> Check(const ConcatExp<LhsExp, RhsExp, Device, DType, srcdim, dimsrc_m_cat> &t) {
+  inline static Shape<srcdim> Check(const ConcatExp<LhsExp, RhsExp,
+                                    Device, DType, srcdim, dimsrc_m_cat> &t) {
     return t.shape_;
   }
 };
@@ -119,7 +125,7 @@ template<typename LhsExp, typename RhsExp,
          int srcdim, int dimsrc_m_cat>
 struct Plan<ConcatExp<LhsExp, RhsExp, Device, DType, srcdim, dimsrc_m_cat>, DType> {
  public:
-  static const int dimcat = srcdim - dimsrc_m_cat;  
+  static const int dimcat = srcdim - dimsrc_m_cat;
   explicit Plan(const ConcatExp<LhsExp, RhsExp, Device, DType, srcdim, dimsrc_m_cat> &e)
       : src1_(MakePlan(e.src1_)), src2_(MakePlan(e.src2_)),
         height_(e.shape_.ProdShape(dimcat + 1, srcdim - 1)),
@@ -130,8 +136,11 @@ struct Plan<ConcatExp<LhsExp, RhsExp, Device, DType, srcdim, dimsrc_m_cat>, DTyp
     const index_t c = i % ch_;
     const index_t b = i / ch_;
     const index_t x = j;
-    if (c < ch_src1_) return src1_.Eval((b * ch_src1_ + c) * height_ + y, x);
-    else return src2_.Eval((b * ch_src2_ + c - ch_src1_) * height_ + y, x);
+    if (c < ch_src1_) {
+      return src1_.Eval((b * ch_src1_ + c) * height_ + y, x);
+    } else {
+      return src2_.Eval((b * ch_src2_ + c - ch_src1_) * height_ + y, x);
+    }
   }
   MSHADOW_XINLINE DType &REval(index_t i, index_t j) {
     const index_t y = i % height_;
@@ -139,32 +148,41 @@ struct Plan<ConcatExp<LhsExp, RhsExp, Device, DType, srcdim, dimsrc_m_cat>, DTyp
     const index_t c = i % ch_;
     const index_t b = i / ch_;
     const index_t x = j;
-    if (c < ch_src1_) return src1_.REval((b * ch_src1_ + c) * height_ + y, x);
-    else return src2_.REval((b * ch_src2_ + c - ch_src1_) * height_ + y, x);
+    if (c < ch_src1_) {
+      return src1_.REval((b * ch_src1_ + c) * height_ + y, x);
+    } else {
+      return src2_.REval((b * ch_src2_ + c - ch_src1_) * height_ + y, x);
+    }
   }
 
  private:
   Plan<LhsExp, DType> src1_;
   Plan<RhsExp, DType> src2_;
   const index_t height_, ch_src1_, ch_src2_, ch_;
-}; // struct Plan
+};  // struct Plan
 
 // specialize for concat in x
 template<typename LhsExp, typename RhsExp,
          typename Device, typename DType,
          int srcdim>
-struct Plan<ConcatExp<LhsExp, RhsExp, Device, DType, srcdim, 1>, DType> {  
+struct Plan<ConcatExp<LhsExp, RhsExp, Device, DType, srcdim, 1>, DType> {
  public:
   explicit Plan(const ConcatExp<LhsExp, RhsExp, Device, DType, srcdim, 1> &e)
       : src1_(MakePlan(e.src1_)), src2_(MakePlan(e.src2_)),
         width_src1_(e.dcat_src1_) {}
   MSHADOW_XINLINE DType Eval(index_t y, index_t x) const {
-    if (x < width_src1_) return src1_.Eval(y, x);
-    else return src2_.Eval(y, x - width_src1_);
+    if (x < width_src1_) {
+      return src1_.Eval(y, x);
+    } else {
+      return src2_.Eval(y, x - width_src1_);
+    }
   }
   MSHADOW_XINLINE DType &REval(index_t y, index_t x) {
-    if (x < width_src1_) return src1_.REval(y, x);
-    else return src2_.REval(y, x - width_src1_);
+    if (x < width_src1_) {
+      return src1_.REval(y, x);
+    } else {
+      return src2_.REval(y, x - width_src1_);
+    }
   }
 
  private:
@@ -172,6 +190,6 @@ struct Plan<ConcatExp<LhsExp, RhsExp, Device, DType, srcdim, 1>, DType> {
   Plan<RhsExp, DType> src2_;
   const index_t width_src1_;
 };
-}// namespace expr
-} // namespace mshadow
-#endif // MSHADOW_EXTENSION_CONCAT_H_
+}  // namespace expr
+}   // namespace mshadow
+#endif  // MSHADOW_EXTENSION_CONCAT_H_

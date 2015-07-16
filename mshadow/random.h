@@ -227,7 +227,7 @@ class Random<gpu, DType> {
    * \brief constructor of random engine
    * \param seed random number seed
    */
-  Random(int seed) {
+  explicit Random(int seed) {
     curandStatus_t status;
     status = curandCreateGenerator(&gen_, CURAND_RNG_PSEUDO_DEFAULT);
     utils::Check(status == CURAND_STATUS_SUCCESS,

@@ -29,16 +29,17 @@ template<typename Device, int dimension, typename DType = float>
 struct Tensor {
   DType *dptr_;
   Shape<dimension> shape_;
+  Stream<Device> stream_;
   index_t stride_;
 };
 // this is how shape object declaration look like
 Shape<2> shape2;
 // this is how tensor object declaration look like
-// you can 
+// you can
 Tensor<cpu, 2> ts2;
 Tensor<gpu, 3, float> ts3;
 ```
-``` Tensor<cpu,2>``` means a two dimensional tensor in CPU, while ``` Tensor<gpu,3>``` means three dimensional tensor in GPU. 
+``` Tensor<cpu,2>``` means a two dimensional tensor in CPU, while ``` Tensor<gpu,3>``` means three dimensional tensor in GPU.
 ```Shape<k>``` gives the shape information of k-dimensional tensor. The declaration use template, and
 can be specialized into tensor of specific device and dimension. This is what two dimensional tensor will look like:
 ```c++
@@ -50,8 +51,8 @@ struct Tensor<cpu, 2, float> {
   Shape<2> shape_;
   index_t stride_;
 };
-```  
-* ``` Tensor<cpu, 2>``` contains ```dptr_```, which points to the space that backup the tensor. 
+```
+* ``` Tensor<cpu, 2>``` contains ```dptr_```, which points to the space that backup the tensor.
 * ```Shape<2>``` is a structure that stores shape information, the convention is same as numpy
 * ```stride_``` gives the number of cell space allocated in the smallest dimension (if we use numpy convention, the dimension corresponds to shape_[-1]).
   This is introduced when we introduce some padding cells in lowest dimension to make sure memory is aligned.
@@ -64,7 +65,7 @@ Tensor<cpu, 2> ts;
 ts.dptr_ = data;
 ts.shape_ = mshadow::Shape2(3, 2);
 ts.stride_ = 3;
-// now: ts[0][0] == 0, ts[0][1] == 1 , ts[1][0] == 3, ts[1][1] == 4 
+// now: ts[0][0] == 0, ts[0][1] == 1 , ts[1][0] == 3, ts[1][1] == 4
 for (index_t i = 0; i < ts.size(0); ++i) {
   for (index_t j = 0; j < ts.size(1), ++j) {
     printf("ts[%u][%u]=%f\n", i, j, ts[i][j]);
@@ -73,10 +74,12 @@ for (index_t i = 0; i < ts.size(0); ++i) {
 ```
 The result ts should be a 3 * 2 matrix, where data[2], data[5], data[8] are padding cells that are ignored. If you want a continuous memory, set ```stride_=shape_[1]```.
 
+NOTICE: We highly recommend use stream in ```gpu``` mode, there will be an error thrown out if no stream is set. Check [basic_stream.cu](basic_stream.cu) for more detail.
+
 Memory Allocation
 ====
 An important design choice about mshadow is that the data structure is a **whitebox**:
-it works so long as we set the space pointer ```dptr_```, corresponding ```shape_``` and ```stride_```: 
+it works so long as we set the space pointer ```dptr_```, corresponding ```shape_``` and ```stride_```:
 * For ```Tensor<cpu, k>```, the space can be created by ```new float[]```, or pointer to some existing space such as float array in last example.
 * For ```Tensor<gpu, k>```, the space need to lie in GPU, created by ```cudaMallocPitch```
 
@@ -197,17 +200,17 @@ int main(void) {
   // Tensor object is only a handle, assignment means they have same data content
   // we can specify content type of a Tensor, if not specified, it is float bydefault
   Tensor<cpu, 2, float> mat2 = mat;
-  
+
   // shaape of matrix, note size order is same as numpy
   printf("%u X %u matrix\n", mat.size(1), mat.size(1));
-  
+
   // initialize all element to zero
   mat = 0.0f;
   // assign some values
   mat[0][1] = 1.0f; mat[1][0] = 2.0f;
   // elementwise operations
   mat += (mat + 10.0f) / 10.0f + 2.0f;
-  
+
   // print out matrix, note: mat2 and mat1 are handles(pointers)
   for (index_t i = 0; i < mat.size(0); ++i) {
     for (index_t j = 0; j < mat.size(1); ++j) {
