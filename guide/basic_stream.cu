@@ -7,12 +7,12 @@ using namespace mshadow::expr;
 
 int main(void) {
   // intialize tensor engine before using tensor operation, needed for CuBLAS
-  InitTensorEngine();
+  InitTensorEngine<gpu>();
   // create a 2 x 5 tensor, from existing space
-  Tensor<gpu, 2, float> ts1 = NewTensor<gpu, float>(Shape2(2, 5), 0.0f);
-  Tensor<gpu, 2, float> ts2 = NewTensor<gpu, float>(Shape2(2, 5), 0.0f);
-  ts1.stream_ = NewStream<gpu>();
-  ts2.stream_ = NewStream<gpu>();
+  Stream<gpu> *sm1 = NewStream<gpu>();
+  Stream<gpu> *sm2 = NewStream<gpu>();
+  Tensor<gpu, 2, float> ts1 = NewTensor<gpu, float>(Shape2(2, 5), 0.0f, sm1);
+  Tensor<gpu, 2, float> ts2 = NewTensor<gpu, float>(Shape2(2, 5), 0.0f, sm2);
   ts1 = 1; // Should use stream 0.
   ts2 = 2; // Should use stream 1. Can run in parallel with stream 0.
   Tensor<gpu, 2> res = NewTensor<gpu, float>(Shape2(2, 2), 0.0f);
@@ -28,6 +28,8 @@ int main(void) {
     printf("\n");
   }
   // shutdown tensor enigne after usage
-  ShutdownTensorEngine();
+  DeleteStream(sm1);
+  DeleteStream(sm2);
+  ShutdownTensorEngine<gpu>();
   return 0;
 }

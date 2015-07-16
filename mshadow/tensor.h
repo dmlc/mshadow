@@ -52,7 +52,7 @@ struct Shape {
     for (int i = 0; i < kDimension; ++i) {
       this->shape_[i] = s[i];
     }
-  }  
+  }
   /*!
    * \brief get corresponding index
    * \param idx dimension index
@@ -70,7 +70,7 @@ struct Shape {
     return shape_[idx];
   }
   /*!
-   * \return whether two shape equals 
+   * \return whether two shape equals
    * \param s the shape to compare against
    */
   MSHADOW_XINLINE bool operator==(const Shape<kDimension> &s) const {
@@ -512,7 +512,8 @@ inline void FreeSpace(Tensor<gpu, dim, DType> *obj);
 template<typename Device, typename DType, int dim>
 inline Tensor<Device, dim, DType> NewTensor(const Shape<dim> &shape,
                                             DType initv,
-                                            bool pad = MSHADOW_ALLOC_PAD);
+                                            bool pad = MSHADOW_ALLOC_PAD,
+                                            Stream<Device> *stream = NULL);
 /*!
  * \brief copy data from one tensor to another, with same shape
  * \param dst target tensor

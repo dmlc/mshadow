@@ -28,8 +28,9 @@ int main(void) {
   // intialize tensor engine before using tensor operation, needed for CuBLAS
   InitTensorEngine<cpu>();
   // take first subscript of the tensor
-  Tensor<cpu,2, float> mat = NewTensor<cpu>(Shape2(2,3), 0.0f);
-  Tensor<cpu,2, float> mat2= NewTensor<cpu>(Shape2(2,3), 0.0f);
+  Stream<cpu> *stream_ = NewStream<cpu>();
+  Tensor<cpu,2, float> mat = NewTensor<cpu>(Shape2(2,3), 0.0f, stream_);
+  Tensor<cpu,2, float> mat2= NewTensor<cpu>(Shape2(2,3), 0.0f, stream_);
 
   mat[0][0] = -2.0f;
   mat = F<maxoftwo>(F<addone>(mat) + 0.5f, mat2);
@@ -41,6 +42,7 @@ int main(void) {
     printf("\n");
   }
   FreeSpace(&mat); FreeSpace(&mat2);
+  DeleteStream(stream_);
   // shutdown tensor enigne after usage
   ShutdownTensorEngine<cpu>();
   return 0;
