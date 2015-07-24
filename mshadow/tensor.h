@@ -536,6 +536,7 @@ inline void FreeSpace(Tensor<gpu, dim, DType> *obj);
  * \param shape: shape of tensor
  * \param initv: initialization value
  * \param pad : padding option
+ * \param stream : stream of tensor
  * \tparam Device device of tensor
  * \tparam DType type of element in tensor
  * \tparam dim dimention of tensor
