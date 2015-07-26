@@ -1,6 +1,6 @@
 Tutorial of mshadow
 =====
-This is a beginner's tutorial of mshadow. If you like mshadow and have ideas to improve this tutorial, you are more than welcomed:)
+This is a beginner's tutorial for mshadow. If you like mshadow and have ideas to improve this tutorial, you are more than welcome to contribute :)
 Please send a pull-request if you would like to share your experience.
 
 See also other related materials about mshadow
@@ -39,9 +39,9 @@ Shape<2> shape2;
 Tensor<cpu, 2> ts2;
 Tensor<gpu, 3, float> ts3;
 ```
-``` Tensor<cpu,2>``` means a two dimensional tensor in CPU, while ``` Tensor<gpu,3>``` means three dimensional tensor in GPU.
-```Shape<k>``` gives the shape information of k-dimensional tensor. The declaration use template, and
-can be specialized into tensor of specific device and dimension. This is what two dimensional tensor will look like:
+``` Tensor<cpu,2>``` is a two dimensional tensor in host memory, while ```Tensor<gpu,3>``` is a three dimensional tensor in device memory.
+```Shape<k>``` gives the shape information of a k-dimensional tensor. The declarations use templates and
+can be specialized to tensors on a specific device and of a specific dimension. This is what a two dimensional tensor would look like:
 ```c++
 struct Shape<2> {
   index_t shape_[2];
@@ -52,11 +52,11 @@ struct Tensor<cpu, 2, float> {
   index_t stride_;
 };
 ```
-* ``` Tensor<cpu, 2>``` contains ```dptr_```, which points to the space that backup the tensor.
-* ```Shape<2>``` is a structure that stores shape information, the convention is same as numpy
-* ```stride_``` gives the number of cell space allocated in the smallest dimension (if we use numpy convention, the dimension corresponds to shape_[-1]).
-  This is introduced when we introduce some padding cells in lowest dimension to make sure memory is aligned.
-  - ```stride_``` is automatically set during memory allocation of tensor in mshadow.
+* ``` Tensor<cpu, 2>``` contains ```dptr_```, which points to the space that backs up the tensor.
+* ```Shape<2>``` is a structure that stores shape information, the convention is the same as numpy.
+* ```stride_``` gives the number of cell spaces allocated in the smallest dimension (if we use numpy convention, the dimension corresponds to shape_[-1]).
+This is introduced when we introduce some padding cells in lowest dimension to make sure memory is aligned. ```stride_``` is automatically set during
+memory allocation of a tensor in mshadow.
 
 To understand the data structure, consider the following code:
 ``` c++
@@ -78,22 +78,22 @@ NOTICE: We highly recommend use stream in ```gpu``` mode, there will be an error
 
 Memory Allocation
 ====
-An important design choice about mshadow is that the data structure is a **whitebox**:
-it works so long as we set the space pointer ```dptr_```, corresponding ```shape_``` and ```stride_```:
-* For ```Tensor<cpu, k>```, the space can be created by ```new float[]```, or pointer to some existing space such as float array in last example.
-* For ```Tensor<gpu, k>```, the space need to lie in GPU, created by ```cudaMallocPitch```
+An important design choice in mshadow was making the data structure ```Tensor``` a **whitebox**,
+it works so long as we set the space pointer ```dptr_``` corresponding ```shape_``` and ```stride_```:
+* For ```Tensor<cpu, k>``` ```dptr_``` must point to space created by ```new float[]``` or to some existing space such as the float array in the last example.
+* For ```Tensor<gpu, k>``` ```dptr_``` must point to space on the device created by ```cudaMallocPitch```.
 
-mshadow also provide explicit memory allocation routine, demonstrated shown by following code
+mshadow also provides an explicit memory allocation routine, as shown in following code:
 ``` c++
-// create a 5 x 3 tensor on GPU, and allocate space
+// create a 5 x 3 tensor on the device, and allocate space
 Tensor<gpu, 2> ts2(Shape2(5, 3));
 AllocSpace(&ts2);
-// allocate 5 x 3 x 2 tensor on CPU, initialized by 0
+// allocate 5 x 3 x 2 tensor on the host, initialized by 0
 Tensor<cpu, 3> ts3 = NewTensor<cpu>(Shape3(5,3,2), 0.0f);
 // free space
 FreeSpace(&ts2); FreeSpace(&ts3);
 ```
-All memory allocations in mshadow are **explicit**. There is **no** implicit memory allocation and de-allocation during any operations.
+All memory allocations in mshadow are **explicit**. There are **no** implicit memory allocations or de-allocations during any operations.
 This means ```Tensor<cpu, k>``` variable is more like a reference handle(pointer), instead of a object. If we assign a tensor to another variable, the two share the same content space.
 
 This also allows user to use mshadow in their existing project easily, simply give mshadow the pointer of the memory and you can get the benefit of all the mshadow expressions with zero cost:)
@@ -118,12 +118,12 @@ void UpdateSGD(Tensor<cpu,2> weight, Tensor<cpu,2> grad, float eta, float lambda
   }
 }
 ```
-As we can see, *no memory allocation* is happened in the translated code. For ```Tensor<gpu, k>```, the corresponding function will be translated into a CUDA kernel of same spirit.
-Using [Expression Template](exp-template), the translation is happened during compile time. We can write simple lines of code while get the full performance of the translated code.
+As we can see, *no memory allocation* happens in the translated code. For ```Tensor<gpu, k>```, the corresponding function will be translated into a CUDA kernel of the same spirit.
+Using an [Expression Template](exp-template), the translation happens at compile time. We can write simple lines of code while getting the full performance of the translated code.
 
 One code for both CPU and GPU
 ====
-Since mshadow have identical interface for ```Tensor<cpu, k>``` and ```Tensor<gpu, k>```, we can easily write one code that works in both CPU and GPU.
+Since mshadow has an identical interface for ```Tensor<cpu, k>``` and ```Tensor<gpu, k>```, we can easily write code that works on both the CPU and GPU.
 For example, the following code compiles for both GPU and CPU Tensors.
 ```c++
 template<typename xpu>
@@ -134,7 +134,7 @@ void UpdateSGD(Tensor<xpu, 2> weight, const Tensor<xpu, 2> &grad,
 ```
 Matrix Multiplications
 ====
-We also have short hands for dot product, as like follows. The code will be translated to call standard packages such as MKL and CuBLAS.
+We also have a shorthand for dot product that will be translated to call standard packages such as MKL and CuBLAS.
 ```c++
 template<typename xpu>
 void Backprop(Tensor<xpu, 2> gradin,
@@ -143,12 +143,12 @@ void Backprop(Tensor<xpu, 2> gradin,
   gradin = dot(gradout, netweight.T());
 }
 ```
-Again, the code can compile for both GPU and CPU Tensors
+Again, the code can compile for both GPU and CPU Tensors.
 
 User Defined Operator
 ====
-There are common cases when we want to define our own function. For example, assume we do not have element-wise sigmoid transformation in mshadow,
-which is very commonly used in machine learning algorithms. We simply use the following code to add sigmoid to mshadow
+There are common cases when we want to define our own function. For example, assume we do not have an element-wise sigmoid transformation in mshadow.
+We simply use the following code to add ```sigmoid``` to mshadow
 ```c++
 struct sigmoid {
   MSHADOW_XINLINE static float Map(float a) {
@@ -160,7 +160,7 @@ void ExampleSigmoid(Tensor<xpu, 2> out, const Tensor<xpu, 2> &in) {
   out = F<sigmoid>(in * 2.0f) + 1.0f;
 }
 ```
-The equivalent translated code for CPU is given by
+The translated code for CPU is given by
 ```c++
 template<typename xpu>
 void ExampleSigmoid(Tensor<xpu, 2> out, const Tensor<xpu, 2> &in) {
@@ -174,11 +174,11 @@ void ExampleSigmoid(Tensor<xpu, 2> out, const Tensor<xpu, 2> &in) {
 Also note that the defined operation can be **composited into expressions**, not only we can write ```out = F<sigmoid>(in)```,
 we can also write ```out = F<sigmoid>+2.0``` or ```out = F<sigmoid>(F<sigmoid>(in))```.
 
-There will also be a translated CUDA kernel version that runs in GPU. Check out [defop.cpp](defop.cpp) for complete example.
+There will also be a translated CUDA kernel version that runs on the GPU. Check out [defop.cpp](defop.cpp) for a complete example.
 
 Complete Example
 ====
-The following code is from [basic.cpp](basic.cpp), that illustrate basic usage of mshadow.
+The following code is from [basic.cpp](basic.cpp). It illustrates basic usage of mshadow.
 
 ```c++
 // header file to use mshadow
@@ -201,8 +201,8 @@ int main(void) {
   // we can specify content type of a Tensor, if not specified, it is float bydefault
   Tensor<cpu, 2, float> mat2 = mat;
 
-  // shaape of matrix, note size order is same as numpy
-  printf("%u X %u matrix\n", mat.size(1), mat.size(1));
+  // shape of matrix, note size order is the same as numpy
+  printf("%u X %u matrix\n", mat.size(0), mat.size(1));
 
   // initialize all element to zero
   mat = 0.0f;
