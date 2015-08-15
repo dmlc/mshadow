@@ -69,8 +69,12 @@ struct TShape {
     // remove data heap space from s
     s.data_heap_ = NULL;
   }
+  /*!
+   * \brief move constructor from Shape
+   * \param s the source shape
+   */
   template<int dim>
-  TShape(Shape<dim> &&shape)
+  TShape(Shape<dim> &&shape)  // NOLINT(*)
       : ndim_(0),
         num_heap_allocated_(0),
         data_heap_(NULL) {
