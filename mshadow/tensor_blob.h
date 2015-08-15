@@ -74,11 +74,11 @@ struct TShape {
    * \param s the source shape
    */
   template<int dim>
-  TShape(Shape<dim> &&shape)  // NOLINT(*)
+  TShape(Shape<dim> &&s)  // NOLINT(*)
       : ndim_(0),
         num_heap_allocated_(0),
         data_heap_(NULL) {
-    this->CopyFrom(shape.shape_, shape.shape_ + dim);
+    this->CopyFrom(s.shape_, s.shape_ + dim);
   }
 #endif
   /*! \brief destructor */
