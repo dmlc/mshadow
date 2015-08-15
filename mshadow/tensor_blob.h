@@ -69,6 +69,13 @@ struct TShape {
     // remove data heap space from s
     s.data_heap_ = NULL;
   }
+  template<int dim>
+  TShape(Shape<dim> &&shape)
+      : ndim_(0),
+        num_heap_allocated_(0),
+        data_heap_(NULL) {
+    this->CopyFrom(shape.shape_, shape.shape_ + dim);
+  }
 #endif
   /*! \brief destructor */
   ~TShape() {
