@@ -93,8 +93,9 @@ inline void AllocSpace(Tensor<cpu, dim, DType> *obj, bool pad) {
 }
 template<typename Device, typename DType, int dim>
 inline Tensor<Device, dim, DType>
-NewTensor(const Shape<dim> &shape, DType initv, bool pad) {
+NewTensor(const Shape<dim> &shape, DType initv, bool pad, Stream<Device> *stream_) {
   Tensor<Device, dim, DType> obj(shape);
+  obj.stream_ = stream_;
   AllocSpace(&obj, pad);
   MapExp<sv::saveto>(&obj, expr::ScalarExp<DType>(initv));
   return obj;

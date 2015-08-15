@@ -12,13 +12,14 @@ export NVCCFLAGS = -O3 --use_fast_math -ccbin $(CXX) $(MSHADOW_NVCCFLAGS)
 BIN = basic defop
 OBJ =
 CUOBJ =
-CUBIN = 
+CUBIN =
 .PHONY: clean all
 
 all: $(BIN) $(OBJ) $(CUBIN) $(CUOBJ)
 
 basic: basic.cpp
 defop: defop.cpp
+basic_stream: basic_stream.cu
 
 $(BIN) :
 	$(CXX) $(CFLAGS) -o $@ $(filter %.cpp %.o %.c, $^)  $(LDFLAGS)

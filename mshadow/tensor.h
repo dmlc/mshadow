@@ -536,6 +536,7 @@ inline void FreeSpace(Tensor<gpu, dim, DType> *obj);
  * \param shape: shape of tensor
  * \param initv: initialization value
  * \param pad : padding option
+ * \param stream : stream of tensor
  * \tparam Device device of tensor
  * \tparam DType type of element in tensor
  * \tparam dim dimention of tensor
@@ -545,7 +546,8 @@ inline void FreeSpace(Tensor<gpu, dim, DType> *obj);
 template<typename Device, typename DType, int dim>
 inline Tensor<Device, dim, DType> NewTensor(const Shape<dim> &shape,
                                             DType initv,
-                                            bool pad = MSHADOW_ALLOC_PAD);
+                                            bool pad = MSHADOW_ALLOC_PAD,
+                                            Stream<Device> *stream = NULL);
 /*!
  * \brief copy data from one tensor to another, with same shape
  * \param dst target tensor
