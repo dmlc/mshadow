@@ -10,6 +10,7 @@
 #define MSHADOW_TENSOR_BLOB_H_
 #include <vector>
 #include <algorithm>
+#include <iostream>
 #include "./tensor.h"
 
 namespace mshadow {
@@ -249,6 +250,7 @@ struct TShape {
   inline bool operator!=(const Shape<dim> &s) const {
     return !(*this == s);
   }
+  friend std::ostream &operator<<(std::ostream &os, const TShape &shape);
 
  private:
   // the shape will be stored in data_stack_
@@ -279,6 +281,24 @@ struct TShape {
     ndim_ = dim;
   }
 };
+
+/*!
+ * \brief allow string printing of the shape
+ * \param os the output stream
+ * \param shape the shape
+ * \return the ostream
+ */
+inline std::ostream &operator<<(std::ostream &os, const TShape &shape) {
+  os << '(';
+  for (index_t i = 0; i < shape.ndim(); ++i) {
+    if (i != 0) os << ", ";
+    os << shape[i];
+  }
+  // python style tuple
+  if (shape.ndim() == 1) os << ',';
+  os << ')';
+  return os;
+}
 
 /*! \brief data type flag */
 template<typename DType>
