@@ -32,7 +32,7 @@ const int kMaxGridNum = 65535;
 /*! \brief suggested grid number for mapping kernel */
 const int kBaseGridNum = 1024;
 /*! \brief get align stride for given size in x dimension */
-inline index_t GetAlignStride(index_t xsize) { 
+inline index_t GetAlignStride(index_t xsize) {
   if (xsize >= MSHADOW_MIN_PAD_RATIO * 32) {
     return ((xsize  + kMemUnit - 1) >> kMemUnitBits) << kMemUnitBits;
   } else {
@@ -45,7 +45,7 @@ inline void CheckLaunchParam(dim3 dimGrid, dim3 dimBlock, const char *estr = "")
       dimGrid.x > 65535 || dimGrid.y > 65535) {
     fprintf(stderr, "%s[%u,%u,%u]:", estr, dimBlock.x, dimBlock.y, dimBlock.z);
     utils::Error("too large launch parameter\n");
-  } 
+  }
 }
 template<typename Saver, typename DstPlan,
          typename Plan, int block_dim_bits>
@@ -68,7 +68,7 @@ __global__ void MapPlanKernel(DstPlan dst, index_t xstride,
 template<typename Saver, int block_dim_bits, int grid_size,
          typename DstPlan, typename Plan>
 __global__ void MapPlanLargeKernel(DstPlan dst, index_t xstride,
-                                   Shape<2> dshape, const Plan exp, int repeat) {  
+                                   Shape<2> dshape, const Plan exp, int repeat) {
   for (int i = 0; i < repeat; ++i) {
   MapPlanProc<Saver, DstPlan, Plan, block_dim_bits>
       (dst, xstride, dshape, exp, blockIdx.x + i * grid_size);
@@ -83,7 +83,7 @@ inline void MapPlan(expr::Plan<DstExp, DType> dst,
   const index_t xstride = GetAlignStride(dshape[1]);
   const int num_block = (dshape[0] * xstride + kBaseThreadNum-1) / kBaseThreadNum;
   dim3 dimBlock(kBaseThreadNum, 1, 1);
-  
+
   if (num_block < kMaxGridNum) {
     dim3 dimGrid(num_block, 1, 1);
     MapPlanKernel<Saver, kBaseThreadBits,
@@ -150,15 +150,15 @@ template<typename Saver, typename Reducer, int block_dim_bits,
 __global__ void MapReduceKeepDim1Kernel(DstPlan dst, Plan plan, DType scale, Shape<4> pshape) {
   const int block_size = 1 << block_dim_bits;
   __shared__ DType s_rec[block_size];
-  const int c = blockIdx.x;  
+  const int c = blockIdx.x;
   const index_t tot = pshape[3] * pshape[2] * pshape[0];
-  
+
   DType res; Reducer::SetInitValue(res);
   for (index_t i_offset = 0; i_offset < tot; i_offset += block_size) {
     index_t i = i_offset + threadIdx.x;
     if (i< tot) {
       const index_t x = i % pshape[3];
-      i /= pshape[3]; 
+      i /= pshape[3];
       const index_t y = i % pshape[2];
       const index_t n = i / pshape[2];
       Reducer::Reduce(res, plan.Eval((n * pshape[1] + c) * pshape[2] + y, x));
@@ -186,14 +186,25 @@ inline void MapReduceKeepDim1(expr::Plan<DstExp, DType> dst,
       <<<dimGrid, dimBlock, 0, stream>>>(dst, plan, scale, pshape);
 }
 
+template<int x_bits, typename DType, typename DstPlan, typename SrcPlan1, typename SrcPlan2>
+__global__ void SoftmaxGradKernel(DstPlan dst, SrcPlan1 src, SrcPlan2 label, index_t xmax) {
+  const int y = blockIdx.x;
+  const int x = threadIdx.x;
+  const int k = static_cast<int>(label.Eval(y, 0));
+  if (x < xmax) {
+    x == k ? dst.REval(y, k) = src.Eval(y, k) - 1.0f :  dst.REval(y, k) = src.Eval(y, k);
+  }
+  __syncthreads();
+}
+
 template<int x_bits, typename DType,  typename DstPlan, typename SrcPlan>
 __global__ void SoftmaxKernel(DstPlan dst, SrcPlan src, index_t xmax) {
   const unsigned x_size = 1 << x_bits;
   const int y = blockIdx.x;
-  __shared__ DType s_rec[x_size];  
+  __shared__ DType s_rec[x_size];
   // step 1: get max
   if (threadIdx.x < xmax) {
-    s_rec[threadIdx.x] = src.Eval(y, threadIdx.x); 
+    s_rec[threadIdx.x] = src.Eval(y, threadIdx.x);
   }
   for (unsigned x = x_size; x < xmax; x += x_size) {
     if (x + threadIdx.x < xmax) {
@@ -212,7 +223,7 @@ __global__ void SoftmaxKernel(DstPlan dst, SrcPlan src, index_t xmax) {
   __syncthreads();
   s_rec[threadIdx.x] = 0.0f;
   __syncthreads();
- 
+
   // calculate normalizer, with writeback
   for (unsigned x = 0; x < xmax; x += x_size) {
     if (x + threadIdx.x < xmax) {
@@ -227,7 +238,7 @@ __global__ void SoftmaxKernel(DstPlan dst, SrcPlan src, index_t xmax) {
   Reduce1D<red::sum, x_bits>(s_rec);
   __syncthreads();
   DType ssum = s_rec[0];
-  
+
   for (unsigned x = 0; x < xmax; x += x_size) {
     if (x + threadIdx.x < xmax) {
       dst.REval(y, x + threadIdx.x) /= ssum;
@@ -246,6 +257,24 @@ inline void Softmax(Tensor<gpu, 2, DType> &dst,
       <<<dimGrid, dimBlock, 0, stream>>>
       (expr::MakePlan(dst),
        expr::MakePlan(src),
+       dst.size(1));
+}
+
+template<typename DType>
+inline void SoftmaxGrad(Tensor<gpu, 2, DType> &dst,
+                        const Tensor<gpu, 2, DType> &src,
+                        const Tensor<gpu, 1, DType> &label) {
+  dim3 dimBlock(kBaseThreadNum);
+  dim3 dimGrid(dst.size(0));
+  utils::Check(dst.shape_ == src.shape_, "SoftmaxGrad: shape mismatch");
+  utils::Check(dst.size(0) == label.size(0), "SoftmaxGrad: label shape mismatch");
+  CheckLaunchParam(dimGrid, dimBlock, "SoftmaxGrad");
+  cudaStream_t stream = Stream<gpu>::GetStream(dst.stream_);
+  SoftmaxGradKernel<kBaseThreadBits, DType>
+      <<<dimGrid, dimBlock, 0, stream>>>
+      (expr::MakePlan(dst),
+       expr::MakePlan(src),
+       expr::MakePlan(label),
        dst.size(1));
 }
 }  // namespace cuda
