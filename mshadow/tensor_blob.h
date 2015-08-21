@@ -325,7 +325,7 @@ inline std::istream &operator>>(std::istream &is, TShape &shape) {
     char ch;
     do {
       ch = is.get();
-    } while(isspace(ch));
+    } while (isspace(ch));
     if (ch == ',') {
       while (true) {
         ch = is.peek();
