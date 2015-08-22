@@ -11,6 +11,7 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
+#include <cctype>
 #include "./tensor.h"
 
 namespace mshadow {
@@ -251,6 +252,7 @@ struct TShape {
     return !(*this == s);
   }
   friend std::ostream &operator<<(std::ostream &os, const TShape &shape);
+  friend std::istream &operator>>(std::istream &is, TShape &shape);
 
  private:
   // the shape will be stored in data_stack_
@@ -298,6 +300,53 @@ inline std::ostream &operator<<(std::ostream &os, const TShape &shape) {
   if (shape.ndim() == 1) os << ',';
   os << ')';
   return os;
+}
+
+/*!
+ * \brief read shape from the istream
+ * \param is the input stream
+ * \param shape the shape
+ * \return the istream
+ */
+inline std::istream &operator>>(std::istream &is, TShape &shape) {
+  // get (
+  while (true) {
+    char ch = is.get();
+    if (ch == '(') break;
+    if (!isspace(ch)) {
+      is.setstate(std::ios::failbit);
+      return is;
+    }
+  }
+  index_t idx;
+  std::vector<index_t> tmp;
+  while (is >> idx) {
+    tmp.push_back(idx);
+    char ch;
+    do {
+      ch = is.get();
+    } while (isspace(ch));
+    if (ch == ',') {
+      while (true) {
+        ch = is.peek();
+        if (isspace(ch)) {
+          is.get(); continue;
+        }
+        if (ch == ')') {
+          is.get(); break;
+        }
+        break;
+      }
+      if (ch == ')') break;
+    } else if (ch == ')') {
+      break;
+    } else {
+      is.setstate(std::ios::failbit);
+      return is;
+    }
+  }
+  shape.CopyFrom(tmp.begin(), tmp.end());
+  return is;
 }
 
 /*! \brief data type flag */
