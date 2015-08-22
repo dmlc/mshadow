@@ -75,7 +75,56 @@ struct BLASEngine<cpu> {
     cblas_dger(CblasColMajor, m, n, alpha, X, incX, Y, incY, A, lda);
   }
 };
-#endif  // MSHADOW_USE_CBLAS || MSHADOW_USE_MKL
+#elif MSHADOW_STAND_ALONE == 1
+template<>
+struct BLASEngine<cpu> {
+  inline static bool GetT(bool t) {
+    return t ? true : false;
+  }
+  inline static void SetStream(Stream<cpu> *stream) {
+  }
+  inline static void gemm(Stream<cpu> *stream,
+                          bool transa, bool transb,
+                          int m, int n, int k, float alpha,
+                          const float *A, int lda, const float *B, int ldb,
+                          float beta, float *C, int ldc) {
+    utils::Error("Not implmented!");
+  }
+  inline static void gemm(Stream<cpu> *stream,
+                          bool transa, bool transb,
+                          int m, int n, int k, double alpha,
+                          const double *A, int lda, const double *B, int ldb,
+                          double beta, double *C, int ldc) {
+    utils::Error("Not implmented!");
+  }
+  inline static void gemv(Stream<cpu> *stream,
+                          bool trans, int m, int n,
+                          float alpha, const float *A, int lda,
+                          const float *X, int incX,
+                          float beta, float *Y, int incY) {
+    utils::Error("Not implmented!");
+  }
+  inline static void gemv(Stream<cpu> *stream,
+                          bool trans, int m, int n, double alpha,
+                          const double *A, int lda,
+                          const double *X, int incX,
+                          double beta, double *Y, int incY) {
+    utils::Error("Not implmented!");
+  }
+  inline static void ger(Stream<cpu> *stream,
+                         int m, int n, float alpha,
+                         const float *X, int incX,
+                         const float *Y, int incY, float *A, int lda) {
+    utils::Error("Not implmented!");
+  }
+  inline static void ger(Stream<cpu> *stream,
+                         int m, int n, double alpha,
+                         const double *X, int incX,
+                         const double *Y, int incY, double *A, int lda) {
+    utils::Error("Not implmented!");
+  }
+};
+#endif  // MSHADOW_USE_CBLAS || MSHADOW_USE_MKL || MSHADOW_STAND_ALONE
 // CuBLAS redirect code
 #if MSHADOW_USE_CUDA
 // All CuBLAS goes to here, use legacy API: not threadsafe

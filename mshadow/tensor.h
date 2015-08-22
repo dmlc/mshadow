@@ -610,6 +610,27 @@ inline void Softmax(Tensor<cpu, 2, DType> dst, const Tensor<cpu, 2, DType> &ener
  */
 template<typename DType>
 inline void Softmax(Tensor<gpu, 2, DType> dst, const Tensor<gpu, 2, DType> &energy);
+
+/*!
+ * \brief CPU/GPU: softmax gradient
+ * \param dst destination
+ * \param src source output
+ * \param label label info
+ */
+template<typename DType>
+inline void SoftmaxGrad(Tensor<cpu, 2, DType> dst,
+                        const Tensor<cpu, 2, DType> &src,
+                        const Tensor<cpu, 1, DType> &label);
+/*!
+ * \brief CPU/GPU: softmax gradient
+ * \param dst destination
+ * \param src source output
+ * \param label label info
+ */
+template<typename DType>
+inline void SoftmaxGrad(Tensor<gpu, 2, DType> dst,
+                        const Tensor<gpu, 2, DType> &src,
+                        const Tensor<gpu, 1, DType> &label);
 // function declarations to support expression, no need to understand them
 // these functions do not need to be directly used
 /*!

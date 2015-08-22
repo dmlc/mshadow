@@ -47,6 +47,7 @@ endif
 else
 	MSHADOW_CFLAGS += -DMSHADOW_USE_CBLAS=1 -DMSHADOW_USE_MKL=0
 endif
+
 ifeq ($(USE_BLAS), openblas)
 	MSHADOW_LDFLAGS += -lopenblas
 else ifeq ($(USE_BLAS), atlas)
