@@ -608,6 +608,8 @@ inline void Softmax(Tensor<cpu, 2, DType> dst, const Tensor<cpu, 2, DType> &ener
  * \param dst destination
  * \param energy input energy
  */
+template<typename DType>
+inline void Softmax(Tensor<gpu, 2, DType> dst, const Tensor<gpu, 2, DType> &energy);
 
 /*!
  * \brief CPU/GPU: softmax gradient
@@ -619,9 +621,6 @@ template<typename DType>
 inline void SoftmaxGrad(Tensor<cpu, 2, DType> dst,
                         const Tensor<cpu, 2, DType> &src,
                         const Tensor<cpu, 1, DType> &label);
-
-template<typename DType>
-inline void Softmax(Tensor<gpu, 2, DType> dst, const Tensor<gpu, 2, DType> &energy);
 /*!
  * \brief CPU/GPU: softmax gradient
  * \param dst destination

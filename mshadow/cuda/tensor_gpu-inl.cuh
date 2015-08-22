@@ -192,9 +192,12 @@ __global__ void SoftmaxGradKernel(DstPlan dst, SrcPlan1 src, SrcPlan2 label, ind
   const int x = threadIdx.x;
   const int k = static_cast<int>(label.Eval(y, 0));
   if (x < xmax) {
-    x == k ? dst.REval(y, k) = src.Eval(y, k) - 1.0f :  dst.REval(y, k) = src.Eval(y, k);
+    if (x == k) {
+      dst.REval(y, k) = src.Eval(y, k) - 1.0f;
+    } else {
+      dst.REval(y, k) = src.Eval(y, k);
+    }
   }
-  __syncthreads();
 }
 
 template<int x_bits, typename DType,  typename DstPlan, typename SrcPlan>
