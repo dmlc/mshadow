@@ -44,10 +44,7 @@ endif
 else
 	MSHADOW_LDFLAGS += -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5
 endif
-ifneq($(USE_BLAS), NONE)
-	MSHADOW_CFLAGS += -DMSHADOW_USE_CBLAS=1 -DMSHADOW_USE_MKL=0
 endif
-
 ifeq ($(USE_BLAS), openblas)
 	MSHADOW_LDFLAGS += -lopenblas
 else ifeq ($(USE_BLAS), atlas)
