@@ -251,6 +251,31 @@ struct TShape {
   inline bool operator!=(const Shape<dim> &s) const {
     return !(*this == s);
   }
+  /*!
+   * \brief save the content into binary stream
+   * \param strm the output stream
+   * \tparam TStream any stream type that have write
+   */
+  template<typename TStream>
+  inline void Save(TStream *strm) const {
+    strm->Write(&ndim_, sizeof(ndim_));
+    strm->Write(data(), sizeof(index_t) * ndim_);
+  }
+  /*!
+   * \brief load the content from binary stream
+   * \param strm the output stream
+   * \tparam TStream any stream type that have write
+   * \return whether the load is successful
+   */
+  template<typename TStream>
+  inline bool Load(TStream *strm) {
+    if (strm->Read(&ndim_, sizeof(ndim_)) != sizeof(ndim_)) return false;
+    this->SetDim(ndim_);
+    size_t nread = sizeof(index_t) * ndim_;
+    if (strm->Read(data(), nread) != nread) return false;
+    return true;
+  }
+
   friend std::ostream &operator<<(std::ostream &os, const TShape &shape);
   friend std::istream &operator>>(std::istream &is, TShape &shape);
 
