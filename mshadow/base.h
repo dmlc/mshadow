@@ -124,10 +124,8 @@ extern "C" {
   #include <curand.h>
 #endif
 
-#if MSHADOW_USE_CUDNN
-  #ifdef __CUDACC__
-    #include <cudnn.h>
-  #endif
+#if MSHADOW_USE_CUDNN == 1
+  #include <cudnn.h>
 #endif
 
 #if MSHADOW_USE_NVML
