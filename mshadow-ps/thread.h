@@ -11,7 +11,7 @@
 #ifdef _MSC_VER
 #include <windows.h>
 #include <process.h>
-#include "../mshadow/utils.h"
+#include "../mshadow/logging.h"
 namespace mshadow {
 namespace utils {
 /*! \brief simple semaphore used for synchronization */
@@ -19,16 +19,17 @@ class Semaphore {
  public :
   inline void Init(int init_val) {
     sem = CreateSemaphore(NULL, init_val, 10, NULL);
-    utils::Check(sem != NULL, "create Semaphore error");
+    CHECK_NE(sem, NULL) << "create Semaphore error";
   }
   inline void Destroy(void) {
     CloseHandle(sem);
   }
   inline void Wait(void) {
-    utils::Check(WaitForSingleObject(sem, INFINITE) == WAIT_OBJECT_0, "WaitForSingleObject error");
+    CHECK_EQ(WaitForSingleObject(sem, INFINITE), WAIT_OBJECT_0)
+      << "WaitForSingleObject error";
   }
   inline void Post(void) {
-    utils::Check(ReleaseSemaphore(sem, 1, NULL) != 0, "ReleaseSemaphore error");
+    CHECK_NE(ReleaseSemaphore(sem, 1, NULL), 0) << "ReleaseSemaphore error";
   }
 
  private:
@@ -39,8 +40,8 @@ class Semaphore {
 class Mutex {
  public:
   inline void Init(void) {
-    utils::Check(InitializeCriticalSectionAndSpinCount(&mutex, 0x00000400) != 0,
-                   "Mutex::Init fail");
+    CHECK_NE(InitializeCriticalSectionAndSpinCount(&mutex, 0x00000400), 0)
+      << "Mutex::Init fail";
   }
   inline void Lock(void) {
     EnterCriticalSection(&mutex);
@@ -70,8 +71,8 @@ class ConditionVariable {
   }
   // wait on the conditional variable
   inline void Wait(Mutex *mutex) {
-    utils::Check(SleepConditionVariableCS(&cond, &(mutex->mutex), INFINITE) != 0,
-                 "ConditionVariable:Wait fail");
+    CHECK_NE(SleepConditionVariableCS(&cond, &(mutex->mutex), INFINITE), 0)
+      << "ConditionVariable:Wait fail";
   }
   inline void Broadcast(void) {
     WakeAllConditionVariable(&cond);
@@ -140,7 +141,7 @@ class Semaphore {
       perror("sem_open");
       exit(1);
     }
-    utils::Check(semPtr != NULL, "create Semaphore error");
+    CHECK_NE(semPtr, NULL) << "create Semaphore error";
   }
   inline void Destroy(void) {
     if (sem_close(semPtr) == -1) {
@@ -166,22 +167,22 @@ class Semaphore {
  public:
   inline void Init(int init_val) {
     if (sem_init(&sem, 0, init_val) != 0) {
-      utils::Error("Semaphore.Init:%s", strerror(errno));
+      LOG(FATAL) << "Semaphore.Init: " << strerror(errno);
     }
   }
   inline void Destroy(void) {
     if (sem_destroy(&sem) != 0) {
-      utils::Error("Semaphore.Destroy:%s", strerror(errno));
+      LOG(FATAL) << "Semaphore.Destroy: " << strerror(errno);
     }
   }
   inline void Wait(void) {
     if (sem_wait(&sem) != 0) {
-      utils::Error("Semaphore.Wait:%s", strerror(errno));
+      LOG(FATAL) << "Semaphore.Wait: " << strerror(errno);
     }
   }
   inline void Post(void) {
     if (sem_post(&sem) != 0) {
-      utils::Error("Semaphore.Post:%s", strerror(errno));
+      LOG(FATAL) << "Semaphore.Post: " << strerror(errno);
     }
   }
   #endif

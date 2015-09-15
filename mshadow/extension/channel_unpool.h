@@ -45,15 +45,19 @@ struct ChannelUnpoolingExp:
         grad_pooled_(grad_pooled),
         nsize_(nsize), kstride_(kstride), pad_(pad) {
     Shape<srcdim> pshape = ShapeCheck<srcdim, SrcExp>::Check(grad_pooled);
-    utils::Check(pshape == ShapeCheck<srcdim, SrcExp>::Check(data_pooled),
-                 "ChannelUnPoolingExp: data and grad shape mismatch");
+    typedef ShapeCheck<srcdim, SrcExp> ShapeCheckSrcDimSrcExp;
+    CHECK_EQ(pshape, ShapeCheckSrcDimSrcExp::Check(data_pooled))
+      << "ChannelUnPoolingExp: data and grad shape mismatch";
     Shape<srcdim> sshape = ShapeCheck<srcdim, SrcExp>::Check(data_src);
     for (int k = 0; k < srcdim; ++k) {
       if (k == 1) {
         continue;
       }
-      utils::Check(pshape[k] == sshape[k],
-                   "ChannelUnPoolingExp: pooled tensor and src tensor shape mismatch");
+      CHECK_EQ(pshape[k], sshape[k])
+        << "ChannelUnPoolingExp: pooled tensor and src tensor shape mismatch"
+        << pshape[k]
+        << " vs "
+        << sshape[k];
     }
     pchannel_ = pshape[1];
     this->shape_ = sshape;

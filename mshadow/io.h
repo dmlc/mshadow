@@ -10,21 +10,21 @@
 
 namespace mshadow {
 namespace utils {
-/*! 
- * \brief interface of stream I/O, used to serialize data, 
+/*!
+ * \brief interface of stream I/O, used to serialize data,
  *   mshadow does not restricted to only this interface in SaveBinary/LoadBinary
  *   mshadow accept all class that implements Read and Write
  */
 class IStream {
  public:
-  /*! 
+  /*!
    * \brief read data from stream
    * \param ptr pointer to memory buffer
    * \param size size of block
    * \return usually is the size of data readed
    */
   virtual size_t Read(void *ptr, size_t size) = 0;
-  /*! 
+  /*!
    * \brief write data to stream
    * \param ptr pointer to memory buffer
    * \param size size of block
@@ -107,18 +107,16 @@ template<int dim, typename DType, typename TStream>
 inline void LoadBinary(TStream &fi, // NOLINT(*)
                        Tensor<cpu, dim, DType> *dst_, bool pre_alloc) {
   Shape<dim> shape;
-  utils::Check(fi.Read(&shape, sizeof(shape)) != 0, "mshadow::LoadBinary");
+  CHECK_NE(fi.Read(&shape, sizeof(shape)), 0) << "mshadow::LoadBinary";
   if (pre_alloc) {
-    utils::Check(shape == dst_->shape_,
-                 "LoadBinary, shape do not match pre-allocated shape");
+    CHECK_EQ(shape, dst_->shape_) << "LoadBinary, shape do not match pre-allocated shape";
   } else {
     dst_->shape_ = shape; AllocSpace(dst_);
   }
   Tensor<cpu, 2, DType> dst = dst_->FlatTo2D();
   if (dst.size(0) == 0) return;
   for (index_t i = 0; i < dst.size(0); ++i) {
-    utils::Check(fi.Read(dst[i].dptr_, sizeof(DType) * dst.size(1)) != 0,
-                 "mshadow::LoadBinary");
+    CHECK_NE(fi.Read(dst[i].dptr_, sizeof(DType) * dst.size(1)), 0) << "mshadow::LoadBinary";
   }
 }
 template<int dim, typename DType, typename TStream>
@@ -127,8 +125,7 @@ inline void LoadBinary(TStream &fi, // NOLINT(*)
   Tensor<cpu, dim, DType> tmp;
   LoadBinary(fi, &tmp, false);
   if (pre_alloc) {
-    utils::Check(tmp.shape == dst->shape_,
-                 "LoadBinary, shape do not match pre-allocated shape");
+    CHECK_EQ(tmp.shape, dst->shape_) << "LoadBinary, shape do not match pre-allocated shape";
   } else {
     dst->shape = tmp.shape; AllocSpace(dst);
   }

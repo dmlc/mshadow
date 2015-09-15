@@ -49,8 +49,7 @@ class Random<cpu, DType> {
   inline void Seed(int seed) {
 #if MSHADOW_USE_MKL
     int status = vslNewStream(&vStream_, VSL_BRNG_MT19937, seed);
-    utils::Check(status == VSL_STATUS_OK,
-                 "MKL VSL Random engine failed to be initialized.\n");
+    CHECK_EQ(status, VSL_STATUS_OK) << "MKL VSL Random engine failed to be initialized.";
 #else
     this->rseed_ = static_cast<unsigned>(seed);
 #endif
@@ -138,23 +137,19 @@ class Random<cpu, DType> {
   // generate uniform distribution
   inline void GenUniform(float *dptr, index_t size, float a, float b) {
     int status = vsRngUniform(0, vStream_, size, dptr, a, b);
-    utils::Check(status == VSL_STATUS_OK,
-                 "Failed to generate random number by MKL.");
+    CHECK_EQ(status, VSL_STATUS_OK) << "Failed to generate random number by MKL.";
   }
   inline void GenUniform(double *dptr, index_t size, double a, double b) {
     int status = vdRngUniform(0, vStream_, size, dptr, a, b);
-    utils::Check(status == VSL_STATUS_OK,
-                 "Failed to generate random number by MKL.");
+    CHECK_EQ(status, VSL_STATUS_OK) << "Failed to generate random number by MKL.";
   }
   inline void GenGaussian(float *dptr, index_t size, float mu, float sigma) {
     int status = vsRngGaussian(0, vStream_, size, dptr, mu, sigma);
-    utils::Check(status == VSL_STATUS_OK,
-                 "Failed to generate random number by MKL.");
+    CHECK_EQ(status, VSL_STATUS_OK) << "Failed to generate random number by MKL.";
   }
   inline void GenGaussian(double *dptr, index_t size, double mu, double sigma) {
     int status = vdRngGaussian(0, vStream_, size, dptr, mu, sigma);
-    utils::Check(status == VSL_STATUS_OK,
-                 "Failed to generate random number by MKL.");
+    CHECK_EQ(status, VSL_STATUS_OK) << "Failed to generate random number by MKL.";
   }
 #else
   /*! \brief random number seed used by PRNG*/
@@ -230,8 +225,7 @@ class Random<gpu, DType> {
   explicit Random(int seed) {
     curandStatus_t status;
     status = curandCreateGenerator(&gen_, CURAND_RNG_PSEUDO_DEFAULT);
-    utils::Check(status == CURAND_STATUS_SUCCESS,
-                 "Can not create CURAND Generator");
+    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "Can not create CURAND Generator";
     this->Seed(seed);
     buffer_.Resize(Shape1(kRandBufferSize));
   }
@@ -239,8 +233,7 @@ class Random<gpu, DType> {
   ~Random(void) {
     curandStatus_t status;
     status = curandDestroyGenerator(gen_);
-    utils::Check(status == CURAND_STATUS_SUCCESS,
-                 "Destory CURAND Gen failed");
+    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "Destory CURAND Gen failed";
   }
   /*!
    * \brief set the stream of computation
@@ -249,8 +242,8 @@ class Random<gpu, DType> {
   inline void set_stream(Stream<gpu> *stream) {
     curandStatus_t status;
     status = curandSetStream(gen_, Stream<gpu>::GetStream(stream));
-    utils::Check(status == CURAND_STATUS_SUCCESS,
-                 "set_stream CURAND failed");
+
+    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "set_stream CURAND failed";
   }
   /*!
    * \brief seed random number generator using this seed
@@ -259,8 +252,7 @@ class Random<gpu, DType> {
   inline void Seed(int seed) {
     curandStatus_t status;
     status = curandSetPseudoRandomGeneratorSeed(gen_, seed);
-    utils::Check(status == CURAND_STATUS_SUCCESS,
-                 "Set CURAND seed failed.");
+    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "Set CURAND seed failed.";
   }
   /*!
    * \brief generate data from uniform [a,b)
@@ -336,22 +328,22 @@ class Random<gpu, DType> {
   inline void GenGaussian(float *dptr, size_t size, float mu, float sigma) {
     curandStatus_t status;
     status = curandGenerateNormal(gen_, dptr, size, mu, sigma);
-    utils::Check(status == CURAND_STATUS_SUCCESS, "CURAND Gen Uniform failed");
+    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Uniform failed";
   }
   inline void GenGaussian(double *dptr, size_t size, double mu, double sigma) {
     curandStatus_t status;
     status = curandGenerateNormalDouble(gen_, dptr, size, mu, sigma);
-    utils::Check(status == CURAND_STATUS_SUCCESS, "CURAND Gen Uniform failed");
+    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Uniform failed";
   }
   inline void GenUniform(float *dptr, size_t size) {
     curandStatus_t status;
     status = curandGenerateUniform(gen_, dptr, size);
-    utils::Check(status == CURAND_STATUS_SUCCESS, "CURAND Gen Uniform failed");
+    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Uniform failed";
   }
   inline void GenUniform(double *dptr, size_t size) {
     curandStatus_t status;
     status = curandGenerateUniformDouble(gen_, dptr, size);
-    utils::Check(status == CURAND_STATUS_SUCCESS, "CURAND Gen Uniform failed");
+    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Uniform failed";
   }
   /*! \brief random numbeer generator */
   curandGenerator_t gen_;

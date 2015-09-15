@@ -31,10 +31,8 @@ struct CroppingExp:
   explicit CroppingExp(const SrcExp &src, Shape<2> cshape)
       : src_(src) {
     this->shape_ = ShapeCheck<srcdim, SrcExp>::Check(src_);
-    utils::Check(this->shape_[srcdim - 2] >= cshape[0],
-                 "CroppingExp: height requirement not met");
-    utils::Check(this->shape_[srcdim - 1] >= cshape[1],
-                 "CroppingExp: width requirement not met");
+    CHECK_GE(this->shape_[srcdim - 2], cshape[0]) << "CroppingExp: height requirement not met";
+    CHECK_GE(this->shape_[srcdim - 1], cshape[1]) << "CroppingExp: width requirement not met";
     pad_height_ = (this->shape_[srcdim - 2] - cshape[0]) / 2;
     pad_width_ = (this->shape_[srcdim - 1] - cshape[1]) / 2;
     src_height_ = this->shape_[srcdim - 2];
@@ -46,10 +44,10 @@ struct CroppingExp:
                        index_t start_height, index_t start_width)
       : src_(src), pad_height_(start_height), pad_width_(start_width) {
     this->shape_ = ShapeCheck<srcdim, SrcExp>::Check(src_);
-    utils::Check(this->shape_[srcdim - 2] >= cshape[0] + start_height,
-                 "CroppingExp: height requirement not met");
-    utils::Check(this->shape_[srcdim - 1] >= cshape[1] + start_width,
-                 "CroppingExp: width requirement not met");
+    CHECK_GE(this->shape_[srcdim - 2], cshape[0] + start_height)
+      << "CroppingExp: height requirement not met";
+    CHECK_GE(this->shape_[srcdim - 1], cshape[1] + start_width)
+      << "CroppingExp: width requirement not met";
     src_height_ = this->shape_[srcdim - 2];
     this->shape_[srcdim - 2] = cshape[0];  // height
     this->shape_[srcdim - 1] = cshape[1];  // width

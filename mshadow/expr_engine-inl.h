@@ -8,7 +8,7 @@
 #define MSHADOW_EXPR_ENGINE_INL_H_
 #include <utility>
 #include <algorithm>
-#include "./utils.h"
+#include "./logging.h"
 #include "./expression.h"
 #include "./tensor.h"
 
@@ -361,8 +361,7 @@ struct ShapeCheck<dim, BinaryMapExp<OP, TA, TB, DType, etype> > {
     Shape<dim> shape2 = ShapeCheck<dim, TB>::Check(t.rhs_);
     if (shape1[0] == 0) return shape2;
     if (shape2[0] == 0) return shape1;
-    utils::Check(shape1 == shape2,
-                 "BinaryMapExp: Shapes of operands are not the same");
+    CHECK_EQ(shape1, shape2) << "BinaryMapExp: Shapes of operands are not the same";
     return shape1;
   }
 };

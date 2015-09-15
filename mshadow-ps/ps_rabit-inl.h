@@ -60,7 +60,7 @@ class RabitModel : public LocalModel<xpu, DType> {
                                 int key) {
     // summation the data fron all devices
     LocalModel<xpu, DType>::ReduceSum(data);
-    utils::Assert(data[0].CheckContiguous(), "data must be contiguous");
+    CHECK_EQ(data[0].CheckContiguous(), true) << "data must be contiguous";
     ReduceTask tsk;
     tsk.data = data[0]; tsk.key = key;
     reduce_queue_.Push(tsk, 0);
@@ -87,19 +87,17 @@ class RabitModel : public LocalModel<xpu, DType> {
     while (!destroy_reduce_thread_) {
       ReduceTask tsk;
       if (reduce_queue_.Pop(&tsk)) {
-        utils::Check(disable_allreduce_ == 0,
-                     "Allreduce disabled error");
+        CHECK_EQ(disable_allreduce_, 0) << "Allreduce disabled error";
         int key = tsk.key;
         rabit::Allreduce<rabit::op::Max>(&key, 1);
-        utils::Check(key == tsk.key, "Allreduce not concensus");
+        CHECK_EQ(key, tsk.key) << "Allreduce not concensus";
         rabit::Allreduce<rabit::op::Sum>
             (tsk.data.dptr_, tsk.data.MSize());
         tsk.data *= 1.0f / rabit::GetWorldSize();
-        utils::Check(disable_allreduce_ == 0,
-                     "Allreduce disabled error");
+        CHECK_EQ(disable_allreduce_, 0) << "Allreduce disabled error";
         this->HandleReduceFinish(tsk.data, tsk.key);
       } else {
-        utils::Assert(destroy_reduce_thread_, "abort but not destroy");
+        CHECK_EQ(destroy_reduce_thread_, true) << "abort but not destroy";
       }
     }
   }

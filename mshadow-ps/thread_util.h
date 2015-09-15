@@ -83,11 +83,11 @@ class ThreadPQueue {
       }
     }
     if (use_fifo_) {
-      utils::Assert(fqueue_.size() != 0, "Queue.Pop");
+      CHECK_NE(fqueue_.size(), 0) << "Queue.Pop";
       *data_out = fqueue_.front();
       fqueue_.pop();
     } else {
-      utils::Assert(pqueue_.size() != 0, "Queue.Pop");
+      CHECK_NE(pqueue_.size(), 0) << "Queue.Pop";
       *data_out = pqueue_.top().data;
       pqueue_.pop();
     }
@@ -147,7 +147,7 @@ class ThreadSafeMap {
   }
   inline TValue &GetRef(int key) {
     TValue *ret = this->Get(key);
-    utils::Assert(ret != NULL, "key=%d does not exist", key);
+    CHECK_NE(ret, NULL) << "key = " << key << " does not exist";
     return *ret;
   }
   inline void Init(int key) {

@@ -152,6 +152,20 @@ v   * \return subshape
     }
     return s;
   }
+  /*!
+   * \brief make shape to string
+   * \return shape in tuple string
+   */
+  MSHADOW_XINLINE std::string ToString() const {
+    std::ostringstream os;
+    os << "(";
+    for (int i = 0; i < dimension; ++i) {
+      if (i != 0) os << ",";
+      os << this->shape_[i];
+    }
+    os << ")";
+    return os.str();
+  }
 };  // Shape
 //------------------------------------------------
 // useful construction functions to generate shape

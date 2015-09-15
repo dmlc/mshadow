@@ -38,8 +38,8 @@ struct PoolingExp:
              index_t ksize_y, index_t ksize_x, index_t kstride)
       : src_(src), ksize_y_(ksize_y), ksize_x_(ksize_x), kstride_(kstride) {
     Shape<srcdim> sshape = ShapeCheck<srcdim, SrcExp>::Check(src_);
-    utils::Check(sshape[srcdim - 1] >= ksize_x && sshape[srcdim - 2] >= ksize_y,
-                 "PoolingExp: kernel must be smaller than image");
+    CHECK(sshape[srcdim - 1] >= ksize_x && sshape[srcdim - 2] >= ksize_y)
+      << "PoolingExp: kernel must be smaller than image";
     this->src_height_ = sshape[srcdim - 2];
     this->src_width_  = sshape[srcdim - 1];
     this->shape_ = sshape;
@@ -51,9 +51,8 @@ struct PoolingExp:
              index_t ksize_y, index_t ksize_x, index_t kstride)
       : src_(src), ksize_y_(ksize_y), ksize_x_(ksize_x), kstride_(kstride) {
     Shape<srcdim> sshape = ShapeCheck<srcdim, SrcExp>::Check(src_);
-    utils::Check(sshape[srcdim - 1] >= ksize_x &&
-                 sshape[srcdim - 2] >= ksize_y,
-                 "PoolingExp: kernel must be smaller than image");
+    CHECK(sshape[srcdim - 1] >= ksize_x && sshape[srcdim - 2] >= ksize_y)
+      << "PoolingExp: kernel must be smaller than image";
     this->src_height_ = sshape[srcdim - 2];
     this->src_width_  = sshape[srcdim - 1];
     this->shape_ = sshape;
@@ -82,10 +81,10 @@ pool(const Exp<SrcExp, DType, etype> &src,
   return PoolingExp<Reducer, SrcExp, DType, ExpInfo<SrcExp>::kDim>
       (src.self(), ksize_y, ksize_x, kstride);
 }
-/*! 
+/*!
  * \brief same as pool, except the output shape is specified by pshape
  * \param src source image
- * \param pshape ouput shape 
+ * \param pshape ouput shape
  * \param ksize_y kernel size in y
  * \param ksize_x kernel size in x
  * \param kstride stride for each kernel

@@ -37,8 +37,7 @@ struct ConcatExp : public TRValue<ConcatExp<LhsExp, RhsExp,
     #pragma unroll
     for (int i = 0; i < srcdim; ++i) {
       if (i != dimcat) {
-        utils::Check(sshape1[i] == sshape2[i],
-                     "ConcatExp: shape mismatch");
+        CHECK_EQ(sshape1[i], sshape2[i]) << "ConcatExp: shape mismatch";
       }
     }
     this->shape_ = sshape1;

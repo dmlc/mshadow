@@ -38,11 +38,10 @@ struct PackColToPatchXExp:
     const index_t o_height = (imshape[dstdim - 2] - psize_y) / pstride + 1;
     const index_t o_width  = (imshape[dstdim - 1] - psize_x) / pstride + 1;
     Shape<2> sshape = ShapeCheck<2, SrcExp>::Check(src_);
-    utils::Check(sshape[1] == o_height * o_width *
-                 imshape.ProdShape(0, dstdim - 3),
-                 "PackColToPatchExp: src.size(1) mismatch");
-    utils::Check(sshape[0] == psize_y * psize_x * imshape[dstdim - 3],
-                 "PackColToPatchExp: src.size(0) mismatch");
+    CHECK_EQ(sshape[1], o_height * o_width * imshape.ProdShape(0, dstdim - 3))
+      << "PackColToPatchExp: src.size(1) mismatch";
+    CHECK_EQ(sshape[0], psize_y * psize_x * imshape[dstdim - 3])
+      << "PackColToPatchExp: src.size(0) mismatch";
   }
 };
 /*!
@@ -65,9 +64,8 @@ pack_col2patch(const expr::Exp<SrcExp, DType, etype> &src,
                index_t psize_x, index_t pstride) {
   TypeCheckPass<ExpInfo<SrcExp>::kDim == 2>
       ::Error_Expression_Does_Not_Meet_Dimension_Req();
-  utils::Check(imshape[dstdim - 1] >= psize_x &&
-               imshape[dstdim - 2] >= psize_y,
-               "PackColToPatch:image shape smaller than patch size");
+  CHECK(imshape[dstdim - 1] >= psize_x && imshape[dstdim - 2] >= psize_y)
+    << "PackColToPatch:image shape smaller than patch size";
   return PackColToPatchXExp<SrcExp, DType, dstdim>(src.self(), imshape,
                                                    psize_y, psize_x, pstride);
 }

@@ -43,8 +43,11 @@ inline index_t GetAlignStride(index_t xsize) {
 inline void CheckLaunchParam(dim3 dimGrid, dim3 dimBlock, const char *estr = "") {
   if (dimBlock.x * dimBlock.y * dimBlock.z > static_cast<unsigned>(kMaxThreadsPerBlock) ||
       dimGrid.x > 65535 || dimGrid.y > 65535) {
-    fprintf(stderr, "%s[%u,%u,%u]:", estr, dimBlock.x, dimBlock.y, dimBlock.z);
-    utils::Error("too large launch parameter\n");
+    LOG(FATAL) << "too large launch parameter: "
+      << estr << "["
+      << dimBlock.x << ","
+      << dimBlock.y << ","
+      << dimBlock.z << "]";
   }
 }
 template<typename Saver, typename DstPlan,
@@ -253,7 +256,7 @@ inline void Softmax(Tensor<gpu, 2, DType> &dst,
                     const Tensor<gpu, 2, DType> &src) {
   dim3 dimBlock(kBaseThreadNum);
   dim3 dimGrid(dst.size(0));
-  utils::Check(dst.shape_ == src.shape_, "Softmax: shape mismatch");
+  CHECK_EQ(dst.shape_, src.shape_) << "Softmax: shape mismatch";
   CheckLaunchParam(dimGrid, dimBlock, "Softmax");
   cudaStream_t stream = Stream<gpu>::GetStream(dst.stream_);
   SoftmaxKernel<kBaseThreadBits, DType>
@@ -269,8 +272,8 @@ inline void SoftmaxGrad(Tensor<gpu, 2, DType> &dst,
                         const Tensor<gpu, 1, DType> &label) {
   dim3 dimBlock(kBaseThreadNum);
   dim3 dimGrid(dst.size(0));
-  utils::Check(dst.shape_ == src.shape_, "SoftmaxGrad: shape mismatch");
-  utils::Check(dst.size(0) == label.size(0), "SoftmaxGrad: label shape mismatch");
+  CHECK_EQ(dst.shape_, src.shape_) << "SoftmaxGrad: shape mismatch";
+  CHECK_EQ(dst.size(0), label.size(0)) << "SoftmaxGrad: label shape mismatch";
   CheckLaunchParam(dimGrid, dimBlock, "SoftmaxGrad");
   cudaStream_t stream = Stream<gpu>::GetStream(dst.stream_);
   SoftmaxGradKernel<kBaseThreadBits, DType>
