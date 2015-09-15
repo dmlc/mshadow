@@ -7,9 +7,15 @@
  */
 #ifndef MSHADOW_RANDOM_H_
 #define MSHADOW_RANDOM_H_
+
 #include <cstdlib>
+#include "./base.h"
 #include "./tensor.h"
 #include "./tensor_container.h"
+
+#if MSHADOW_IN_CXX11
+#include <random>  // use cxx11 random by default
+#endif
 
 #if _MSC_VER
 #define rand_r(x) rand()
@@ -38,18 +44,14 @@ class Random<cpu, DType> {
     buffer_.Resize(Shape1(kRandBufferSize));
   }
   ~Random(void) {
-#if MSHADOW_USE_MKL
-    vslDeleteStream(&vStream_);
-#endif
   }
   /*!
    * \brief seed random number generator using this seed
    * \param seed seed of prng
    */
   inline void Seed(int seed) {
-#if MSHADOW_USE_MKL
-    int status = vslNewStream(&vStream_, VSL_BRNG_MT19937, seed);
-    CHECK_EQ(status, VSL_STATUS_OK) << "MKL VSL Random engine failed to be initialized.";
+#if MSHADOW_IN_CXX11
+    rnd_engine_.seed(seed);
 #else
     this->rseed_ = static_cast<unsigned>(seed);
 #endif
@@ -70,9 +72,13 @@ class Random<cpu, DType> {
   template<int dim>
   inline void SampleUniform(Tensor<cpu, dim, DType> *dst,
                             DType a = 0.0f, DType b = 1.0f) {
-    Tensor<cpu, 2, DType> mat = dst->FlatTo2D();
-    for (index_t i = 0; i < mat.size(0); ++i) {
-      this->GenUniform(mat[i].dptr_, mat.size(1), a, b);
+    if (dst->CheckContiguous()) {
+      this->GenUniform(dst->dptr_, dst->shape_.Size(), a, b);
+    } else {
+      Tensor<cpu, 2, DType> mat = dst->FlatTo2D();
+      for (index_t i = 0; i < mat.size(0); ++i) {
+        this->GenUniform(mat[i].dptr_, mat.size(1), a, b);
+      }
     }
   }
   /*!
@@ -88,9 +94,13 @@ class Random<cpu, DType> {
     if (sigma <= 0.0f) {
       *dst = mu; return;
     }
-    Tensor<cpu, 2, DType> mat = dst->FlatTo2D();
-    for (index_t i = 0; i < mat.size(0); ++i) {
-      this->GenGaussian(mat[i].dptr_, mat.size(1), mu, sigma);
+    if (dst->CheckContiguous()) {
+      this->GenGaussian(dst->dptr_, dst->shape_.Size(), mu, sigma);
+    } else {
+      Tensor<cpu, 2, DType> mat = dst->FlatTo2D();
+      for (index_t i = 0; i < mat.size(0); ++i) {
+        this->GenGaussian(mat[i].dptr_, mat.size(1), mu, sigma);
+      }
     }
   }
   /*!
@@ -131,28 +141,25 @@ class Random<cpu, DType> {
   }
 
  private:
-#if MSHADOW_USE_MKL
-  /*! \brief stream used by MKL VSL */
-  VSLStreamStatePtr vStream_;
-  // generate uniform distribution
-  inline void GenUniform(float *dptr, index_t size, float a, float b) {
-    int status = vsRngUniform(0, vStream_, size, dptr, a, b);
-    CHECK_EQ(status, VSL_STATUS_OK) << "Failed to generate random number by MKL.";
+#if MSHADOW_IN_CXX11
+  /*! \brief use c++11 random engine. */
+  std::mt19937 rnd_engine_;
+  // implementing generators.
+  inline void GenUniform(DType *dptr, index_t size, DType a, DType b) {
+    std::uniform_real_distribution<DType> dist_uniform(a, b);
+    for (size_t i = 0; i < size; ++i) {
+      dptr[i] = dist_uniform(rnd_engine_);
+    }
   }
-  inline void GenUniform(double *dptr, index_t size, double a, double b) {
-    int status = vdRngUniform(0, vStream_, size, dptr, a, b);
-    CHECK_EQ(status, VSL_STATUS_OK) << "Failed to generate random number by MKL.";
+  inline void GenGaussian(DType *dptr, index_t size, DType mu, DType sigma) {
+    std::normal_distribution<DType> dist_normal(mu, sigma);
+    for (size_t i = 0; i < size; ++i) {
+      dptr[i] = dist_normal(rnd_engine_);
+    }
   }
-  inline void GenGaussian(float *dptr, index_t size, float mu, float sigma) {
-    int status = vsRngGaussian(0, vStream_, size, dptr, mu, sigma);
-    CHECK_EQ(status, VSL_STATUS_OK) << "Failed to generate random number by MKL.";
-  }
-  inline void GenGaussian(double *dptr, index_t size, double mu, double sigma) {
-    int status = vdRngGaussian(0, vStream_, size, dptr, mu, sigma);
-    CHECK_EQ(status, VSL_STATUS_OK) << "Failed to generate random number by MKL.";
-  }
+
 #else
-  /*! \brief random number seed used by PRNG*/
+  /*! \brief random number seed used by PRNG */
   unsigned rseed_;
   // functions
   inline void GenUniform(float *dptr, index_t size, float a, float b) {
@@ -212,8 +219,9 @@ class Random<cpu, DType> {
   /*! \brief temporal space used to store random numbers */
   TensorContainer<cpu, 1, DType> buffer_;
 };  // class Random<cpu, DType>
-// only allow GPU PRNG in CUDACC
-#ifdef __CUDACC__
+
+// only allow GPU PRNG when cuda is enabled
+#if MSHADOW_USE_CUDA
 /*! \brief GPU random number generator */
 template<typename DType>
 class Random<gpu, DType> {
@@ -263,13 +271,8 @@ class Random<gpu, DType> {
    */
   template<int dim>
   inline void SampleUniform(Tensor<gpu, dim, DType> *dst,
-                            DType a = 0.0f, DType b = 1.0f) {
-    if (a == 0.0f && b == 1.0f) {
-      *dst = this->uniform(dst->shape_);
-    } else {
-      *dst = this->uniform(dst->shape_) * (b - a) + a;
-    }
-  }
+                            DType a = 0.0f, DType b = 1.0f);
+
   /*!
    * \brief generate data from standard gaussian
    * \param dst destination
@@ -279,9 +282,7 @@ class Random<gpu, DType> {
    */
   template<int dim>
   inline void SampleGaussian(Tensor<gpu, dim, DType> *dst,
-                             DType mu = 0.0f, DType sigma = 1.0f) {
-    *dst = this->gaussian(dst->shape_, mu, sigma);
-  }
+                             DType mu = 0.0f, DType sigma = 1.0f);
   /*!
    * \brief return a temporal expression storing standard gaussian random variables
    *        the temporal tensor is only valid before next call of gaussian or uniform
@@ -297,14 +298,7 @@ class Random<gpu, DType> {
    */
   template<int dim>
   inline expr::ReshapeExp<Tensor<gpu, 1, DType>, DType, dim, 1>
-  gaussian(Shape<dim> shape, DType mu = 0.0f, DType sigma = 1.0f) {
-    size_t aligned_sz = ((shape.Size() + 1UL) >> 1) << 1;
-    // allocate alligned size
-    buffer_.Resize(Shape1(aligned_sz));
-    buffer_.Resize(Shape1(shape.Size()));
-    this->GenGaussian(buffer_.dptr_, aligned_sz, mu, sigma);
-    return expr::reshape(buffer_, shape);
-  }
+  gaussian(Shape<dim> shape, DType mu = 0.0f, DType sigma = 1.0f);
   /*!
    * \brief return a temporal expression storing standard uniform [0,1)
    *        the temporal tensor is only valid before next call of gaussian or uniform
@@ -318,11 +312,7 @@ class Random<gpu, DType> {
    */
   template<int dim>
   inline expr::ReshapeExp<Tensor<gpu, 1, DType>, DType, dim, 1>
-  uniform(Shape<dim> shape) {
-    buffer_.Resize(Shape1(shape.Size()));
-    this->GenUniform(buffer_.dptr_, buffer_.size(0));
-    return expr::reshape(buffer_, shape);
-  }
+  uniform(Shape<dim> shape);
 
  private:
   inline void GenGaussian(float *dptr, size_t size, float mu, float sigma) {
@@ -350,6 +340,55 @@ class Random<gpu, DType> {
   /*! \brief templ buffer */
   TensorContainer<gpu, 1, DType> buffer_;
 };  // class Random<gpu, DType>
-#endif
+#endif  // MSHADOW_USE_CUDA
+
+#ifdef __CUDACC__
+// implementations that depends on cuda kernels
+template<typename DType>
+template<int dim>
+inline void Random<gpu, DType>::SampleUniform(
+    Tensor<gpu, dim, DType> *dst, DType a, DType b) {
+  if (a == 0.0f && b == 1.0f) {
+    if (dst->CheckContiguous()) {
+      this->GenUniform(dst->dptr_, dst->shape_.Size());
+    } else {
+      *dst = this->uniform(dst->shape_);
+    }
+  } else {
+    *dst = this->uniform(dst->shape_) * (b - a) + a;
+  }
+}
+template<typename DType>
+template<int dim>
+inline void Random<gpu, DType>::SampleGaussian(
+    Tensor<gpu, dim, DType> *dst, DType mu, DType sigma) {
+  if (dst->CheckContiguous()) {
+    this->GenGaussian(dst->dptr_, dst->shape_.Size(), mu, sigma);
+  } else {
+    *dst = this->gaussian(dst->shape_, mu, sigma);
+  }
+}
+
+template<typename DType>
+template<int dim>
+inline expr::ReshapeExp<Tensor<gpu, 1, DType>, DType, dim, 1>
+Random<gpu, DType>::gaussian(Shape<dim> shape, DType mu, DType sigma) {
+  size_t aligned_sz = ((shape.Size() + 1UL) >> 1) << 1;
+  // allocate alligned size
+  buffer_.Resize(Shape1(aligned_sz));
+  buffer_.Resize(Shape1(shape.Size()));
+  this->GenGaussian(buffer_.dptr_, aligned_sz, mu, sigma);
+  return expr::reshape(buffer_, shape);
+}
+
+template<typename DType>
+template<int dim>
+inline expr::ReshapeExp<Tensor<gpu, 1, DType>, DType, dim, 1>
+Random<gpu, DType>::uniform(Shape<dim> shape) {
+  buffer_.Resize(Shape1(shape.Size()));
+  this->GenUniform(buffer_.dptr_, buffer_.size(0));
+  return expr::reshape(buffer_, shape);
+}
+#endif  // __CUDACC__
 }  // namespace mshadow
 #endif  // MSHADOW_RANDOM_H_
