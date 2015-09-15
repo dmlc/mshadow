@@ -43,9 +43,8 @@ struct UnpackPatchToColXExp:
       : img_(img), psize_y_(psize_y),
        psize_x_(psize_x), pstride_(pstride) {
     Shape<srcdim> imshape = ShapeCheck<srcdim, SrcExp>::Check(img_);
-    utils::Check(imshape[srcdim - 1] >= psize_x &&
-                 imshape[srcdim - 2] >= psize_y,
-                 "UnpackPatchToCol:image shape smaller than patch size");
+    CHECK(imshape[srcdim - 1] >= psize_x && imshape[srcdim - 2] >= psize_y)
+      << "UnpackPatchToCol:image shape smaller than patch size";
     this->i_channel_ = imshape[srcdim - 3];
     this->i_height_  = imshape[srcdim - 2];
     this->i_width_   = imshape[srcdim - 1];
@@ -71,7 +70,7 @@ struct UnpackPatchToColXExp:
  * \param img source image; shape[-3]: in_channels, shape[-2]: in_height, shape[-1]: in_width, can be 3D or 4D tensor(multiple images)
  * \param psize_y height of each patch
  * \param psize_x width of each patch
- * \param pstride stride of each patch 
+ * \param pstride stride of each patch
  * \tparam SrcExp source expression
  * \tparam DType the type of elements
  * \tparam etype type of expression

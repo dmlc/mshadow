@@ -303,7 +303,7 @@ class IModelUpdater {
    * \param data the tensor data corresponding to the data we want to initialize
    */
   virtual void InitModel_(int key, Tensor<cpu, 1, DType> data) {
-    utils::Error("InitModel: not implemented");
+    LOG(FATAL) << "InitModel: not implemented";
   }
   /*!
    * \brief update the model, user can implement this one
@@ -312,7 +312,7 @@ class IModelUpdater {
    * \param data the tensor data corresponding to the data we want to initialize
    */
   virtual void Update_(int key, Tensor<cpu, 1, DType> data) {
-    utils::Error("InitModel: not implemented");
+    LOG(FATAL) << "InitModel: not implemented";
   }
 };
 /*!
@@ -350,7 +350,7 @@ inline ISharedModel<xpu, DType> *CreateSharedModel(const char *type) {
 #if MSHADOW_DIST_PS
   if (!strcmp("dist", type)) return new DistModel<xpu, DType>();
 #endif
-  utils::Error("unknown server type %s\n", type);
+  LOG(FATAL) << "unknown server type " << type;
   return NULL;
 }
 }  // namespace ps

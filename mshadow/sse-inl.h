@@ -17,7 +17,7 @@
 namespace mshadow {
 /*! \brief namespace to support sse2 vectorization */
 namespace sse2 {
-/*! 
+/*!
  * \brief analog to cudaMallocPitch, allocate a aligned space with num_line * lspace cells
  * \param out_pitch output parameter, the actuall space allocated for each line
  * \param lspace number of cells required for each line
@@ -36,11 +36,11 @@ inline void* AlignedMallocPitch(size_t *out_pitch,
   void *res = memalign(16, pitch * num_line);
 #endif
 #endif
-  utils::Check(res != NULL, "AlignedMallocPitch failed");
+  CHECK_NE(res, NULL) << "AlignedMallocPitch failed";
   return res;
 }
-/*! 
- * \brief free aligned space 
+/*!
+ * \brief free aligned space
  * \param ptr pointer to space to be freed
  */
 inline void AlignedFree(void *ptr) {
@@ -58,16 +58,16 @@ inline bool CheckAlign(size_t pitch) {
 inline bool CheckAlign(void *ptr) {
   return CheckAlign(reinterpret_cast<size_t>(ptr));
 }
-/*! 
- * \brief get upper bound of aligned index of size 
+/*!
+ * \brief get upper bound of aligned index of size
  * \param size size of the array
  * \param fsize size of float
  */
 inline index_t UpperAlign(index_t size, size_t fsize) {
   return (((size * fsize + 15) >> 4) << 4) / fsize;
 }
-/*! 
- * \brief get lower bound of aligned index of size 
+/*!
+ * \brief get lower bound of aligned index of size
  * \param size size of the array
  * \param fsize size of float
  */
@@ -82,8 +82,8 @@ inline index_t LowerAlign(index_t size, size_t fsize) {
 
 namespace mshadow {
 namespace sse2 {
-/*! 
- * \brief float vector real type, used for vectorization 
+/*!
+ * \brief float vector real type, used for vectorization
  * \tparam FloatType double or float
  */
 template<typename FloatType>

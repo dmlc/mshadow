@@ -11,6 +11,7 @@
  */
 #ifndef MSHADOW_TENSOR_H_
 #define MSHADOW_TENSOR_H_
+#include <string>
 #include "./base.h"
 #include "./expression.h"
 
@@ -151,6 +152,20 @@ v   * \return subshape
       s[i - dimstart] = this->shape_[i];
     }
     return s;
+  }
+  /*!
+   * \brief make shape to string
+   * \return shape in tuple string
+   */
+  MSHADOW_XINLINE std::string ToString() const {
+    std::ostringstream os;
+    os << "(";
+    for (int i = 0; i < dimension; ++i) {
+      if (i != 0) os << ",";
+      os << this->shape_[i];
+    }
+    os << ")";
+    return os.str();
   }
 };  // Shape
 //------------------------------------------------

@@ -46,12 +46,12 @@ struct UnPoolingExp:
         grad_pooled_(grad_pooled),
         ksize_y_(ksize_y), ksize_x_(ksize_x), kstride_(kstride) {
     Shape<srcdim> pshape = ShapeCheck<srcdim, SrcExp>::Check(grad_pooled);
-    utils::Check(pshape == ShapeCheck<srcdim, SrcExp>::Check(data_pooled),
-                 "UnPoolingExp: pooled shape mismatch");
+    typedef ShapeCheck<srcdim, SrcExp> ShapeCheckSrcDimSrcExp;
+    CHECK_EQ(pshape, ShapeCheckSrcDimSrcExp::Check(data_pooled))
+      << "UnPoolingExp: pooled shape mismatch";
     Shape<srcdim> sshape = ShapeCheck<srcdim, SrcExp>::Check(data_src);
     for (int k = 0;  k < srcdim - 2; ++k) {
-      utils::Check(pshape[k] == sshape[k],
-                   "UnPoolingExp: pool and src shape mismatch");
+      CHECK_EQ(pshape[k], sshape[k]) << "UnPoolingExp: pool and src shape mismatch";
     }
     pshape_x_ = pshape[srcdim - 1];
     pshape_y_ = pshape[srcdim - 2];

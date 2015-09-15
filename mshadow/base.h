@@ -17,6 +17,7 @@
 #include <cfloat>
 #include <climits>
 #include <algorithm>
+#include <sstream>
 // macro defintiions
 /*!
  * \brief if this macro is define to be 1,
@@ -166,6 +167,14 @@ extern "C" {
 #ifndef MSHADOW_DEFAULT_DTYPE
 #define MSHADOW_DEFAULT_DTYPE = default_real_t
 #endif
+
+
+/*!
+ * \brief DMLC marco for logging
+ */
+#ifndef MSHADOW_USE_GLOG
+#define MSHADOW_USE_GLOG DMLC_USE_GLOG
+#endif  // MSHADOW_USE_GLOG
 
 /*! \brief namespace for mshadow */
 namespace mshadow {

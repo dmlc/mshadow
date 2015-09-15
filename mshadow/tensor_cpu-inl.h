@@ -41,14 +41,14 @@ inline void FreeHost_(void * dptr);
 template<>
 inline void *AllocHost_<gpu>(size_t size) {
   void *dptr;
-  utils::Check(cudaMallocHost(&dptr, size,
-                 cudaHostAllocPortable) == cudaSuccess,
-               "AllocHost");
+  cudaError_t err = cudaMallocHost(&dptr, size, cudaHostAllocPortable);
+  CHECK_EQ(err, cudaSuccess) << cudaGetErrorString(err);
   return dptr;
 }
 template<>
 inline void FreeHost_<gpu>(void *dptr) {
-  cudaFreeHost(dptr);
+  cudaError_t err = cudaFreeHost(dptr);
+  CHECK_EQ(err, cudaSuccess) << cudaGetErrorString(err);
 }
 #endif
 
@@ -65,13 +65,13 @@ inline void FreeHost_<cpu>(void *dptr) {
 template<typename xpu, int dim, typename DType>
 inline void AllocHost(Tensor<cpu, dim, DType> *obj) {
   obj->stride_ = obj->size(dim - 1);
-  utils::Assert(obj->CheckContiguous(), "AllocHost");
+  CHECK_EQ(obj->CheckContiguous(), true) << "AllocHost";
   void *dptr = AllocHost_<xpu>(obj->MSize() * sizeof(DType));
   obj->dptr_ = reinterpret_cast<DType*>(dptr);
 }
 template<typename xpu, int dim, typename DType>
 inline void FreeHost(Tensor<cpu, dim, DType> *obj) {
-  utils::Assert(obj->dptr_ != NULL, "FreeHost:: double free");
+  CHECK_NE(obj->dptr_, NULL) << "FreeHost:: double free";
   FreeHost_<xpu>(obj->dptr_);
   obj->dptr_ = NULL;
 }
@@ -109,7 +109,8 @@ template<int dim, typename DType>
 inline void Copy(Tensor<cpu, dim, DType> _dst,
                  const Tensor<cpu, dim, DType> &_src,
                  Stream<cpu> *stream) {
-  utils::Check(_dst.shape_ == _src.shape_, "Copy:shape mismatch");
+  CHECK_EQ(_dst.shape_, _src.shape_)
+    << "Copy:shape mismatch:" << _dst.shape_.ToString() << " vs " << _src.shape_.ToString();
   Tensor<cpu, 2, DType> dst = _dst.FlatTo2D();
   Tensor<cpu, 2, DType> src = _src.FlatTo2D();
   for (index_t y = 0; y < dst.size(0); ++y) {
@@ -165,8 +166,8 @@ inline void MapExp(TRValue<R, cpu, dim, DType> *dst,
       ::Error_All_Tensor_in_Exp_Must_Have_Same_Type();
   Shape<dim> eshape = expr::ShapeCheck<dim, E>::Check(exp.self());
   Shape<dim> dshape = expr::ShapeCheck<dim, R>::Check(dst->self());
-  utils::Check(eshape[0] == 0 || eshape == dshape,
-               "Assignment: Shape of Tensors are not consistent with target");
+  CHECK(eshape[0] == 0 || eshape == dshape)
+    << "Assignment: Shape of Tensors are not consistent with target";
 #if MSHADOW_USE_SSE
   MapExpCPUEngine<expr::SSECheck<E>::kPass, Saver, R, dim, DType, E, etype>
       ::Map(dst->ptrself(), exp);
@@ -185,9 +186,8 @@ inline void MapReduceKeepLowest(TRValue<R, cpu, 1, DType> *dst,
   Shape<2> eshape = expr::ShapeCheck<expr::ExpInfo<E>::kDim, E>
       ::Check(exp.self()).FlatTo2D();
   Shape<1> dshape = expr::ShapeCheck<1, R>::Check(dst->self());
-  utils::Check(eshape[1] == dshape[0],
-               "MapReduceKeepLowest::reduction dimension do not match");
-  utils::Check(eshape[0] != 0, "can not reduce over empty tensor");
+  CHECK_EQ(eshape[1], dshape[0]) << "MapReduceKeepLowest::reduction dimension do not match";
+  CHECK_NE(eshape[0], 0) << "can not reduce over empty tensor";
   // execution
   expr::Plan<R, DType> dplan = MakePlan(dst->self());
   expr::Plan<E, DType> splan = MakePlan(exp.self());
@@ -211,8 +211,8 @@ inline void MapReduceKeepHighDim(TRValue<R, cpu, 1, DType> *dst,
   EShape eshape = expr::ShapeCheck<expr::ExpInfo<E>::kDim, E>
       ::Check(exp.self());
   Shape<1> dshape = expr::ShapeCheck<1, R>::Check(dst->self());
-  utils::Check(eshape[dimkeep] == dshape[0],
-               "MapReduceKeepHighDim::reduction dimension do not match");
+  CHECK_EQ(eshape[dimkeep], dshape[0])
+    << "MapReduceKeepHighDim::reduction dimension do not match";
   // use equvalent form
   Shape<4> pshape = Shape4(eshape.ProdShape(0, dimkeep),
                            eshape[dimkeep],
@@ -273,7 +273,7 @@ inline void SoftmaxGrad(Tensor<cpu, 2, DType> dst,
 template<typename DType>
 inline void Softmax(Tensor<cpu, 2, DType> dst,
                     const Tensor<cpu, 2, DType> &energy) {
-  utils::Check(dst.shape_ == energy.shape_, "Softmax: shape mismatch");
+  CHECK_EQ(dst.shape_, energy.shape_) << "Softmax: shape mismatch";
   for (index_t y = 0; y < dst.size(0); ++y) {
     Softmax(dst[y], energy[y]);
   }
@@ -282,7 +282,7 @@ inline void Softmax(Tensor<cpu, 2, DType> dst,
 template<typename DType>
 inline DType VDot(const Tensor<cpu, 1, DType> &lhs,
                   const Tensor<cpu, 1, DType> &rhs) {
-  utils::Check(lhs.shape_ == rhs.shape_, "VDot: shape mismatch");
+  CHECK_EQ(lhs.shape_, rhs.shape_) <<  "VDot: shape mismatch";
   DType sum = static_cast<DType>(0);
   for (index_t x = 0; x < lhs.size(0); ++x) {
     sum += lhs[x] * rhs[x];

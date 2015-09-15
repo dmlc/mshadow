@@ -29,7 +29,7 @@ struct ReshapeExp:
   ReshapeExp(const SrcExp &src, Shape<dimdst> shape)
       : src_(src) {
     Shape<dimsrc> ishape = ShapeCheck<dimsrc, SrcExp>::Check(src_);
-    utils::Check(ishape.Size() == shape.Size(), "reshape size must match");
+    CHECK_EQ(ishape.Size(), shape.Size()) << "reshape size must match";
     ishapex_ = ishape[dimsrc - 1];
     this->shape_ = shape;
   }
