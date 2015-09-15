@@ -11,6 +11,7 @@
  */
 #ifndef MSHADOW_TENSOR_H_
 #define MSHADOW_TENSOR_H_
+#include <string>
 #include "./base.h"
 #include "./expression.h"
 

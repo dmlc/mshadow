@@ -5,8 +5,10 @@
  *  allows use of GLOG, fall back to internal
  *  implementation when disabled
  */
+#ifndef MSHADOW_LOGGING_H_
+#define MSHADOW_LOGGING_H_
+
 #ifndef DMLC_LOGGING_H_
-#define DMLC_LOGGING_H_
 #include <cstdio>
 #include <cstdlib>
 #include <string>
@@ -15,6 +17,8 @@
 #include "./base.h"
 
 namespace dmlc {
+/*! \brief taken from DMLC directly */
+
 /*!
  * \brief exception class that will be thrown by
  *  default logger if DMLC_LOG_FATAL_THROW == 1
@@ -42,6 +46,7 @@ struct Error : public std::runtime_error {
 #include <glog/logging.h>
 
 namespace dmlc {
+/*! \brief taken from DMLC directly */
 inline void InitLogging(const char* argv0) {
   google::InitGoogleLogging(argv0);
 }
@@ -230,4 +235,5 @@ class LogMessageVoidify {
 
 #endif
 #endif  // DMLC_LOGGING_H_
+#endif  // MSHADOW_LOGGING_H_
 
