@@ -295,6 +295,10 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
   /*! \brief constructor from data pointer and shape, without stride */
   MSHADOW_XINLINE Tensor(DType *dptr, const Shape<dimension> &shape)
       : dptr_(dptr), shape_(shape), stride_(shape[kSubdim]), stream_(NULL) {}
+  /*! \brief constructor from data pointer and shape, without stride */
+  MSHADOW_XINLINE Tensor(DType *dptr, const Shape<dimension> &shape,
+                         Stream<Device> *stream)
+    : dptr_(dptr), shape_(shape), stride_(shape[kSubdim]), stream_(stream) {}
   /*! \brief constructor from data pointer and shape  */
   MSHADOW_XINLINE Tensor(DType *dptr,
                          const Shape<dimension> &shape,
