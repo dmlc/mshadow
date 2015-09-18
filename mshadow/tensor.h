@@ -166,8 +166,10 @@ v   * \return subshape
     }
     return s;
   }
+  //! \cond Doxygen_Suppress
   template<int dim>
   friend std::ostream &operator<<(std::ostream &os, const Shape<dim> &shape); // NOLINT(*)
+  //! \endcond
 };  // Shape
 //------------------------------------------------
 // useful construction functions to generate shape
