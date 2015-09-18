@@ -12,6 +12,7 @@
 #ifndef MSHADOW_TENSOR_H_
 #define MSHADOW_TENSOR_H_
 #include <string>
+#include <iostream>
 #include "./base.h"
 #include "./expression.h"
 
@@ -30,6 +31,18 @@ struct gpu {
   /*! \brief device flag number, identifies this device */
   static const int kDevMask = 1 << 1;
 };
+template<int ndim>
+struct Shape;
+
+/*!
+ * \brief allow string printing of the shape
+ * \param os the output stream
+ * \param shape the shape
+ * \return the ostream
+ */
+template<int ndim>
+inline std::ostream &operator<<(std::ostream &os, const Shape<ndim> &shape); // NOLINT(*)
+
 /*!
  * \brief shape of a tensor
  *       IMPORTANT NOTE: this shape is different from numpy.shape
@@ -153,8 +166,8 @@ v   * \return subshape
     }
     return s;
   }
-  // print function
-  friend std::ostream &operator<<(std::ostream &os, const Shape<dimension> &shape); // NOLINT(*)
+  template<int dim>
+  friend std::ostream &operator<<(std::ostream &os, const Shape<dim> &shape); // NOLINT(*)
 };  // Shape
 //------------------------------------------------
 // useful construction functions to generate shape

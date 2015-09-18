@@ -630,9 +630,9 @@ class LocalModel : public ISharedModel<xpu, DType> {
         PushEntry &e = push_map.GetRef(tsk.key);
         CHECK_EQ(e.data[0][0].shape_, tsk.data.shape_)
           << "Tensor with same key must share same shape "
-          << e.data[0][0].shape_.ToString()
+          << e.data[0][0].shape_
           << " vs "
-          << tsk.data.shape_.ToString();
+          << tsk.data.shape_;
         CHECK_EQ(!e.copied[wid], true) << "data inconsistency";
         // start copy
         SetDevice<xpu>(tsk.devid);
