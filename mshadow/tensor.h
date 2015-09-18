@@ -157,7 +157,7 @@ v   * \return subshape
    * \brief make shape to string
    * \return shape in tuple string
    */
-  MSHADOW_XINLINE std::string ToString() const {
+  inline std::string ToString() const {
     std::ostringstream os;
     os << "(";
     for (int i = 0; i < dimension; ++i) {

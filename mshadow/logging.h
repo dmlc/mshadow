@@ -7,8 +7,9 @@
  */
 #ifndef MSHADOW_LOGGING_H_
 #define MSHADOW_LOGGING_H_
-
 #ifndef DMLC_LOGGING_H_
+#define DMLC_LOGGING_H_
+
 #include <cstdio>
 #include <cstdlib>
 #include <string>
