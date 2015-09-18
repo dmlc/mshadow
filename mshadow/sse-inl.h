@@ -36,7 +36,9 @@ inline void* AlignedMallocPitch(size_t *out_pitch,
   void *res = memalign(16, pitch * num_line);
 #endif
 #endif
-  CHECK_NE(res, NULL) << "AlignedMallocPitch failed";
+  if (res == NULL) {
+    LOG(FATAL) << "AlignedMallocPitch failed";
+  }
   return res;
 }
 /*!

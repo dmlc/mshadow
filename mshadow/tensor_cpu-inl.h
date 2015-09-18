@@ -82,7 +82,9 @@ inline void AllocHost(Tensor<cpu, dim, DType> *obj) {
 }
 template<typename xpu, int dim, typename DType>
 inline void FreeHost(Tensor<cpu, dim, DType> *obj) {
-  CHECK_NE(obj->dptr_, NULL) << "FreeHost:: double free";
+  if (obj->dptr_ == NULL) {
+    LOG(FATAL) << "FreeHost:: double free";
+  }
   FreeHost_<xpu>(obj->dptr_);
   obj->dptr_ = NULL;
 }
