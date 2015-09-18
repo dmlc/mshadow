@@ -153,20 +153,8 @@ v   * \return subshape
     }
     return s;
   }
-  /*!
-   * \brief make shape to string
-   * \return shape in tuple string
-   */
-  inline std::string ToString() const {
-    std::ostringstream os;
-    os << "(";
-    for (int i = 0; i < dimension; ++i) {
-      if (i != 0) os << ",";
-      os << this->shape_[i];
-    }
-    os << ")";
-    return os.str();
-  }
+  // print function
+  friend std::ostream &operator<<(std::ostream &os, const Shape<dimension> &shape); // NOLINT(*)
 };  // Shape
 //------------------------------------------------
 // useful construction functions to generate shape

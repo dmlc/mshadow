@@ -32,6 +32,17 @@ inline void DeleteStream<cpu>(Stream<cpu> *stream) {
   delete stream;
 }
 
+template<int ndim>
+inline std::ostream &operator<<(std::ostream &os, const Shape<ndim> &shape) { // NOLINT(*)
+  os << "(";
+  for (int i = 0; i < ndim; ++i) {
+    if (i != 0) os << ",";
+    os << shape[i];
+  }
+  os << ")";
+  return os;
+}
+
 template<typename xpu>
 inline void *AllocHost_(size_t size);
 template<typename xpu>
@@ -110,7 +121,7 @@ inline void Copy(Tensor<cpu, dim, DType> _dst,
                  const Tensor<cpu, dim, DType> &_src,
                  Stream<cpu> *stream) {
   CHECK_EQ(_dst.shape_, _src.shape_)
-    << "Copy:shape mismatch:" << _dst.shape_.ToString() << " vs " << _src.shape_.ToString();
+      << "Copy:shape mismatch:" << _dst.shape_ << " vs " << _src.shape_;
   Tensor<cpu, 2, DType> dst = _dst.FlatTo2D();
   Tensor<cpu, 2, DType> src = _src.FlatTo2D();
   for (index_t y = 0; y < dst.size(0); ++y) {

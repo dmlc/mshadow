@@ -243,9 +243,9 @@ struct DotEngine<SV, xpu, 1, 1, 2, false, transpose_right, DType> {
     Shape<2> sright = GetShape(rhs.shape, transpose_right);
     CHECK(dst.size(0) == sright[1] && lhs.size(0) == sright[0])
       << "dot-gemv: matrix shape mismatch"
-      << "dst: " << dst.shape_.ToString() << "\n"
-      << "lhs: " << lhs.shape_.ToString() << "\n"
-      << "rhs: " << sright.ToString() << "\n";
+      << "dst: " << dst.shape_ << "\n"
+      << "lhs: " << lhs.shape_ << "\n"
+      << "rhs: " << sright << "\n";
     BLASEngine<xpu>::gemv
         (dst.stream_,
          transpose_right,
@@ -267,9 +267,9 @@ struct DotEngine<SV, xpu, 2, 1, 1, true, false, DType> {
     BLASEngine<xpu>::SetStream(dst.stream_);
     CHECK_EQ(dst.size(0), lhs.size(0) && dst.size(1) == rhs.size(0))
       << "dot-ger: matrix shape mismatch"
-      << "dst: " << dst.shape_.ToString() << "\n"
-      << "lhs: " << lhs.shape_.ToString() << "\n"
-      << "rhs: " << rhs.shape_.ToString();
+      << "dst: " << dst.shape_ << "\n"
+      << "lhs: " << lhs.shape_ << "\n"
+      << "rhs: " << rhs.shape_;
     if (SV::BetaBLAS() == 0.0f) {
       BLASEngine<xpu>::ger
           (dst.stream_, rhs.size(0), lhs.size(0), scale * SV::AlphaBLAS(),
