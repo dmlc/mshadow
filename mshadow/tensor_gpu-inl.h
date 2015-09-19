@@ -67,7 +67,7 @@ inline void FreeSpace(Tensor<gpu, dim, DType> *obj) {
   if (err == cudaErrorCudartUnloading) {
     throw dmlc::Error(cudaGetErrorString(err));
   }
-  CHECK_EQ(err, cudaSuccess) << cudaGetErrorString(err);  
+  CHECK_EQ(err, cudaSuccess) << cudaGetErrorString(err);
   obj->dptr_ = NULL;
 }
 template<typename A, typename B, int dim, typename DType>
