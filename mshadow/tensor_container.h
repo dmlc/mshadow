@@ -72,7 +72,7 @@ class TensorContainer: public Tensor<Device, dimension, DType> {
     }
   }
   ~TensorContainer(void) {
-    this->FreeSpace();
+    this->Release();
   }
   /*!
    * \brief resize the container to given shape, content is NOT preserved
@@ -164,19 +164,28 @@ class TensorContainer: public Tensor<Device, dimension, DType> {
   operator=(const expr::Exp<E, DType, expr::type::kComplex> &exp) {
     return this->__assign(exp);
   }
+  /*!
+   * \brief Release the llocated space,
+   *  The TensorContainer is still functionable,
+   *  but will restart allocating space when Resize is called.
+   */
+  inline void Release(void) {
+    if (data_.dptr_ != NULL) {
+      mshadow::FreeSpace(&data_);
+      this->dptr_ = data_.dptr_ = NULL;
+      this->shape_[0] = 0;
+      this->stride_ = 0;
+      this->data_.stride_ = 0;
+      this->data_.shape_[0] = 0;
+    }
+  }
 
  private:
   /*! \brief whether we do padding in the space */
   bool pad_;
   /*! \brief the shape of data_ is actually current data space */
   Tensor<Device, 2, DType> data_;
-  // freespace
-  inline void FreeSpace(void) {
-    if (data_.dptr_ != NULL) {
-      mshadow::FreeSpace(&data_);
-      data_.dptr_ = this->dptr_ = NULL;
-    }
-  }
+
   inline void AllocByShape(const Shape<dimension>& shape) {
     if (data_.dptr_ != NULL) this->FreeSpace();
     data_.shape_ = shape.FlatTo2D();
