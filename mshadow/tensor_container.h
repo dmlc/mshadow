@@ -187,7 +187,7 @@ class TensorContainer: public Tensor<Device, dimension, DType> {
   Tensor<Device, 2, DType> data_;
 
   inline void AllocByShape(const Shape<dimension>& shape) {
-    if (data_.dptr_ != NULL) this->FreeSpace();
+    if (data_.dptr_ != NULL) this->Release();
     data_.shape_ = shape.FlatTo2D();
     mshadow::AllocSpace(&data_, pad_);
     this->dptr_ = data_.dptr_;
