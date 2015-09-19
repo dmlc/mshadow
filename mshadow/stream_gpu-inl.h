@@ -147,6 +147,9 @@ inline Stream<gpu> *NewStream<gpu>(bool create_blas_handle,
 template<>
 inline void DeleteStream<gpu>(Stream<gpu> *stream) {
   cudaError_t err = cudaStreamDestroy(stream->stream_);
+  if (err == cudaErrorCudartUnloading) {
+    throw dmlc::Error(cudaGetErrorString(err));
+  }
   CHECK_EQ(err, cudaSuccess) << cudaGetErrorString(err);
   stream->DestoryBlasHandle();
   stream->DestroyDnnHandle();

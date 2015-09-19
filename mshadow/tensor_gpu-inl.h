@@ -37,6 +37,9 @@ inline void ShutdownTensorEngine<gpu>(void) {
 template<>
 inline void SetDevice<gpu>(int devid) {
   cudaError_t err = cudaSetDevice(devid);
+  if (err == cudaErrorCudartUnloading) {
+    throw dmlc::Error(cudaGetErrorString(err));
+  }
   CHECK_EQ(err, cudaSuccess) << cudaGetErrorString(err);
 }
 template<int dim, typename DType>
@@ -60,7 +63,12 @@ inline void AllocSpace(Tensor<gpu, dim, DType> *obj, bool pad) {
 }
 template<int dim, typename DType>
 inline void FreeSpace(Tensor<gpu, dim, DType> *obj) {
-  cudaFree(obj->dptr_); obj->dptr_ = NULL;
+  cudaError_t err = cudaFree(obj->dptr_);
+  if (err == cudaErrorCudartUnloading) {
+    throw dmlc::Error(cudaGetErrorString(err));
+  }
+  CHECK_EQ(err, cudaSuccess) << cudaGetErrorString(err);  
+  obj->dptr_ = NULL;
 }
 template<typename A, typename B, int dim, typename DType>
 inline void Copy(Tensor<A, dim, DType> _dst,

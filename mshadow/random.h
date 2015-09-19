@@ -237,8 +237,7 @@ class Random<gpu, DType> {
     this->Seed(seed);
     buffer_.Resize(Shape1(kRandBufferSize));
   }
-
-  ~Random(void) {
+  ~Random(void) DMLC_THROW_EXCEPTION {
     curandStatus_t status;
     status = curandDestroyGenerator(gen_);
     CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "Destory CURAND Gen failed";
