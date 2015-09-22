@@ -168,13 +168,43 @@ extern "C" {
 #define MSHADOW_DEFAULT_DTYPE = default_real_t
 #endif
 
-
 /*!
  * \brief DMLC marco for logging
  */
 #ifndef MSHADOW_USE_GLOG
 #define MSHADOW_USE_GLOG DMLC_USE_GLOG
 #endif  // MSHADOW_USE_GLOG
+
+/*!
+ * \brief Protected cuda call in mshadow
+ * \param func Expression to call.
+ * It checks for CUDA errors after invocation of the expression.
+ */
+#define MSHADOW_CUDA_CALL(func)                                    \
+  {                                                                \
+    cudaError_t e = (func);                                        \
+    if (e == cudaErrorCudartUnloading) {                           \
+      throw dmlc::Error(cudaGetErrorString(e));                    \
+    }                                                              \
+    CHECK(e == cudaSuccess)                                        \
+        << "CUDA: " << cudaGetErrorString(e);                      \
+  }
+
+/*!
+ * \brief Run function and catch error, log unknown error.
+ * \param func Expression to call.
+ */
+#define MSHADOW_CATCH_ERROR(func)                                     \
+  {                                                                   \
+    try {                                                             \
+      (func);                                                         \
+    } catch (const dmlc::Error &e) {                                    \
+      std::string what = e.what();                                      \
+      if (what.find("driver shutting down") == std::string::npos) {     \
+        LOG(ERROR) << "Ignore CUDA Error " << what;                     \
+      }                                                                 \
+    }                                                                   \
+  }
 
 /*! \brief namespace for mshadow */
 namespace mshadow {

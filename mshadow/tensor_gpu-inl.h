@@ -14,7 +14,6 @@ namespace mshadow {
 template<>
 inline void InitTensorEngine<gpu>(int dev_id) {
   cudaDeviceProp prop;
-  cudaError_t err;
   int device_id = 0;
   int device_count = 0;
   cudaGetDeviceCount(&device_count);
@@ -25,49 +24,34 @@ inline void InitTensorEngine<gpu>(int dev_id) {
     device_id = dev_id;
   }
   CHECK_LT(device_id, device_count) << "Incorrect Device ID";
-  err = cudaSetDevice(device_id);
-  CHECK_EQ(err, cudaSuccess) << cudaGetErrorString(err);
-  err = cudaGetDeviceProperties(&prop, device_id);
-  CHECK_EQ(err, cudaSuccess) << cudaGetErrorString(err);
-  printf("Use CUDA Device %d: %s\n", device_id, prop.name);
+  MSHADOW_CUDA_CALL(cudaSetDevice(device_id));
+  MSHADOW_CUDA_CALL(cudaGetDeviceProperties(&prop, device_id));
 }
 template<>
 inline void ShutdownTensorEngine<gpu>(void) {
 }
 template<>
 inline void SetDevice<gpu>(int devid) {
-  cudaError_t err = cudaSetDevice(devid);
-  if (err == cudaErrorCudartUnloading) {
-    throw dmlc::Error(cudaGetErrorString(err));
-  }
-  CHECK_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+  MSHADOW_CUDA_CALL(cudaSetDevice(devid));
 }
 template<int dim, typename DType>
 inline void AllocSpace(Tensor<gpu, dim, DType> *obj, bool pad) {
   size_t pitch;
   // common choice for cuda mem align unit is 32
   if (pad && obj->size(dim - 1) >= MSHADOW_MIN_PAD_RATIO * 32) {
-    cudaError_t err =
-        cudaMallocPitch(reinterpret_cast<void**>(&(obj->dptr_)), &pitch,
-                        obj->size(dim - 1) * sizeof(DType),
-                        obj->shape_.FlatTo2D()[0]);
-    CHECK_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+    MSHADOW_CUDA_CALL(cudaMallocPitch(reinterpret_cast<void**>(&(obj->dptr_)), &pitch,
+                                      obj->size(dim - 1) * sizeof(DType),
+                                      obj->shape_.FlatTo2D()[0]));
     obj->stride_ = static_cast<index_t>(pitch / sizeof(DType));
   } else {
     obj->stride_ = obj->size(dim - 1);
-    cudaError_t err =
-        cudaMallocPitch(reinterpret_cast<void**>(&(obj->dptr_)), &pitch,
-                        obj->shape_.Size() * sizeof(DType), 1);
-    CHECK_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+    MSHADOW_CUDA_CALL(cudaMallocPitch(reinterpret_cast<void**>(&(obj->dptr_)), &pitch,
+                                      obj->shape_.Size() * sizeof(DType), 1));
   }
 }
 template<int dim, typename DType>
 inline void FreeSpace(Tensor<gpu, dim, DType> *obj) {
-  cudaError_t err = cudaFree(obj->dptr_);
-  if (err == cudaErrorCudartUnloading) {
-    throw dmlc::Error(cudaGetErrorString(err));
-  }
-  CHECK_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+  MSHADOW_CUDA_CALL(cudaFree(obj->dptr_));
   obj->dptr_ = NULL;
 }
 template<typename A, typename B, int dim, typename DType>
@@ -78,16 +62,14 @@ inline void Copy(Tensor<A, dim, DType> _dst,
   CHECK_EQ(_dst.shape_, _src.shape_) << "Copy:shape mismatch";
   Tensor<A, 2, DType> dst = _dst.FlatTo2D();
   Tensor<B, 2, DType> src = _src.FlatTo2D();
-  cudaError_t err = cudaMemcpy2DAsync(dst.dptr_, dst.stride_ * sizeof(DType),
+  MSHADOW_CUDA_CALL(cudaMemcpy2DAsync(dst.dptr_, dst.stride_ * sizeof(DType),
                                       src.dptr_, src.stride_ * sizeof(DType),
                                       dst.size(1) * sizeof(DType),
                                       dst.size(0), kind,
-                                      Stream<gpu>::GetStream(stream));
-  CHECK_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+                                      Stream<gpu>::GetStream(stream)));
   // use synchronize call behavior for zero stream
   if (stream == NULL) {
-    err = cudaStreamSynchronize(0);
-    CHECK_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+    MSHADOW_CUDA_CALL(cudaStreamSynchronize(0));
   }
 }
 template<int dim, typename DType>

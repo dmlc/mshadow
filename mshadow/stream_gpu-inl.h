@@ -42,8 +42,7 @@ struct Stream<gpu> {
    *  with this stream to complete
    */
   inline void Wait(void) {
-    cudaError_t err = cudaStreamSynchronize(stream_);
-    CHECK_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+    MSHADOW_CUDA_CALL(cudaStreamSynchronize(stream_));
   }
   /*!
    * \brief query whether the the stream is idle
@@ -134,23 +133,18 @@ template<>
 inline Stream<gpu> *NewStream<gpu>(bool create_blas_handle,
                                    bool create_dnn_handle) {
   Stream<gpu> *st = new Stream<gpu>();
-  cudaError_t err = cudaStreamCreate(&st->stream_);
+  MSHADOW_CUDA_CALL(cudaStreamCreate(&st->stream_));
   if (create_blas_handle) {
     st->CreateBlasHandle();
   }
   if (create_dnn_handle) {
     st->CreateDnnHandle();
   }
-  CHECK_EQ(err, cudaSuccess) << cudaGetErrorString(err);
   return st;
 }
 template<>
 inline void DeleteStream<gpu>(Stream<gpu> *stream) {
-  cudaError_t err = cudaStreamDestroy(stream->stream_);
-  if (err == cudaErrorCudartUnloading) {
-    throw dmlc::Error(cudaGetErrorString(err));
-  }
-  CHECK_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+  MSHADOW_CUDA_CALL(cudaStreamDestroy(stream->stream_));
   stream->DestoryBlasHandle();
   stream->DestroyDnnHandle();
   delete stream;

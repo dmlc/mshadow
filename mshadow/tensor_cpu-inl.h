@@ -52,14 +52,12 @@ inline void FreeHost_(void * dptr);
 template<>
 inline void *AllocHost_<gpu>(size_t size) {
   void *dptr;
-  cudaError_t err = cudaMallocHost(&dptr, size, cudaHostAllocPortable);
-  CHECK_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+  MSHADOW_CUDA_CALL(cudaMallocHost(&dptr, size, cudaHostAllocPortable));
   return dptr;
 }
 template<>
 inline void FreeHost_<gpu>(void *dptr) {
-  cudaError_t err = cudaFreeHost(dptr);
-  CHECK_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+  MSHADOW_CUDA_CALL(cudaFreeHost(dptr));
 }
 #endif
 
