@@ -42,7 +42,7 @@ struct UnpackPatchToColXExp:
                        index_t psize_x,
                        index_t pstride_y,
                        index_t pstride_x)
-      : img_(img), psize_y_(psize_y), psize_x_(psize_x), 
+      : img_(img), psize_y_(psize_y), psize_x_(psize_x),
       pstride_y_(pstride_y), pstride_x_(pstride_x) {
     Shape<srcdim> imshape = ShapeCheck<srcdim, SrcExp>::Check(img_);
     CHECK(imshape[srcdim - 1] >= psize_x && imshape[srcdim - 2] >= psize_y)
