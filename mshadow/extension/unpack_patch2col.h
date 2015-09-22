@@ -42,7 +42,8 @@ struct UnpackPatchToColXExp:
                        index_t psize_x,
                        index_t pstride_y,
                        index_t pstride_x)
-      : img_(img), psize_y_(psize_y), psize_x_(psize_x), pstride_y_(pstride_y), pstride_x_(pstride_x) {
+      : img_(img), psize_y_(psize_y), psize_x_(psize_x), 
+      pstride_y_(pstride_y), pstride_x_(pstride_x) {
     Shape<srcdim> imshape = ShapeCheck<srcdim, SrcExp>::Check(img_);
     CHECK(imshape[srcdim - 1] >= psize_x && imshape[srcdim - 2] >= psize_y)
       << "UnpackPatchToCol:image shape smaller than patch size";
@@ -106,7 +107,7 @@ struct Plan<UnpackPatchToColXExp<SrcExp, DType, srcdim>, DType> {
  public:
   explicit Plan(const UnpackPatchToColXExp<SrcExp, DType, srcdim> &e)
       :src_(MakePlan(e.img_)),
-       psize_y_(e.psize_y_), psize_x_(e.psize_x_), 
+       psize_y_(e.psize_y_), psize_x_(e.psize_x_),
        pstride_y_(e.pstride_y_), pstride_x_(e.pstride_x_),
        i_channel_(e.i_channel_), i_height_(e.i_height_), i_width_(e.i_width_),
        o_height_((i_height_  - psize_y_) / pstride_y_ + 1),
