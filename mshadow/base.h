@@ -18,6 +18,7 @@
 #include <climits>
 #include <algorithm>
 #include <sstream>
+#include <string>
 // macro defintiions
 /*!
  * \brief if this macro is define to be 1,
