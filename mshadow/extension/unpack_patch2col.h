@@ -28,7 +28,8 @@ struct UnpackPatchToColXExp:
   /*! \brief patch width */
   index_t psize_x_;
   /*! \brief patch stride */
-  index_t pstride_;
+  index_t pstride_y_;
+  index_t pstride_x_;
   /*! \brief number of input channel */
   index_t i_channel_;
   /*! \brief height of img */
@@ -39,9 +40,10 @@ struct UnpackPatchToColXExp:
   UnpackPatchToColXExp(const SrcExp &img,
                        index_t psize_y,
                        index_t psize_x,
-                       index_t pstride)
-      : img_(img), psize_y_(psize_y),
-       psize_x_(psize_x), pstride_(pstride) {
+                       index_t pstride_y,
+                       index_t pstride_x)
+      : img_(img), psize_y_(psize_y), psize_x_(psize_x),
+      pstride_y_(pstride_y), pstride_x_(pstride_x) {
     Shape<srcdim> imshape = ShapeCheck<srcdim, SrcExp>::Check(img_);
     CHECK(imshape[srcdim - 1] >= psize_x && imshape[srcdim - 2] >= psize_y)
       << "UnpackPatchToCol:image shape smaller than patch size";
@@ -50,8 +52,8 @@ struct UnpackPatchToColXExp:
     this->i_width_   = imshape[srcdim - 1];
     // calculate number of batches
     const index_t num = imshape.ProdShape(0, srcdim - 3);
-    const index_t o_height = (i_height_ - psize_y) / pstride + 1;
-    const index_t o_width  = (i_width_  - psize_x) / pstride + 1;
+    const index_t o_height = (i_height_ - psize_y) / pstride_y + 1;
+    const index_t o_width  = (i_width_  - psize_x) / pstride_x + 1;
     this->shape_[1] = o_height * o_width * num;
     this->shape_[0] = psize_y * psize_x * i_channel_;
   }
@@ -82,7 +84,20 @@ unpack_patch2col(const Exp<SrcExp, DType, etype> &img,
   TypeCheckPass<ExpInfo<SrcExp>::kDim >= 3>
       ::Error_Expression_Does_Not_Meet_Dimension_Req();
   return UnpackPatchToColXExp<SrcExp, DType, ExpInfo<SrcExp>::kDim>
-      (img.self(), psize_y, psize_x, pstride);
+      (img.self(), psize_y, psize_x, pstride, pstride);
+}
+
+/*!
+ *if you want to specify stride_x and stride_y
+ */
+template<typename SrcExp, typename DType, int etype>
+inline UnpackPatchToColXExp<SrcExp, DType, ExpInfo<SrcExp>::kDim>
+unpack_patch2col(const Exp<SrcExp, DType, etype> &img,
+                 index_t psize_y, index_t psize_x, index_t pstride_y_, index_t pstride_x_) {
+  TypeCheckPass<ExpInfo<SrcExp>::kDim >= 3>
+      ::Error_Expression_Does_Not_Meet_Dimension_Req();
+  return UnpackPatchToColXExp<SrcExp, DType, ExpInfo<SrcExp>::kDim>
+      (img.self(), psize_y, psize_x, pstride_y_, pstride_x_);
 }
 //----------------------
 // Execution plan
@@ -92,18 +107,19 @@ struct Plan<UnpackPatchToColXExp<SrcExp, DType, srcdim>, DType> {
  public:
   explicit Plan(const UnpackPatchToColXExp<SrcExp, DType, srcdim> &e)
       :src_(MakePlan(e.img_)),
-       psize_y_(e.psize_y_), psize_x_(e.psize_x_), pstride_(e.pstride_),
+       psize_y_(e.psize_y_), psize_x_(e.psize_x_),
+       pstride_y_(e.pstride_y_), pstride_x_(e.pstride_x_),
        i_channel_(e.i_channel_), i_height_(e.i_height_), i_width_(e.i_width_),
-       o_height_((i_height_  - psize_y_) / pstride_ + 1),
-       o_width_((i_width_   - psize_x_) / pstride_ + 1) {}
+       o_height_((i_height_  - psize_y_) / pstride_y_ + 1),
+       o_width_((i_width_   - psize_x_) / pstride_x_ + 1) {}
   MSHADOW_XINLINE DType Eval(index_t i, index_t j) const {
     const index_t x_offset = i % psize_x_;
     const index_t idivp    = i / psize_x_;
     const index_t y_offset = idivp % psize_y_;
     const index_t c = idivp / psize_y_;
-    const index_t x = (j % o_width_) * pstride_ + x_offset;
+    const index_t x = (j % o_width_) * pstride_x_ + x_offset;
     const index_t jdivw = j / o_width_;
-    const index_t y = (jdivw % o_height_) * pstride_ + y_offset;
+    const index_t y = (jdivw % o_height_) * pstride_y_ + y_offset;
     const index_t n = jdivw / o_height_;
     if (x < i_width_ && y < i_height_) {
       return src_.Eval((n * i_channel_  + c) * i_height_ + y, x);
@@ -114,7 +130,7 @@ struct Plan<UnpackPatchToColXExp<SrcExp, DType, srcdim>, DType> {
 
  private:
   Plan<SrcExp, DType> src_;
-  const index_t psize_y_, psize_x_, pstride_, i_channel_;
+  const index_t psize_y_, psize_x_, pstride_y_, pstride_x_, i_channel_;
   const index_t i_height_, i_width_, o_height_, o_width_;
 };
 }  // namespace expr
