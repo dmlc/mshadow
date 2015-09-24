@@ -122,10 +122,14 @@ inline void Copy(Tensor<cpu, dim, DType> _dst,
                  Stream<cpu> *stream) {
   CHECK_EQ(_dst.shape_, _src.shape_)
       << "Copy:shape mismatch:" << _dst.shape_ << " vs " << _src.shape_;
-  Tensor<cpu, 2, DType> dst = _dst.FlatTo2D();
-  Tensor<cpu, 2, DType> src = _src.FlatTo2D();
-  for (index_t y = 0; y < dst.size(0); ++y) {
-    memcpy(dst[y].dptr_, src[y].dptr_, sizeof(DType) * dst.size(1));
+  if (_dst.CheckContiguous() && _src.CheckContiguous()) {
+    memcpy(_dst.dptr_, _src.dptr_, sizeof(DType) * _dst.shape_.Size());
+  } else {
+    Tensor<cpu, 2, DType> dst = _dst.FlatTo2D();
+    Tensor<cpu, 2, DType> src = _src.FlatTo2D();
+    for (index_t y = 0; y < dst.size(0); ++y) {
+      memcpy(dst[y].dptr_, src[y].dptr_, sizeof(DType) * dst.size(1));
+    }
   }
 }
 
