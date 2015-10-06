@@ -19,7 +19,7 @@ else
 endif
 ifneq ($(USE_CUDA_PATH), NONE)
 	MSHADOW_CFLAGS += -I$(USE_CUDA_PATH)/include
-	MSHADOW_LDFLAGS += -L$(USE_CUDA_PATH)/lib64
+	MSHADOW_LDFLAGS += -L$(USE_CUDA_PATH)/lib64 -L$(USE_CUDA_PATH)/lib
 endif
 
 ifeq ($(USE_BLAS), mkl)
