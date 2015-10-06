@@ -8,8 +8,12 @@
 #ifndef MSHADOW_BASE_H_
 #define MSHADOW_BASE_H_
 #ifdef _MSC_VER
+#ifndef _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
+#endif
+#ifndef _CRT_SECURE_NO_DEPRECATE
 #define _CRT_SECURE_NO_DEPRECATE
+#endif
 #define NOMINMAX
 #endif
 #include <cmath>
