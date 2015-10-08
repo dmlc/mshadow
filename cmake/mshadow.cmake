@@ -1,6 +1,5 @@
 ﻿set(mshadow_LINKER_LIBS "")
 
-
 set(BLAS "Atlas" CACHE STRING "Selected BLAS library")
 set_property(CACHE BLAS PROPERTY STRINGS "Atlas;Open;MKL")
 
@@ -24,9 +23,6 @@ elseif(BLAS STREQUAL "MKL" OR BLAS STREQUAL "mkl")
   add_definitions(-DMSHADOW_USE_MKL=1)
 endif()
 
-
-mxnet_option(USE_CUDA "Use CUDA" ON)
-
 if(USE_CUDA)
 	find_package(CUDA 5.5 QUIET)
 	find_cuda_helper_libs(curand) 
@@ -40,4 +36,4 @@ if(USE_CUDA)
 else()
   add_definitions(-DMSHADOW_USE_CUDA=0)
 endif() 
-  add_definitions(-DMSHADOW_IN_CXX11)
+add_definitions(-DMSHADOW_IN_CXX11)
