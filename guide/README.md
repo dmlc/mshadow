@@ -67,7 +67,7 @@ ts.shape_ = mshadow::Shape2(3, 2);
 ts.stride_ = 3;
 // now: ts[0][0] == 0, ts[0][1] == 1 , ts[1][0] == 3, ts[1][1] == 4
 for (index_t i = 0; i < ts.size(0); ++i) {
-  for (index_t j = 0; j < ts.size(1), ++j) {
+  for (index_t j = 0; j < ts.size(1); ++j) {
     printf("ts[%u][%u]=%f\n", i, j, ts[i][j]);
   }
 }
