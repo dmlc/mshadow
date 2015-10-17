@@ -9,7 +9,7 @@
 #include <cstring>
 #include "./base.h"
 #include "./tensor.h"
-#include "./sse-inl.h"
+#include "./packet-inl.h"
 
 namespace mshadow {
 template<>
@@ -64,11 +64,11 @@ inline void FreeHost_<gpu>(void *dptr) {
 template<>
 inline void *AllocHost_<cpu>(size_t size) {
   size_t pitch;
-  return sse2::AlignedMallocPitch(&pitch, size, 1);
+  return packet::AlignedMallocPitch(&pitch, size, 1);
 }
 template<>
 inline void FreeHost_<cpu>(void *dptr) {
-  sse2::AlignedFree(dptr);
+  packet::AlignedFree(dptr);
 }
 
 template<typename xpu, int dim, typename DType>
@@ -92,12 +92,12 @@ inline void AllocSpace(Tensor<cpu, dim, DType> *obj, bool pad) {
   size_t pitch;
   void *dptr;
   if (pad) {
-    dptr = sse2::AlignedMallocPitch
+    dptr = packet::AlignedMallocPitch
         (&pitch, obj->size(dim - 1) * sizeof(DType), obj->shape_.FlatTo2D()[0]);
     obj->stride_ = static_cast<index_t>(pitch / sizeof(DType));
   } else {
     obj->stride_ = obj->size(dim - 1);
-    dptr = sse2::AlignedMallocPitch
+    dptr = packet::AlignedMallocPitch
         (&pitch, obj->shape_.Size() * sizeof(DType), 1);
   }
   obj->dptr_ = reinterpret_cast<DType*>(dptr);
@@ -113,7 +113,7 @@ NewTensor(const Shape<dim> &shape, DType initv, bool pad, Stream<Device> *stream
 }
 template<int dim, typename DType>
 inline void FreeSpace(Tensor<cpu, dim, DType> *obj) {
-  sse2::AlignedFree(obj->dptr_);
+  packet::AlignedFree(obj->dptr_);
   obj->dptr_ = NULL;
 }
 template<int dim, typename DType>
@@ -157,21 +157,21 @@ struct MapExpCPUEngine {
   }
 };
 
-#if MSHADOW_USE_SSE
 template<typename SV, int dim, typename DType, typename E, int etype>
 struct MapExpCPUEngine<true, SV, Tensor<cpu, dim, DType>,
                        dim, DType, E, etype> {
   inline static void Map(Tensor<cpu, dim, DType> *dst,
                          const expr::Exp<E, DType, etype> &exp) {
-    if (expr::SSEAlignCheck<dim, E>::Check(exp.self()) &&
-        expr::SSEAlignCheck<dim, Tensor<cpu, dim, DType> >::Check(*dst)) {
-      expr::MapSSEPlan<SV>(dst->self(), MakeSSEPlan(exp.self()));
+    if (expr::PacketAlignCheck<dim, E, MSHADOW_DEFAULT_PACKET>::Check(exp.self()) &&
+        expr::PacketAlignCheck<dim, Tensor<cpu, dim, DType>, MSHADOW_DEFAULT_PACKET>::Check(*dst)) {
+      expr::MapPacketPlan<SV>(dst->self(),
+                              expr::MakePacketPlan<MSHADOW_DEFAULT_PACKET>(exp.self()));
     } else {
       MapPlan<SV>(dst, MakePlan(exp.self()));
     }
   }
 };
-#endif
+
 
 template<typename Saver, typename R, int dim,
          typename DType, typename E, int etype>
@@ -182,13 +182,10 @@ inline void MapExp(TRValue<R, cpu, dim, DType> *dst,
   Shape<dim> eshape = expr::ShapeCheck<dim, E>::Check(exp.self());
   Shape<dim> dshape = expr::ShapeCheck<dim, R>::Check(dst->self());
   CHECK(eshape[0] == 0 || eshape == dshape)
-    << "Assignment: Shape of Tensors are not consistent with target";
-#if MSHADOW_USE_SSE
-  MapExpCPUEngine<expr::SSECheck<E>::kPass, Saver, R, dim, DType, E, etype>
-      ::Map(dst->ptrself(), exp);
-#else
-  MapExpCPUEngine<false, Saver, R, dim, DType, E, etype>::Map(dst, exp);
-#endif
+      << "Assignment: Shape of Tensors are not consistent with target";
+  MapExpCPUEngine<expr::PacketCheck<E, MSHADOW_DEFAULT_PACKET>::kPass,
+                  Saver, R, dim, DType, E, etype>
+  ::Map(dst->ptrself(), exp);
 }
 
 template<typename Saver, typename Reducer,
