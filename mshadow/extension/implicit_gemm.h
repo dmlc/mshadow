@@ -77,7 +77,7 @@ struct Plan<ImplicitGEMMExp<LhsExp, RhsExp, DType>, DType> {
       for (index_t j = 0; j < Packet::kSize; ++j) {
         rhs_temp[j] = rhs_.Eval(i + j, x);
       }
-      sum = sum + Packet::Load(lhs_temp) * Packet::Load(rhs_temp);
+      sum = sum + Packet::LoadUnAligned(lhs_temp) * Packet::LoadUnAligned(rhs_temp);
     }
     DType ret_result = sum.Sum();
 
