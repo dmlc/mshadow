@@ -36,6 +36,18 @@ int main(void) {
     }
     printf("\n");
   }
+
+  TensorContainer<cpu, 2> lhs(Shape2(2, 3)), rhs(Shape2(2, 3)), ret(Shape2(2,2));
+  lhs = 1.0;
+  rhs = 1.0;
+  ret = implicit_dot(lhs, rhs.T());
+  for (index_t i = 0; i < ret.size(0); ++i) {
+    for (index_t j = 0; j < ret.size(1); ++j) {
+      printf("%.2f ", ret[i][j]);
+    }
+    printf("\n");
+  }
+
   // shutdown tensor enigne after usage
   ShutdownTensorEngine<cpu>();
   return 0;

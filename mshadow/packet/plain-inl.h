@@ -30,6 +30,10 @@ struct Packet<DType, kPlain> {
   MSHADOW_CINLINE static Packet<DType, kPlain> Load(const DType* src) {
     return Packet<DType, kPlain>(*src);
   }
+  // load from address
+  MSHADOW_CINLINE static Packet<DType, kPlain> LoadUnAligned(const DType* src) {
+    return Packet<DType, kPlain>(*src);
+  }
   // fill it with value s
   MSHADOW_CINLINE Packet<DType, kPlain>& operator=(DType s) {
     data_ = s;

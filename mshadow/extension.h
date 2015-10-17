@@ -1,7 +1,7 @@
 /*!
  * Copyright by Contributors
  * \file extension.h
- * \brief some extension of expressions, 
+ * \brief some extension of expressions,
  *  used to support something beyond elementwise op
  * \author Tianqi Chen, Bing Xu
  */
@@ -22,4 +22,5 @@
 #include "./extension/crop.h"
 #include "./extension/mirror.h"
 #include "./extension/concat.h"
+#include "./extension/implicit_gemm.h"
 #endif  // MSHADOW_EXTENSION_H_

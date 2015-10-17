@@ -32,6 +32,10 @@ struct Packet<float, kSSE2> {
   MSHADOW_CINLINE static Packet<float, kSSE2> Load(const float* src) {
     return Packet<float, kSSE2>(_mm_load_ps(src));
   }
+  // load from address
+  MSHADOW_CINLINE static Packet<float, kSSE2> LoadUnAligned(const float* src) {
+    return Packet<float, kSSE2>(_mm_loadu_ps(src));
+  }
   // fill it with value s
   MSHADOW_CINLINE Packet<float, kSSE2>& operator=(float s) {
     data_ = _mm_set1_ps(s);
@@ -72,6 +76,9 @@ struct Packet<double, kSSE2> {
   // load from address
   MSHADOW_CINLINE static Packet<double, kSSE2> Load(const double* src) {
     return Packet<double, kSSE2>(_mm_load_pd(src));
+  }
+  MSHADOW_CINLINE static Packet<double, kSSE2> LoadUnAligned(const double* src) {
+    return Packet<double, kSSE2>(_mm_loadu_pd(src));
   }
   // fill it with value s
   MSHADOW_CINLINE Packet<double, kSSE2>& operator=(double s) {
