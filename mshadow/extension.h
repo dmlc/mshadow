@@ -24,4 +24,5 @@
 #include "./extension/concat.h"
 #include "./extension/implicit_gemm.h"
 #include "./extension/choose.h"
+#include "./extension/one_hot.h"
 #endif  // MSHADOW_EXTENSION_H_

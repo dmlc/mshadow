@@ -65,7 +65,17 @@ int main(void) {
   for (index_t i = 0; i < choosed.size(0); ++i) {
     printf("%.2f ", choosed[i]);
   }
-  printf("\n ");
+  printf("\n");
+
+  rhs = one_hot_encode(index, 3);
+
+  for (index_t i = 0; i < lhs.size(0); ++i) {
+    for (index_t j = 0; j < lhs.size(1); ++j) {
+      printf("%.2f ", rhs[i][j]);
+    }
+    printf("\n");
+  }
+  printf("\n");
 
   // shutdown tensor enigne after usage
   ShutdownTensorEngine<cpu>();
