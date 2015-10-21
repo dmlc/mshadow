@@ -23,4 +23,5 @@
 #include "./extension/mirror.h"
 #include "./extension/concat.h"
 #include "./extension/implicit_gemm.h"
+#include "./extension/choose.h"
 #endif  // MSHADOW_EXTENSION_H_

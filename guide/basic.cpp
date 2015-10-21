@@ -41,12 +41,31 @@ int main(void) {
   lhs = 1.0;
   rhs = 1.0;
   ret = implicit_dot(lhs, rhs.T());
+  int cnt = 0;
   for (index_t i = 0; i < ret.size(0); ++i) {
     for (index_t j = 0; j < ret.size(1); ++j) {
       printf("%.2f ", ret[i][j]);
     }
     printf("\n");
   }
+
+  printf("\n");
+
+  for (index_t i = 0; i < lhs.size(0); ++i) {
+    for (index_t j = 0; j < lhs.size(1); ++j) {
+      lhs[i][j] = cnt++;
+      printf("%.2f ", lhs[i][j]);
+    }
+    printf("\n");
+  }
+  printf("\n");
+  TensorContainer<cpu, 1> index(Shape1(2)), choosed(Shape1(2));
+  index[0] = 1; index[1] = 2;
+  choosed = mat_choose_row_element(lhs, index);
+  for (index_t i = 0; i < choosed.size(0); ++i) {
+    printf("%.2f ", choosed[i]);
+  }
+  printf("\n ");
 
   // shutdown tensor enigne after usage
   ShutdownTensorEngine<cpu>();
