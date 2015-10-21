@@ -8,7 +8,6 @@
 #define MSHADOW_EXTENSION_CHOOSE_H_
 
 #include "../extension.h"
-#include "../packet-inl.h"
 
 namespace mshadow {
 namespace expr {
@@ -89,5 +88,3 @@ struct ExpInfo<MatChooseRowElementExp<SrcExp, IndexExp, DType> > {
 }  // namespace expr
 }  // namespace mshadow
 #endif  // MSHADOW_EXTENSION_CHOOSE_H_
-
-
