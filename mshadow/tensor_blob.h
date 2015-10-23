@@ -490,6 +490,14 @@ class TBlob {
   inline index_t size(index_t idx) const {
     return shape_[idx];
   }
+  /*! \brief total number of elements in the tensor */
+  inline index_t Size(void) const {
+    index_t size = 1;
+    for (index_t i = 0; i < shape_.ndim(); ++i) {
+      size *= shape_[i];
+    }
+    return size;
+  }
   /*!
    * \brief fetch the tensor, with respect to specific dimension
    * if dim do not match the stored dimension, an error will be issued
