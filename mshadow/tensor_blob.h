@@ -509,7 +509,7 @@ class TBlob {
   }
   /*!
    * \brief fetch a tensor in given shape
-   * if size do not match the stored dimension, an error will be issued
+   *  If size do not match the stored size, an error will be issued
    * \return the tensor requested
    * \param shape the shape required
    * \param stream the possible stream target tensor should reside on
@@ -518,7 +518,7 @@ class TBlob {
    * \tparam DType the type of elements in the tensor
    */
   template<typename Device, int dim, typename DType>
-  inline Tensor<Device, dim, DType> get_with_shape(const TShape &shape,
+  inline Tensor<Device, dim, DType> get_with_shape(const Shape<dim> &shape,
                                                    Stream<Device> *stream = NULL) const {
     CHECK(Device::kDevMask == dev_mask_ && DataType<DType>::kFlag == type_flag_)
       << "TBlob.get_with_shape: device type do not match specified type";
@@ -526,7 +526,7 @@ class TBlob {
     CHECK_EQ(this->shape_.Size(), shape.Size())
       << "TBlob.get_with_shape: new and old shape do not match total elements";
     return Tensor<Device, dim, DType>(static_cast<DType*>(dptr_),
-                                      shape.get<dim>(),
+                                      shape,
                                       shape[dim - 1],
                                       stream);
   }
