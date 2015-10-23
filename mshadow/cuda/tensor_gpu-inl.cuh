@@ -190,82 +190,75 @@ inline void MapReduceKeepDim1(expr::Plan<DstExp, DType> dst,
 }
 
 template<int x_bits, typename DType, typename DstPlan, typename SrcPlan1, typename SrcPlan2>
-__global__ void SoftmaxGradKernel(DstPlan dst, SrcPlan1 src, SrcPlan2 label,
-                                  index_t xmax, unsigned n_output) {
+__global__ void SoftmaxGradKernel(DstPlan dst, SrcPlan1 src, SrcPlan2 label, index_t xmax) {
   const unsigned x_size = 1 << x_bits;
   const int y = blockIdx.x;
+  const int k = static_cast<int>(label.Eval(0, y));
 
-  for (unsigned n = 0; n < n_output; ++n) {
-    const int k = static_cast<int>(label.Eval(0, y*n_output + n));
-    const unsigned base = n*xmax;
-    // calculate normalizer, with writeback
-    for (unsigned x = 0; x < xmax; x += x_size) {
-      const unsigned xindex = x + threadIdx.x;
-      if (xindex < xmax) {
-        if (xindex == k) {
-          dst.REval(y, base + xindex) = src.Eval(y, base + xindex) - 1.0f;
-        } else {
-          dst.REval(y, base + xindex) = src.Eval(y, base + xindex);
-        }
+  // calculate normalizer, with writeback
+  for (unsigned x = 0; x < xmax; x += x_size) {
+    const unsigned xindex = x + threadIdx.x;
+    if (xindex < xmax) {
+      if (xindex == k) {
+        dst.REval(y, xindex) = src.Eval(y, xindex) - 1.0f;
+      } else {
+        dst.REval(y, xindex) = src.Eval(y, xindex);
       }
     }
   }
 }
 
 template<int x_bits, typename DType,  typename DstPlan, typename SrcPlan>
-__global__ void SoftmaxKernel(DstPlan dst, SrcPlan src, index_t xmax, unsigned n_output) {
+__global__ void SoftmaxKernel(DstPlan dst, SrcPlan src, index_t xmax) {
   const unsigned x_size = 1 << x_bits;
   const int y = blockIdx.x;
   __shared__ DType s_rec[x_size];
+  // step 1: get max
+  if (threadIdx.x < xmax) {
+    s_rec[threadIdx.x] = src.Eval(y, threadIdx.x);
+  }
+  for (unsigned x = x_size; x < xmax; x += x_size) {
+    if (x + threadIdx.x < xmax) {
+      DType a = src.Eval(y, x + threadIdx.x);
+      s_rec[threadIdx.x] = max(a, s_rec[threadIdx.x]);
+    }
+  }
+  __syncthreads();
+  if (threadIdx.x >= xmax) {
+    s_rec[threadIdx.x] = s_rec[0];
+  }
+  __syncthreads();
+  Reduce1D<red::maximum, x_bits>(s_rec);
+  __syncthreads();
+  DType smax = s_rec[0];
+  __syncthreads();
+  s_rec[threadIdx.x] = 0.0f;
+  __syncthreads();
 
-  for (unsigned base = 0; base < xmax*n_output; base += xmax) {
-    // step 1: get max
-    if (threadIdx.x < xmax) {
-      s_rec[threadIdx.x] = src.Eval(y, base + threadIdx.x);
+  // calculate normalizer, with writeback
+  for (unsigned x = 0; x < xmax; x += x_size) {
+    if (x + threadIdx.x < xmax) {
+      DType p = expf(src.Eval(y, x + threadIdx.x) - smax);
+      s_rec[threadIdx.x] += p;
+      // write back first, will fetch later
+      dst.REval(y, x + threadIdx.x) = p;
     }
-    for (unsigned x = x_size; x < xmax; x += x_size) {
-      if (x + threadIdx.x < xmax) {
-        DType a = src.Eval(y, base + x + threadIdx.x);
-        s_rec[threadIdx.x] = max(a, s_rec[threadIdx.x]);
-      }
-    }
-    __syncthreads();
-    if (threadIdx.x >= xmax) {
-      s_rec[threadIdx.x] = s_rec[0];
-    }
-    __syncthreads();
-    Reduce1D<red::maximum, x_bits>(s_rec);
-    __syncthreads();
-    DType smax = s_rec[0];
-    __syncthreads();
-    s_rec[threadIdx.x] = 0.0f;
-    __syncthreads();
+  }
+  // calculate normalizer
+  __syncthreads();
+  Reduce1D<red::sum, x_bits>(s_rec);
+  __syncthreads();
+  DType ssum = s_rec[0];
 
-    // calculate normalizer, with writeback
-    for (unsigned x = 0; x < xmax; x += x_size) {
-      if (x + threadIdx.x < xmax) {
-        DType p = expf(src.Eval(y, base + x + threadIdx.x) - smax);
-        s_rec[threadIdx.x] += p;
-        // write back first, will fetch later
-        dst.REval(y, base + x + threadIdx.x) = p;
-      }
-    }
-    // calculate normalizer
-    __syncthreads();
-    Reduce1D<red::sum, x_bits>(s_rec);
-    __syncthreads();
-    DType ssum = s_rec[0];
-
-    for (unsigned x = 0; x < xmax; x += x_size) {
-      if (x + threadIdx.x < xmax) {
-        dst.REval(y, base + x + threadIdx.x) /= ssum;
-      }
+  for (unsigned x = 0; x < xmax; x += x_size) {
+    if (x + threadIdx.x < xmax) {
+      dst.REval(y, x + threadIdx.x) /= ssum;
     }
   }
 }
 template<typename DType>
 inline void Softmax(Tensor<gpu, 2, DType> &dst,
-                    const Tensor<gpu, 2, DType> &src, unsigned n_output = 1) {
+                    const Tensor<gpu, 2, DType> &src) {
   dim3 dimBlock(kBaseThreadNum);
   dim3 dimGrid(dst.size(0));
   CHECK_EQ(dst.shape_, src.shape_) << "Softmax: shape mismatch";
@@ -275,14 +268,13 @@ inline void Softmax(Tensor<gpu, 2, DType> &dst,
       <<<dimGrid, dimBlock, 0, stream>>>
       (expr::MakePlan(dst),
        expr::MakePlan(src),
-       dst.size(1), n_output);
+       dst.size(1));
 }
 
 template<typename DType>
 inline void SoftmaxGrad(Tensor<gpu, 2, DType> &dst,
                         const Tensor<gpu, 2, DType> &src,
-                        const Tensor<gpu, 1, DType> &label,
-                        unsigned n_output = 1) {
+                        const Tensor<gpu, 1, DType> &label) {
   dim3 dimBlock(kBaseThreadNum);
   dim3 dimGrid(dst.size(0));
   CHECK_EQ(dst.shape_, src.shape_) << "SoftmaxGrad: shape mismatch";
@@ -294,8 +286,79 @@ inline void SoftmaxGrad(Tensor<gpu, 2, DType> &dst,
       (expr::MakePlan(dst),
        expr::MakePlan(src),
        expr::MakePlan(label),
-       dst.size(1), n_output);
+       dst.size(1));
 }
+
+template<typename DType>
+__global__ void Softmax3DGradKernel(Tensor<gpu, 3, DType> &dst,
+                                    const Tensor<gpu, 3, DType> &src,
+                                    const Tensor<gpu, 2, DType> &label) {
+  const index_t xmax = dst.size(1);
+  const int y = blockIdx.x;
+  const int n = threadIdx.x;
+
+  if (n < dst.size(2)) {
+    const int k = static_cast<int>(label[y][n]);
+    for (index_t i = 0; i < xmax; ++i) {
+      if (i == k) {
+        dst[y][i][n] = src[y][i][n] - 1.0f;
+      } else {
+        dst[y][i][n] = src[y][i][n];
+      }
+    }
+  }
+}  
+
+template<typename DType>
+__global__ void Softmax3DKernel(Tensor<gpu, 3, DType> &dst,
+                    const Tensor<gpu, 3, DType> &src) {
+  const index_t xmax = dst.size(1);
+  const int y = blockIdx.x;
+  const int n = threadIdx.x;
+
+  if (n < dst.size(2)) {
+    DType smax = src[y][0][n];
+    for (index_t i = 1; i < xmax; ++i) {
+      smax = max(smax, src[y][i][n]);
+    }
+    DType ssum = 0.0f;
+    for (index_t i = 0; i < xmax; ++i) {
+      DType p = expf(src[y][i][n] - smax);
+      ssum += p;
+      dst[y][i][n] = p;
+    }
+    for (index_t i = 0; i < xmax; ++i) {
+      dst[y][i][n] /= ssum;
+    }
+  }
+}
+
+template<typename DType>
+inline void Softmax(Tensor<gpu, 3, DType> &dst,
+                    const Tensor<gpu, 3, DType> &src) {
+  dim3 dimBlock(kBaseThreadNum);
+  dim3 dimGrid(dst.size(0), dst.size(2));
+  CHECK_EQ(dst.shape_, src.shape_) << "Softmax: shape mismatch";
+  CheckLaunchParam(dimGrid, dimBlock, "Softmax");
+  cudaStream_t stream = Stream<gpu>::GetStream(dst.stream_);
+  Softmax3DKernel<DType><<<dimGrid, dimBlock, 0, stream>>>(dst, src);
+}
+
+
+template<typename DType>
+inline void SoftmaxGrad(Tensor<gpu, 3, DType> &dst,
+                        const Tensor<gpu, 3, DType> &src,
+                        const Tensor<gpu, 2, DType> &label) {
+  dim3 dimBlock(kBaseThreadNum);
+  dim3 dimGrid(dst.size(0), dst.size(2));
+  CHECK_EQ(dst.shape_, src.shape_) << "SoftmaxGrad: shape mismatch";
+  CHECK_EQ(dst.size(0), label.size(0)) << "SoftmaxGrad: label shape mismatch";
+  CHECK_EQ(dst.size(2), label.size(1)) << "SoftmaxGrad: label shape mismatch";
+  CheckLaunchParam(dimGrid, dimBlock, "SoftmaxGrad");
+  cudaStream_t stream = Stream<gpu>::GetStream(dst.stream_);
+  Softmax3DGradKernel<DType><<<dimGrid, dimBlock, 0, stream>>>(dst, src, label);
+}
+
 }  // namespace cuda
 }  // namespace mshadow
 #endif  // MSHADOW_CUDA_TENSOR_GPU_INL_CUH_
