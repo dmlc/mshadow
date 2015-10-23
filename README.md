@@ -13,7 +13,7 @@ MShadow also provides interface that allows writing Multi-GPU and distributed de
 * [Parameter Server Interface for GPU Tensor](guide/mshadow-ps)
 
 Features
-=====
+--------
 * Efficient: all the expression you write will be lazily evaluated and compiled into optimized code
   - No temporal memory allocation will happen for expression you write
   - mshadow will generate specific kernel for every expression you write in compile time.
@@ -25,15 +25,13 @@ Features
 * MultiGPU and Distributed ML: mshadow-ps interface allows user to write efficient MultiGPU and distributed programs in an unified way.
 
 Version
-======
+-------
 * This version mshadow-2.x, there are a lot of changes in the interface and it is not backward compatible with mshadow-1.0
   - If you use older version of cxxnet, you will need to use the legacy mshadow code
 * For legacy code, refer to [Here](https://github.com/tqchen/mshadow/releases/tag/v1.1)
 * Change log in [CHANGES.md](CHANGES.md)
 
-Related Projects
-=====
-* [CXXNET: large-scale deep learning backed by mshadow](https://github.com/antinucleon/cxxnet)
-* [Parameter Server](https://github.com/mli/parameter_server)
-  - Parameter server project provides distributed back-end for mshadow-ps
-  - mshadow-ps extends original parameter server to support async updates for GPU Tensor
+Projects Using MShadow
+----------------------
+* [MXNet: Efficient and Flexible Distributed Deep Learning Framework](https://github.com/dmlc/mxnet)
+* [CXXNet: A lightweight  C++ based deep learnig framework](https://github.com/dmlc/cxxnet)
