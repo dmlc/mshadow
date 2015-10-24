@@ -251,32 +251,67 @@ inline void MapReduceKeepHighDim(TRValue<R, cpu, 1, DType> *dst,
 
 template<typename DType>
 inline void Softmax(Tensor<cpu, 1, DType> dst,
-                    const Tensor<cpu, 1, DType> &energy) {
-  DType mmax = energy[0];
-  for (index_t x = 1; x < dst.size(0); ++x) {
-    if (mmax < energy[x]) mmax = energy[x];
-  }
-  DType sum = 0.0f;
-  for (index_t x = 0; x < dst.size(0); ++x) {
-    dst[x] = std::exp(energy[x] - mmax);
-    sum += dst[x];
-  }
-  for (index_t x = 0; x < dst.size(0); ++x) {
-    dst[x] /= sum;
+                    const Tensor<cpu, 1, DType> &energy,
+                    unsigned n_output = 1) {
+  CHECK_EQ(dst.size(0)%n_output, 0)
+    << "Invalid input dimension for output number";
+  unsigned xmax = dst.size(0)/n_output;
+  for (unsigned base = 0; base < dst.size(0); base += xmax) {
+    DType mmax = energy[base];
+    for (index_t x = 1; x < xmax; ++x) {
+      if (mmax < energy[base + x]) mmax = energy[base + x];
+    }
+    DType sum = 0.0f;
+    for (index_t x = 0; x < xmax; ++x) {
+      dst[base + x] = std::exp(energy[base + x] - mmax);
+      sum += dst[base + x];
+    }
+    for (index_t x = 0; x < xmax; ++x) {
+      dst[base + x] /= sum;
+    }
   }
 }
 
 template<typename DType>
 inline void SoftmaxGrad(Tensor<cpu, 2, DType> dst,
                         const Tensor<cpu, 2, DType> &src,
-                        const Tensor<cpu, 1, DType> &label) {
+                        const Tensor<cpu, 1, DType> &label,
+                        unsigned n_output = 1) {
+  CHECK_EQ(dst.size(1)%n_output, 0)
+    << "Invalid input dimension for n_output";
+  CHECK_EQ(dst.size(0), label.size(0)/n_output)
+    << "Label and input dimensions doesn't match";
+  CHECK_EQ(label.size(0)%n_output, 0)
+    << "Invalid label dimension for n_output";
+  const unsigned xmax = dst.size(1)/n_output;
   for (index_t y = 0; y < dst.size(0); ++y) {
-    const index_t k = static_cast<int>(label[y]);
-    for (index_t x = 0; x < dst.size(1); ++x) {
-      if (x == k) {
-        dst[y][k] = src[y][k] - 1.0f;
-      } else {
-        dst[y][x] = src[y][x];
+    for (unsigned n = 0; n < n_output; ++n) {
+      const base = n*xmax;
+      const index_t k = static_cast<int>(label[y*n_output+n]);
+      for (index_t x = 0; x < xmax; ++x) {
+        if (x == k) {
+          dst[y][base + k] = src[y][base + k] - 1.0f;
+        } else {
+          dst[y][base + x] = src[y][base + x];
+        }
+      }
+    }
+  }
+}
+
+template<typename DType>
+inline void SoftmaxGrad(Tensor<cpu, 3, DType> dst,
+                        const Tensor<cpu, 3, DType> &src,
+                        const Tensor<cpu, 2, DType> &label) {
+  for (index_t n = 0; n < dst.size(2); ++n) {
+    for (index_t y = 0; y < dst.size(0); ++y) {
+      const index_t k = static_cast<int>(label[y][n]);
+      for (index_t x = 0; x < dst.size(1); ++x) {
+        if (x == k) {
+          dst[y][k][n] = src[y][k][n] - 1.0f;
+        } else {
+          dst[y][x][n] = src[y][x][n];
+        }
       }
     }
   }
@@ -284,10 +319,32 @@ inline void SoftmaxGrad(Tensor<cpu, 2, DType> dst,
 
 template<typename DType>
 inline void Softmax(Tensor<cpu, 2, DType> dst,
-                    const Tensor<cpu, 2, DType> &energy) {
+                    const Tensor<cpu, 2, DType> &energy, unsigned n_output = 1) {
   CHECK_EQ(dst.shape_, energy.shape_) << "Softmax: shape mismatch";
   for (index_t y = 0; y < dst.size(0); ++y) {
-    Softmax(dst[y], energy[y]);
+    Softmax(dst[y], energy[y], unsigned n_output = 1);
+  }
+}
+
+template<typename DType>
+inline void Softmax(Tensor<cpu, 3, DType> dst,
+                    const Tensor<cpu, 3, DType> &energy) {
+  CHECK_EQ(dst.shape_, energy.shape_) << "Softmax: shape mismatch";
+  for (index_t y = 0; y < dst.size(0); ++y) {
+    for (index_t n = 0; n < dst.size(2); ++n) {
+      DType mmax = energy[y][0][n];
+      for (index_t x = 1; x < dst.size(1); ++x) {
+        if (mmax < energy[y][x][n]) mmax = energy[y][x][n];
+      }
+      DType sum = 0.0f;
+      for (index_t x = 0; x < dst.size(1); ++x) {
+        dst[y][x][n] = std::exp(energy[y][x][n] - mmax);
+        sum += dst[y][x][n];
+      }
+      for (index_t x = 0; x < dst.size(1); ++x) {
+        dst[y][x][n] /= sum;
+      }
+    }
   }
 }
 
