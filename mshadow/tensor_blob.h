@@ -492,11 +492,7 @@ class TBlob {
   }
   /*! \brief total number of elements in the tensor */
   inline index_t Size(void) const {
-    index_t size = 1;
-    for (index_t i = 0; i < shape_.ndim(); ++i) {
-      size *= shape_[i];
-    }
-    return size;
+    return shape_.Size();
   }
   /*!
    * \brief fetch the tensor, with respect to specific dimension
