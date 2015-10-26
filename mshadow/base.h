@@ -69,6 +69,7 @@
 #ifndef MSHADOW_USE_MKL
   #define MSHADOW_USE_MKL   1
 #endif
+
 /*!
  * \brief use CUDA support, must ensure that the cuda include path is correct,
  * or directly compile using nvcc

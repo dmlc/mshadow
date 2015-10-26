@@ -22,7 +22,7 @@ struct DotEngine {
 // handles the dot
 template<typename Device>
 struct BLASEngine;
-#if (MSHADOW_USE_CBLAS || MSHADOW_USE_MKL)
+#if (MSHADOW_USE_MKL || MSHADOW_USE_CBLAS)
 template<>
 struct BLASEngine<cpu> {
   inline static CBLAS_TRANSPOSE GetT(bool t) {
@@ -74,6 +74,18 @@ struct BLASEngine<cpu> {
                          const double *Y, int incY, double *A, int lda) {
     cblas_dger(CblasColMajor, m, n, alpha, X, incX, Y, incY, A, lda);
   }
+  inline static float dot(Stream<cpu> *stream,
+                          int n,
+                          const float* X, int incX,
+                          const float* Y, int incY) {
+    return cblas_sdot(n, X, incX, Y, incY);
+  }
+  inline static double dot(Stream<cpu> *stream,
+                           int n,
+                           const double* X, int incX,
+                           const double* Y, int incY) {
+    return cblas_ddot(n, X, incX, Y, incY);
+  }
 };
 #elif MSHADOW_STAND_ALONE == 1
 template<>
@@ -121,6 +133,18 @@ struct BLASEngine<cpu> {
                          int m, int n, double alpha,
                          const double *X, int incX,
                          const double *Y, int incY, double *A, int lda) {
+    LOG(FATAL) << "Not implmented!";
+  }
+  inline static void dot(Stream<cpu> *stream,
+                         int n,
+                         const float* X, int incX,
+                         const float* Y, int incY) {
+    LOG(FATAL) << "Not implmented!";
+  }
+  inline static void dot(Stream<cpu> *stream,
+                         int n,
+                         const double* X, int incX,
+                         const double* Y, int incY) {
     LOG(FATAL) << "Not implmented!";
   }
 };
@@ -183,7 +207,7 @@ struct BLASEngine<gpu> {
                          const float *X, int incX,
                          const float *Y, int incY, float *A, int lda) {
     cublasStatus_t err = cublasSger(Stream<gpu>::GetBlasHandle(stream),
-               m, n, &alpha, X, incX, Y, incY, A, lda);
+                                    m, n, &alpha, X, incX, Y, incY, A, lda);
     CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas: Sger fail";
   }
   inline static void ger(Stream<gpu> *stream,
@@ -191,8 +215,28 @@ struct BLASEngine<gpu> {
                          const double *X, int incX,
                          const double *Y, int incY, double *A, int lda) {
     cublasStatus_t err = cublasDger(Stream<gpu>::GetBlasHandle(stream),
-               m, n, &alpha, X, incX, Y, incY, A, lda);
+                                    m, n, &alpha, X, incX, Y, incY, A, lda);
     CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas: Dger fail";
+  }
+  inline static float dot(Stream<gpu> *stream,
+                         int n,
+                         const float* X, int incX,
+                         const float* Y, int incY) {
+    float ret;
+    cublasStatus_t err = cublasSdot(Stream<gpu>::GetBlasHandle(stream),
+                                    n, X, incX, Y, incY, &ret);
+    CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas: Dot fail";
+    return ret;
+  }
+  inline static double dot(Stream<gpu> *stream,
+                           int n,
+                           const double* X, int incX,
+                           const double* Y, int incY) {
+    double ret;
+    cublasStatus_t err = cublasDdot(Stream<gpu>::GetBlasHandle(stream),
+                                    n, X, incX, Y, incY, &ret);
+    CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas: Dot fail";
+    return ret;
   }
 };
 #endif  // MSHADOW_USE_CUDA
