@@ -764,13 +764,14 @@ inline void MapReduceKeepHighDim(TRValue<R, gpu, 1, DType> *dst,
 
 /*!
  * \brief CPU/GPU: 1 dimension vector dot
+ * \param dst Length 1 vector, used to hold the result.
  * \param lhs Left operand vector
  * \param rhs right operand vector
- * \return dot(lhs, rhs)
  */
 template<typename Device, typename DType>
-inline DType VectorDot(const Tensor<Device, 1, DType> &lhs,
-                       const Tensor<Device, 1, DType> &rhs);
+inline void VectorDot(Tensor<Device, 1, DType> dst,
+                      const Tensor<Device, 1, DType> &lhs,
+                      const Tensor<Device, 1, DType> &rhs);
 }  // namespace mshadow
 // include headers
 #include "./stream_gpu-inl.h"
