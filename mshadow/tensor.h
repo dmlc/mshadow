@@ -761,6 +761,16 @@ template<typename Saver, typename Reducer, int dimkeep,
 inline void MapReduceKeepHighDim(TRValue<R, gpu, 1, DType> *dst,
                                  const expr::Exp<E, DType, etype> &exp,
                                  DType scale = 1);
+
+/*!
+ * \brief CPU/GPU: 1 dimension vector dot
+ * \param lhs Left operand vector
+ * \param rhs right operand vector
+ * \return dot(lhs, rhs)
+ */
+template<typename Device, typename DType>
+inline DType VectorDot(const Tensor<Device, 1, DType> &lhs,
+                       const Tensor<Device, 1, DType> &rhs);
 }  // namespace mshadow
 // include headers
 #include "./stream_gpu-inl.h"

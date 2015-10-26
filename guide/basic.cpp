@@ -41,6 +41,7 @@ int main(void) {
   lhs = 1.0;
   rhs = 1.0;
   ret = implicit_dot(lhs, rhs.T());
+  printf("vdot=%f\n", VectorDot(lhs[0], rhs[0]));
   int cnt = 0;
   for (index_t i = 0; i < ret.size(0); ++i) {
     for (index_t j = 0; j < ret.size(1); ++j) {

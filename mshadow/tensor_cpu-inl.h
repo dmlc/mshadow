@@ -10,6 +10,7 @@
 #include "./base.h"
 #include "./tensor.h"
 #include "./packet-inl.h"
+#include "./dot_engine-inl.h"
 
 namespace mshadow {
 template<>
@@ -331,15 +332,13 @@ inline void Softmax(Tensor<cpu, 3, DType> dst,
   }
 }
 
-template<typename DType>
-inline DType VDot(const Tensor<cpu, 1, DType> &lhs,
-                  const Tensor<cpu, 1, DType> &rhs) {
-  CHECK_EQ(lhs.shape_, rhs.shape_) <<  "VDot: shape mismatch";
-  DType sum = static_cast<DType>(0);
-  for (index_t x = 0; x < lhs.size(0); ++x) {
-    sum += lhs[x] * rhs[x];
-  }
-  return sum;
+// blas related
+template<typename Device, typename DType>
+inline DType VectorDot(const Tensor<Device, 1, DType> &lhs,
+                       const Tensor<Device, 1, DType> &rhs) {
+  expr::BLASEngine<Device>::SetStream(lhs.stream_);
+  return  mshadow::expr::BLASEngine<Device>::dot(
+      lhs.stream_, lhs.size(0), lhs.dptr_, 1, rhs.dptr_, 1);
 }
 }  // namespace mshadow
 #endif  // MSHADOW_TENSOR_CPU_INL_H_
