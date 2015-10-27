@@ -234,7 +234,6 @@ struct BLASEngine<gpu> {
     CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas: Dot fail";
     cublasSetPointerMode(Stream<gpu>::GetBlasHandle(stream),
                          CUBLAS_POINTER_MODE_HOST);
-    return ret;
   }
   inline static void dot(Stream<gpu> *stream,
                          int n,
@@ -248,7 +247,6 @@ struct BLASEngine<gpu> {
     CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas: Dot fail";
     cublasSetPointerMode(Stream<gpu>::GetBlasHandle(stream),
                          CUBLAS_POINTER_MODE_HOST);
-    return ret;
   }
 };
 #endif  // MSHADOW_USE_CUDA

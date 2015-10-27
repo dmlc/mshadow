@@ -25,4 +25,5 @@
 #include "./extension/implicit_gemm.h"
 #include "./extension/choose.h"
 #include "./extension/one_hot.h"
+#include "./extension/slice.h"
 #endif  // MSHADOW_EXTENSION_H_
