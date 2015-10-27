@@ -74,17 +74,19 @@ struct BLASEngine<cpu> {
                          const double *Y, int incY, double *A, int lda) {
     cblas_dger(CblasColMajor, m, n, alpha, X, incX, Y, incY, A, lda);
   }
-  inline static float dot(Stream<cpu> *stream,
-                          int n,
-                          const float* X, int incX,
-                          const float* Y, int incY) {
-    return cblas_sdot(n, X, incX, Y, incY);
+  inline static void dot(Stream<cpu> *stream,
+                         int n,
+                         const float* X, int incX,
+                         const float* Y, int incY,
+                         float* ret) {
+    *ret = cblas_sdot(n, X, incX, Y, incY);
   }
-  inline static double dot(Stream<cpu> *stream,
-                           int n,
-                           const double* X, int incX,
-                           const double* Y, int incY) {
-    return cblas_ddot(n, X, incX, Y, incY);
+  inline static void dot(Stream<cpu> *stream,
+                         int n,
+                         const double* X, int incX,
+                         const double* Y, int incY,
+                         double* ret) {
+    *ret = cblas_ddot(n, X, incX, Y, incY);
   }
 };
 #elif MSHADOW_STAND_ALONE == 1
@@ -138,13 +140,15 @@ struct BLASEngine<cpu> {
   inline static void dot(Stream<cpu> *stream,
                          int n,
                          const float* X, int incX,
-                         const float* Y, int incY) {
+                         const float* Y, int incY,
+                         float* ret) {
     LOG(FATAL) << "Not implmented!";
   }
   inline static void dot(Stream<cpu> *stream,
                          int n,
                          const double* X, int incX,
-                         const double* Y, int incY) {
+                         const double* Y, int incY,
+                         double* ret) {
     LOG(FATAL) << "Not implmented!";
   }
 };
@@ -218,24 +222,32 @@ struct BLASEngine<gpu> {
                                     m, n, &alpha, X, incX, Y, incY, A, lda);
     CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas: Dger fail";
   }
-  inline static float dot(Stream<gpu> *stream,
+  inline static void dot(Stream<gpu> *stream,
                          int n,
                          const float* X, int incX,
-                         const float* Y, int incY) {
-    float ret;
+                         const float* Y, int incY,
+                         float *ret) {
+    cublasSetPointerMode(Stream<gpu>::GetBlasHandle(stream),
+                         CUBLAS_POINTER_MODE_DEVICE);
     cublasStatus_t err = cublasSdot(Stream<gpu>::GetBlasHandle(stream),
-                                    n, X, incX, Y, incY, &ret);
+                                    n, X, incX, Y, incY, ret);
     CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas: Dot fail";
+    cublasSetPointerMode(Stream<gpu>::GetBlasHandle(stream),
+                         CUBLAS_POINTER_MODE_HOST);
     return ret;
   }
-  inline static double dot(Stream<gpu> *stream,
-                           int n,
-                           const double* X, int incX,
-                           const double* Y, int incY) {
-    double ret;
+  inline static void dot(Stream<gpu> *stream,
+                         int n,
+                         const double* X, int incX,
+                         const double* Y, int incY,
+                         double *ret) {
+    cublasSetPointerMode(Stream<gpu>::GetBlasHandle(stream),
+                         CUBLAS_POINTER_MODE_DEVICE);
     cublasStatus_t err = cublasDdot(Stream<gpu>::GetBlasHandle(stream),
-                                    n, X, incX, Y, incY, &ret);
+                                    n, X, incX, Y, incY, ret);
     CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas: Dot fail";
+    cublasSetPointerMode(Stream<gpu>::GetBlasHandle(stream),
+                         CUBLAS_POINTER_MODE_HOST);
     return ret;
   }
 };

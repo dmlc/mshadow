@@ -334,11 +334,16 @@ inline void Softmax(Tensor<cpu, 3, DType> dst,
 
 // blas related
 template<typename Device, typename DType>
-inline DType VectorDot(const Tensor<Device, 1, DType> &lhs,
-                       const Tensor<Device, 1, DType> &rhs) {
+inline void VectorDot(Tensor<Device, 1, DType> dst,
+                      const Tensor<Device, 1, DType> &lhs,
+                      const Tensor<Device, 1, DType> &rhs) {
+  CHECK_EQ(lhs.size(0), rhs.size(0))
+      << "VectorDot: Shape mismatch";
+  CHECK_EQ(dst.size(0), 1)
+      << "VectorDot: expect dst to be scalar";
   expr::BLASEngine<Device>::SetStream(lhs.stream_);
-  return  mshadow::expr::BLASEngine<Device>::dot(
-      lhs.stream_, lhs.size(0), lhs.dptr_, 1, rhs.dptr_, 1);
+  mshadow::expr::BLASEngine<Device>::dot(
+      lhs.stream_, lhs.size(0), lhs.dptr_, 1, rhs.dptr_, 1, dst.dptr_);
 }
 }  // namespace mshadow
 #endif  // MSHADOW_TENSOR_CPU_INL_H_
