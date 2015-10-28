@@ -197,13 +197,13 @@ void ExampleSumRows(void) {
   - psize_y height of each patch
   - psize_x width of each patch
   - pstride: stride of each patch
-* return expression type:  ```Tensor<xpu, 2>```, with ```shape=(in_channel*psize*psize, out_height*out_width)```,  is Chainer expression
+* return expression type:  ```Tensor<xpu, 2>```, with ```shape=(in_channel*psize_x*psize_y, out_height*out_width)```,  is Chainer expression
 ```c++
 void ExampleCovolution(Tensor<cpu, 3> dst, Tensor<cpu, 3> src,
                        Tensor<cpu, 2> weight, int ksize, int stride) {
   int o_height = (src.size(1)- ksize) / stride + 1;
   int o_width  = (src.size(2)- ksize) / stride + 1;
-  utils::Assert(weight.size(0) == src.size(0) * ksize * ksize);
+  utils::Assert(weight.size(1) == src.size(0) * ksize * ksize);
   TensorContainer<cpu, 2> tmp_col(Shape2(src.size(0) * ksize * ksize,
                                          o_height * o_width)); 
   TensorContainer<cpu, 2> tmp_dst(Shape2(weight.size(0),
@@ -230,7 +230,7 @@ void ExampleDecovolution(Tensor<cpu, 3> bottom, Tensor<cpu, 3> top,
                          Tensor<cpu, 2> weight, int ksize, int stride) {
   int o_height = (bottom.size(1)- ksize) / stride + 1;
   int o_width  = (bottom.size(2)- ksize) / stride + 1;
-  utils::Assert(weight.size(0) == bottom.size(0) * ksize * ksize);
+  utils::Assert(weight.size(1) == bottom.size(0) * ksize * ksize);
   TensorContainer<cpu, 2> tmp_col(Shape2(bottom.size(0) * ksize * ksize,
                                          o_height * o_width)); 
   TensorContainer<cpu, 2> tmp_dst(Shape2(weight.size(0), o_height*o_width)); 
