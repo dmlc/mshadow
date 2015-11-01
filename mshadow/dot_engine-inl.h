@@ -6,6 +6,9 @@
  */
 #ifndef MSHADOW_DOT_ENGINE_INL_H_
 #define MSHADOW_DOT_ENGINE_INL_H_
+
+#include "./extension/implicit_gemm.h"
+
 namespace mshadow {
 namespace expr {
 //---------------------------------------------------------------------
@@ -263,6 +266,17 @@ struct DotEngine<SV, xpu, 2, 2, 2, transpose_left, transpose_right, DType> {
                           const Tensor<xpu, 2, DType> &rhs,
                           DType scale) {
     Tensor<xpu, 2, DType> &dst = *p_dst;
+#if MSHADOW_STAND_ALONE
+    if (xpu::kDevMask == cpu::kDevMask && scale == 1.0f) {
+      if (!transpose_left && !transpose_right) {
+        dst = expr::implicit_dot(lhs, rhs); return;
+      } else if(!transpose_left && transpose_right) {
+        dst = expr::implicit_dot(lhs, rhs.T()); return;
+      } else if(transpose_left && !transpose_right) {
+        dst = expr::implicit_dot(lhs.T(), rhs); return;
+      }
+    }
+#endif
     // set kernel stream
     // if there is no stream, crush
     BLASEngine<xpu>::SetStream(dst.stream_);

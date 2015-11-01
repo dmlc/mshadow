@@ -775,8 +775,8 @@ inline void VectorDot(Tensor<Device, 1, DType> dst,
 }  // namespace mshadow
 // include headers
 #include "./stream_gpu-inl.h"
-#include "./expr_engine-inl.h"
 #include "./extension.h"
+#include "./expr_engine-inl.h"
 #include "./tensor_cpu-inl.h"
 #include "./tensor_gpu-inl.h"
 #include "./io.h"
