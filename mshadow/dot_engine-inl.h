@@ -270,9 +270,9 @@ struct DotEngine<SV, xpu, 2, 2, 2, transpose_left, transpose_right, DType> {
     if (xpu::kDevMask == cpu::kDevMask && scale == 1.0f) {
       if (!transpose_left && !transpose_right) {
         dst = expr::implicit_dot(lhs, rhs); return;
-      } else if(!transpose_left && transpose_right) {
+      } else if (!transpose_left && transpose_right) {
         dst = expr::implicit_dot(lhs, rhs.T()); return;
-      } else if(transpose_left && !transpose_right) {
+      } else if (transpose_left && !transpose_right) {
         dst = expr::implicit_dot(lhs.T(), rhs); return;
       }
     }
