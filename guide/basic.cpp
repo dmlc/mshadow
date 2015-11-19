@@ -78,6 +78,26 @@ int main(void) {
     printf("\n");
   }
   printf("\n");
+  TensorContainer<cpu, 1> idx(Shape1(3));
+  idx[0] = 8;
+  idx[1] = 0;
+  idx[1] = 1;
+
+  TensorContainer<cpu, 2> weight(Shape2(10, 5));
+  TensorContainer<cpu, 2> embed(Shape2(3, 5));
+
+  for (index_t i = 0; i < weight.size(0); ++i) {
+    for (index_t j = 0; j < weight.size(1); ++j) {
+      weight[i][j] = i;
+    }
+  }
+  embed = take(idx, weight);
+  for (index_t i = 0; i < embed.size(0); ++i) {
+    for (index_t j = 0; j < embed.size(1); ++j) {
+      printf("%.2f ", embed[i][j]);
+    }
+    printf("\n");
+  }
 
   // shutdown tensor enigne after usage
   ShutdownTensorEngine<cpu>();
