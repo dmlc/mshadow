@@ -312,7 +312,10 @@ template<int dim, typename DType>
 struct ShapeCheck<dim, ScalarExp<DType> > {
   inline static Shape<dim> Check(const ScalarExp<DType> &exp) {
     // use lowest dimension to mark scalar exp
-    Shape<dim> shape; shape[0] = 0;
+    Shape<dim> shape;
+    for (int i = 0; i < dim; ++i) {
+      shape[i] = 0;
+    }
     return shape;
   }
 };
