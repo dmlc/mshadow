@@ -98,6 +98,14 @@ int main(void) {
     }
     printf("\n");
   }
+  printf("\n\n");
+  weight = take_grad(idx, embed, 10);
+  for (index_t i = 0; i < weight.size(0); ++i) {
+    for (index_t j = 0; j < weight.size(1); ++j) {
+      printf("%.2f ", weight[i][j]);
+    }
+    printf("\n");
+  }
 
   // shutdown tensor enigne after usage
   ShutdownTensorEngine<cpu>();
