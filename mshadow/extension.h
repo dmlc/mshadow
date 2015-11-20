@@ -26,4 +26,6 @@
 #include "./extension/choose.h"
 #include "./extension/one_hot.h"
 #include "./extension/slice.h"
+#include "./extension/take.h"
+#include "./extension/take_grad.h"
 #endif  // MSHADOW_EXTENSION_H_
