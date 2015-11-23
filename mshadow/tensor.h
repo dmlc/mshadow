@@ -220,6 +220,21 @@ MSHADOW_XINLINE Shape<4> Shape4(index_t s0, index_t s1,
   return s;
 }
 /*!
+* \brief construct a five dimension shape, stride will equal s0
+* \param s0 size of dimension 0
+* \param s1 size of dimension 1
+* \param s2 size of dimension 2
+* \param s3 size of dimension 3
+* \param s4 size of dimension 4
+* \return the shape construction
+*/
+MSHADOW_XINLINE Shape<5> Shape5(index_t s0, index_t s1, index_t s2,
+                                index_t s3, index_t s4) {
+  Shape<5> s;
+  s[0] = s0; s[1] = s1; s[2] = s2; s[3] = s3; s[4] = s4;
+  return s;
+}
+/*!
  * \brief computaion stream structure, used for asynchronize computation
  */
 template<typename Device>
