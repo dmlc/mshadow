@@ -114,15 +114,22 @@ int main(void) {
   small[1][0] = 3.0f;
   small[1][1] = 4.0f;
   TensorContainer<cpu, 2> large(Shape2(6, 6));
-  large = upsampling(small, 3);
+  large = upsampling_nearest(small, 3);
   for (index_t i = 0; i < large.size(0); ++i) {
     for (index_t j = 0; j < large.size(1); ++j) {
       printf("%.2f ", large[i][j]);
     }
     printf("\n");
   }
-
+  small = pool<red::sum>(large, small.shape_, 3, 3, 3);
   // shutdown tensor enigne after usage
+  for (index_t i = 0; i < small.size(0); ++i) {
+    for (index_t j = 0; j < small.size(1); ++j) {
+      printf("%.2f ", small[i][j]);
+    }
+    printf("\n");
+  }
+
   ShutdownTensorEngine<cpu>();
   return 0;
 }

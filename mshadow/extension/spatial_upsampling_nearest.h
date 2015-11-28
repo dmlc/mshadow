@@ -4,8 +4,8 @@
  * \brief
  * \author Bing Xu
 */
-#ifndef MSHADOW_EXTENSION_SPATIAL_UPSAMPLING_H_
-#define MSHADOW_EXTENSION_SPATIAL_UPSAMPLING_H_
+#ifndef MSHADOW_EXTENSION_SPATIAL_UPSAMPLING_NEAREST_H_
+#define MSHADOW_EXTENSION_SPATIAL_UPSAMPLING_NEAREST_H_
 #include "../extension.h"
 
 namespace mshadow {
@@ -18,15 +18,15 @@ namespace expr {
  *  \tparam srcdim source dimension
  */
 template<typename SrcExp, typename DType, int srcdim>
-struct UpSamplingExp :
-  public MakeTensorExp<UpSamplingExp<SrcExp, DType, srcdim>,
+struct UpSamplingNearestExp :
+  public MakeTensorExp<UpSamplingNearestExp<SrcExp, DType, srcdim>,
                        SrcExp, srcdim, DType> {
   /*! \brief source oprand */
   const SrcExp &src_;
   /*! \brief up sampling scale */
   index_t scale_;
   /*! \brief constructor */
-  UpSamplingExp(const SrcExp &src, index_t scale)
+  UpSamplingNearestExp(const SrcExp &src, index_t scale)
     : src_(src), scale_(scale) {
     this->shape_ = ShapeCheck<srcdim, SrcExp>::Check(src_);
     this->shape_[srcdim - 2] *= scale_;
@@ -36,17 +36,17 @@ struct UpSamplingExp :
 
 
 template<typename SrcExp, typename DType, int etype>
-inline UpSamplingExp<SrcExp, DType, ExpInfo<SrcExp>::kDim>
-upsampling(const Exp<SrcExp, DType, etype> &src, index_t scale) {
+inline UpSamplingNearestExp<SrcExp, DType, ExpInfo<SrcExp>::kDim>
+upsampling_nearest(const Exp<SrcExp, DType, etype> &src, index_t scale) {
   TypeCheckPass<ExpInfo<SrcExp>::kDim >= 2>
     ::Error_Expression_Does_Not_Meet_Dimension_Req();
-  return UpSamplingExp<SrcExp, DType, ExpInfo<SrcExp>::kDim>(src.self(), scale);
+  return UpSamplingNearestExp<SrcExp, DType, ExpInfo<SrcExp>::kDim>(src.self(), scale);
 }
 
 template<typename SrcExp, typename DType, int srcdim>
-struct Plan<UpSamplingExp<SrcExp, DType, srcdim>, DType> {
+struct Plan<UpSamplingNearestExp<SrcExp, DType, srcdim>, DType> {
  public:
-  explicit Plan(const UpSamplingExp<SrcExp, DType, srcdim> &e)
+  explicit Plan(const UpSamplingNearestExp<SrcExp, DType, srcdim> &e)
     : src_(MakePlan(e.src_)),
       scale_(e.scale_),
       new_height_(e.shape_[srcdim - 2]),
@@ -68,4 +68,4 @@ struct Plan<UpSamplingExp<SrcExp, DType, srcdim>, DType> {
 };
 }  // namespace expr
 }  // namespace mshadow
-#endif  // MSHADOW_EXTENSION_SPATIAL_UPSAMPLING_H_
+#endif  // MSHADOW_EXTENSION_SPATIAL_UPSAMPLING_NEAREST_H_
