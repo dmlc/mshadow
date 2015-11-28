@@ -28,4 +28,5 @@
 #include "./extension/slice.h"
 #include "./extension/take.h"
 #include "./extension/take_grad.h"
+#include "./extension/spatial_upsampling_nearest.h"
 #endif  // MSHADOW_EXTENSION_H_
