@@ -70,73 +70,73 @@ inline void InitLogging(const char* argv0) {
 }
 
 // Always-on checking
-#define CHECK(x)                                           \
+#define MSHADOW_CHECK(x)                                           \
   if (!(x))                                                \
     dmlc::LogMessageFatal(__FILE__, __LINE__).stream() << "Check "  \
       "failed: " #x << ' '
-#define CHECK_LT(x, y) CHECK((x) < (y))
-#define CHECK_GT(x, y) CHECK((x) > (y))
-#define CHECK_LE(x, y) CHECK((x) <= (y))
-#define CHECK_GE(x, y) CHECK((x) >= (y))
-#define CHECK_EQ(x, y) CHECK((x) == (y))
-#define CHECK_NE(x, y) CHECK((x) != (y))
-#define CHECK_NOTNULL(x) \
+#define MSHADOW_CHECK_LT(x, y) MSHADOW_CHECK((x) < (y))
+#define MSHADOW_CHECK_GT(x, y) MSHADOW_CHECK((x) > (y))
+#define MSHADOW_CHECK_LE(x, y) MSHADOW_CHECK((x) <= (y))
+#define MSHADOW_CHECK_GE(x, y) MSHADOW_CHECK((x) >= (y))
+#define MSHADOW_CHECK_EQ(x, y) MSHADOW_CHECK((x) == (y))
+#define MSHADOW_CHECK_NE(x, y) MSHADOW_CHECK((x) != (y))
+#define MSHADOW_CHECK_NOTNULL(x) \
   ((x) == NULL ? dmlc::LogMessageFatal(__FILE__, __LINE__).stream() << "Check  notnull: "  #x << ' ', (x) : (x)) // NOLINT(*)
 // Debug-only checking.
 #ifdef NDEBUG
-#define DCHECK(x) \
-  while (false) CHECK(x)
-#define DCHECK_LT(x, y) \
-  while (false) CHECK((x) < (y))
-#define DCHECK_GT(x, y) \
-  while (false) CHECK((x) > (y))
-#define DCHECK_LE(x, y) \
-  while (false) CHECK((x) <= (y))
-#define DCHECK_GE(x, y) \
-  while (false) CHECK((x) >= (y))
-#define DCHECK_EQ(x, y) \
-  while (false) CHECK((x) == (y))
-#define DCHECK_NE(x, y) \
-  while (false) CHECK((x) != (y))
+#define MSHADOW_DCHECK(x) \
+  while (false) MSHADOW_CHECK(x)
+#define MSHADOW_DCHECK_LT(x, y) \
+  while (false) MSHADOW_CHECK((x) < (y))
+#define MSHADOW_DCHECK_GT(x, y) \
+  while (false) MSHADOW_CHECK((x) > (y))
+#define MSHADOW_DCHECK_LE(x, y) \
+  while (false) MSHADOW_CHECK((x) <= (y))
+#define MSHADOW_DCHECK_GE(x, y) \
+  while (false) MSHADOW_CHECK((x) >= (y))
+#define MSHADOW_DCHECK_EQ(x, y) \
+  while (false) MSHADOW_CHECK((x) == (y))
+#define MSHADOW_DCHECK_NE(x, y) \
+  while (false) MSHADOW_CHECK((x) != (y))
 #else
-#define DCHECK(x) CHECK(x)
-#define DCHECK_LT(x, y) CHECK((x) < (y))
-#define DCHECK_GT(x, y) CHECK((x) > (y))
-#define DCHECK_LE(x, y) CHECK((x) <= (y))
-#define DCHECK_GE(x, y) CHECK((x) >= (y))
-#define DCHECK_EQ(x, y) CHECK((x) == (y))
-#define DCHECK_NE(x, y) CHECK((x) != (y))
+#define MSHADOW_DCHECK(x) MSHADOW_CHECK(x)
+#define MSHADOW_DCHECK_LT(x, y) MSHADOW_CHECK((x) < (y))
+#define MSHADOW_DCHECK_GT(x, y) MSHADOW_CHECK((x) > (y))
+#define MSHADOW_DCHECK_LE(x, y) MSHADOW_CHECK((x) <= (y))
+#define MSHADOW_DCHECK_GE(x, y) MSHADOW_CHECK((x) >= (y))
+#define MSHADOW_DCHECK_EQ(x, y) MSHADOW_CHECK((x) == (y))
+#define MSHADOW_DCHECK_NE(x, y) MSHADOW_CHECK((x) != (y))
 #endif  // NDEBUG
 
-#define LOG_INFO dmlc::LogMessage(__FILE__, __LINE__)
-#define LOG_ERROR LOG_INFO
-#define LOG_WARNING LOG_INFO
-#define LOG_FATAL dmlc::LogMessageFatal(__FILE__, __LINE__)
-#define LOG_QFATAL LOG_FATAL
+#define MSHADOW_LOG_INFO dmlc::LogMessage(__FILE__, __LINE__)
+#define MSHADOW_LOG_ERROR MSHADOW_LOG_INFO
+#define MSHADOW_LOG_WARNING MSHADOW_LOG_INFO
+#define MSHADOW_LOG_FATAL dmlc::LogMessageFatal(__FILE__, __LINE__)
+#define MSHADOW_LOG_QFATAL MSHADOW_LOG_FATAL
 
 // Poor man version of VLOG
-#define VLOG(x) LOG_INFO.stream()
+#define MSHADOW_VLOG(x) MSHADOW_LOG_INFO.stream()
 
-#define LOG(severity) LOG_##severity.stream()
-#define LG LOG_INFO.stream()
-#define LOG_IF(severity, condition) \
-  !(condition) ? (void)0 : dmlc::LogMessageVoidify() & LOG(severity)
+#define MSHADOW_LOG(severity) MSHADOW_LOG_##severity.stream()
+#define MSHADOW_LG MSHADOW_LOG_INFO.stream()
+#define MSHADOW_LOG_IF(severity, condition) \
+  !(condition) ? (void)0 : dmlc::LogMessageVoidify() & MSHADOW_LOG(severity)
 
 #ifdef NDEBUG
-#define LOG_DFATAL LOG_ERROR
-#define DFATAL ERROR
-#define DLOG(severity) true ? (void)0 : dmlc::LogMessageVoidify() & LOG(severity)
-#define DLOG_IF(severity, condition) \
-  (true || !(condition)) ? (void)0 : dmlc::LogMessageVoidify() & LOG(severity)
+#define MSHADOW_LOG_DFATAL MSHADOW_LOG_ERROR
+#define MSHADOW_DFATAL ERROR
+#define MSHADOW_DLOG(severity) true ? (void)0 : dmlc::LogMessageVoidify() & MSHADOW_LOG(severity)
+#define MSHADOW_DLOG_IF(severity, condition) \
+  (true || !(condition)) ? (void)0 : dmlc::LogMessageVoidify() & MSHADOW_LOG(severity)
 #else
-#define LOG_DFATAL LOG_FATAL
-#define DFATAL FATAL
-#define DLOG(severity) LOG(severity)
-#define DLOG_IF(severity, condition) LOG_IF(severity, condition)
+#define MSHADOW_LOG_DFATAL MSHADOW_LOG_FATAL
+#define MSHADOW_DFATAL FATAL
+#define MSHADOW_DLOG(severity) MSHADOW_LOG(severity)
+#define MSHADOW_DLOG_IF(severity, condition) MSHADOW_LOG_IF(severity, condition)
 #endif
 
 // Poor man version of LOG_EVERY_N
-#define LOG_EVERY_N(severity, n) LOG(severity)
+#define MSHADOW_LOG_EVERY_N(severity, n) MSHADOW_LOG(severity)
 
 class DateLogger {
  public:

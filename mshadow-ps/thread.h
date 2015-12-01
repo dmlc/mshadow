@@ -19,17 +19,17 @@ class Semaphore {
  public :
   inline void Init(int init_val) {
     sem = CreateSemaphore(NULL, init_val, 10, NULL);
-    CHECK_NE(sem, NULL) << "create Semaphore error";
+    MSHADOW_CHECK_NE(sem, NULL) << "create Semaphore error";
   }
   inline void Destroy(void) {
     CloseHandle(sem);
   }
   inline void Wait(void) {
-    CHECK_EQ(WaitForSingleObject(sem, INFINITE), WAIT_OBJECT_0)
+    MSHADOW_CHECK_EQ(WaitForSingleObject(sem, INFINITE), WAIT_OBJECT_0)
       << "WaitForSingleObject error";
   }
   inline void Post(void) {
-    CHECK_NE(ReleaseSemaphore(sem, 1, NULL), 0) << "ReleaseSemaphore error";
+    MSHADOW_CHECK_NE(ReleaseSemaphore(sem, 1, NULL), 0) << "ReleaseSemaphore error";
   }
 
  private:
@@ -40,7 +40,7 @@ class Semaphore {
 class Mutex {
  public:
   inline void Init(void) {
-    CHECK_NE(InitializeCriticalSectionAndSpinCount(&mutex, 0x00000400), 0)
+    MSHADOW_CHECK_NE(InitializeCriticalSectionAndSpinCount(&mutex, 0x00000400), 0)
       << "Mutex::Init fail";
   }
   inline void Lock(void) {
@@ -71,7 +71,7 @@ class ConditionVariable {
   }
   // wait on the conditional variable
   inline void Wait(Mutex *mutex) {
-    CHECK_NE(SleepConditionVariableCS(&cond, &(mutex->mutex), INFINITE), 0)
+    MSHADOW_CHECK_NE(SleepConditionVariableCS(&cond, &(mutex->mutex), INFINITE), 0)
       << "ConditionVariable:Wait fail";
   }
   inline void Broadcast(void) {
@@ -141,7 +141,7 @@ class Semaphore {
       perror("sem_open");
       exit(1);
     }
-    CHECK_NE(semPtr, NULL) << "create Semaphore error";
+    MSHADOW_CHECK_NE(semPtr, NULL) << "create Semaphore error";
   }
   inline void Destroy(void) {
     if (sem_close(semPtr) == -1) {
@@ -167,22 +167,22 @@ class Semaphore {
  public:
   inline void Init(int init_val) {
     if (sem_init(&sem, 0, init_val) != 0) {
-      LOG(FATAL) << "Semaphore.Init: " << strerror(errno);
+      MSHADOW_LOG(FATAL) << "Semaphore.Init: " << strerror(errno);
     }
   }
   inline void Destroy(void) {
     if (sem_destroy(&sem) != 0) {
-      LOG(FATAL) << "Semaphore.Destroy: " << strerror(errno);
+      MSHADOW_LOG(FATAL) << "Semaphore.Destroy: " << strerror(errno);
     }
   }
   inline void Wait(void) {
     if (sem_wait(&sem) != 0) {
-      LOG(FATAL) << "Semaphore.Wait: " << strerror(errno);
+      MSHADOW_LOG(FATAL) << "Semaphore.Wait: " << strerror(errno);
     }
   }
   inline void Post(void) {
     if (sem_post(&sem) != 0) {
-      LOG(FATAL) << "Semaphore.Post: " << strerror(errno);
+      MSHADOW_LOG(FATAL) << "Semaphore.Post: " << strerror(errno);
     }
   }
   #endif

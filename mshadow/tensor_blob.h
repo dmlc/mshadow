@@ -195,7 +195,7 @@ struct TShape {
    */
   template<int dim>
   inline Shape<dim> get(void) const {
-    CHECK_EQ(dim, ndim_) << "dimension do not match target dimension " << dim << " vs " << ndim_;
+    MSHADOW_CHECK_EQ(dim, ndim_) << "dimension do not match target dimension " << dim << " vs " << ndim_;
     const index_t *d = this->data();
     Shape<dim> s;
     for (int i = 0; i < dim; ++i) {
@@ -473,7 +473,7 @@ class TBlob {
    */
   template<typename Device, typename DType>
   inline Tensor<Device, 2, DType> FlatTo2D(Stream<Device> *stream = NULL) const {
-    CHECK(Device::kDevMask == dev_mask_ && DataType<DType>::kFlag == type_flag_)
+    MSHADOW_CHECK(Device::kDevMask == dev_mask_ && DataType<DType>::kFlag == type_flag_)
       << "TBlob.get: device type do not match specified type";
     return Tensor<Device, 2, DType>(static_cast<DType*>(dptr_),
                                     shape_.FlatTo2D(), stride_, stream);
@@ -505,7 +505,7 @@ class TBlob {
    */
   template<typename Device, int dim, typename DType>
   inline Tensor<Device, dim, DType> get(Stream<Device> *stream = NULL) const {
-    CHECK(Device::kDevMask == dev_mask_ && DataType<DType>::kFlag == type_flag_)
+    MSHADOW_CHECK(Device::kDevMask == dev_mask_ && DataType<DType>::kFlag == type_flag_)
       << "TBlob.get: device type do not match specified type";
     return Tensor<Device, dim, DType>(static_cast<DType*>(dptr_),
                                        shape_.get<dim>(),
@@ -524,10 +524,10 @@ class TBlob {
   template<typename Device, int dim, typename DType>
   inline Tensor<Device, dim, DType> get_with_shape(const Shape<dim> &shape,
                                                    Stream<Device> *stream = NULL) const {
-    CHECK(Device::kDevMask == dev_mask_ && DataType<DType>::kFlag == type_flag_)
+    MSHADOW_CHECK(Device::kDevMask == dev_mask_ && DataType<DType>::kFlag == type_flag_)
       << "TBlob.get_with_shape: device type do not match specified type";
-    CHECK_EQ(this->CheckContiguous(), true) << "TBlob.get_reshape: must be contiguous";
-    CHECK_EQ(this->shape_.Size(), shape.Size())
+    MSHADOW_CHECK_EQ(this->CheckContiguous(), true) << "TBlob.get_reshape: must be contiguous";
+    MSHADOW_CHECK_EQ(this->shape_.Size(), shape.Size())
       << "TBlob.get_with_shape: new and old shape do not match total elements";
     return Tensor<Device, dim, DType>(static_cast<DType*>(dptr_),
                                       shape,
