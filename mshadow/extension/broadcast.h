@@ -48,7 +48,7 @@ broadcast(const expr::Exp<SrcExp, DType, etype> &src, Shape<dimdst> shape) {
   TypeCheckPass<dimcast < dimdst && ExpInfo<SrcExp>::kDim == 1>
                 ::Error_Expression_Does_Not_Meet_Dimension_Req();
   typedef ShapeCheck<1, SrcExp> ShapeCheckDim1SrcExp;
-  CHECK_EQ(ShapeCheckDim1SrcExp::Check(src.self())[0], shape[dimcast])
+  MSHADOW_CHECK_EQ(ShapeCheckDim1SrcExp::Check(src.self())[0], shape[dimcast])
     << "broadcast, shape mismatch";
   return Broadcast1DExp<SrcExp, DType, dimdst,
                         dimdst - dimcast>(src.self(), shape);

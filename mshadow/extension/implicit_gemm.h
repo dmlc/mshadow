@@ -105,11 +105,11 @@ template<int dim, typename LhsExp, typename RhsExp, typename DType>
 struct ShapeCheck<dim, ImplicitGEMMExp<LhsExp, RhsExp, DType> > {
   inline static Shape<dim>
   Check(const ImplicitGEMMExp<LhsExp, RhsExp, DType> &t) {
-    CHECK(dim == 2)
+    MSHADOW_CHECK(dim == 2)
         << "ImplicitGEMMExp only support 2 dimension";
     Shape<dim> shape1 = ShapeCheck<dim, LhsExp>::Check(t.lhs_);
     Shape<dim> shape2 = ShapeCheck<dim, RhsExp>::Check(t.rhs_);
-    CHECK_EQ(shape1[1], shape2[0])
+    MSHADOW_CHECK_EQ(shape1[1], shape2[0])
       << "implicit_dot The matrix shape do  not match";
     return t.shape_;
   }

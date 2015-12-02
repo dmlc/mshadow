@@ -77,7 +77,7 @@ struct Stream<gpu> {
     if (stream == NULL) {
       return 0;
     } else {
-      CHECK_NE(stream->blas_handle_ownership_, NoHandle)
+      MSHADOW_CHECK_NE(stream->blas_handle_ownership_, NoHandle)
         << "No handle exist in source stream";
       return stream->blas_handle_;
     }

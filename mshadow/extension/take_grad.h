@@ -88,7 +88,7 @@ template<int dim, typename IndexExp, typename SrcExp, typename DType>
 struct ShapeCheck<dim, TakeGradExp<IndexExp, SrcExp, DType> > {
   inline static Shape<dim>
   Check(const TakeGradExp<IndexExp, SrcExp, DType> &t) {
-    CHECK(dim == 2)
+    MSHADOW_CHECK(dim == 2)
       << "TakeGradExp only support 2D output";
     // Shape<1> dshape = ShapeCheck<1, IndexExp>::Check(t.index_);
     Shape<2> gshape = ShapeCheck<2, SrcExp>::Check(t.src_);

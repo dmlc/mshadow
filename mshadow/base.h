@@ -192,7 +192,7 @@ extern "C" {
     if (e == cudaErrorCudartUnloading) {                           \
       throw dmlc::Error(cudaGetErrorString(e));                    \
     }                                                              \
-    CHECK(e == cudaSuccess)                                        \
+    MSHADOW_CHECK(e == cudaSuccess)                                        \
         << "CUDA: " << cudaGetErrorString(e);                      \
   }
 

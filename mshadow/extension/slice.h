@@ -33,7 +33,7 @@ struct SliceExp : public TRValue<SliceExp<SrcExp,
       : src_(src), ch_begin_(begin) {
     shape_ = ShapeCheck<srcdim, SrcExp>::Check(src_);
     ch_old_ = shape_[dimslice];
-    CHECK(begin < shape_[dimslice] && end <= shape_[dimslice])
+    MSHADOW_CHECK(begin < shape_[dimslice] && end <= shape_[dimslice])
         << "The slice went out of range";
     shape_[dimslice] = end - begin;
   }

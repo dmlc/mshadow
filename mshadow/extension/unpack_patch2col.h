@@ -45,7 +45,7 @@ struct UnpackPatchToColXExp:
       : img_(img), psize_y_(psize_y), psize_x_(psize_x),
       pstride_y_(pstride_y), pstride_x_(pstride_x) {
     Shape<srcdim> imshape = ShapeCheck<srcdim, SrcExp>::Check(img_);
-    CHECK(imshape[srcdim - 1] >= psize_x && imshape[srcdim - 2] >= psize_y)
+    MSHADOW_CHECK(imshape[srcdim - 1] >= psize_x && imshape[srcdim - 2] >= psize_y)
       << "UnpackPatchToCol:image shape smaller than patch size";
     this->i_channel_ = imshape[srcdim - 3];
     this->i_height_  = imshape[srcdim - 2];
