@@ -50,7 +50,7 @@ struct Plan<UpSamplingNearestExp<SrcExp, DType, srcdim>, DType> {
     : src_(MakePlan(e.src_)),
       scale_(e.scale_),
       new_height_(e.shape_[srcdim - 2]),
-      src_height_(static_cast<index_t>(e.shape_[srcdim - 2] / 2)) {}
+      src_height_(static_cast<index_t>(e.shape_[srcdim - 2] / e.scale_)) {}
   MSHADOW_XINLINE DType Eval(index_t i, index_t j) const {
     const index_t x = j;
     const index_t y = i % new_height_;
