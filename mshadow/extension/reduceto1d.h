@@ -46,6 +46,21 @@ sumall_except_dim(const Exp<SrcExp, DType, etype> &exp) {
                        ExpInfo<SrcExp>::kDim - dimkeep>(exp.self(), 1);
 }
 /*!
+ * \brief reduce over all dimensions, except dimkeep
+ * \param exp input expression that must be a matrix Tensor<?,2>
+ * \return a expresion with type Tensor<Device,1>
+ * \tparam dimkeep the dimension that will be kept
+ * \tparam SrcExp expression
+ * \tparam etype type of expression
+ */
+template<int dimkeep, typename Reducer, typename SrcExp, typename DType, int etype>
+inline ReduceTo1DExp<SrcExp, DType, Reducer,
+                     ExpInfo<SrcExp>::kDim - dimkeep>
+reduce_except_dim(const Exp<SrcExp, DType, etype> &exp) {
+  return ReduceTo1DExp<SrcExp, DType, Reducer,
+                       ExpInfo<SrcExp>::kDim - dimkeep>(exp.self(), 1);
+}
+/*!
  * \brief a expression that sum over rows of a matrix
  * \param exp input expression that must be a matrix Tensor<?, 2>
  * \return a expresion with type Tensor<Device, 1>
