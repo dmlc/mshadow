@@ -417,6 +417,30 @@ struct maximum {
     initv = limits::MinValue<DType>();
   }
 };
+/*! \brief minimum reducer */
+struct minimum {
+  /*! \brief do reduction into dst */
+  template<typename DType>
+  MSHADOW_XINLINE static void Reduce(volatile DType& dst,  volatile DType src) { // NOLINT(*)
+    using namespace std;
+    dst = min(dst, src);
+  }
+  /*!
+   * \brief calculate gradient of redres with respect to redsrc,
+   * redres: reduced result, redsrc: one of reduction element
+   */
+  template<typename DType>
+  MSHADOW_XINLINE static DType PartialGrad(DType redres, DType redsrc) {
+    return redres == redsrc ? 1: 0;
+  }
+  /*!
+   *\brief set the initial value during reduction
+   */
+  template<typename DType>
+  MSHADOW_XINLINE static void SetInitValue(DType &initv) { // NOLINT(*)
+    initv = -limits::MinValue<DType>();
+  }
+};
 }  // namespace red
 }  // namespace mshadow
 #endif  // MSHADOW_BASE_H_
