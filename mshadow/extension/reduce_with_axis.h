@@ -32,7 +32,7 @@ struct ReduceWithAxisExp:
   /*! \brief size of last src dimension */
   index_t last_;
   /*! constructor */
-  ReduceWithAxisExp(const SrcExp &src)
+  explicit ReduceWithAxisExp(const SrcExp &src)
     : src_(src) {
     CHECK(srcdim > axis) << "reduce axis out of bound";
     Shape<srcdim> src_shape = ShapeCheck<srcdim, SrcExp>::Check(src_);
@@ -89,6 +89,6 @@ struct Plan<ReduceWithAxisExp<Reducer, axis, SrcExp, DType, srcdim>, DType> {
   Plan<SrcExp, DType> src_;
   const index_t leading_, trailing_, size_, last_;
 };
-}  //namespace expr
-}  //namespace mshadow
+}  // namespace expr
+}  // namespace mshadow
 #endif  // MSHADOW_EXTENSION_REDUCE_WITH_AXIS_H_

@@ -84,6 +84,6 @@ struct Plan<BroadcastWithAxisExp<axis, SrcExp, DType, srcdim>, DType> {
   Plan<SrcExp, DType> src_;
   const index_t leading_, trailing_, size_, last_;
 };
-}  //namespace expr
-}  //namespace mshadow
+}  // namespace expr
+}  // namespace mshadow
 #endif  // MSHADOW_EXTENSION_BROADCAST_WITH_AXIS_H_
