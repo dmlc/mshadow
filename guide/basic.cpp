@@ -81,7 +81,7 @@ int main(void) {
   TensorContainer<cpu, 1> idx(Shape1(3));
   idx[0] = 8;
   idx[1] = 0;
-  idx[1] = 1;
+  idx[2] = 1;
 
   TensorContainer<cpu, 2> weight(Shape2(10, 5));
   TensorContainer<cpu, 2> embed(Shape2(3, 5));
