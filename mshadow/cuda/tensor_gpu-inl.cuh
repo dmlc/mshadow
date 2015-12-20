@@ -256,6 +256,7 @@ __global__ void SoftmaxKernel(DstPlan dst, SrcPlan src, index_t xmax) {
     }
   }
 }
+
 template<typename DType>
 inline void Softmax(Tensor<gpu, 2, DType> &dst,
                     const Tensor<gpu, 2, DType> &src) {
@@ -312,6 +313,34 @@ __global__ void Softmax3DGradKernel(Tensor<gpu, 3, DType> dst,
 }
 
 template<int n_bits, typename DType>
+__global__ void Softmax3DGradKernel(Tensor<gpu, 3, DType> dst,
+                                    const Tensor<gpu, 3, DType> src,
+                                    const Tensor<gpu, 2, DType> label,
+                                    DType ignore_label) {
+  const index_t xmax = dst.size(1);
+  const index_t nmax = dst.size(2);
+  const unsigned n_size = 1 << n_bits;
+  const int y = blockIdx.x;
+  const int n = threadIdx.x;
+  for (index_t n_index = n; n_index < nmax; n_index += n_size) {
+    int k = static_cast<int>(label[y][n_index]);
+    if (k == static_cast<int>(ignore_label)) {
+      for (index_t i = 0; i < xmax; ++i) {
+        dst[y][i][n_index] = 0.0f;
+      }
+    } else {
+      for (index_t i = 0; i < xmax; ++i) {
+        if (i == k) {
+          dst[y][i][n_index] = src[y][i][n_index] - 1.0f;
+        } else {
+          dst[y][i][n_index] = src[y][i][n_index];
+        }
+      }
+    }
+  }
+}
+
+template<int n_bits, typename DType>
 __global__ void Softmax3DKernel(Tensor<gpu, 3, DType> dst,
                     const Tensor<gpu, 3, DType> src) {
   const index_t xmax = dst.size(1);
@@ -337,7 +366,6 @@ __global__ void Softmax3DKernel(Tensor<gpu, 3, DType> dst,
   }
 }
 
-
 template<typename DType>
 inline void Softmax(Tensor<gpu, 3, DType> &dst,
                     const Tensor<gpu, 3, DType> &src) {
@@ -348,7 +376,6 @@ inline void Softmax(Tensor<gpu, 3, DType> &dst,
   cudaStream_t stream = Stream<gpu>::GetStream(dst.stream_);
   Softmax3DKernel<kBaseThreadBits, DType><<<dimGrid, dimBlock, 0, stream>>>(dst, src);
 }
-
 
 template<typename DType>
 inline void SoftmaxGrad(Tensor<gpu, 3, DType> &dst,
@@ -362,6 +389,21 @@ inline void SoftmaxGrad(Tensor<gpu, 3, DType> &dst,
   CheckLaunchParam(dimGrid, dimBlock, "SoftmaxGrad");
   cudaStream_t stream = Stream<gpu>::GetStream(dst.stream_);
   Softmax3DGradKernel<kBaseThreadBits, DType><<<dimGrid, dimBlock, 0, stream>>>(dst, src, label);
+}
+
+template<typename DType>
+inline void SoftmaxGrad(Tensor<gpu, 3, DType> &dst,
+                        const Tensor<gpu, 3, DType> &src,
+                        const Tensor<gpu, 2, DType> &label,
+                        const DType &ignore_label) {
+  dim3 dimBlock(kBaseThreadNum);
+  dim3 dimGrid(dst.size(0));
+  CHECK_EQ(dst.shape_, src.shape_) << "SoftmaxGrad: shape mismatch";
+  CHECK_EQ(dst.size(0), label.size(0)) << "SoftmaxGrad: label shape mismatch";
+  CHECK_EQ(dst.size(2), label.size(1)) << "SoftmaxGrad: label shape mismatch";
+  CheckLaunchParam(dimGrid, dimBlock, "SoftmaxGrad");
+  cudaStream_t stream = Stream<gpu>::GetStream(dst.stream_);
+  Softmax3DGradKernel<kBaseThreadBits, DType><<<dimGrid, dimBlock, 0, stream>>>(dst, src, label, ignore_label);
 }
 
 }  // namespace cuda
