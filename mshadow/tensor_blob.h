@@ -373,17 +373,80 @@ inline std::istream &operator>>(std::istream &is, TShape &shape) {
   return is;
 }
 
-/*! \brief data type flag */
-template<typename DType>
-struct DataType;
-template<>
-struct DataType<float> {
-  static const int kFlag = 0;
-};
-template<>
-struct DataType<double> {
-  static const int kFlag = 1;
-};
+#define MSHADOW_TYPE_SWITCH(type, DType, ...)       \
+  switch (type) {                                   \
+  case mshadow::kFloat32:                           \
+    {                                               \
+      typedef float DType;                          \
+      {__VA_ARGS__}                                 \
+    }                                               \
+    break;                                          \
+  case mshadow::kFloat64:                           \
+    {                                               \
+      typedef double DType;                         \
+      {__VA_ARGS__}                                 \
+    }                                               \
+    break;                                          \
+  case mshadow::kFloat16:                           \
+    {                                               \
+      typedef mshadow::half::half_t DType;          \
+      {__VA_ARGS__}                                 \
+    }                                               \
+    break;                                          \
+  case mshadow::kUint8:                             \
+    {                                               \
+      typedef uint8_t DType;                        \
+      {__VA_ARGS__}                                 \
+    }                                               \
+    break;                                          \
+  case mshadow::kInt32:                             \
+    {                                               \
+      typedef int32_t DType;                        \
+      {__VA_ARGS__}                                 \
+    }                                               \
+    break;                                          \
+  default:                                          \
+    LOG(FATAL) << "Unknown type enum " << type;     \
+  }
+
+#define MSHADOW_REAL_TYPE_SWITCH(type, DType, ...)  \
+  switch (type) {                                   \
+  case mshadow::kFloat32:                           \
+    {                                               \
+      typedef float DType;                          \
+      {__VA_ARGS__}                                 \
+    }                                               \
+    break;                                          \
+  case mshadow::kFloat64:                           \
+    {                                               \
+      typedef double DType;                         \
+      {__VA_ARGS__}                                 \
+    }                                               \
+    break;                                          \
+  case mshadow::kFloat16:                           \
+    {                                               \
+      typedef mshadow::half::half_t DType;          \
+      {__VA_ARGS__}                                 \
+    }                                               \
+    break;                                          \
+  case mshadow::kUint8:                             \
+    LOG(FATAL) << "This operation only support "    \
+                  "floating point types not uint8"; \
+    break;                                          \
+  case mshadow::kInt32:                             \
+    LOG(FATAL) << "This operation only support "      \
+                  "floating point types, not int32";  \
+    break;                                            \
+  default:                                            \
+    LOG(FATAL) << "Unknown type enum " << type;       \
+  }
+
+/*! \brief get data type size from type enum */
+inline size_t mshadow_sizeof(int type) {
+  int size = 0;
+  MSHADOW_TYPE_SWITCH(type, DType, size = sizeof(DType););
+  return size;
+}
 
 /*!
  * \brief tensor blob class that can be used to hold tensor of any dimension,
@@ -430,6 +493,21 @@ class TBlob {
         dev_mask_(dev_mask),
         type_flag_(DataType<DType>::kFlag) {}
   /*!
+   * \brief constructor that construct TBlob from contiguous memory
+   * \param dptr the pointer to the memory
+   * \param shape the shape of the data
+   * \param dev_mask the device mask, can be cpu::kDevMask or gpu::kDevMask
+   * \param type_flag the type flag. Can be one of enum mshadow::dtype
+   */
+  TBlob(void *dptr,
+        const TShape &shape,
+        int dev_mask,
+        int type_flag)
+      : dptr_(dptr), shape_(shape),
+        stride_(shape[shape.ndim() - 1]),
+        dev_mask_(dev_mask),
+        type_flag_(type_flag) {}
+  /*!
    * \brief constructor from tensor
    * \param src source tensor
    * \tparam Device which device the tensor is on
@@ -473,8 +551,11 @@ class TBlob {
    */
   template<typename Device, typename DType>
   inline Tensor<Device, 2, DType> FlatTo2D(Stream<Device> *stream = NULL) const {
-    CHECK(Device::kDevMask == dev_mask_ && DataType<DType>::kFlag == type_flag_)
+    CHECK(Device::kDevMask == dev_mask_)
       << "TBlob.get: device type do not match specified type";
+    CHECK(DataType<DType>::kFlag == type_flag_)
+      << "TBlob.get_with_shape: data type do not match specified type."
+      << "Expected: " << type_flag_ << " v.s. given " << DataType<DType>::kFlag;
     return Tensor<Device, 2, DType>(static_cast<DType*>(dptr_),
                                     shape_.FlatTo2D(), stride_, stream);
   }
@@ -505,8 +586,11 @@ class TBlob {
    */
   template<typename Device, int dim, typename DType>
   inline Tensor<Device, dim, DType> get(Stream<Device> *stream = NULL) const {
-    CHECK(Device::kDevMask == dev_mask_ && DataType<DType>::kFlag == type_flag_)
+    CHECK(Device::kDevMask == dev_mask_)
       << "TBlob.get: device type do not match specified type";
+    CHECK(DataType<DType>::kFlag == type_flag_)
+      << "TBlob.get_with_shape: data type do not match specified type."
+      << "Expected: " << type_flag_ << " v.s. given " << DataType<DType>::kFlag;
     return Tensor<Device, dim, DType>(static_cast<DType*>(dptr_),
                                        shape_.get<dim>(),
                                        stride_, stream);
@@ -524,8 +608,11 @@ class TBlob {
   template<typename Device, int dim, typename DType>
   inline Tensor<Device, dim, DType> get_with_shape(const Shape<dim> &shape,
                                                    Stream<Device> *stream = NULL) const {
-    CHECK(Device::kDevMask == dev_mask_ && DataType<DType>::kFlag == type_flag_)
-      << "TBlob.get_with_shape: device type do not match specified type";
+    CHECK(Device::kDevMask == dev_mask_)
+      << "TBlob.get: device type do not match specified type";
+    CHECK(DataType<DType>::kFlag == type_flag_)
+      << "TBlob.get_with_shape: data type do not match specified type."
+      << "Expected: " << type_flag_ << " v.s. given " << DataType<DType>::kFlag;
     CHECK_EQ(this->CheckContiguous(), true) << "TBlob.get_reshape: must be contiguous";
     CHECK_EQ(this->shape_.Size(), shape.Size())
       << "TBlob.get_with_shape: new and old shape do not match total elements";

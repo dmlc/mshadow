@@ -593,9 +593,9 @@ inline Tensor<Device, dim, DType> NewTensor(const Shape<dim> &shape,
  * \tparam dim specify the dim of tensor
  * \tparam DType type of element in tensor
  */
-template<int dim, typename DType>
+template<int dim, typename DType, typename SrcDType>
 inline void Copy(Tensor<cpu, dim, DType> dst,
-                 const Tensor<cpu, dim, DType> &src,
+                 const Tensor<cpu, dim, SrcDType> &src,
                  Stream<cpu> *stream = NULL);
 /*!
  * \brief copy data from one tensor to another, with same shape
@@ -629,9 +629,9 @@ inline void Copy(Tensor<gpu, dim, DType> dst,
  * \tparam dim specify the dim of tensor
  * \tparam DType type of element in tensor
  */
-template<int dim, typename DType>
+template<int dim, typename DType, typename SrcDType>
 inline void Copy(Tensor<gpu, dim, DType> dst,
-                 const Tensor<gpu, dim, DType> &src,
+                 const Tensor<gpu, dim, SrcDType> &src,
                  Stream<gpu> *stream = NULL);
 /*!
  * \brief CPU/GPU: normalize softmax: dst[i][j] = exp(energy[i][j]) /(sum_j exp(energy[i][j]))

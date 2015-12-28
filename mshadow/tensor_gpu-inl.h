@@ -54,16 +54,17 @@ inline void FreeSpace(Tensor<gpu, dim, DType> *obj) {
   MSHADOW_CUDA_CALL(cudaFree(obj->dptr_));
   obj->dptr_ = NULL;
 }
-template<typename A, typename B, int dim, typename DType>
+template<typename A, typename B, int dim, typename DType, typename SrcDType>
 inline void Copy(Tensor<A, dim, DType> _dst,
-                 Tensor<B, dim, DType> _src,
+                 Tensor<B, dim, SrcDType> _src,
                  cudaMemcpyKind kind,
                  Stream<gpu> *stream) {
   CHECK_EQ(_dst.shape_, _src.shape_) << "Copy:shape mismatch";
+  CHECK_EQ(DataType<DType>::kFlag, DataType<SrcDType>::kFlag) << "Copy:type mismatch";
   Tensor<A, 2, DType> dst = _dst.FlatTo2D();
-  Tensor<B, 2, DType> src = _src.FlatTo2D();
+  Tensor<B, 2, SrcDType> src = _src.FlatTo2D();
   MSHADOW_CUDA_CALL(cudaMemcpy2DAsync(dst.dptr_, dst.stride_ * sizeof(DType),
-                                      src.dptr_, src.stride_ * sizeof(DType),
+                                      src.dptr_, src.stride_ * sizeof(SrcDType),
                                       dst.size(1) * sizeof(DType),
                                       dst.size(0), kind,
                                       Stream<gpu>::GetStream(stream)));
@@ -78,11 +79,15 @@ inline void Copy(Tensor<cpu, dim, DType> dst,
                  Stream<gpu> *stream) {
   Copy(dst, src, cudaMemcpyDeviceToHost, stream);
 }
-template<int dim, typename DType>
+template<int dim, typename DType, typename SrcDType>
 inline void Copy(Tensor<gpu, dim, DType> dst,
-                 const Tensor<gpu, dim, DType> &src,
+                 const Tensor<gpu, dim, SrcDType> &src,
                  Stream<gpu> *stream) {
-  Copy(dst, src, cudaMemcpyDeviceToDevice, stream);
+  if (DataType<DType>::kFlag != DataType<SrcDType>::kFlag) {
+    dst = expr::tcast<DType>(src);
+  } else {
+    Copy(dst, src, cudaMemcpyDeviceToDevice, stream);
+  }
 }
 template<int dim, typename DType>
 inline void Copy(Tensor<gpu, dim, DType> dst,

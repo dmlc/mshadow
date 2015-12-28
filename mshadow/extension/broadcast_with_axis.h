@@ -17,9 +17,9 @@ namespace expr {
  *  \tparam TopExp type of right expression
  *  \tparam DType data type
  */
-template<int axis, typename SrcExp, typename DType, int srcdim>
+template<typename SrcExp, typename DType, int srcdim>
 struct BroadcastWithAxisExp:
-    public MakeTensorExp<BroadcastWithAxisExp<axis, SrcExp, DType, srcdim>,
+    public MakeTensorExp<BroadcastWithAxisExp<SrcExp, DType, srcdim>,
                          SrcExp, srcdim+1, DType> {
   /*! \brief data oprand */
   const SrcExp &src_;
@@ -32,7 +32,7 @@ struct BroadcastWithAxisExp:
   /*! \brief size of middle dimension */
   index_t last_;
   /*! constructor */
-  BroadcastWithAxisExp(const SrcExp &src, const index_t size)
+  BroadcastWithAxisExp(const SrcExp &src, const int axis, const index_t size)
     : src_(src), size_(size) {
     CHECK(srcdim > axis) << "broadcast axis out of bound";
     Shape<srcdim> src_shape = ShapeCheck<srcdim, SrcExp>::Check(src_);
@@ -59,18 +59,18 @@ struct BroadcastWithAxisExp:
  * \tparam TopExp right expression
  * \tparam DType the content data type
  */
-template<int axis, typename SrcExp, typename DType, int etype>
-inline BroadcastWithAxisExp<axis, SrcExp, DType, ExpInfo<SrcExp>::kDim>
-broadcast_with_axis(const Exp<SrcExp, DType, etype> &src, const index_t size) {
-  return BroadcastWithAxisExp<axis, SrcExp, DType, ExpInfo<SrcExp>::kDim>(src.self(), size);
+template<typename SrcExp, typename DType, int etype>
+inline BroadcastWithAxisExp<SrcExp, DType, ExpInfo<SrcExp>::kDim>
+broadcast_with_axis(const Exp<SrcExp, DType, etype> &src, const int axis, const index_t size) {
+  return BroadcastWithAxisExp<SrcExp, DType, ExpInfo<SrcExp>::kDim>(src.self(), axis, size);
 }
 //----------------------
 // Execution plan
 //----------------------
-template<int axis, typename SrcExp, typename DType, int srcdim>
-struct Plan<BroadcastWithAxisExp<axis, SrcExp, DType, srcdim>, DType> {
+template<typename SrcExp, typename DType, int srcdim>
+struct Plan<BroadcastWithAxisExp<SrcExp, DType, srcdim>, DType> {
  public:
-  explicit Plan(const BroadcastWithAxisExp<axis, SrcExp, DType, srcdim> &e)
+  explicit Plan(const BroadcastWithAxisExp<SrcExp, DType, srcdim> &e)
       : src_(MakePlan(e.src_)), leading_(e.leading_),
         trailing_(e.trailing_), size_(e.size_), last_(e.last_) {}
   MSHADOW_XINLINE DType Eval(index_t i, index_t j) const {

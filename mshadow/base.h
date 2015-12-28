@@ -23,6 +23,21 @@
 #include <algorithm>
 #include <sstream>
 #include <string>
+
+#ifdef _MSC_VER
+//! \cond Doxygen_Suppress
+typedef signed char int8_t;
+typedef __int16 int16_t;
+typedef __int32 int32_t;
+typedef __int64 int64_t;
+typedef unsigned char uint8_t;
+typedef unsigned __int16 uint16_t;
+typedef unsigned __int32 uint32_t;
+typedef unsigned __int64 uint64_t;
+//! \endcond
+#else
+#include <inttypes.h>
+#endif
 // macro defintiions
 /*!
  * \brief if this macro is define to be 1,
@@ -127,6 +142,7 @@ extern "C" {
 #endif
 
 #if MSHADOW_USE_CUDA
+  #include <cuda.h>
   #include <cublas_v2.h>
   #include <curand.h>
 #endif
@@ -138,6 +154,7 @@ extern "C" {
 #if MSHADOW_USE_NVML
   #include <nvml.h>
 #endif
+
 // --------------------------------
 // MSHADOW_XINLINE is used for inlining template code for both CUDA and CPU code
 #ifdef MSHADOW_XINLINE
@@ -212,6 +229,8 @@ extern "C" {
     }                                                                   \
   }
 
+#include "./half.h"
+
 /*! \brief namespace for mshadow */
 namespace mshadow {
 /*! \brief buffer size for each random number generator */
@@ -222,6 +241,41 @@ const float kPi = 3.1415926f;
 typedef unsigned index_t;
 /*! \brief float point type that will be used in default by mshadow */
 typedef float default_real_t;
+
+/*! \brief data type flag */
+enum TypeFlag {
+  kFloat32,
+  kFloat64,
+  kFloat16,
+  kUint8,
+  kInt32
+};
+
+template<typename DType>
+struct DataType;
+template<>
+struct DataType<float> {
+  static const int kFlag = kFloat32;
+};
+template<>
+struct DataType<double> {
+  static const int kFlag = kFloat64;
+};
+template<>
+struct DataType<half::half_t> {
+  static const int kFlag = kFloat16;
+};
+template<>
+struct DataType<uint8_t> {
+  static const int kFlag = kUint8;
+};
+template<>
+struct DataType<int32_t> {
+  static const int kFlag = kInt32;
+};
+
+/*! \brief type enum value for default real type */
+const int default_type_flag = DataType<default_real_t>::kFlag;
 
 /*! \brief namespace for operators */
 namespace op {
@@ -362,6 +416,11 @@ MSHADOW_XINLINE float MinValue<float>(void) {
 template<>
 MSHADOW_XINLINE double MinValue<double>(void) {
   return -DBL_MAX;
+}
+/*! \brief minimum value of half */
+template<>
+MSHADOW_XINLINE half::half_t MinValue<half::half_t>(void) {
+  return MSHADOW_HALF_MIN;
 }
 /*! \brief minimum value of int */
 template<>
