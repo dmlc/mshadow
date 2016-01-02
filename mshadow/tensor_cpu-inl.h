@@ -11,7 +11,6 @@
 #include "./tensor.h"
 #include "./packet-inl.h"
 #include "./dot_engine-inl.h"
-#include "./extension.h"
 
 namespace mshadow {
 template<>
@@ -118,20 +117,17 @@ inline void FreeSpace(Tensor<cpu, dim, DType> *obj) {
   packet::AlignedFree(obj->dptr_);
   obj->dptr_ = NULL;
 }
-
-template<int dim, typename DType, typename SrcDType>
+template<int dim, typename DType>
 inline void Copy(Tensor<cpu, dim, DType> _dst,
-                 const Tensor<cpu, dim, SrcDType> &_src,
+                 const Tensor<cpu, dim, DType> &_src,
                  Stream<cpu> *stream) {
   CHECK_EQ(_dst.shape_, _src.shape_)
       << "Copy:shape mismatch:" << _dst.shape_ << " vs " << _src.shape_;
-  if (DataType<DType>::kFlag != DataType<SrcDType>::kFlag) {
-    _dst = expr::tcast<DType>(_src);
-  } else if (_dst.CheckContiguous() && _src.CheckContiguous()) {
+  if (_dst.CheckContiguous() && _src.CheckContiguous()) {
     memcpy(_dst.dptr_, _src.dptr_, sizeof(DType) * _dst.shape_.Size());
   } else {
     Tensor<cpu, 2, DType> dst = _dst.FlatTo2D();
-    Tensor<cpu, 2, SrcDType> src = _src.FlatTo2D();
+    Tensor<cpu, 2, DType> src = _src.FlatTo2D();
     for (index_t y = 0; y < dst.size(0); ++y) {
       memcpy(dst[y].dptr_, src[y].dptr_, sizeof(DType) * dst.size(1));
     }
@@ -183,7 +179,7 @@ template<typename Saver, typename R, int dim,
 inline void MapExp(TRValue<R, cpu, dim, DType> *dst,
                    const expr::Exp<E, DType, etype> &exp) {
   expr::TypeCheckPass<expr::TypeCheck<cpu, dim, DType, E>::kMapPass>
-     ::Error_All_Tensor_in_Exp_Must_Have_Same_Type();
+      ::Error_All_Tensor_in_Exp_Must_Have_Same_Type();
   Shape<dim> eshape = expr::ShapeCheck<dim, E>::Check(exp.self());
   Shape<dim> dshape = expr::ShapeCheck<dim, R>::Check(dst->self());
   CHECK(eshape[0] == 0 || eshape == dshape)
