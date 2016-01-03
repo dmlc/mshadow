@@ -98,7 +98,7 @@ class Plan<TypecastExp<DstDType, SrcDType, EType, etype>, DstDType> {
  public:
   explicit Plan(const Plan<EType, SrcDType> &src) : src_(src) {}
   MSHADOW_XINLINE DstDType Eval(index_t y, index_t x) const {
-    return static_cast<DstDType>(src_.Eval(y, x));
+    return DstDType(src_.Eval(y, x));  // NOLINT(*)
   }
 
  private:
