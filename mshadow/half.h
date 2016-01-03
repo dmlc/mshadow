@@ -61,11 +61,11 @@ class half_t {
 
   MSHADOW_XINLINE half_t() {}
 
-#if MSHADOW_USE_CUDA
+#if MSHADOW_CUDA_HALF
   MSHADOW_XINLINE explicit half_t(const __half& value) {
     cuhalf_ = value;
   }
-#endif  // MSHADOW_USE_CUDA
+#endif  // MSHADOW_CUDA_HALF
 
   MSHADOW_XINLINE explicit half_t(const float& value) { constructor(value); }
   MSHADOW_XINLINE explicit half_t(const double& value) { constructor(value); }
@@ -122,9 +122,9 @@ class half_t {
 
   union {
     uint16_t half_;
-#if MSHADOW_USE_CUDA
+#if MSHADOW_CUDA_HALF
     __half cuhalf_;
-#endif  // MSHADOW_USE_CUDA
+#endif  // MSHADOW_CUDA_HALF
   };
 
   MSHADOW_XINLINE uint16_t float2half(const float value) const {
