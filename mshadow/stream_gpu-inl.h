@@ -94,8 +94,10 @@ struct Stream<gpu> {
   inline void CreateBlasHandle() {
     this->DestoryBlasHandle();
     cublasStatus_t err = cublasCreate(&blas_handle_);
-    blas_handle_ownership_ = OwnHandle;
     MSHADOW_CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Create cublas handle failed";
+    err = cublasSetStream(blas_handle_, stream_);
+    MSHADOW_CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Set cublas handle failed";
+    this->blas_handle_ownership_ = OwnHandle;
   }
 // #if MSHADOW_USE_CUDNN && defined(__CUDACC__)
 #if MSHADOW_USE_CUDNN == 1
