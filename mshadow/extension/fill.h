@@ -39,9 +39,10 @@ inline MatFillRowElementExp<SrcExp, ValExp, IndexExp, SDType>
 mat_fill_row_element(const Exp<SrcExp, SDType, e1> &src,
                      const Exp<ValExp, VDType, e2> &val,
                      const Exp<IndexExp, IDType, e3> &index) {
-  TypeCheckPass<ExpInfo<SrcExp>::kDim == 2 && ExpInfo<ValExp>::kDim == 1 && ExpInfo<IndexExp>::kDim == 1>
-      ::Error_Expression_Does_Not_Meet_Dimension_Req();
-  return MatFillRowElementExp<SrcExp, ValExp, IndexExp, SDType>(src.self(), val.self(), index.self());
+  TypeCheckPass<ExpInfo<SrcExp>::kDim == 2 && ExpInfo<ValExp>::kDim == 1
+                && ExpInfo<IndexExp>::kDim == 1>::Error_Expression_Does_Not_Meet_Dimension_Req();
+  return MatFillRowElementExp<SrcExp, ValExp, IndexExp, SDType>(src.self(),
+                                                                val.self(), index.self());
 }
 
 //----------------------
@@ -57,10 +58,9 @@ struct Plan<MatFillRowElementExp<SrcExp, ValExp, IndexExp, DType>, DType> {
   }
   MSHADOW_XINLINE DType Eval(index_t y, index_t x) const {
     index_t idx = static_cast<index_t>(index_.Eval(0, y));
-    if(idx == x) {
+    if (idx == x) {
       return static_cast<DType>(val_.Eval(0, y));
-    }
-    else {
+    } else {
       return static_cast<DType>(src_.Eval(y, x));
     }
   }
@@ -87,7 +87,7 @@ struct ShapeCheck<dim, MatFillRowElementExp<SrcExp, ValExp, IndexExp, DType> > {
     Shape<1> shape_val = ShapeCheck<1, ValExp>::Check(t.val_);
     Shape<1> shape_index = ShapeCheck<1, IndexExp>::Check(t.index_);
     CHECK((shape_src[0] == shape_index[0]) && (shape_index[0] == shape_val[0]))
-        << "mat_fill_row_element index vector length, val vector length and number of rows in matrix";
+        << "mat_fill_row_element index length, val length and number of rows in matrix";
     return shape_src;
   }
 };
@@ -95,7 +95,8 @@ struct ShapeCheck<dim, MatFillRowElementExp<SrcExp, ValExp, IndexExp, DType> > {
 template<typename SrcExp, typename ValExp, typename IndexExp, typename DType>
 struct ExpInfo<MatFillRowElementExp<SrcExp, ValExp, IndexExp, DType> > {
   static const int kDim = 2;
-  static const int kDevMask = ExpInfo<SrcExp>::kDevMask & ExpInfo<ValExp>::kDevMask & ExpInfo<IndexExp>::kDevMask;
+  static const int kDevMask =
+          ExpInfo<SrcExp>::kDevMask & ExpInfo<ValExp>::kDevMask & ExpInfo<IndexExp>::kDevMask;
 };
 }  // namespace expr
 }  // namespace mshadow
