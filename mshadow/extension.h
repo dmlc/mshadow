@@ -24,6 +24,7 @@
 #include "./extension/concat.h"
 #include "./extension/implicit_gemm.h"
 #include "./extension/choose.h"
+#include "./extension/fill.h"
 #include "./extension/one_hot.h"
 #include "./extension/slice.h"
 #include "./extension/take.h"
