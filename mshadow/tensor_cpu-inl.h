@@ -35,12 +35,14 @@ inline void DeleteStream<cpu>(Stream<cpu> *stream) {
 
 template<int ndim>
 inline std::ostream &operator<<(std::ostream &os, const Shape<ndim> &shape) { // NOLINT(*)
-  os << "(";
+  os << '(';
   for (int i = 0; i < ndim; ++i) {
-    if (i != 0) os << ",";
+    if (i != 0) os << ',';
     os << shape[i];
   }
-  os << ")";
+  // python style tuple
+  if (ndim == 1) os << ',';
+  os << ')';
   return os;
 }
 
