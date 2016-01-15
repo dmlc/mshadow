@@ -317,7 +317,7 @@ struct TShape {
 inline std::ostream &operator<<(std::ostream &os, const TShape &shape) {
   os << '(';
   for (index_t i = 0; i < shape.ndim(); ++i) {
-    if (i != 0) os << ", ";
+    if (i != 0) os << ',';
     os << shape[i];
   }
   // python style tuple
