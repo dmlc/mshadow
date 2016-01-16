@@ -371,7 +371,7 @@ inline void Random<gpu, DType>::SampleGaussian(
     Tensor<gpu, dim, DType> *dst, DType mu, DType sigma) {
   // We need to check whether the shape size is even since CuRand supports only normal distribution
   // generation of even number of elements.
-  if (dst->CheckContiguous() && (dst->shape_.Size()%2 == 0)) {
+  if (dst->CheckContiguous() && (dst->shape_.Size() % 2 == 0)) {
     this->GenGaussian(dst->dptr_, dst->shape_.Size(), mu, sigma);
   } else {
     *dst = this->gaussian(dst->shape_, mu, sigma);
