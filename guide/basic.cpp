@@ -12,7 +12,7 @@ int main(void) {
   float data[20];
   // create a 2 x 5 x 2 tensor, from existing space
   Tensor<cpu, 3> ts(data, Shape3(2,5,2));
-    // take first subscript of the tensor
+  // take first subscript of the tensor
   Tensor<cpu, 2> mat = ts[0];
   // Tensor object is only a handle, assignment means they have same data content
   // we can specify content type of a Tensor, if not specified, it is float bydefault
@@ -66,6 +66,16 @@ int main(void) {
   choosed = mat_choose_row_element(lhs, index);
   for (index_t i = 0; i < choosed.size(0); ++i) {
     printf("%.2f ", choosed[i]);
+  }
+  printf("\n");
+
+  TensorContainer<cpu, 2> recover_lhs(Shape2(2, 3)), small_mat(Shape2(2, 3));
+  small_mat = -100.0f;
+  recover_lhs = mat_fill_row_element(small_mat, choosed, index);
+  for (index_t i = 0; i < recover_lhs.size(0); ++i) {
+    for (index_t j = 0; j < recover_lhs.size(1); ++j) {
+      printf("%.2f ", recover_lhs[i][j] - lhs[i][j]);
+    }
   }
   printf("\n");
 
