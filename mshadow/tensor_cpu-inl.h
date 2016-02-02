@@ -140,7 +140,8 @@ inline void MapPlan(TRValue<R, cpu, dim, DType> *dst,
                     const expr::Plan<E, DType> &plan) {
   Shape<2> shape = expr::ShapeCheck<dim, R>::Check(dst->self()).FlatTo2D();
   expr::Plan<R, DType> dplan = expr::MakePlan(dst->self());
-  for (index_t y = 0; y < shape[0]; ++y) {
+  #pragma omp parallel for
+  for (int y = 0; y < shape[0]; ++y) {
     for (index_t x = 0; x < shape[1]; ++x) {
       // trust your compiler! -_- they will optimize it
       Saver::Save(dplan.REval(y, x), plan.Eval(y, x));
