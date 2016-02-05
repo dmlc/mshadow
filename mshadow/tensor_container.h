@@ -171,12 +171,17 @@ class TensorContainer: public Tensor<Device, dimension, DType> {
    */
   inline void Release(void) {
     if (data_.dptr_ != NULL) {
-      mshadow::FreeSpace(&data_);
-      this->dptr_ = data_.dptr_ = NULL;
       this->shape_[0] = 0;
       this->stride_ = 0;
       this->data_.stride_ = 0;
       this->data_.shape_[0] = 0;
+      try {
+        mshadow::FreeSpace(&data_);
+      } catch (const dmlc::Error &e) {
+        this->dptr_ = data_.dptr_ = NULL;
+        throw e;
+      }
+      this->dptr_ = data_.dptr_ = NULL;
     }
   }
 
