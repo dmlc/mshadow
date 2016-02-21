@@ -317,12 +317,12 @@ class Random<gpu, DType> {
   inline void GenGaussian(float *dptr, size_t size, float mu, float sigma) {
     curandStatus_t status;
     status = curandGenerateNormal(gen_, dptr, size, mu, sigma);
-    MSHADOW_CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Uniform failed";
+    MSHADOW_CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Gaussian failed: " << status;
   }
   inline void GenGaussian(double *dptr, size_t size, double mu, double sigma) {
     curandStatus_t status;
     status = curandGenerateNormalDouble(gen_, dptr, size, mu, sigma);
-    MSHADOW_CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Uniform failed";
+    MSHADOW_CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Gaussian failed";
   }
   inline void GenUniform(float *dptr, size_t size) {
     curandStatus_t status;
