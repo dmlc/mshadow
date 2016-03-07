@@ -179,6 +179,14 @@ inline void SoftmaxGrad(Tensor<gpu, 3, DType> dst,
   cuda::SoftmaxGrad(dst, src, label);
 }
 
+template<typename DType>
+inline void SoftmaxGrad(Tensor<gpu, 3, DType> dst,
+                        const Tensor<gpu, 3, DType> &src,
+                        const Tensor<gpu, 2, DType> &label,
+                        const DType &ignore_label) {
+  cuda::SoftmaxGrad(dst, src, label, ignore_label);
+}
+
 }  // namespace mshadow
 #endif  // __CUDACC__
 #endif  // MSHADOW_TENSOR_GPU_INL_H_

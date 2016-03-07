@@ -35,12 +35,14 @@ inline void DeleteStream<cpu>(Stream<cpu> *stream) {
 
 template<int ndim>
 inline std::ostream &operator<<(std::ostream &os, const Shape<ndim> &shape) { // NOLINT(*)
-  os << "(";
+  os << '(';
   for (int i = 0; i < ndim; ++i) {
-    if (i != 0) os << ",";
+    if (i != 0) os << ',';
     os << shape[i];
   }
-  os << ")";
+  // python style tuple
+  if (ndim == 1) os << ',';
+  os << ')';
   return os;
 }
 
@@ -140,7 +142,8 @@ inline void MapPlan(TRValue<R, cpu, dim, DType> *dst,
                     const expr::Plan<E, DType> &plan) {
   Shape<2> shape = expr::ShapeCheck<dim, R>::Check(dst->self()).FlatTo2D();
   expr::Plan<R, DType> dplan = expr::MakePlan(dst->self());
-  for (index_t y = 0; y < shape[0]; ++y) {
+  #pragma omp parallel for
+  for (int y = 0; y < shape[0]; ++y) {
     for (index_t x = 0; x < shape[1]; ++x) {
       // trust your compiler! -_- they will optimize it
       Saver::Save(dplan.REval(y, x), plan.Eval(y, x));
@@ -295,6 +298,31 @@ inline void SoftmaxGrad(Tensor<cpu, 3, DType> dst,
           dst[y][k][n] = src[y][k][n] - 1.0f;
         } else {
           dst[y][x][n] = src[y][x][n];
+        }
+      }
+    }
+  }
+}
+
+template<typename DType>
+inline void SoftmaxGrad(Tensor<cpu, 3, DType> dst,
+                        const Tensor<cpu, 3, DType> &src,
+                        const Tensor<cpu, 2, DType> &label,
+                        const DType &ignore_label) {
+  for (index_t n = 0; n < dst.size(2); ++n) {
+    for (index_t y = 0; y < dst.size(0); ++y) {
+      const index_t k = static_cast<int>(label[y][n]);
+      if (k == static_cast<int>(ignore_label)) {
+        for (index_t x = 0; x < dst.size(1); ++x) {
+          dst[y][x][n] = 0.0f;
+        }
+      } else {
+        for (index_t x = 0; x < dst.size(1); ++x) {
+          if (x == k) {
+            dst[y][k][n] = src[y][k][n] - 1.0f;
+          } else {
+            dst[y][x][n] = src[y][x][n];
+          }
         }
       }
     }

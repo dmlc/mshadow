@@ -324,13 +324,21 @@ template<typename E, PacketArch Arch>
 struct PacketCheck{
   static const bool kPass = false;
 };
+template<PacketArch Arch>
+struct PacketCheck<float, Arch> {
+  static const bool kPass = true;
+};
+template<PacketArch Arch>
+struct PacketCheck<double, Arch> {
+  static const bool kPass = true;
+};
 template<typename DType, PacketArch Arch>
 struct PacketCheck<ScalarExp<DType>, Arch> {
-  static const bool kPass = true;
+  static const bool kPass = PacketCheck<DType, Arch>::kPass;
 };
 template<int dim, typename DType, PacketArch Arch>
 struct PacketCheck<Tensor<cpu, dim, DType>, Arch> {
-  static const bool kPass = true;
+  static const bool kPass = PacketCheck<DType, Arch>::kPass;
 };
 template<typename OP, typename TA, typename DType, int etype, PacketArch Arch>
 struct PacketCheck<UnaryMapExp<OP, TA, DType, etype>, Arch> {

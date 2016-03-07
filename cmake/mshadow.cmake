@@ -1,6 +1,6 @@
 set(mshadow_LINKER_LIBS "")
 
-set(BLAS "Atlas" CACHE STRING "Selected BLAS library")
+set(BLAS "Open" CACHE STRING "Selected BLAS library")
 set_property(CACHE BLAS PROPERTY STRINGS "Atlas;Open;MKL")
 
 if(BLAS STREQUAL "Atlas" OR BLAS STREQUAL "atlas")

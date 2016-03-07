@@ -317,22 +317,30 @@ class Random<gpu, DType> {
   inline void GenGaussian(float *dptr, size_t size, float mu, float sigma) {
     curandStatus_t status;
     status = curandGenerateNormal(gen_, dptr, size, mu, sigma);
-    MSHADOW_CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Gaussian failed: " << status;
+    MSHADOW_CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Normal float failed."
+                                            << " size = " << size
+                                            << ",mu = " << mu
+                                            << ",sigma = " << sigma;
   }
   inline void GenGaussian(double *dptr, size_t size, double mu, double sigma) {
     curandStatus_t status;
     status = curandGenerateNormalDouble(gen_, dptr, size, mu, sigma);
-    MSHADOW_CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Gaussian failed";
+    MSHADOW_CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Normal double failed."
+                                            << " size = " << size
+                                            << ",mu = " << mu
+                                            << ",sigma = " << sigma;
   }
   inline void GenUniform(float *dptr, size_t size) {
     curandStatus_t status;
     status = curandGenerateUniform(gen_, dptr, size);
-    MSHADOW_CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Uniform failed";
+    MSHADOW_CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Uniform float failed."
+                                            << " size = " << size;
   }
   inline void GenUniform(double *dptr, size_t size) {
     curandStatus_t status;
     status = curandGenerateUniformDouble(gen_, dptr, size);
-    MSHADOW_CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Uniform failed";
+    MSHADOW_CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Uniform double failed."
+                                            << " size = " << size;
   }
   /*! \brief random numbeer generator */
   curandGenerator_t gen_;
@@ -361,7 +369,9 @@ template<typename DType>
 template<int dim>
 inline void Random<gpu, DType>::SampleGaussian(
     Tensor<gpu, dim, DType> *dst, DType mu, DType sigma) {
-  if (dst->CheckContiguous()) {
+  // We need to check whether the shape size is even since CuRand supports only normal distribution
+  // generation of even number of elements.
+  if (dst->CheckContiguous() && (dst->shape_.Size() % 2 == 0)) {
     this->GenGaussian(dst->dptr_, dst->shape_.Size(), mu, sigma);
   } else {
     *dst = this->gaussian(dst->shape_, mu, sigma);

@@ -12,7 +12,7 @@ int main(void) {
   float data[20];
   // create a 2 x 5 x 2 tensor, from existing space
   Tensor<cpu, 3> ts(data, Shape3(2,5,2));
-    // take first subscript of the tensor
+  // take first subscript of the tensor
   Tensor<cpu, 2> mat = ts[0];
   // Tensor object is only a handle, assignment means they have same data content
   // we can specify content type of a Tensor, if not specified, it is float bydefault
@@ -69,6 +69,16 @@ int main(void) {
   }
   printf("\n");
 
+  TensorContainer<cpu, 2> recover_lhs(Shape2(2, 3)), small_mat(Shape2(2, 3));
+  small_mat = -100.0f;
+  recover_lhs = mat_fill_row_element(small_mat, choosed, index);
+  for (index_t i = 0; i < recover_lhs.size(0); ++i) {
+    for (index_t j = 0; j < recover_lhs.size(1); ++j) {
+      printf("%.2f ", recover_lhs[i][j] - lhs[i][j]);
+    }
+  }
+  printf("\n");
+
   rhs = one_hot_encode(index, 3);
 
   for (index_t i = 0; i < lhs.size(0); ++i) {
@@ -81,7 +91,7 @@ int main(void) {
   TensorContainer<cpu, 1> idx(Shape1(3));
   idx[0] = 8;
   idx[1] = 0;
-  idx[1] = 1;
+  idx[2] = 1;
 
   TensorContainer<cpu, 2> weight(Shape2(10, 5));
   TensorContainer<cpu, 2> embed(Shape2(3, 5));
@@ -107,7 +117,29 @@ int main(void) {
     printf("\n");
   }
 
+  printf("upsampling\n");
+  TensorContainer<cpu, 2> small(Shape2(2, 2));
+  small[0][0] = 1.0f;
+  small[0][1] = 2.0f;
+  small[1][0] = 3.0f;
+  small[1][1] = 4.0f;
+  TensorContainer<cpu, 2> large(Shape2(6, 6));
+  large = upsampling_nearest(small, 3);
+  for (index_t i = 0; i < large.size(0); ++i) {
+    for (index_t j = 0; j < large.size(1); ++j) {
+      printf("%.2f ", large[i][j]);
+    }
+    printf("\n");
+  }
+  small = pool<red::sum>(large, small.shape_, 3, 3, 3);
   // shutdown tensor enigne after usage
+  for (index_t i = 0; i < small.size(0); ++i) {
+    for (index_t j = 0; j < small.size(1); ++j) {
+      printf("%.2f ", small[i][j]);
+    }
+    printf("\n");
+  }
+
   ShutdownTensorEngine<cpu>();
   return 0;
 }
