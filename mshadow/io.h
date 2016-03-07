@@ -116,7 +116,8 @@ inline void LoadBinary(TStream &fi, // NOLINT(*)
   Tensor<cpu, 2, DType> dst = dst_->FlatTo2D();
   if (dst.size(0) == 0) return;
   for (index_t i = 0; i < dst.size(0); ++i) {
-    MSHADOW_CHECK_NE(fi.Read(dst[i].dptr_, sizeof(DType) * dst.size(1)), 0) << "mshadow::LoadBinary";
+    MSHADOW_CHECK_NE(fi.Read(dst[i].dptr_, sizeof(DType) * dst.size(1)), 0)
+      << "mshadow::LoadBinary";
   }
 }
 template<int dim, typename DType, typename TStream>
@@ -125,7 +126,8 @@ inline void LoadBinary(TStream &fi, // NOLINT(*)
   Tensor<cpu, dim, DType> tmp;
   LoadBinary(fi, &tmp, false);
   if (pre_alloc) {
-    MSHADOW_CHECK_EQ(tmp.shape, dst->shape_) << "LoadBinary, shape do not match pre-allocated shape";
+    MSHADOW_CHECK_EQ(tmp.shape, dst->shape_)
+      << "LoadBinary, shape do not match pre-allocated shape";
   } else {
     dst->shape = tmp.shape; AllocSpace(dst);
   }

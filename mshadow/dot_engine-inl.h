@@ -36,27 +36,27 @@ struct BLASEngine {
                           int m, int n, int k, DType alpha,
                           const DType *A, int lda, const DType *B, int ldb,
                           DType beta, DType *C, int ldc) {
-    LOG(FATAL) << "Not implmented!";
+    MSHADOW_LOG(FATAL) << "Not implmented!";
   }
   inline static void gemv(Stream<Device> *stream,
                           bool trans, int m, int n,
                           DType alpha, const DType *A, int lda,
                           const DType *X, int incX,
                           DType beta, DType *Y, int incY) {
-    LOG(FATAL) << "Not implmented!";
+    MSHADOW_LOG(FATAL) << "Not implmented!";
   }
   inline static void ger(Stream<Device> *stream,
                          int m, int n, DType alpha,
                          const DType *X, int incX,
                          const DType *Y, int incY, DType *A, int lda) {
-    LOG(FATAL) << "Not implmented!";
+    MSHADOW_LOG(FATAL) << "Not implmented!";
   }
   inline static void dot(Stream<Device> *stream,
                          int n,
                          const DType* X, int incX,
                          const DType* Y, int incY,
                          DType* ret) {
-    LOG(FATAL) << "Not implmented!";
+    MSHADOW_LOG(FATAL) << "Not implmented!";
   }
 };
 
@@ -86,10 +86,10 @@ struct BLASEngine<cpu, float> {
       } else if (transpose_left && !transpose_right) {
         dst = expr::implicit_dot(lhs.T(), rhs); return;
       } else {
-        LOG(FATAL) << "Not implmented!";
+        MSHADOW_LOG(FATAL) << "Not implmented!";
       }
     } else {
-      LOG(FATAL) << "Not implmented!";
+      MSHADOW_LOG(FATAL) << "Not implmented!";
     }
   }
   inline static void gemv(Stream<cpu> *stream,
@@ -97,20 +97,20 @@ struct BLASEngine<cpu, float> {
                           float alpha, const float *A, int lda,
                           const float *X, int incX,
                           float beta, float *Y, int incY) {
-    LOG(FATAL) << "Not implmented!";
+    MSHADOW_LOG(FATAL) << "Not implmented!";
   }
   inline static void ger(Stream<cpu> *stream,
                          int m, int n, float alpha,
                          const float *X, int incX,
                          const float *Y, int incY, float *A, int lda) {
-    LOG(FATAL) << "Not implmented!";
+    MSHADOW_LOG(FATAL) << "Not implmented!";
   }
   inline static void dot(Stream<cpu> *stream,
                          int n,
                          const float* X, int incX,
                          const float* Y, int incY,
                          float* ret) {
-    LOG(FATAL) << "Not implmented!";
+    MSHADOW_LOG(FATAL) << "Not implmented!";
   }
 };
 
@@ -139,10 +139,10 @@ struct BLASEngine<cpu, double> {
       } else if (transpose_left && !transpose_right) {
         dst = expr::implicit_dot(lhs.T(), rhs); return;
       } else {
-        LOG(FATAL) << "Not implmented!";
+        MSHADOW_LOG(FATAL) << "Not implmented!";
       }
     } else {
-      LOG(FATAL) << "Not implmented!";
+      MSHADOW_LOG(FATAL) << "Not implmented!";
     }
   }
   inline static void gemv(Stream<cpu> *stream,
@@ -150,20 +150,20 @@ struct BLASEngine<cpu, double> {
                           double alpha, const double *A, int lda,
                           const double *X, int incX,
                           double beta, double *Y, int incY) {
-    LOG(FATAL) << "Not implmented!";
+    MSHADOW_LOG(FATAL) << "Not implmented!";
   }
   inline static void ger(Stream<cpu> *stream,
                          int m, int n, double alpha,
                          const double *X, int incX,
                          const double *Y, int incY, double *A, int lda) {
-    LOG(FATAL) << "Not implmented!";
+    MSHADOW_LOG(FATAL) << "Not implmented!";
   }
   inline static void dot(Stream<cpu> *stream,
                          int n,
                          const double* X, int incX,
                          const double* Y, int incY,
                          double* ret) {
-    LOG(FATAL) << "Not implmented!";
+    MSHADOW_LOG(FATAL) << "Not implmented!";
   }
 };
 

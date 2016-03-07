@@ -398,9 +398,9 @@ inline void SoftmaxGrad(Tensor<gpu, 3, DType> &dst,
                         const DType &ignore_label) {
   dim3 dimBlock(kBaseThreadNum);
   dim3 dimGrid(dst.size(0));
-  CHECK_EQ(dst.shape_, src.shape_) << "SoftmaxGrad: shape mismatch";
-  CHECK_EQ(dst.size(0), label.size(0)) << "SoftmaxGrad: label shape mismatch";
-  CHECK_EQ(dst.size(2), label.size(1)) << "SoftmaxGrad: label shape mismatch";
+  MSHADOW_CHECK_EQ(dst.shape_, src.shape_) << "SoftmaxGrad: shape mismatch";
+  MSHADOW_CHECK_EQ(dst.size(0), label.size(0)) << "SoftmaxGrad: label shape mismatch";
+  MSHADOW_CHECK_EQ(dst.size(2), label.size(1)) << "SoftmaxGrad: label shape mismatch";
   CheckLaunchParam(dimGrid, dimBlock, "SoftmaxGrad");
   cudaStream_t stream = Stream<gpu>::GetStream(dst.stream_);
   Softmax3DGradKernel<kBaseThreadBits, DType><<<dimGrid, dimBlock, 0, stream>>>(dst, src, label, ignore_label);

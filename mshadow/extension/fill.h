@@ -81,12 +81,12 @@ template<int dim, typename SrcExp, typename ValExp, typename IndexExp, typename 
 struct ShapeCheck<dim, MatFillRowElementExp<SrcExp, ValExp, IndexExp, DType> > {
   inline static Shape<dim>
   Check(const MatFillRowElementExp<SrcExp, ValExp, IndexExp, DType> &t) {
-    CHECK(dim == 2)
+    MSHADOW_CHECK(dim == 2)
         << "MatFillRowElementExp only support 2 dimension output";
     Shape<2> shape_src = ShapeCheck<2, SrcExp>::Check(t.src_);
     Shape<1> shape_val = ShapeCheck<1, ValExp>::Check(t.val_);
     Shape<1> shape_index = ShapeCheck<1, IndexExp>::Check(t.index_);
-    CHECK((shape_src[0] == shape_index[0]) && (shape_index[0] == shape_val[0]))
+    MSHADOW_CHECK((shape_src[0] == shape_index[0]) && (shape_index[0] == shape_val[0]))
         << "mat_fill_row_element index length, val length and number of rows in matrix";
     return shape_src;
   }

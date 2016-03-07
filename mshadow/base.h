@@ -224,7 +224,7 @@ extern "C" {
     } catch (const dmlc::Error &e) {                                    \
       std::string what = e.what();                                      \
       if (what.find("driver shutting down") == std::string::npos) {     \
-        LOG(ERROR) << "Ignore CUDA Error " << what;                     \
+        MSHADOW_LOG(ERROR) << "Ignore CUDA Error " << what;                     \
       }                                                                 \
     }                                                                   \
   }

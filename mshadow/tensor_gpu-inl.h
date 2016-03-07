@@ -142,7 +142,8 @@ inline void MapReduceKeepHighDim(TRValue<R, gpu, 1, DType> *dst,
   EShape eshape = expr::ShapeCheck<expr::ExpInfo<E>::kDim, E>
       ::Check(exp.self());
     Shape<1> dshape = expr::ShapeCheck<1, R>::Check(dst->self());
-  MSHADOW_CHECK_EQ(eshape[dimkeep], dshape[0]) << "MapReduceKeepHighDim::reduction dimension do not match";
+  MSHADOW_CHECK_EQ(eshape[dimkeep], dshape[0])
+    << "MapReduceKeepHighDim::reduction dimension do not match";
   // use equvalent form
   Shape<4> pshape = Shape4(eshape.ProdShape(0, dimkeep),
                            eshape[dimkeep],

@@ -31,8 +31,10 @@ struct CroppingExp:
   explicit CroppingExp(const SrcExp &src, Shape<2> cshape)
       : src_(src) {
     this->shape_ = ShapeCheck<srcdim, SrcExp>::Check(src_);
-    MSHADOW_CHECK_GE(this->shape_[srcdim - 2], cshape[0]) << "CroppingExp: height requirement not met";
-    MSHADOW_CHECK_GE(this->shape_[srcdim - 1], cshape[1]) << "CroppingExp: width requirement not met";
+    MSHADOW_CHECK_GE(this->shape_[srcdim - 2], cshape[0])
+      << "CroppingExp: height requirement not met";
+    MSHADOW_CHECK_GE(this->shape_[srcdim - 1], cshape[1])
+      << "CroppingExp: width requirement not met";
     pad_height_ = (this->shape_[srcdim - 2] - cshape[0]) / 2;
     pad_width_ = (this->shape_[srcdim - 1] - cshape[1]) / 2;
     src_height_ = this->shape_[srcdim - 2];

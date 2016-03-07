@@ -81,7 +81,7 @@ class DistModel : public LocalModel<xpu, DType> {
 
     // push and pull
     Tensor<cpu, 2> sendrecv = data[0];
-    CHECK_EQ(data[0].CheckContiguous(), true) << "data must be contiguous";
+    MSHADOW_CHECK_EQ(data[0].CheckContiguous(), true) << "data must be contiguous";
 
     int ts = shared_model_.Push(
         ::ps::Parameter::Request(key), sendrecv.dptr_, sendrecv.MSize(), false);
