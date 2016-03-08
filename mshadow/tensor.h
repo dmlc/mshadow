@@ -15,6 +15,8 @@
 #include <iostream>
 #include "./base.h"
 #include "./expression.h"
+#include <iostream>
+#define DBGLOG(message) std::cout << "DEBUG::" << message << std::endl;
 
 namespace mshadow {
 /*! \brief device name CPU */

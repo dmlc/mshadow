@@ -64,6 +64,12 @@ struct UnpackPatchToColXExp:
         (pdilate_x == 1 ? psize_x : psize_x * pdilate_x - 1)) / pstride_x + 1;
     this->shape_[1] = o_height * o_width * num;
     this->shape_[0] = psize_y * psize_x * i_channel_;
+    DBGLOG("UnpackPatch2ColXExp Constructed psize=" << psize_x << ","<< psize_y <<
+    		" stride=" << pstride_x_ << "," << pstride_y_ <<
+    		" dilate=" << pdilate_x_ << "," << pdilate_y_ <<
+    		" inshape=" << i_width_ << "," << i_height_ << "," << i_channel_ <<
+    		" outshape=" << o_width << "," << o_height << "," << num);
+
   }
 };
 
@@ -134,9 +140,13 @@ struct Plan<UnpackPatchToColXExp<SrcExp, DType, srcdim>, DType> {
     const index_t jdivw = j / o_width_;
     const index_t y = (jdivw % o_height_) * pstride_y_ + y_offset;
     const index_t n = jdivw / o_height_;
+
     if (x < i_width_ && y < i_height_) {
+      DBGLOG("UnpackPatchToColXExp: " << i << "," << j << " <= " << ((j % o_width_) * pstride_x_) << "+" << x_offset <<
+    		  "," << ((jdivw % o_height_) * pstride_y_) << "+" << y_offset << " chan=" << n);
       return src_.Eval((n * i_channel_  + c) * i_height_ + y, x);
     } else {
+      DBGLOG("UnpackPatchToColXExp: " << i << "," << j << " <= 0.0 :: OUT OF RANGE");
       return 0.0f;
     }
   }
