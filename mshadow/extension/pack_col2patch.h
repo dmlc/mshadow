@@ -44,9 +44,9 @@ struct PackColToPatchXExp:
        pdilate_y_(pdilate_y), pdilate_x_(pdilate_x){
     this->shape_ = imshape;
     const index_t o_height = (imshape[dstdim - 2] -
-        (pdilate_y * ( psize_y - 1) + 1)) / pstride_y + 1;
+        (pdilate_y * (psize_y - 1)+ 1))/pstride_y + 1;
     const index_t o_width  = (imshape[dstdim - 1] -
-        (pdilate_x * ( psize_x - 1 ) + 1)) / pstride_x + 1;
+        (pdilate_x * (psize_x - 1) + 1)) / pstride_x + 1;
     Shape<2> sshape = ShapeCheck<2, SrcExp>::Check(src_);
     CHECK_EQ(sshape[1], o_height * o_width * imshape.ProdShape(0, dstdim - 3))
       << "PackColToPatchExp: src.size(1) mismatch";
@@ -123,8 +123,8 @@ struct Plan<PackColToPatchXExp<SrcExp, DType, dstdim>, DType> {
     const index_t n = idivh / i_channel_;
     const index_t x = j;
 
-    const index_t psize_y_dilate = (pdilate_y_ * ( psize_y_ - 1) + 1);
-    const index_t psize_x_dilate = (pdilate_x_ * ( psize_x_ - 1) + 1);
+    const index_t psize_y_dilate = (pdilate_y_ * (psize_y_ - 1) + 1);
+    const index_t psize_x_dilate = (pdilate_x_ * (psize_x_ - 1) + 1);
 
     const index_t py_min =
         y < psize_y_dilate ? y % pdilate_y_ : (y-psize_y_dilate + pstride_y_) / pstride_y_;

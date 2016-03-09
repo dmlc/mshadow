@@ -64,7 +64,6 @@ struct UnpackPatchToColXExp:
         (pdilate_x * (psize_x - 1) + 1)) / pstride_x + 1;
     this->shape_[1] = o_height * o_width * num;
     this->shape_[0] = psize_y * psize_x * i_channel_;
-
   }
 };
 
@@ -122,8 +121,8 @@ struct Plan<UnpackPatchToColXExp<SrcExp, DType, srcdim>, DType> {
        pstride_y_(e.pstride_y_), pstride_x_(e.pstride_x_),
        i_channel_(e.i_channel_), pdilate_y_(e.pdilate_y_), pdilate_x_(e.pdilate_x_),
        i_height_(e.i_height_), i_width_(e.i_width_),
-       o_height_((i_height_  - (pdilate_y_ * (psize_y_ - 1 ) + 1)) / pstride_y_ + 1),
-       o_width_((i_width_   - (pdilate_x_ * (psize_x_ - 1) + 1)) / pstride_x_ + 1) {}
+       o_height_((i_height_ - (pdilate_y_ * (psize_y_ - 1) + 1)) / pstride_y_ + 1),
+       o_width_((i_width_ - (pdilate_x_ * (psize_x_ - 1) + 1)) / pstride_x_ + 1) {}
   MSHADOW_XINLINE DType Eval(index_t i, index_t j) const {
     const index_t x_offset = i % psize_x_ * pdilate_x_;
     const index_t idivp    = i / psize_x_;
