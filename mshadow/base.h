@@ -207,7 +207,7 @@ extern "C" {
   {                                                                \
     cudaError_t e = (func);                                        \
     if (e == cudaErrorCudartUnloading) {                           \
-      throw dmlc::Error(cudaGetErrorString(e));                    \
+      throw mshadow::Error(cudaGetErrorString(e));                    \
     }                                                              \
     MSHADOW_CHECK(e == cudaSuccess)                                        \
         << "CUDA: " << cudaGetErrorString(e);                      \
@@ -221,7 +221,7 @@ extern "C" {
   {                                                                   \
     try {                                                             \
       (func);                                                         \
-    } catch (const dmlc::Error &e) {                                    \
+    } catch (const mshadow::Error &e) {                                    \
       std::string what = e.what();                                      \
       if (what.find("driver shutting down") == std::string::npos) {     \
         MSHADOW_LOG(ERROR) << "Ignore CUDA Error " << what;                     \
