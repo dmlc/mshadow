@@ -43,6 +43,17 @@ struct TShape {
     }
   }
   /*!
+   * \brief move constructor from Shape
+   * \param s the source shape
+   */
+  template<int dim>
+  TShape(const Shape<dim> &s)  // NOLINT(*)
+      : ndim_(0),
+        num_heap_allocated_(0),
+        data_heap_(NULL) {
+    this->CopyFrom(s.shape_, s.shape_ + dim);
+  }
+  /*!
    * \brief construct the TShape from content of iterator
    * \param begin the beginning of iterator
    * \param end end the end of the iterator
