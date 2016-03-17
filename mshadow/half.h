@@ -90,6 +90,11 @@ class half_t {
     return half_t(-float(*this));  // NOLINT(*)
   }
 
+  template<typename T>
+  MSHADOW_XINLINE half_t operator=(T a) {
+    return *this = half_t(a);  /* NOLINT(*)*/
+  }
+
  private:
   union Bits {
     float f;

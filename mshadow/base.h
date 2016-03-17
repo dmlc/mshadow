@@ -256,14 +256,26 @@ struct DataType;
 template<>
 struct DataType<float> {
   static const int kFlag = kFloat32;
+#if (MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1)
+  static const cudnnDataType_t kCudnnFlag = CUDNN_DATA_FLOAT;
+  typedef float ScaleType;
+#endif
 };
 template<>
 struct DataType<double> {
   static const int kFlag = kFloat64;
+#if (MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1)
+  static const cudnnDataType_t kCudnnFlag = CUDNN_DATA_DOUBLE;
+  typedef double ScaleType;
+#endif
 };
 template<>
 struct DataType<half::half_t> {
   static const int kFlag = kFloat16;
+#if (MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1)
+  static const cudnnDataType_t kCudnnFlag = CUDNN_DATA_HALF;
+  typedef float ScaleType;
+#endif
 };
 template<>
 struct DataType<uint8_t> {
