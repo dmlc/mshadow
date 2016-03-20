@@ -43,7 +43,7 @@ inline ReduceTo1DExp<SrcExp, DType, red::sum,
                      ExpInfo<SrcExp>::kDim - dimkeep>
 sumall_except_dim(const Exp<SrcExp, DType, etype> &exp) {
   return ReduceTo1DExp<SrcExp, DType, red::sum,
-                       ExpInfo<SrcExp>::kDim - dimkeep>(exp.self(), 1);
+                       ExpInfo<SrcExp>::kDim - dimkeep>(exp.self(), DType(1));
 }
 /*!
  * \brief reduce over all dimensions, except dimkeep
@@ -58,7 +58,7 @@ inline ReduceTo1DExp<SrcExp, DType, Reducer,
                      ExpInfo<SrcExp>::kDim - dimkeep>
 reduce_except_dim(const Exp<SrcExp, DType, etype> &exp) {
   return ReduceTo1DExp<SrcExp, DType, Reducer,
-                       ExpInfo<SrcExp>::kDim - dimkeep>(exp.self(), 1);
+                       ExpInfo<SrcExp>::kDim - dimkeep>(exp.self(), DType(1));
 }
 /*!
  * \brief a expression that sum over rows of a matrix

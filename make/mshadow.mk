@@ -95,3 +95,7 @@ MSHADOW_NVCCFLAGS += --std=c++11
 else
 	MSHADOW_CFLAGS+= -DMSHADOW_DIST_PS=0
 endif
+
+# Set MSDHADOW_USE_PASCAL to one to enable nvidia pascal gpu features.
+# Like cublasHgemm
+MSHADOW_CFLAGS += -DMSDHADOW_USE_PASCAL=0

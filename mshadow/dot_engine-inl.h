@@ -248,6 +248,59 @@ struct BLASEngine<cpu, double> {
 #if MSHADOW_USE_CUDA
 // All CuBLAS goes to here, use legacy API: not threadsafe
 template<>
+struct BLASEngine<gpu, half::half_t> {
+  inline static cublasOperation_t GetT(bool t) {
+    return t ? CUBLAS_OP_T : CUBLAS_OP_N;
+  }
+  inline static void SetStream(Stream<gpu> *stream) {
+    cublasStatus_t err = cublasSetStream(Stream<gpu>::GetBlasHandle(stream),
+                    Stream<gpu>::GetStream(stream));
+    CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas set stream fail";
+  }
+  inline static void gemm(Stream<gpu> *stream,
+                          bool transa, bool transb,
+                          int m, int n, int k, half::half_t alpha,
+                          const half::half_t *A, int lda,
+                          const half::half_t *B, int ldb, half::half_t beta,
+                          half::half_t *C, int ldc) {
+#if MSHADOW_USE_PASCAL == 1
+    cublasStatus_t err = cublasHgemm(Stream<gpu>::GetBlasHandle(stream),
+                GetT(transa), GetT(transb), m, n, k, &alpha,
+                A, lda, B, ldb, &beta, C, ldc);
+    CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas Hgemm fail";
+#else
+    float alpha_f = float(alpha);  // NOLINT(*)
+    float beta_f = float(beta);  // NOLINT(*)
+    cublasStatus_t err = cublasSgemmEx(Stream<gpu>::GetBlasHandle(stream),
+                GetT(transa), GetT(transb), m, n, k, &alpha_f,
+                A, CUBLAS_DATA_HALF, lda, B, CUBLAS_DATA_HALF,
+                ldb, &beta_f, C, CUBLAS_DATA_HALF, ldc);
+    CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas SgemmEx fail";
+#endif  // MSHADOW_USE_PASCAL == 1
+  }
+  inline static void gemv(Stream<gpu> *stream,
+                          bool trans, int m, int n, half::half_t alpha,
+                          const half::half_t *A, int lda,
+                          const half::half_t *X, int incX, half::half_t beta,
+                          half::half_t *Y, int incY) {
+    LOG(FATAL) << "Not implmented!";
+  }
+  inline static void ger(Stream<gpu> *stream,
+                         int m, int n, half::half_t alpha,
+                         const half::half_t *X, int incX,
+                         const half::half_t *Y, int incY, half::half_t *A, int lda) {
+    LOG(FATAL) << "Not implmented!";
+  }
+  inline static void dot(Stream<gpu> *stream,
+                         int n,
+                         const half::half_t* X, int incX,
+                         const half::half_t* Y, int incY,
+                         half::half_t *ret) {
+    LOG(FATAL) << "Not implmented!";
+  }
+};
+
+template<>
 struct BLASEngine<gpu, float> {
   inline static cublasOperation_t GetT(bool t) {
     return t ? CUBLAS_OP_T : CUBLAS_OP_N;

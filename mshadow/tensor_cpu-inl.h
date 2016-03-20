@@ -260,7 +260,7 @@ inline void Softmax(Tensor<cpu, 1, DType> dst,
   for (index_t x = 1; x < dst.size(0); ++x) {
     if (mmax < energy[x]) mmax = energy[x];
   }
-  DType sum = 0.0f;
+  DType sum = DType(0.0f);
   for (index_t x = 0; x < dst.size(0); ++x) {
     dst[x] = std::exp(energy[x] - mmax);
     sum += dst[x];
@@ -314,7 +314,7 @@ inline void SoftmaxGrad(Tensor<cpu, 3, DType> dst,
       const index_t k = static_cast<int>(label[y][n]);
       if (k == static_cast<int>(ignore_label)) {
         for (index_t x = 0; x < dst.size(1); ++x) {
-          dst[y][x][n] = 0.0f;
+          dst[y][x][n] = DType(0.0f);
         }
       } else {
         for (index_t x = 0; x < dst.size(1); ++x) {
@@ -348,7 +348,7 @@ inline void Softmax(Tensor<cpu, 3, DType> dst,
       for (index_t x = 1; x < dst.size(1); ++x) {
         if (mmax < energy[y][x][n]) mmax = energy[y][x][n];
       }
-      DType sum = 0.0f;
+      DType sum = DType(0.0f);
       for (index_t x = 0; x < dst.size(1); ++x) {
         dst[y][x][n] = std::exp(energy[y][x][n] - mmax);
         sum += dst[y][x][n];
