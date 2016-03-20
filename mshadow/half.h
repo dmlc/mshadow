@@ -35,11 +35,11 @@ namespace half {
 
 #define MSHADOW_HALF_ASSIGNOP(AOP, OP)                                    \
   template<typename T>                                                    \
-  MSHADOW_XINLINE half_t operator AOP (const T& a) {                             \
+  MSHADOW_XINLINE half_t operator AOP (const T& a) {                      \
     return *this = half_t(float(*this) OP float(a));  /* NOLINT(*)*/      \
   }                                                                       \
   template<typename T>                                                    \
-  MSHADOW_XINLINE volatile half_t operator AOP (const volatile T& a) volatile {                             \
+  MSHADOW_XINLINE half_t operator AOP (const volatile T& a) volatile {    \
     return *this = half_t(float(*this) OP float(a));  /* NOLINT(*)*/      \
   }
 
@@ -77,15 +77,12 @@ class half_t {
   }
 #endif  // MSHADOW_CUDA_HALF
 
-  MSHADOW_XINLINE explicit half_t(const float& value) { constructor(value); }
+  MSHADOW_XINLINE half_t(const float& value) { constructor(value); }
   MSHADOW_XINLINE explicit half_t(const double& value) { constructor(value); }
   MSHADOW_XINLINE explicit half_t(const uint8_t& value) { constructor(value); }
   MSHADOW_XINLINE explicit half_t(const int32_t& value) { constructor(value); }
 
   MSHADOW_HALF_CONVERSIONOP(float)
-  MSHADOW_HALF_CONVERSIONOP(double)
-  MSHADOW_HALF_CONVERSIONOP(uint8_t)
-  MSHADOW_HALF_CONVERSIONOP(int32_t)
 
   MSHADOW_HALF_ASSIGNOP(+=, +)
   MSHADOW_HALF_ASSIGNOP(-=, -)
@@ -100,14 +97,19 @@ class half_t {
     return half_t(-float(*this));  // NOLINT(*)
   }
 
+  MSHADOW_XINLINE half_t operator=(const half_t& a) {
+    half_ = a.half_;
+    return a;
+  }
+
   template<typename T>
   MSHADOW_XINLINE half_t operator=(const T& a) {
     return *this = half_t(a);  /* NOLINT(*)*/
   }
 
-  template<typename T>
-  MSHADOW_XINLINE half_t operator=(const volatile T& a) volatile {
-    return *this = half_t(a);  /* NOLINT(*)*/
+  MSHADOW_XINLINE half_t operator=(const half_t& a) volatile {
+    half_ = a.half_;
+    return a;
   }
 
   template<typename T>

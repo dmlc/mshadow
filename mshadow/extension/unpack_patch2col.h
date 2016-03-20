@@ -137,7 +137,7 @@ struct Plan<UnpackPatchToColXExp<SrcExp, DType, srcdim>, DType> {
     if (x < i_width_ && y < i_height_) {
       return src_.Eval((n * i_channel_  + c) * i_height_ + y, x);
     } else {
-      return 0.0f;
+      return DType(0.0f);
     }
   }
 

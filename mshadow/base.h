@@ -470,7 +470,11 @@ struct maximum {
   template<typename DType>
   MSHADOW_XINLINE static void Reduce(volatile DType& dst,  volatile DType src) { // NOLINT(*)
     using namespace std;
+#ifdef __CUDACC__
+    dst = ::max(dst, src);
+#else
     dst = max(dst, src);
+#endif  // __CUDACC__
   }
   /*!
    * \brief calculate gradient of redres with respect to redsrc,
@@ -494,7 +498,11 @@ struct minimum {
   template<typename DType>
   MSHADOW_XINLINE static void Reduce(volatile DType& dst,  volatile DType src) { // NOLINT(*)
     using namespace std;
+#ifdef __CUDACC__
+    dst = ::min(dst, src);
+#else
     dst = min(dst, src);
+#endif  // __CUDACC__
   }
   /*!
    * \brief calculate gradient of redres with respect to redsrc,
