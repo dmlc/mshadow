@@ -171,7 +171,7 @@ class half_t {
     return v.ui | sign;
   }
 
-  MSHADOW_XINLINE uint16_t float2half(const volatile float& value) const volatile {
+  MSHADOW_XINLINE uint16_t float2half(const volatile float& value) const volatile {  // NOLINT (*)
     Bits v, s;
     v.f = value;
     uint32_t sign = v.si & signN;
@@ -206,7 +206,7 @@ class half_t {
     return v.f;
   }
 
-  MSHADOW_XINLINE float half2float(const volatile uint16_t& value) const volatile {
+  MSHADOW_XINLINE float half2float(const volatile uint16_t& value) const volatile {  // NOLINT(*)
     Bits v;
     v.ui = value;
     int32_t sign = v.si & signC;

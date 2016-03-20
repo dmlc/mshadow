@@ -269,11 +269,12 @@ struct BLASEngine<gpu, half::half_t> {
                 A, lda, B, ldb, &beta, C, ldc);
     CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas Hgemm fail";
 #else
-    float alpha_f = float(alpha);
-    float beta_f = float(beta);
+    float alpha_f = float(alpha);  // NOLINT(*)
+    float beta_f = float(beta);  // NOLINT(*)
     cublasStatus_t err = cublasSgemmEx(Stream<gpu>::GetBlasHandle(stream),
                 GetT(transa), GetT(transb), m, n, k, &alpha_f,
-                A, CUBLAS_DATA_HALF, lda, B, CUBLAS_DATA_HALF, ldb, &beta_f, C, CUBLAS_DATA_HALF, ldc);
+                A, CUBLAS_DATA_HALF, lda, B, CUBLAS_DATA_HALF,
+                ldb, &beta_f, C, CUBLAS_DATA_HALF, ldc);
     CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas SgemmEx fail";
 #endif  // MSHADOW_USE_PASCAL == 1
   }
