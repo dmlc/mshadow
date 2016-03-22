@@ -263,6 +263,7 @@ struct BLASEngine<gpu, half::half_t> {
                           const half::half_t *A, int lda,
                           const half::half_t *B, int ldb, half::half_t beta,
                           half::half_t *C, int ldc) {
+#if defined(CUDA_VERSION) && CUDA_VERSION >= 7050
 #if MSHADOW_USE_PASCAL == 1
     cublasStatus_t err = cublasHgemm(Stream<gpu>::GetBlasHandle(stream),
                 GetT(transa), GetT(transb), m, n, k, &alpha,
@@ -277,6 +278,9 @@ struct BLASEngine<gpu, half::half_t> {
                 ldb, &beta_f, C, CUBLAS_DATA_HALF, ldc);
     CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas SgemmEx fail";
 #endif  // MSHADOW_USE_PASCAL == 1
+#else
+    LOG(FATAL) << "Require CUDA version >= 7.5!";
+#endif  // defined(CUDA_VERSION) && CUDA_VERSION >= 7050
   }
   inline static void gemv(Stream<gpu> *stream,
                           bool trans, int m, int n, half::half_t alpha,
