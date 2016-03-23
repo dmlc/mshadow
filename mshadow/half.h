@@ -12,6 +12,12 @@
 #if (MSHADOW_USE_CUDA && CUDA_VERSION >= 7050 && defined(__CUDA_ARCH__))
   #define MSHADOW_CUDA_HALF 1
   #include <cuda_fp16.h>
+  /*! \brief __half2float_warp */
+  __host__ __device__ float __half2float_warp(const volatile __half& h) { /* NOLINT(*) */
+    __half val;
+    val.x = h.x;
+    return __half2float(val);
+  }
 #else
   #define MSHADOW_CUDA_HALF 0
 #endif
@@ -49,7 +55,7 @@ namespace half {
     return T(__half2float(cuhalf_));  /* NOLINT(*)*/                      \
   }                                                                       \
   MSHADOW_XINLINE operator T() const volatile {                           \
-    return T(__half2float(cuhalf_));  /* NOLINT(*)*/                      \
+    return T(__half2float_warp(cuhalf_));  /* NOLINT(*)*/                      \
   }
 #else
 #define MSHADOW_HALF_CONVERSIONOP(T)                                      \
