@@ -360,6 +360,15 @@ inline void Softmax(Tensor<cpu, 3, DType> dst,
   }
 }
 
+template<typename IndexType, typename DType>
+inline void AddTakeGrad(Tensor<cpu, 2, DType> dst,
+                        const Tensor<cpu, 1, IndexType>& index,
+                        const Tensor<cpu, 2, DType> &src) {
+  for (index_t y = 0; y < index.size(0); ++y) {
+    dst[index[y]] += src[y];
+  }
+}
+
 // blas related
 template<typename Device, typename DType>
 inline void VectorDot(Tensor<Device, 1, DType> dst,
