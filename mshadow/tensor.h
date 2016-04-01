@@ -668,6 +668,27 @@ template<typename DType>
 inline void SoftmaxGrad(Tensor<gpu, 2, DType> dst,
                         const Tensor<gpu, 2, DType> &src,
                         const Tensor<gpu, 1, DType> &label);
+/*!
+ * \brief CPU/GPU: dst += take_grad(index, src);
+ * \param dst destination
+ * \param index index to take
+ * \param src source output
+ */
+template<typename IndexType, typename DType>
+inline void AddTakeGrad(Tensor<cpu, 2, DType> dst,
+                        const Tensor<cpu, 1, IndexType>& index,
+                        const Tensor<cpu, 2, DType> &src);
+/*!
+ * \brief CPU/GPU: dst += take_grad(index, src);
+ * \param dst destination
+ * \param index index to take
+ * \param src source output
+ */
+template<typename IndexType, typename DType>
+inline void AddTakeGrad(Tensor<gpu, 2, DType> dst,
+                        const Tensor<gpu, 1, IndexType>& index,
+                        const Tensor<gpu, 2, DType> &src);
+
 // function declarations to support expression, no need to understand them
 // these functions do not need to be directly used
 /*!

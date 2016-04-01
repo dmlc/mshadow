@@ -406,6 +406,44 @@ inline void SoftmaxGrad(Tensor<gpu, 3, DType> &dst,
   Softmax3DGradKernel<kBaseThreadBits, DType><<<dimGrid, dimBlock, 0, stream>>>(dst, src, label, ignore_label);
 }
 
+
+template<int x_bits, typename DType, typename DstPlan, typename SrcPlan1, typename SrcPlan2>
+__global__ void AddTakeGradKernel(DstPlan dst,
+                                  SrcPlan1 index, SrcPlan2 src,
+                                  index_t ymax, index_t xmax) {
+  const unsigned x_size = 1 << x_bits;
+  const int xindex = blockIdx.x * x_size + threadIdx.x;
+  __shared__ int ptr;
+  for (unsigned y = 0; y < ymax; ++y) {
+    if (threadIdx.x == 0)  ptr = index.Eval(0, y);
+    __syncthreads();
+    if (xindex < xmax) {
+      dst.REval(ptr, xindex) += src.Eval(y, xindex);
+    }
+  }
+}
+
+template<typename IndexType, typename DType>
+inline void AddTakeGrad(Tensor<gpu, 2, DType> dst,
+                        const Tensor<gpu, 1, IndexType>& index,
+                        const Tensor<gpu, 2, DType> &src) {
+  const int kUnitBits = kMemUnitBits + 1;
+  dim3 dimBlock(1 << kUnitBits);
+  dim3 dimGrid(dst.size(1) >> kUnitBits);
+
+  CHECK_EQ(dst.size(1), src.size(1)) << "AddtTakeGrad: shape mismatch";
+  CHECK_EQ(index.size(0), src.size(0)) << "AddtTakeGrad: shape mismatch";
+  CheckLaunchParam(dimGrid, dimBlock, "AddTakeGrad");
+  cudaStream_t stream = Stream<gpu>::GetStream(dst.stream_);
+
+  AddTakeGradKernel<kUnitBits, DType>
+      <<<dimGrid, dimBlock, 0, stream>>>
+      (expr::MakePlan(dst),
+       expr::MakePlan(index),
+       expr::MakePlan(src),
+       src.size(0),
+       src.size(1));
+}
 }  // namespace cuda
 }  // namespace mshadow
 #endif  // MSHADOW_CUDA_TENSOR_GPU_INL_CUH_
