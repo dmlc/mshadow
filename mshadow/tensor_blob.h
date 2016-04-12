@@ -206,6 +206,19 @@ struct TShape {
     return s;
   }
   /*!
+   * \return product shape in [dimstart,dimend)
+   * \param dimstart start dimension
+   * \param dimend end dimension
+   */
+  inline index_t ProdShape(int dimstart, int dimend) const {
+    index_t num = 1;
+    const index_t *d = this->data();
+    for (int i = dimstart; i < dimend; ++i) {
+      num *= d[i];
+    }
+    return num;
+  }
+  /*!
    * \brief get the shape of tensor specifying dim
    * \return the shape requested
    * \tparam dim dimension of the tensor
