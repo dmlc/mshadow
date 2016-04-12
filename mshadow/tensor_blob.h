@@ -31,7 +31,7 @@ struct TShape {
    * \brief construct an "all-one" TShape with given dimension
    * \param ndim the number of dimension of the shape
    */
-  TShape(index_t ndim)
+  explicit TShape(index_t ndim)
       : ndim_(ndim) {
     if (ndim_ <= kStackCache) {
       data_heap_ = NULL;
