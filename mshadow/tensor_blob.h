@@ -26,6 +26,23 @@ struct TShape {
       : ndim_(0),
         num_heap_allocated_(0),
         data_heap_(NULL) {}
+
+  /*!
+   * \brief construct an "all-one" TShape with given dimension
+   * \param ndim the number of dimension of the shape
+   */
+  TShape(index_t ndim)
+      : ndim_(ndim) {
+    if (ndim_ <= kStackCache) {
+      data_heap_ = NULL;
+      num_heap_allocated_ = 0;
+      std::fill_n(data_stack_, ndim_, 1);
+    } else {
+      data_heap_ = new index_t[ndim_];
+      num_heap_allocated_ = ndim_;
+      std::fill_n(data_heap_, ndim_, 1);
+    }
+  }
   /*!
    * \brief constructor from TShape
    * \param s the source shape
