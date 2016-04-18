@@ -69,6 +69,13 @@ namespace half {
 
 class half_t {
  public:
+  union {
+    uint16_t half_;
+#if MSHADOW_CUDA_HALF
+    __half cuhalf_;
+#endif  // MSHADOW_CUDA_HALF
+  };
+
   static MSHADOW_XINLINE half_t Binary(uint16_t value) {
     half_t res;
     res.half_ = value;
@@ -152,13 +159,6 @@ class half_t {
 
   static int32_t const maxD = infC - maxC - 1;
   static int32_t const minD = minC - subC - 1;
-
-  union {
-    uint16_t half_;
-#if MSHADOW_CUDA_HALF
-    __half cuhalf_;
-#endif  // MSHADOW_CUDA_HALF
-  };
 
   MSHADOW_XINLINE uint16_t float2half(const float& value) const {
     Bits v, s;
