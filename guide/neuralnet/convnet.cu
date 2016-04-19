@@ -149,7 +149,7 @@ class ConvNet : public INNet {
     tmp_col.Resize(Shape2(in.size(1)*ksize*ksize, nbatch*oheight*owidth));
     tmp_dst.Resize(Shape2(nchannel, nbatch*oheight*owidth));
     // unpack local patches , stride=1
-    tmp_col = unpack_patch2col(in, ksize, ksize, kstride);
+	tmp_col = unpack_patch2col(in, ksize, ksize, kstride, kstride, 1, 1);
     tmp_dst = dot(kernel, tmp_col);
     // reshape, then swap axis, we chain equations together
     out = swapaxis<1,0>(reshape(tmp_dst, Shape4(nchannel, nbatch, oheight, owidth)));
@@ -172,12 +172,12 @@ class ConvNet : public INNet {
                           nbatch * oheight * owidth));
     tmp_dst.Resize(Shape2(nchannel, nbatch * oheight * owidth));
     // unpack local patches
-    tmp_col = unpack_patch2col(in, ksize, ksize, kstride);
+    tmp_col = unpack_patch2col(in, ksize, ksize, kstride, kstride, 1, 1);
     tmp_dst = reshape(swapaxis<1,0>(out), tmp_dst.shape_);
     g_kernel = dot(tmp_dst, tmp_col.T());
         // backpropgation: not necessary for first layer, but included anyway
     tmp_col = dot(kernel.T(), tmp_dst);
-    in = pack_col2patch(tmp_col, in.shape_, ksize, ksize, kstride);
+    in = pack_col2patch(tmp_col, in.shape_, ksize, ksize, kstride, kstride, 1, 1);
   }
  private:
   // random seed generator
