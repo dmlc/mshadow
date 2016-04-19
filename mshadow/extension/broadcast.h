@@ -30,6 +30,28 @@ struct Broadcast1DExp:
     this->shape_ = shape;
   }
 };
+
+/*!
+ * \brief broadcast scalar into a higher dimension Tensor
+ * input: Tensor<Device,1>: ishape = {1}
+ * output: Tensor<Device, dimdst> : oshape[dimcast] = ishape[0]
+ * \tparam SrcExp type of input expression
+ * \tparam DType the type of elements
+ * \tparam dimdst  target tensor dimension
+ */
+template<typename SrcExp, typename DType, int dimdst>
+struct BroadcastScalarExp:
+      public MakeTensorExp<BroadcastScalarExp<SrcExp, DType, dimdst>,
+                           SrcExp, dimdst, DType> {
+  /*! \brief source operand */
+  const SrcExp &src_;
+  /*! \brief constructor */
+  BroadcastScalarExp(const SrcExp &src, Shape<dimdst> shape)
+      : src_(src) {
+    this->shape_ = shape;
+  }
+};
+
 /*!
  * \brief a expression that replicate a 1 dimension tensor in dimension dimcast
  * \param src Tensor<Device,1>: shape[0]
@@ -52,6 +74,27 @@ broadcast(const expr::Exp<SrcExp, DType, etype> &src, Shape<dimdst> shape) {
     << "broadcast, shape mismatch";
   return Broadcast1DExp<SrcExp, DType, dimdst,
                         dimdst - dimcast>(src.self(), shape);
+}
+
+/*!
+ * \brief a expression that replicate a scalar tensor to target dimension.
+ * \param src Tensor<Device,1>: shape[0] == 1
+ * \param shape shape of output
+ * \return a expresion with type Tensor<Device, dimdst>
+ * \tparam dimcast target dimension where the 1D tensor will be broadcasted
+ * \tparam SrcExp type of input expression
+ * \tparam DType the type of elements
+ * \tparam dimdst dimension of destination tensor
+ */
+template<typename SrcExp, typename DType, int etype, int dimdst>
+inline BroadcastScalarExp<SrcExp, DType, dimdst>
+broadcast_scalar(const expr::Exp<SrcExp, DType, etype> &src, Shape<dimdst> shape) {
+  TypeCheckPass<ExpInfo<SrcExp>::kDim == 1>
+                ::Error_Expression_Does_Not_Meet_Dimension_Req();
+  typedef ShapeCheck<1, SrcExp> ShapeCheckDim1SrcExp;
+  CHECK_EQ(ShapeCheckDim1SrcExp::Check(src.self())[0], 1)
+      << "broadcast_scalar, source need to be scalar expression";
+  return BroadcastScalarExp<SrcExp, DType, dimdst>(src.self(), shape);
 }
 // short cut functions
 /*!
@@ -98,6 +141,20 @@ struct Plan<Broadcast1DExp<SrcExp, DType, dimdst, 1>, DType>{
       : src_(MakePlan(e.src_)) {}
   MSHADOW_XINLINE DType Eval(index_t y, index_t x) const {
     return src_.Eval(0, x);
+  }
+
+ private:
+  expr::Plan<SrcExp, DType> src_;
+};
+
+/*! \brief execution plan of Broadcast1DExp */
+template<typename SrcExp, typename DType, int dimdst>
+struct Plan<BroadcastScalarExp<SrcExp, DType, dimdst>, DType>{
+ public:
+  explicit Plan(const BroadcastScalarExp<SrcExp, DType, dimdst> &e)
+      : src_(MakePlan(e.src_)) {}
+  MSHADOW_XINLINE DType Eval(index_t y, index_t x) const {
+    return src_.Eval(0, 0);
   }
 
  private:

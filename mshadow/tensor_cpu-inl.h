@@ -249,7 +249,7 @@ inline void MapReduceKeepHighDim(TRValue<R, cpu, 1, DType> *dst,
       }
       Reducer::Reduce(res, tres);
     }
-    Saver::Save(dplan.REval(0, c), res * scale);
+    Saver::Save(dplan.REval(0, c), DType(res * scale));
   }
 }
 

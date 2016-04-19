@@ -129,7 +129,7 @@ __global__ void MapRedKeepLowestKernel(DstPlan dst, Plan plan,
   __syncthreads();
 
   if (threadIdx.y == 0 && x < eshape[1]) {
-    Saver::Save(dst.REval(0, x),  s_res[threadIdx.x][0] * scale);
+    Saver::Save(dst.REval(0, x),  DType(s_res[threadIdx.x][0] * scale));
   }
 }
 
@@ -171,7 +171,7 @@ __global__ void MapReduceKeepDim1Kernel(DstPlan dst, Plan plan, DType scale, Sha
   __syncthreads();
   Reduce1D<Reducer, block_dim_bits>(s_rec);
   if (threadIdx.x == 0) {
-    Saver::Save(dst.REval(0, c), s_rec[0] * scale);
+    Saver::Save(dst.REval(0, c), DType(s_rec[0] * scale));
   }
 }
 
