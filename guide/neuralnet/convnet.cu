@@ -149,7 +149,7 @@ class ConvNet : public INNet {
     tmp_col.Resize(Shape2(in.size(1)*ksize*ksize, nbatch*oheight*owidth));
     tmp_dst.Resize(Shape2(nchannel, nbatch*oheight*owidth));
     // unpack local patches , stride=1
-    tmp_col = mshadow::expr::unpack_patch2col(in, ksize, ksize, kstride, kstride, 1, 1);
+	tmp_col = unpack_patch2col(in, ksize, ksize, kstride, kstride, 1, 1);
     tmp_dst = dot(kernel, tmp_col);
     // reshape, then swap axis, we chain equations together
     out = swapaxis<1,0>(reshape(tmp_dst, Shape4(nchannel, nbatch, oheight, owidth)));
