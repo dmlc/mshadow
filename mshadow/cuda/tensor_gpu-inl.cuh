@@ -8,6 +8,7 @@
 #define MSHADOW_CUDA_TENSOR_GPU_INL_CUH_
 #include "../tensor.h"
 #include "./reduce.cuh"
+#include "./tensor_gpu_roipooling-inl.cuh"
 
 namespace mshadow {
 namespace cuda {

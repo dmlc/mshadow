@@ -11,6 +11,7 @@
 #include "./tensor.h"
 #include "./packet-inl.h"
 #include "./dot_engine-inl.h"
+#include "./tensor_cpu_roipooling-inl.h"
 
 namespace mshadow {
 template<>
