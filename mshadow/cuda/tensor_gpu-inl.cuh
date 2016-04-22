@@ -208,6 +208,30 @@ __global__ void SoftmaxGradKernel(DstPlan dst, SrcPlan1 src, SrcPlan2 label, ind
   }
 }
 
+template<int x_bits, typename DType, typename DstPlan, typename SrcPlan1, typename SrcPlan2>
+__global__ void SoftmaxGradKernel(DstPlan dst, SrcPlan1 src, SrcPlan2 label, index_t xmax,
+                                  DType ignore_label) {
+  const unsigned x_size = 1 << x_bits;
+  const int y = blockIdx.x;
+  const int k = static_cast<int>(label.Eval(0, y));
+
+  // calculate normalizer, with writeback
+  for (unsigned x = 0; x < xmax; x += x_size) {
+    const unsigned xindex = x + threadIdx.x;
+    if (xindex < xmax) {
+      if (static_cast<int>(ignore_label) == k) {
+        dst.REval(y, xindex) = 0.0f;
+      } else {
+        if (xindex == k) {
+          dst.REval(y, xindex) = src.Eval(y, xindex) - 1.0f;
+        } else {
+          dst.REval(y, xindex) = src.Eval(y, xindex);
+        }
+      }
+    }
+  }
+}
+
 template<int x_bits, typename DType,  typename DstPlan, typename SrcPlan>
 __global__ void SoftmaxKernel(DstPlan dst, SrcPlan src, index_t xmax) {
   const unsigned x_size = 1 << x_bits;
@@ -288,6 +312,26 @@ inline void SoftmaxGrad(Tensor<gpu, 2, DType> &dst,
        expr::MakePlan(src),
        expr::MakePlan(label),
        dst.size(1));
+}
+
+template<typename DType>
+inline void SoftmaxGrad(Tensor<gpu, 2, DType> &dst,
+                        const Tensor<gpu, 2, DType> &src,
+                        const Tensor<gpu, 1, DType> &label,
+                        const DType &ignore_label) {
+  dim3 dimBlock(kBaseThreadNum);
+  dim3 dimGrid(dst.size(0));
+  CHECK_EQ(dst.shape_, src.shape_) << "SoftmaxGrad: shape mismatch";
+  CHECK_EQ(dst.size(0), label.size(0)) << "SoftmaxGrad: label shape mismatch";
+  CheckLaunchParam(dimGrid, dimBlock, "SoftmaxGrad");
+  cudaStream_t stream = Stream<gpu>::GetStream(dst.stream_);
+  SoftmaxGradKernel<kBaseThreadBits, DType>
+      <<<dimGrid, dimBlock, 0, stream>>>
+      (expr::MakePlan(dst),
+       expr::MakePlan(src),
+       expr::MakePlan(label),
+       dst.size(1),
+       ignore_label);
 }
 
 template<int n_bits, typename DType>
