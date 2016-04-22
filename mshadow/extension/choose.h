@@ -70,11 +70,11 @@ template<int dim, typename SrcExp, typename IndexExp, typename DType>
 struct ShapeCheck<dim, MatChooseRowElementExp<SrcExp, IndexExp, DType> > {
   inline static Shape<dim>
   Check(const MatChooseRowElementExp<SrcExp, IndexExp, DType> &t) {
-    CHECK(dim == 1)
+    MSHADOW_CHECK(dim == 1)
         << "MatChooseRowElementExp only support 1 dimension output";
     Shape<2> shape1 = ShapeCheck<2, SrcExp>::Check(t.src_);
     Shape<dim> shape2 = ShapeCheck<dim, IndexExp>::Check(t.index_);
-    CHECK_EQ(shape1[0], shape2[0])
+    MSHADOW_CHECK_EQ(shape1[0], shape2[0])
         << "mat_choose_row_element index length and number of rows in matrix";
     return shape2;
   }

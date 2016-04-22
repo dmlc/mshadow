@@ -177,7 +177,7 @@ class TensorContainer: public Tensor<Device, dimension, DType> {
       this->data_.shape_[0] = 0;
       try {
         mshadow::FreeSpace(&data_);
-      } catch (const dmlc::Error &e) {
+      } catch (const mshadow::Error &e) {
         this->dptr_ = data_.dptr_ = NULL;
         throw e;
       }

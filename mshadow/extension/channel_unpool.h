@@ -46,14 +46,14 @@ struct ChannelUnpoolingExp:
         nsize_(nsize), kstride_(kstride), pad_(pad) {
     Shape<srcdim> pshape = ShapeCheck<srcdim, SrcExp>::Check(grad_pooled);
     typedef ShapeCheck<srcdim, SrcExp> ShapeCheckSrcDimSrcExp;
-    CHECK_EQ(pshape, ShapeCheckSrcDimSrcExp::Check(data_pooled))
+    MSHADOW_CHECK_EQ(pshape, ShapeCheckSrcDimSrcExp::Check(data_pooled))
       << "ChannelUnPoolingExp: data and grad shape mismatch";
     Shape<srcdim> sshape = ShapeCheck<srcdim, SrcExp>::Check(data_src);
     for (int k = 0; k < srcdim; ++k) {
       if (k == 1) {
         continue;
       }
-      CHECK_EQ(pshape[k], sshape[k])
+      MSHADOW_CHECK_EQ(pshape[k], sshape[k])
         << "ChannelUnPoolingExp: pooled tensor and src tensor shape mismatch"
         << pshape[k]
         << " vs "

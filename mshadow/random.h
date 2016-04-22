@@ -233,14 +233,14 @@ class Random<gpu, DType> {
   explicit Random(int seed) {
     curandStatus_t status;
     status = curandCreateGenerator(&gen_, CURAND_RNG_PSEUDO_DEFAULT);
-    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "Can not create CURAND Generator";
+    MSHADOW_CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "Can not create CURAND Generator";
     this->Seed(seed);
     buffer_.Resize(Shape1(kRandBufferSize));
   }
   ~Random(void) DMLC_THROW_EXCEPTION {
     curandStatus_t status;
     status = curandDestroyGenerator(gen_);
-    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "Destory CURAND Gen failed";
+    MSHADOW_CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "Destory CURAND Gen failed";
   }
   /*!
    * \brief set the stream of computation
@@ -250,7 +250,7 @@ class Random<gpu, DType> {
     curandStatus_t status;
     status = curandSetStream(gen_, Stream<gpu>::GetStream(stream));
 
-    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "set_stream CURAND failed";
+    MSHADOW_CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "set_stream CURAND failed";
   }
   /*!
    * \brief seed random number generator using this seed
@@ -259,7 +259,7 @@ class Random<gpu, DType> {
   inline void Seed(int seed) {
     curandStatus_t status;
     status = curandSetPseudoRandomGeneratorSeed(gen_, seed);
-    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "Set CURAND seed failed.";
+    MSHADOW_CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "Set CURAND seed failed.";
   }
   /*!
    * \brief generate data from uniform [a,b)
@@ -317,7 +317,7 @@ class Random<gpu, DType> {
   inline void GenGaussian(float *dptr, size_t size, float mu, float sigma) {
     curandStatus_t status;
     status = curandGenerateNormal(gen_, dptr, size, mu, sigma);
-    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Normal float failed."
+    MSHADOW_CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Normal float failed."
                                             << " size = " << size
                                             << ",mu = " << mu
                                             << ",sigma = " << sigma;
@@ -325,7 +325,7 @@ class Random<gpu, DType> {
   inline void GenGaussian(double *dptr, size_t size, double mu, double sigma) {
     curandStatus_t status;
     status = curandGenerateNormalDouble(gen_, dptr, size, mu, sigma);
-    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Normal double failed."
+    MSHADOW_CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Normal double failed."
                                             << " size = " << size
                                             << ",mu = " << mu
                                             << ",sigma = " << sigma;
@@ -333,13 +333,13 @@ class Random<gpu, DType> {
   inline void GenUniform(float *dptr, size_t size) {
     curandStatus_t status;
     status = curandGenerateUniform(gen_, dptr, size);
-    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Uniform float failed."
+    MSHADOW_CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Uniform float failed."
                                             << " size = " << size;
   }
   inline void GenUniform(double *dptr, size_t size) {
     curandStatus_t status;
     status = curandGenerateUniformDouble(gen_, dptr, size);
-    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Uniform double failed."
+    MSHADOW_CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Uniform double failed."
                                             << " size = " << size;
   }
   /*! \brief random numbeer generator */

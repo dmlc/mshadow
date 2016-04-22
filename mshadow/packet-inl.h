@@ -69,10 +69,10 @@ inline void* AlignedMallocPitch(size_t *out_pitch,
 #else
   void *res;
   int ret = posix_memalign(&res, 1 << bits, pitch * num_line);
-  CHECK_EQ(ret, 0) << "AlignedMallocPitch failed";
+  MSHADOW_CHECK_EQ(ret, 0) << "AlignedMallocPitch failed";
 #endif
   if (res == NULL) {
-    LOG(FATAL) << "AlignedMallocPitch failed";
+    MSHADOW_LOG(FATAL) << "AlignedMallocPitch failed";
   }
   return res;
 }

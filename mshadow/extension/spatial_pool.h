@@ -38,7 +38,7 @@ struct PoolingExp:
              index_t ksize_y, index_t ksize_x, index_t kstride)
       : src_(src), ksize_y_(ksize_y), ksize_x_(ksize_x), kstride_(kstride) {
     Shape<srcdim> sshape = ShapeCheck<srcdim, SrcExp>::Check(src_);
-    CHECK(sshape[srcdim - 1] >= ksize_x && sshape[srcdim - 2] >= ksize_y)
+    MSHADOW_CHECK(sshape[srcdim - 1] >= ksize_x && sshape[srcdim - 2] >= ksize_y)
       << "PoolingExp: kernel must be smaller than image";
     this->src_height_ = sshape[srcdim - 2];
     this->src_width_  = sshape[srcdim - 1];
@@ -51,7 +51,7 @@ struct PoolingExp:
              index_t ksize_y, index_t ksize_x, index_t kstride)
       : src_(src), ksize_y_(ksize_y), ksize_x_(ksize_x), kstride_(kstride) {
     Shape<srcdim> sshape = ShapeCheck<srcdim, SrcExp>::Check(src_);
-    CHECK(sshape[srcdim - 1] >= ksize_x && sshape[srcdim - 2] >= ksize_y)
+    MSHADOW_CHECK(sshape[srcdim - 1] >= ksize_x && sshape[srcdim - 2] >= ksize_y)
       << "PoolingExp: kernel must be smaller than image";
     this->src_height_ = sshape[srcdim - 2];
     this->src_width_  = sshape[srcdim - 1];

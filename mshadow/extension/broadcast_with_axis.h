@@ -34,7 +34,7 @@ struct BroadcastWithAxisExp:
   /*! constructor */
   BroadcastWithAxisExp(const SrcExp &src, const int axis, const index_t size)
     : src_(src), size_(size) {
-    CHECK(srcdim > axis) << "broadcast axis out of bound";
+    MSHADOW_CHECK(srcdim > axis) << "broadcast axis out of bound";
     Shape<srcdim> src_shape = ShapeCheck<srcdim, SrcExp>::Check(src_);
     this->leading_ = 1;
     for (index_t i = 0; i <= axis; ++i) {

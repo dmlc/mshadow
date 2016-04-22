@@ -17,13 +17,13 @@ inline void InitTensorEngine<gpu>(int dev_id) {
   int device_id = 0;
   int device_count = 0;
   cudaGetDeviceCount(&device_count);
-  CHECK_GT(device_count, 0) << "Cannot find CUDA device. Please check CUDA-Configuration";
+  MSHADOW_CHECK_GT(device_count, 0) << "Cannot find CUDA device. Please check CUDA-Configuration";
   if (dev_id < 0) {
     device_id = 0;
   } else {
     device_id = dev_id;
   }
-  CHECK_LT(device_id, device_count) << "Incorrect Device ID";
+  MSHADOW_CHECK_LT(device_id, device_count) << "Incorrect Device ID";
   MSHADOW_CUDA_CALL(cudaSetDevice(device_id));
   MSHADOW_CUDA_CALL(cudaGetDeviceProperties(&prop, device_id));
 }
@@ -59,7 +59,7 @@ inline void Copy(Tensor<A, dim, DType> _dst,
                  Tensor<B, dim, DType> _src,
                  cudaMemcpyKind kind,
                  Stream<gpu> *stream) {
-  CHECK_EQ(_dst.shape_, _src.shape_) << "Copy:shape mismatch";
+  MSHADOW_CHECK_EQ(_dst.shape_, _src.shape_) << "Copy:shape mismatch";
   Tensor<A, 2, DType> dst = _dst.FlatTo2D();
   Tensor<B, 2, DType> src = _src.FlatTo2D();
   MSHADOW_CUDA_CALL(cudaMemcpy2DAsync(dst.dptr_, dst.stride_ * sizeof(DType),
@@ -106,7 +106,7 @@ inline void MapExp(TRValue<R, gpu, dim, DType> *dst,
       ::Error_All_Tensor_in_Exp_Must_Have_Same_Type();
   Shape<dim> eshape = expr::ShapeCheck<dim, E>::Check(exp.self());
   Shape<dim> dshape = expr::ShapeCheck<dim, R>::Check(dst->self());
-  CHECK(eshape[0] == 0 || eshape == dshape)
+  MSHADOW_CHECK(eshape[0] == 0 || eshape == dshape)
     << "Assignment: Shape of Tensors are not consistent with target";
   cuda::MapPlan<Saver>(MakePlan(dst->self()),
                        MakePlan(exp.self()),
@@ -124,8 +124,8 @@ inline void MapReduceKeepLowest(TRValue<R, gpu, 1, DType> *dst,
   Shape<2> eshape = expr::ShapeCheck<expr::ExpInfo<E>::kDim, E>
       ::Check(exp.self()).FlatTo2D();
   Shape<1> dshape = expr::ShapeCheck<1, R>::Check(dst->self());
-  CHECK_EQ(eshape[1], dshape[0]) << "MapReduceKeepLowest::reduction dimension do not match";
-  CHECK_NE(eshape[0], 0) << "can not reduce over empty tensor";
+  MSHADOW_CHECK_EQ(eshape[1], dshape[0]) << "MapReduceKeepLowest::reduction dimension do not match";
+  MSHADOW_CHECK_NE(eshape[0], 0) << "can not reduce over empty tensor";
   cuda::MapReduceKeepLowest<Saver, Reducer>
       (MakePlan(dst->self()), MakePlan(exp.self()), scale, eshape,
        Stream<gpu>::GetStream(expr::StreamInfo<gpu, R>::Get(dst->self())));
@@ -142,7 +142,8 @@ inline void MapReduceKeepHighDim(TRValue<R, gpu, 1, DType> *dst,
   EShape eshape = expr::ShapeCheck<expr::ExpInfo<E>::kDim, E>
       ::Check(exp.self());
     Shape<1> dshape = expr::ShapeCheck<1, R>::Check(dst->self());
-  CHECK_EQ(eshape[dimkeep], dshape[0]) << "MapReduceKeepHighDim::reduction dimension do not match";
+  MSHADOW_CHECK_EQ(eshape[dimkeep], dshape[0])
+    << "MapReduceKeepHighDim::reduction dimension do not match";
   // use equvalent form
   Shape<4> pshape = Shape4(eshape.ProdShape(0, dimkeep),
                            eshape[dimkeep],

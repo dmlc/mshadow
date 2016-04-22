@@ -60,6 +60,17 @@ struct TShape {
     }
   }
   /*!
+   * \brief move constructor from Shape
+   * \param s the source shape
+   */
+  template<int dim>
+  TShape(const Shape<dim> &s)  // NOLINT(*)
+      : ndim_(0),
+        num_heap_allocated_(0),
+        data_heap_(NULL) {
+    this->CopyFrom(s.shape_, s.shape_ + dim);
+  }
+  /*!
    * \brief construct the TShape from content of iterator
    * \param begin the beginning of iterator
    * \param end end the end of the iterator
@@ -225,7 +236,8 @@ struct TShape {
    */
   template<int dim>
   inline Shape<dim> get(void) const {
-    CHECK_EQ(dim, ndim_) << "dimension do not match target dimension " << dim << " vs " << ndim_;
+    MSHADOW_CHECK_EQ(dim, ndim_)
+      << "dimension do not match target dimension " << dim << " vs " << ndim_;
     const index_t *d = this->data();
     Shape<dim> s;
     for (int i = 0; i < dim; ++i) {
@@ -436,7 +448,7 @@ inline std::istream &operator>>(std::istream &is, TShape &shape) {
     }                                               \
     break;                                          \
   default:                                          \
-    LOG(FATAL) << "Unknown type enum " << type;     \
+    MSHADOW_LOG(FATAL) << "Unknown type enum " << type;     \
   }
 
 #define MSHADOW_REAL_TYPE_SWITCH(type, DType, ...)  \
@@ -460,15 +472,15 @@ inline std::istream &operator>>(std::istream &is, TShape &shape) {
     }                                               \
     break;                                          \
   case mshadow::kUint8:                             \
-    LOG(FATAL) << "This operation only support "    \
+    MSHADOW_LOG(FATAL) << "This operation only support "    \
                   "floating point types not uint8"; \
     break;                                          \
   case mshadow::kInt32:                             \
-    LOG(FATAL) << "This operation only support "      \
+    MSHADOW_LOG(FATAL) << "This operation only support "      \
                   "floating point types, not int32";  \
     break;                                            \
   default:                                            \
-    LOG(FATAL) << "Unknown type enum " << type;       \
+    MSHADOW_LOG(FATAL) << "Unknown type enum " << type;       \
   }
 
 /*! \brief get data type size from type enum */
@@ -581,9 +593,9 @@ class TBlob {
    */
   template<typename Device, typename DType>
   inline Tensor<Device, 2, DType> FlatTo2D(Stream<Device> *stream = NULL) const {
-    CHECK(Device::kDevMask == dev_mask_)
+    MSHADOW_CHECK(Device::kDevMask == dev_mask_)
       << "TBlob.get: device type do not match specified type";
-    CHECK(DataType<DType>::kFlag == type_flag_)
+    MSHADOW_CHECK(DataType<DType>::kFlag == type_flag_)
       << "TBlob.get_with_shape: data type do not match specified type."
       << "Expected: " << type_flag_ << " v.s. given " << DataType<DType>::kFlag;
     return Tensor<Device, 2, DType>(static_cast<DType*>(dptr_),
@@ -616,9 +628,9 @@ class TBlob {
    */
   template<typename Device, int dim, typename DType>
   inline Tensor<Device, dim, DType> get(Stream<Device> *stream = NULL) const {
-    CHECK(Device::kDevMask == dev_mask_)
+    MSHADOW_CHECK(Device::kDevMask == dev_mask_)
       << "TBlob.get: device type do not match specified type";
-    CHECK(DataType<DType>::kFlag == type_flag_)
+    MSHADOW_CHECK(DataType<DType>::kFlag == type_flag_)
       << "TBlob.get_with_shape: data type do not match specified type."
       << "Expected: " << type_flag_ << " v.s. given " << DataType<DType>::kFlag;
     return Tensor<Device, dim, DType>(static_cast<DType*>(dptr_),
@@ -638,13 +650,13 @@ class TBlob {
   template<typename Device, int dim, typename DType>
   inline Tensor<Device, dim, DType> get_with_shape(const Shape<dim> &shape,
                                                    Stream<Device> *stream = NULL) const {
-    CHECK(Device::kDevMask == dev_mask_)
+    MSHADOW_CHECK(Device::kDevMask == dev_mask_)
       << "TBlob.get: device type do not match specified type";
-    CHECK(DataType<DType>::kFlag == type_flag_)
+    MSHADOW_CHECK(DataType<DType>::kFlag == type_flag_)
       << "TBlob.get_with_shape: data type do not match specified type."
       << "Expected: " << type_flag_ << " v.s. given " << DataType<DType>::kFlag;
-    CHECK_EQ(this->CheckContiguous(), true) << "TBlob.get_reshape: must be contiguous";
-    CHECK_EQ(this->shape_.Size(), shape.Size())
+    MSHADOW_CHECK_EQ(this->CheckContiguous(), true) << "TBlob.get_reshape: must be contiguous";
+    MSHADOW_CHECK_EQ(this->shape_.Size(), shape.Size())
       << "TBlob.get_with_shape: new and old shape do not match total elements";
     return Tensor<Device, dim, DType>(static_cast<DType*>(dptr_),
                                       shape,

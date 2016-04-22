@@ -36,7 +36,7 @@ struct ChannelPoolingExp:
       : src_(src), nsize_(nsize), stride_(stride), pad_(pad) {
     this->shape_ = ShapeCheck<srcdim, SrcExp>::Check(src_);
     this->src_channel_ = this->shape_[srcdim - 3];
-    CHECK_GE(this->shape_[srcdim - 3], nsize_)
+    MSHADOW_CHECK_GE(this->shape_[srcdim - 3], nsize_)
       << "chpool: local size must be smaller than nchannels";
     this->shape_[srcdim - 3] = (this->src_channel_ - nsize + pad * 2 + 1) / stride;
   }
@@ -57,7 +57,7 @@ inline ChannelPoolingExp<Reducer, SrcExp, DType, ExpInfo<SrcExp>::kDim>
 chpool(const Exp<SrcExp, DType, etype> &src, index_t nsize) {
   TypeCheckPass<ExpInfo<SrcExp>::kDim >= 3>
       ::Error_Expression_Does_Not_Meet_Dimension_Req();
-  CHECK_EQ(nsize % 2, 1) << "chpool: if no pad is specified, local size must be odd";
+  MSHADOW_CHECK_EQ(nsize % 2, 1) << "chpool: if no pad is specified, local size must be odd";
   return ChannelPoolingExp<Reducer, SrcExp,
                            DType, ExpInfo<SrcExp>::kDim>(src.self(), nsize, 1, nsize / 2);
 }

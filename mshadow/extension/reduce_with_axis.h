@@ -34,7 +34,7 @@ struct ReduceWithAxisExp:
   /*! constructor */
   explicit ReduceWithAxisExp(const SrcExp &src, int axis)
     : src_(src) {
-    CHECK(srcdim > axis) << "reduce axis out of bound";
+    MSHADOW_CHECK(srcdim > axis) << "reduce axis out of bound";
     Shape<srcdim> src_shape = ShapeCheck<srcdim, SrcExp>::Check(src_);
     this->leading_ = 1;
     for (index_t i = 0; i < axis; ++i) {

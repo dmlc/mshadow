@@ -1,15 +1,12 @@
 /*!
  *  Copyright (c) 2015 by Contributors
  * \file logging.h
- * \brief defines logging macros of dmlc
+ * \brief defines logging macros of mshadow
  *  allows use of GLOG, fall back to internal
  *  implementation when disabled
  */
 #ifndef MSHADOW_LOGGING_H_
 #define MSHADOW_LOGGING_H_
-#ifndef DMLC_LOGGING_H_
-#define DMLC_LOGGING_H_
-
 #include <cstdio>
 #include <cstdlib>
 #include <string>
@@ -17,9 +14,7 @@
 #include <stdexcept>
 #include "./base.h"
 
-namespace dmlc {
-/*! \brief taken from DMLC directly */
-
+namespace mshadow {
 /*!
  * \brief exception class that will be thrown by
  *  default logger if DMLC_LOG_FATAL_THROW == 1
@@ -31,7 +26,7 @@ struct Error : public std::runtime_error {
    */
   explicit Error(const std::string &s) : std::runtime_error(s) {}
 };
-}  // namespace dmlc
+}  // namespace mshadow
 
 #if defined(_MSC_VER) && _MSC_VER < 1900
 #define noexcept(a)
@@ -46,14 +41,60 @@ struct Error : public std::runtime_error {
 #if DMLC_USE_GLOG
 #include <glog/logging.h>
 
-namespace dmlc {
+namespace mshadow {
 /*! \brief taken from DMLC directly */
 inline void InitLogging(const char* argv0) {
   google::InitGoogleLogging(argv0);
 }
-}  // namespace dmlc
+}  // namespace mshadow
 
+#define MSHADOW_CHECK(x) CHECK(x)
+#define MSHADOW_CHECK_LT(x, y) CHECK_LT(x, y)
+#define MSHADOW_CHECK_GT(x, y) CHECK_GT(x, y)
+#define MSHADOW_CHECK_LE(x, y) CHECK_LE(x, y)
+#define MSHADOW_CHECK_GE(x, y) CHECK_GE(x, y)
+#define MSHADOW_CHECK_EQ(x, y) CHECK_EQ(x, y)
+#define MSHADOW_CHECK_NE(x, y) CHECK_NE(x, y)
+#define MSHADOW_CHECK_NOTNULL(x) CHECK_NOTNULL(x)
+// Debug-only checking.
+#define MSHADOW_DCHECK(x) DCHECK(x)
+#define MSHADOW_DCHECK_LT(x, y) DCHECK_LT(x, y)
+#define MSHADOW_DCHECK_GT(x, y) DCHECK_GT(x, y)
+#define MSHADOW_DCHECK_LE(x, y) DCHECK_LE(x, y)
+#define MSHADOW_DCHECK_GE(x, y) DCHECK_GE(x, y)
+#define MSHADOW_DCHECK_EQ(x, y) DCHECK_EQ(x, y)
+#define MSHADOW_DCHECK_NE(x, y) DCHECK_NE(x, y)
+
+#define MSHADOW_LOG_INFO LOG_INFO
+#define MSHADOW_LOG_ERROR MSHADOW_LOG_INFO
+#define MSHADOW_LOG_WARNING MSHADOW_LOG_INFO
+#define MSHADOW_LOG_FATAL LOG_FATAL
+#define MSHADOW_LOG_QFATAL MSHADOW_LOG_FATAL
+
+// Poor man version of VLOG
+#define MSHADOW_VLOG(x) VLOG(x)
+
+#define MSHADOW_LOG(severity) MSHADOW_LOG_##severity.stream()
+#define MSHADOW_LG MSHADOW_LOG_INFO.stream()
+#define MSHADOW_LOG_IF(severity, condition) LOG_IF(severity, condition)
+
+#ifdef NDEBUG
+#define MSHADOW_LOG_DFATAL MSHADOW_LOG_ERROR
+#define MSHADOW_DFATAL ERROR
+#define MSHADOW_DLOG(severity) DLOG(severity)
+#define MSHADOW_DLOG_IF(severity, condition) DLOG_IF(severity, condition)
 #else
+#define MSHADOW_LOG_DFATAL MSHADOW_LOG_FATAL
+#define MSHADOW_DFATAL FATAL
+#define MSHADOW_DLOG(severity) MSHADOW_LOG(severity)
+#define MSHADOW_DLOG_IF(severity, condition) MSHADOW_LOG_IF(severity, condition)
+#endif  // NDEBUG
+
+// Poor man version of LOG_EVERY_N
+#define MSHADOW_LOG_EVERY_N(severity, n) MSHADOW_LOG(severity)
+
+#else  // DMLC_USE_GLOG
+
 // use a light version of glog
 #include <assert.h>
 #include <iostream>
@@ -64,79 +105,79 @@ inline void InitLogging(const char* argv0) {
 #pragma warning(disable : 4722)
 #endif
 
-namespace dmlc {
+namespace mshadow {
 inline void InitLogging(const char* argv0) {
   // DO NOTHING
 }
 
 // Always-on checking
-#define CHECK(x)                                           \
+#define MSHADOW_CHECK(x)                                           \
   if (!(x))                                                \
-    dmlc::LogMessageFatal(__FILE__, __LINE__).stream() << "Check "  \
+    mshadow::LogMessageFatal(__FILE__, __LINE__).stream() << "Check "  \
       "failed: " #x << ' '
-#define CHECK_LT(x, y) CHECK((x) < (y))
-#define CHECK_GT(x, y) CHECK((x) > (y))
-#define CHECK_LE(x, y) CHECK((x) <= (y))
-#define CHECK_GE(x, y) CHECK((x) >= (y))
-#define CHECK_EQ(x, y) CHECK((x) == (y))
-#define CHECK_NE(x, y) CHECK((x) != (y))
-#define CHECK_NOTNULL(x) \
-  ((x) == NULL ? dmlc::LogMessageFatal(__FILE__, __LINE__).stream() << "Check  notnull: "  #x << ' ', (x) : (x)) // NOLINT(*)
+#define MSHADOW_CHECK_LT(x, y) MSHADOW_CHECK((x) < (y))
+#define MSHADOW_CHECK_GT(x, y) MSHADOW_CHECK((x) > (y))
+#define MSHADOW_CHECK_LE(x, y) MSHADOW_CHECK((x) <= (y))
+#define MSHADOW_CHECK_GE(x, y) MSHADOW_CHECK((x) >= (y))
+#define MSHADOW_CHECK_EQ(x, y) MSHADOW_CHECK((x) == (y))
+#define MSHADOW_CHECK_NE(x, y) MSHADOW_CHECK((x) != (y))
+#define MSHADOW_CHECK_NOTNULL(x) \
+  ((x) == NULL ? mshadow::LogMessageFatal(__FILE__, __LINE__).stream() << "Check  notnull: "  #x << ' ', (x) : (x)) // NOLINT(*)
 // Debug-only checking.
 #ifdef NDEBUG
-#define DCHECK(x) \
-  while (false) CHECK(x)
-#define DCHECK_LT(x, y) \
-  while (false) CHECK((x) < (y))
-#define DCHECK_GT(x, y) \
-  while (false) CHECK((x) > (y))
-#define DCHECK_LE(x, y) \
-  while (false) CHECK((x) <= (y))
-#define DCHECK_GE(x, y) \
-  while (false) CHECK((x) >= (y))
-#define DCHECK_EQ(x, y) \
-  while (false) CHECK((x) == (y))
-#define DCHECK_NE(x, y) \
-  while (false) CHECK((x) != (y))
+#define MSHADOW_DCHECK(x) \
+  while (false) MSHADOW_CHECK(x)
+#define MSHADOW_DCHECK_LT(x, y) \
+  while (false) MSHADOW_CHECK((x) < (y))
+#define MSHADOW_DCHECK_GT(x, y) \
+  while (false) MSHADOW_CHECK((x) > (y))
+#define MSHADOW_DCHECK_LE(x, y) \
+  while (false) MSHADOW_CHECK((x) <= (y))
+#define MSHADOW_DCHECK_GE(x, y) \
+  while (false) MSHADOW_CHECK((x) >= (y))
+#define MSHADOW_DCHECK_EQ(x, y) \
+  while (false) MSHADOW_CHECK((x) == (y))
+#define MSHADOW_DCHECK_NE(x, y) \
+  while (false) MSHADOW_CHECK((x) != (y))
 #else
-#define DCHECK(x) CHECK(x)
-#define DCHECK_LT(x, y) CHECK((x) < (y))
-#define DCHECK_GT(x, y) CHECK((x) > (y))
-#define DCHECK_LE(x, y) CHECK((x) <= (y))
-#define DCHECK_GE(x, y) CHECK((x) >= (y))
-#define DCHECK_EQ(x, y) CHECK((x) == (y))
-#define DCHECK_NE(x, y) CHECK((x) != (y))
+#define MSHADOW_DCHECK(x) MSHADOW_CHECK(x)
+#define MSHADOW_DCHECK_LT(x, y) MSHADOW_CHECK((x) < (y))
+#define MSHADOW_DCHECK_GT(x, y) MSHADOW_CHECK((x) > (y))
+#define MSHADOW_DCHECK_LE(x, y) MSHADOW_CHECK((x) <= (y))
+#define MSHADOW_DCHECK_GE(x, y) MSHADOW_CHECK((x) >= (y))
+#define MSHADOW_DCHECK_EQ(x, y) MSHADOW_CHECK((x) == (y))
+#define MSHADOW_DCHECK_NE(x, y) MSHADOW_CHECK((x) != (y))
 #endif  // NDEBUG
 
-#define LOG_INFO dmlc::LogMessage(__FILE__, __LINE__)
-#define LOG_ERROR LOG_INFO
-#define LOG_WARNING LOG_INFO
-#define LOG_FATAL dmlc::LogMessageFatal(__FILE__, __LINE__)
-#define LOG_QFATAL LOG_FATAL
+#define MSHADOW_LOG_INFO mshadow::LogMessage(__FILE__, __LINE__)
+#define MSHADOW_LOG_ERROR MSHADOW_LOG_INFO
+#define MSHADOW_LOG_WARNING MSHADOW_LOG_INFO
+#define MSHADOW_LOG_FATAL mshadow::LogMessageFatal(__FILE__, __LINE__)
+#define MSHADOW_LOG_QFATAL MSHADOW_LOG_FATAL
 
 // Poor man version of VLOG
-#define VLOG(x) LOG_INFO.stream()
+#define MSHADOW_VLOG(x) MSHADOW_LOG_INFO.stream()
 
-#define LOG(severity) LOG_##severity.stream()
-#define LG LOG_INFO.stream()
-#define LOG_IF(severity, condition) \
-  !(condition) ? (void)0 : dmlc::LogMessageVoidify() & LOG(severity)
+#define MSHADOW_LOG(severity) MSHADOW_LOG_##severity.stream()
+#define MSHADOW_LG MSHADOW_LOG_INFO.stream()
+#define MSHADOW_LOG_IF(severity, condition) \
+  !(condition) ? (void)0 : mshadow::LogMessageVoidify() & MSHADOW_LOG(severity)
 
 #ifdef NDEBUG
-#define LOG_DFATAL LOG_ERROR
-#define DFATAL ERROR
-#define DLOG(severity) true ? (void)0 : dmlc::LogMessageVoidify() & LOG(severity)
-#define DLOG_IF(severity, condition) \
-  (true || !(condition)) ? (void)0 : dmlc::LogMessageVoidify() & LOG(severity)
+#define MSHADOW_LOG_DFATAL MSHADOW_LOG_ERROR
+#define MSHADOW_DFATAL ERROR
+#define MSHADOW_DLOG(severity) true ? (void)0 : mshadow::LogMessageVoidify() & MSHADOW_LOG(severity)
+#define MSHADOW_DLOG_IF(severity, condition) \
+  (true || !(condition)) ? (void)0 : mshadow::LogMessageVoidify() & MSHADOW_LOG(severity)
 #else
-#define LOG_DFATAL LOG_FATAL
-#define DFATAL FATAL
-#define DLOG(severity) LOG(severity)
-#define DLOG_IF(severity, condition) LOG_IF(severity, condition)
-#endif
+#define MSHADOW_LOG_DFATAL MSHADOW_LOG_FATAL
+#define MSHADOW_DFATAL FATAL
+#define MSHADOW_DLOG(severity) MSHADOW_LOG(severity)
+#define MSHADOW_DLOG_IF(severity, condition) MSHADOW_LOG_IF(severity, condition)
+#endif  // NDEBUG
 
 // Poor man version of LOG_EVERY_N
-#define LOG_EVERY_N(severity, n) LOG(severity)
+#define MSHADOW_LOG_EVERY_N(severity, n) MSHADOW_LOG(severity)
 
 class DateLogger {
  public:
@@ -219,7 +260,7 @@ class LogMessageFatal {
   LogMessageFatal(const LogMessageFatal&);
   void operator=(const LogMessageFatal&);
 };
-#endif
+#endif  // DMLC_LOG_FATAL_THROW
 
 // This class is used to explicitly ignore values in the conditional
 // logging macros.  This avoids compiler warnings like "value computed
@@ -232,9 +273,6 @@ class LogMessageVoidify {
   void operator&(std::ostream&) {}
 };
 
-}  // namespace dmlc
-
-#endif
-#endif  // DMLC_LOGGING_H_
+}  // namespace mshadow
+#endif  // DMLC_USE_GLOG
 #endif  // MSHADOW_LOGGING_H_
-

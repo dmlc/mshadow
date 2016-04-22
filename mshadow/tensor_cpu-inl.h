@@ -77,14 +77,14 @@ inline void FreeHost_<cpu>(void *dptr) {
 template<typename xpu, int dim, typename DType>
 inline void AllocHost(Tensor<cpu, dim, DType> *obj) {
   obj->stride_ = obj->size(dim - 1);
-  CHECK_EQ(obj->CheckContiguous(), true) << "AllocHost";
+  MSHADOW_CHECK_EQ(obj->CheckContiguous(), true) << "AllocHost";
   void *dptr = AllocHost_<xpu>(obj->MSize() * sizeof(DType));
   obj->dptr_ = reinterpret_cast<DType*>(dptr);
 }
 template<typename xpu, int dim, typename DType>
 inline void FreeHost(Tensor<cpu, dim, DType> *obj) {
   if (obj->dptr_ == NULL) {
-    LOG(FATAL) << "FreeHost:: double free";
+    MSHADOW_LOG(FATAL) << "FreeHost:: double free";
   }
   FreeHost_<xpu>(obj->dptr_);
   obj->dptr_ = NULL;
@@ -123,7 +123,7 @@ template<int dim, typename DType>
 inline void Copy(Tensor<cpu, dim, DType> _dst,
                  const Tensor<cpu, dim, DType> &_src,
                  Stream<cpu> *stream) {
-  CHECK_EQ(_dst.shape_, _src.shape_)
+  MSHADOW_CHECK_EQ(_dst.shape_, _src.shape_)
       << "Copy:shape mismatch:" << _dst.shape_ << " vs " << _src.shape_;
   if (_dst.CheckContiguous() && _src.CheckContiguous()) {
     memcpy(_dst.dptr_, _src.dptr_, sizeof(DType) * _dst.shape_.Size());
@@ -185,7 +185,7 @@ inline void MapExp(TRValue<R, cpu, dim, DType> *dst,
       ::Error_All_Tensor_in_Exp_Must_Have_Same_Type();
   Shape<dim> eshape = expr::ShapeCheck<dim, E>::Check(exp.self());
   Shape<dim> dshape = expr::ShapeCheck<dim, R>::Check(dst->self());
-  CHECK(eshape[0] == 0 || eshape == dshape)
+  MSHADOW_CHECK(eshape[0] == 0 || eshape == dshape)
       << "Assignment: Shape of Tensors are not consistent with target";
   MapExpCPUEngine<expr::PacketCheck<E, MSHADOW_DEFAULT_PACKET>::kPass,
                   Saver, R, dim, DType, E, etype>
@@ -202,8 +202,8 @@ inline void MapReduceKeepLowest(TRValue<R, cpu, 1, DType> *dst,
   Shape<2> eshape = expr::ShapeCheck<expr::ExpInfo<E>::kDim, E>
       ::Check(exp.self()).FlatTo2D();
   Shape<1> dshape = expr::ShapeCheck<1, R>::Check(dst->self());
-  CHECK_EQ(eshape[1], dshape[0]) << "MapReduceKeepLowest::reduction dimension do not match";
-  CHECK_NE(eshape[0], 0) << "can not reduce over empty tensor";
+  MSHADOW_CHECK_EQ(eshape[1], dshape[0]) << "MapReduceKeepLowest::reduction dimension do not match";
+  MSHADOW_CHECK_NE(eshape[0], 0) << "can not reduce over empty tensor";
   // execution
   expr::Plan<R, DType> dplan = MakePlan(dst->self());
   expr::Plan<E, DType> splan = MakePlan(exp.self());
@@ -227,7 +227,7 @@ inline void MapReduceKeepHighDim(TRValue<R, cpu, 1, DType> *dst,
   EShape eshape = expr::ShapeCheck<expr::ExpInfo<E>::kDim, E>
       ::Check(exp.self());
   Shape<1> dshape = expr::ShapeCheck<1, R>::Check(dst->self());
-  CHECK_EQ(eshape[dimkeep], dshape[0])
+  MSHADOW_CHECK_EQ(eshape[dimkeep], dshape[0])
     << "MapReduceKeepHighDim::reduction dimension do not match";
   // use equvalent form
   Shape<4> pshape = Shape4(eshape.ProdShape(0, dimkeep),
@@ -353,7 +353,7 @@ inline void SoftmaxGrad(Tensor<cpu, 3, DType> dst,
 template<typename DType>
 inline void Softmax(Tensor<cpu, 2, DType> dst,
                     const Tensor<cpu, 2, DType> &energy) {
-  CHECK_EQ(dst.shape_, energy.shape_) << "Softmax: shape mismatch";
+  MSHADOW_CHECK_EQ(dst.shape_, energy.shape_) << "Softmax: shape mismatch";
   for (index_t y = 0; y < dst.size(0); ++y) {
     Softmax(dst[y], energy[y]);
   }
@@ -362,7 +362,7 @@ inline void Softmax(Tensor<cpu, 2, DType> dst,
 template<typename DType>
 inline void Softmax(Tensor<cpu, 3, DType> dst,
                     const Tensor<cpu, 3, DType> &energy) {
-  CHECK_EQ(dst.shape_, energy.shape_) << "Softmax: shape mismatch";
+  MSHADOW_CHECK_EQ(dst.shape_, energy.shape_) << "Softmax: shape mismatch";
   for (index_t y = 0; y < dst.size(0); ++y) {
     for (index_t n = 0; n < dst.size(2); ++n) {
       DType mmax = energy[y][0][n];
@@ -395,9 +395,9 @@ template<typename Device, typename DType>
 inline void VectorDot(Tensor<Device, 1, DType> dst,
                       const Tensor<Device, 1, DType> &lhs,
                       const Tensor<Device, 1, DType> &rhs) {
-  CHECK_EQ(lhs.size(0), rhs.size(0))
+  MSHADOW_CHECK_EQ(lhs.size(0), rhs.size(0))
       << "VectorDot: Shape mismatch";
-  CHECK_EQ(dst.size(0), 1)
+  MSHADOW_CHECK_EQ(dst.size(0), 1)
       << "VectorDot: expect dst to be scalar";
   expr::BLASEngine<Device>::SetStream(lhs.stream_);
   mshadow::expr::BLASEngine<Device>::dot(

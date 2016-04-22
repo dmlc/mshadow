@@ -67,7 +67,7 @@ template<int dim, typename IndexExp, typename DType>
 struct ShapeCheck<dim, OneHotEncodeExp<IndexExp, DType> > {
   inline static Shape<dim>
   Check(const OneHotEncodeExp<IndexExp, DType> &t) {
-    CHECK(dim == 2)
+    MSHADOW_CHECK(dim == 2)
         << "OneHotEncodeExp only support 2 dimension output";
     Shape<1> shape = ShapeCheck<1, IndexExp>::Check(t.index_);
     Shape<dim> ret;
