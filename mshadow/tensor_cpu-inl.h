@@ -287,6 +287,27 @@ inline void SoftmaxGrad(Tensor<cpu, 2, DType> dst,
 }
 
 template<typename DType>
+inline void SoftmaxGrad(Tensor<cpu, 2, DType> dst,
+                        const Tensor<cpu, 2, DType> &src,
+                        const Tensor<cpu, 1, DType> &label,
+                        const DType &ignore_label) {
+  for (index_t y = 0; y < dst.size(0); ++y) {
+    const index_t k = static_cast<int>(label[y]);
+    for (index_t x = 0; x < dst.size(1); ++x) {
+      if (static_cast<int>(ignore_label) == k) {
+        dst[y][x] = 0.0f;
+      } else {
+        if (x == k) {
+          dst[y][k] = src[y][k] - 1.0f;
+        } else {
+          dst[y][x] = src[y][x];
+        }
+      }
+    }
+  }
+}
+
+template<typename DType>
 inline void SoftmaxGrad(Tensor<cpu, 3, DType> dst,
                         const Tensor<cpu, 3, DType> &src,
                         const Tensor<cpu, 2, DType> &label) {

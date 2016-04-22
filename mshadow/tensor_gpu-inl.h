@@ -173,6 +173,14 @@ inline void SoftmaxGrad(Tensor<gpu, 2, DType> dst,
 }
 
 template<typename DType>
+inline void SoftmaxGrad(Tensor<gpu, 2, DType> dst,
+                        const Tensor<gpu, 2, DType> &src,
+                        const Tensor<gpu, 1, DType> &label,
+                        const DType &ignore_label) {
+  cuda::SoftmaxGrad(dst, src, label, ignore_label);
+}
+
+template<typename DType>
 inline void SoftmaxGrad(Tensor<gpu, 3, DType> dst,
                         const Tensor<gpu, 3, DType> &src,
                         const Tensor<gpu, 2, DType> &label) {
