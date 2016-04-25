@@ -473,7 +473,7 @@ inline void AddTakeGrad(Tensor<gpu, 2, DType> dst,
                         const Tensor<gpu, 2, DType> &src) {
   const int kUnitBits = kMemUnitBits + 1;
   dim3 dimBlock(1 << kUnitBits);
-  dim3 dimGrid(dst.size(1) >> kUnitBits);
+  dim3 dimGrid((dst.size(1) + (1 << kUnitBits) - 1) >> kUnitBits);
 
   CHECK_EQ(dst.size(1), src.size(1)) << "AddtTakeGrad: shape mismatch";
   CHECK_EQ(index.size(0), src.size(0)) << "AddtTakeGrad: shape mismatch";
