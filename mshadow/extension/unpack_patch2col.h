@@ -59,9 +59,9 @@ struct UnpackPatchToColXExp:
     // calculate number of batches
     const index_t num = imshape.ProdShape(0, srcdim - 3);
     const index_t o_height = (i_height_ -
-        (pdilate_y == 1 ? psize_y : psize_y * pdilate_y - 1)) / pstride_y + 1;
+        (pdilate_y * (psize_y - 1) + 1)) / pstride_y + 1;
     const index_t o_width  = (i_width_  -
-        (pdilate_x == 1 ? psize_x : psize_x * pdilate_x - 1)) / pstride_x + 1;
+        (pdilate_x * (psize_x - 1) + 1)) / pstride_x + 1;
     this->shape_[1] = o_height * o_width * num;
     this->shape_[0] = psize_y * psize_x * i_channel_;
   }
@@ -121,10 +121,8 @@ struct Plan<UnpackPatchToColXExp<SrcExp, DType, srcdim>, DType> {
        pstride_y_(e.pstride_y_), pstride_x_(e.pstride_x_),
        i_channel_(e.i_channel_), pdilate_y_(e.pdilate_y_), pdilate_x_(e.pdilate_x_),
        i_height_(e.i_height_), i_width_(e.i_width_),
-       o_height_((i_height_  - (pdilate_y_ == 1 ?
-           psize_y_ : psize_y_ * pdilate_y_ - 1)) / pstride_y_ + 1),
-       o_width_((i_width_   - (pdilate_x_ == 1 ?
-           psize_x_ : psize_x_ * pdilate_x_ - 1)) / pstride_x_ + 1) {}
+       o_height_((i_height_ - (pdilate_y_ * (psize_y_ - 1) + 1)) / pstride_y_ + 1),
+       o_width_((i_width_ - (pdilate_x_ * (psize_x_ - 1) + 1)) / pstride_x_ + 1) {}
   MSHADOW_XINLINE DType Eval(index_t i, index_t j) const {
     const index_t x_offset = i % psize_x_ * pdilate_x_;
     const index_t idivp    = i / psize_x_;
@@ -134,6 +132,7 @@ struct Plan<UnpackPatchToColXExp<SrcExp, DType, srcdim>, DType> {
     const index_t jdivw = j / o_width_;
     const index_t y = (jdivw % o_height_) * pstride_y_ + y_offset;
     const index_t n = jdivw / o_height_;
+
     if (x < i_width_ && y < i_height_) {
       return src_.Eval((n * i_channel_  + c) * i_height_ + y, x);
     } else {
