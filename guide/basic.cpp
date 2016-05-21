@@ -131,7 +131,7 @@ int main(void) {
     }
     printf("\n");
   }
-  small = pool<red::sum>(large, small.shape_, 3, 3, 3);
+  small = pool<red::sum>(large, small.shape_, 3, 3, 3, 3);
   // shutdown tensor enigne after usage
   for (index_t i = 0; i < small.size(0); ++i) {
     for (index_t j = 0; j < small.size(1); ++j) {

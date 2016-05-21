@@ -35,16 +35,19 @@ struct UnPoolingExp:
   index_t ksize_y_;
   /*! \brief kernel size in width */
   index_t ksize_x_;
-  /*! \brief kernel stride */
-  index_t kstride_;
+  /*! \brief kernel stride in y directory */
+  index_t kstride_y_;
+  /*! \brief kernel stride in x directory */
+  index_t kstride_x_;
   /*! \brief constructor */
   UnPoolingExp(const SrcExp &data_src,
                const SrcExp &data_pooled,
                const SrcExp &grad_pooled,
-               index_t ksize_y, index_t ksize_x, index_t kstride)
+               index_t ksize_y, index_t ksize_x, index_t kstride_y, index_t kstride_x)
       : data_src_(data_src), data_pooled_(data_pooled),
         grad_pooled_(grad_pooled),
-        ksize_y_(ksize_y), ksize_x_(ksize_x), kstride_(kstride) {
+    ksize_y_(ksize_y), ksize_x_(ksize_x),
+    kstride_y_(kstride_y), kstride_x_(kstride_x) {
     Shape<srcdim> pshape = ShapeCheck<srcdim, SrcExp>::Check(grad_pooled);
     typedef ShapeCheck<srcdim, SrcExp> ShapeCheckSrcDimSrcExp;
     CHECK_EQ(pshape, ShapeCheckSrcDimSrcExp::Check(data_pooled))
@@ -66,7 +69,8 @@ struct UnPoolingExp:
  * \param grad_pooled gradient data of pooled part, to be propgate down
  * \param ksize_y kernel height
  * \param ksize_x kernel width
- * \param kstride stride for each kernel
+ * \param kstride_y stride in y directory
+ * \param kstride_x stride in x directory
  * \return expression corresponding to unpooled 4D Tensor, storing backproped gradient
  * \tparam Reducer reducer type
  * \tparam SrcExp source expression
@@ -78,10 +82,10 @@ inline UnPoolingExp<Reducer, SrcExp, DType, ExpInfo<SrcExp>::kDim>
 unpool(const Exp<SrcExp, DType, etype> &data_src,
        const Exp<SrcExp, DType, etype> &data_pooled,
        const Exp<SrcExp, DType, etype> &grad_pooled,
-       index_t ksize_y, index_t ksize_x, index_t kstride) {
+       index_t ksize_y, index_t ksize_x, index_t kstride_y, index_t kstride_x) {
   return UnPoolingExp<Reducer, SrcExp, DType, ExpInfo<SrcExp>::kDim>
       (data_src.self(), data_pooled.self(), grad_pooled.self(),
-       ksize_y, ksize_x, kstride);
+       ksize_y, ksize_x, kstride_y, kstride_x);
 }
 //----------------------
 // Execution plan
@@ -93,7 +97,8 @@ struct Plan<UnPoolingExp<Reducer, SrcExp, DType, srcdim>, DType> {
       : data_src_(MakePlan(e.data_src_)), data_pooled_(MakePlan(e.data_pooled_)),
         grad_pooled_(MakePlan(e.grad_pooled_)), sshape_y_(e.shape_[srcdim - 2]),
         pshape_y_(e.pshape_y_),  pshape_x_(e.pshape_x_),
-        ksize_y_(e.ksize_y_), ksize_x_(e.ksize_x_), kstride_(e.kstride_) {}
+        ksize_y_(e.ksize_y_), ksize_x_(e.ksize_x_),
+        kstride_y_(e.kstride_y_), kstride_x_(e.kstride_x_) {}
   MSHADOW_XINLINE DType Eval(index_t i, index_t j) const {
     using namespace std;
     const index_t x = j;
@@ -101,11 +106,11 @@ struct Plan<UnPoolingExp<Reducer, SrcExp, DType, srcdim>, DType> {
     const index_t c = i / sshape_y_;
     const DType vsrc = data_src_.Eval(i, j);
     const index_t py_min =
-        y < ksize_y_ ? 0 : (y - ksize_y_ + kstride_) / kstride_;
+        y < ksize_y_ ? 0 : (y - ksize_y_ + kstride_y_) / kstride_y_;
     const index_t px_min =
-        x < ksize_x_ ? 0 : (x - ksize_x_ + kstride_) / kstride_;
-    const index_t py_max = min((y + kstride_) / kstride_, pshape_y_);
-    const index_t px_max = min((x + kstride_) / kstride_, pshape_x_);
+        x < ksize_x_ ? 0 : (x - ksize_x_ + kstride_x_) / kstride_x_;
+    const index_t py_max = min((y + kstride_y_) / kstride_y_, pshape_y_);
+    const index_t px_max = min((x + kstride_x_) / kstride_x_, pshape_x_);
 
     DType val = static_cast<DType>(0);
     for (index_t py = py_min; py < py_max; ++py) {
@@ -123,7 +128,7 @@ struct Plan<UnPoolingExp<Reducer, SrcExp, DType, srcdim>, DType> {
   Plan<SrcExp, DType> data_src_, data_pooled_, grad_pooled_;
   const index_t sshape_y_, pshape_y_, pshape_x_;
   const index_t ksize_y_, ksize_x_;
-  const index_t kstride_;
+  const index_t kstride_y_, kstride_x_;
 };
 }  // namespace expr
 }  // namespace mshadow
