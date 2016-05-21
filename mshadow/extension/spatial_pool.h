@@ -118,7 +118,7 @@ struct Plan<PoolingExp< Reducer, SrcExp, DType, srcdim>, DType> {
  public:
   explicit Plan(const PoolingExp<Reducer, SrcExp, DType, srcdim> &e)
       : src_(MakePlan(e.src_)),
-      ksize_y_(e.ksize_y_), ksize_x_(e.ksize_x_), 
+      ksize_y_(e.ksize_y_), ksize_x_(e.ksize_x_),
       kstride_y_(e.kstride_y_), kstride_x_(e.kstride_x_),
         src_height_(e.src_height_), src_width_(e.src_width_),
         new_height_(e.shape_[srcdim - 2]) {}
