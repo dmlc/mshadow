@@ -46,8 +46,8 @@ struct UnPoolingExp:
                index_t ksize_y, index_t ksize_x, index_t kstride_y, index_t kstride_x)
       : data_src_(data_src), data_pooled_(data_pooled),
         grad_pooled_(grad_pooled),
-		ksize_y_(ksize_y), ksize_x_(ksize_x),
-		kstride_y_(kstride_y), kstride_x_(kstride_x) {
+    ksize_y_(ksize_y), ksize_x_(ksize_x),
+    kstride_y_(kstride_y), kstride_x_(kstride_x) {
     Shape<srcdim> pshape = ShapeCheck<srcdim, SrcExp>::Check(grad_pooled);
     typedef ShapeCheck<srcdim, SrcExp> ShapeCheckSrcDimSrcExp;
     CHECK_EQ(pshape, ShapeCheckSrcDimSrcExp::Check(data_pooled))
@@ -82,7 +82,7 @@ inline UnPoolingExp<Reducer, SrcExp, DType, ExpInfo<SrcExp>::kDim>
 unpool(const Exp<SrcExp, DType, etype> &data_src,
        const Exp<SrcExp, DType, etype> &data_pooled,
        const Exp<SrcExp, DType, etype> &grad_pooled,
-	   index_t ksize_y, index_t ksize_x, index_t kstride_y, index_t kstride_x) {
+       index_t ksize_y, index_t ksize_x, index_t kstride_y, index_t kstride_x) {
   return UnPoolingExp<Reducer, SrcExp, DType, ExpInfo<SrcExp>::kDim>
       (data_src.self(), data_pooled.self(), grad_pooled.self(),
        ksize_y, ksize_x, kstride_y, kstride_x);
@@ -97,8 +97,8 @@ struct Plan<UnPoolingExp<Reducer, SrcExp, DType, srcdim>, DType> {
       : data_src_(MakePlan(e.data_src_)), data_pooled_(MakePlan(e.data_pooled_)),
         grad_pooled_(MakePlan(e.grad_pooled_)), sshape_y_(e.shape_[srcdim - 2]),
         pshape_y_(e.pshape_y_),  pshape_x_(e.pshape_x_),
-		ksize_y_(e.ksize_y_), ksize_x_(e.ksize_x_),
-		kstride_y_(e.kstride_y_), kstride_x_(e.kstride_x_) {}
+        ksize_y_(e.ksize_y_), ksize_x_(e.ksize_x_),
+        kstride_y_(e.kstride_y_), kstride_x_(e.kstride_x_) {}
   MSHADOW_XINLINE DType Eval(index_t i, index_t j) const {
     using namespace std;
     const index_t x = j;
