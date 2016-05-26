@@ -17,10 +17,10 @@ namespace expr {
  *  \tparam SrcExp type of source expression
  *  \tparam DType data type
  */
-template<typename Reducer, typename SrcExp, typename DType, int srcdim, bool mask>
+template<typename Reducer, typename SrcExp, typename DType, int dimsrc, bool mask, int dimdst>
 struct ReduceWithAxisExp:
-    public MakeTensorExp<ReduceWithAxisExp<Reducer, SrcExp, DType, srcdim, mask>,
-                         SrcExp, srcdim-1, DType> {
+    public MakeTensorExp<ReduceWithAxisExp<Reducer, SrcExp, DType, dimsrc, mask, dimdst>,
+                         SrcExp, dimdst, DType> {
   /*! \brief source oprand */
   const SrcExp &src_;
   /*! \brief size of last destination dimension */
@@ -32,48 +32,56 @@ struct ReduceWithAxisExp:
   /*! \brief size of last src dimension */
   index_t last_;
   /*! constructor */
-  explicit ReduceWithAxisExp(const SrcExp &src, int axis)
+  explicit ReduceWithAxisExp(const SrcExp &src, int axis, int keepdim)
     : src_(src) {
-    CHECK(srcdim > axis) << "reduce axis out of bound";
-    Shape<srcdim> src_shape = ShapeCheck<srcdim, SrcExp>::Check(src_);
+    CHECK(dimsrc > axis) << "reduce axis out of bound";
+    Shape<dimsrc> src_shape = ShapeCheck<dimsrc, SrcExp>::Check(src_);
     for (index_t i = 0; i < axis; ++i) {
       this->shape_[i] = src_shape[i];
     }
     this->size_ = src_shape[axis];
     this->trailing_ = 1;
-    for (index_t i = axis + 1; i < srcdim; ++i) {
-      this->trailing_ *= src_shape[i];
-      this->shape_[i-1] = src_shape[i];
-    }
-    this->last_ = src_shape[srcdim-1];
-    if (axis == srcdim -1) {
-      this->last_dst_dim_ = src_shape[srcdim-2];
+    if (!keepdim) {
+      for (index_t i = axis + 1; i < dimsrc; ++i) {
+        this->trailing_ *= src_shape[i];
+        this->shape_[i - 1] = src_shape[i];
+      }
     } else {
-      this->last_dst_dim_ = src_shape[srcdim-1];
+      this->shape_[axis] = 1;
+      for (index_t i = axis + 1; i < dimsrc; ++i) {
+        this->trailing_ *= src_shape[i];
+        this->shape_[i] = src_shape[i];
+      }
     }
+
+    this->last_ = src_shape[dimsrc - 1];
+    this->last_dst_dim_ = this->shape_[dimdst - 1];
   }
 };  // struct ReduceWithAxisExp
 
 /*!
- * \brief pooling subregion results together
- * \param lhs left oprand
- * \param rhs right oprand
- * \tparam LhsExp left expression
- * \tparam RhsExp right expression
- * \tparam DType the content data type
+ * \brief reduce out the dimension of src labeled by axis.
+ * \param Reducer type of the reducing operation
+ * \param mask whether to output the unmask indices
+ * \param keepdim the keepdim flag
+ * \tparam SrcExp source expression
+ * \tparam DType data type
+ * \tparam etype type of the expression
  */
-template<typename Reducer, bool mask, typename SrcExp, typename DType, int etype>
-inline ReduceWithAxisExp<Reducer, SrcExp, DType, ExpInfo<SrcExp>::kDim, mask>
+template<typename Reducer, bool mask, int keepdim, typename SrcExp, typename DType, int etype>
+inline ReduceWithAxisExp<Reducer, SrcExp, DType, ExpInfo<SrcExp>::kDim, mask,
+  ExpInfo<SrcExp>::kDim + keepdim - 1>
 reduce_with_axis(const Exp<SrcExp, DType, etype> &src, int axis) {
-  return ReduceWithAxisExp<Reducer, SrcExp, DType, ExpInfo<SrcExp>::kDim, mask>(src.self(), axis);
+  return ReduceWithAxisExp<Reducer, SrcExp, DType, ExpInfo<SrcExp>::kDim, mask,
+    ExpInfo<SrcExp>::kDim + keepdim - 1>(src.self(), axis, keepdim);
 }
 //----------------------
 // Execution plan
 //----------------------
-template<typename Reducer, typename SrcExp, typename DType, int srcdim, bool mask>
-struct Plan<ReduceWithAxisExp<Reducer, SrcExp, DType, srcdim, mask>, DType> {
+template<typename Reducer, typename SrcExp, typename DType, int dimsrc, bool mask, int dimdst>
+struct Plan<ReduceWithAxisExp<Reducer, SrcExp, DType, dimsrc, mask, dimdst>, DType> {
  public:
-  explicit Plan(const ReduceWithAxisExp<Reducer, SrcExp, DType, srcdim, mask> &e)
+  explicit Plan(const ReduceWithAxisExp<Reducer, SrcExp, DType, dimsrc, mask, dimdst> &e)
       : src_(MakePlan(e.src_)), last_dst_dim_(e.last_dst_dim_), trailing_(e.trailing_),
         size_(e.size_), last_(e.last_) {}
   MSHADOW_XINLINE DType Eval(index_t i, index_t j) const {

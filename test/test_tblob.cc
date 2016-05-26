@@ -1,4 +1,5 @@
 #include <mshadow/tensor.h>
+#include <vector>
 
 // this namespace contains all data structures, functions
 using namespace mshadow;
@@ -59,8 +60,119 @@ void test_tshape() {
   }  
 }
 
+void test_broadcast_with_axis() {
+  std::vector<mshadow::Shape<4> > test_shapes;
+  std::vector<mshadow::Shape<4> > keepdim_input_shapes;
+
+  test_shapes.push_back(mshadow::Shape4(5, 2, 3, 4));
+  test_shapes.push_back(mshadow::Shape4(2, 5, 3, 4));
+  test_shapes.push_back(mshadow::Shape4(2, 3, 5, 4));
+  test_shapes.push_back(mshadow::Shape4(2, 3, 4, 5));
+
+  keepdim_input_shapes.push_back(mshadow::Shape4(1, 2, 3, 4));
+  keepdim_input_shapes.push_back(mshadow::Shape4(2, 1, 3, 4));
+  keepdim_input_shapes.push_back(mshadow::Shape4(2, 3, 1, 4));
+  keepdim_input_shapes.push_back(mshadow::Shape4(2, 3, 4, 1));
+
+  for (int dim = -1; dim < 3; ++dim){
+    mshadow::Tensor<mshadow::cpu, 3> input_tensor(NULL, mshadow::Shape3(2, 3, 4));
+    mshadow::AllocSpace(&input_tensor);
+    input_tensor = 11;
+    mshadow::Tensor<mshadow::cpu, 4> n_tensor(NULL, test_shapes[dim + 1]);
+    mshadow::AllocSpace(&n_tensor);
+    n_tensor = broadcast_with_axis<0>(input_tensor, dim, 5);
+    printf("Test for keepdim = 0, dim = %d", dim);
+    for (index_t i = 0; i < n_tensor.shape_[0]; i++) {
+      for (index_t j = 0; j < n_tensor.shape_[1]; j++) {
+        for (index_t k = 0; k < n_tensor.shape_[2]; k++) {
+          for (index_t l = 0; l < n_tensor.shape_[3]; l++) {
+            CHECK_EQ(n_tensor[i][j][k][l], 11);
+          }
+        }
+      }
+    }
+    printf(" Pass!\n");
+  }
+
+  for (int dim = 0; dim < 4; ++dim){
+    mshadow::Tensor<mshadow::cpu, 4> input_tensor(NULL, keepdim_input_shapes[dim]);
+    mshadow::AllocSpace(&input_tensor);
+    input_tensor = 11;
+    mshadow::Tensor<mshadow::cpu, 4> n_tensor(NULL, test_shapes[dim]);
+    mshadow::AllocSpace(&n_tensor);
+    n_tensor = broadcast_with_axis<1>(input_tensor, dim, 5);
+    printf("Test for keepdim = 1, dim = %d", dim);
+    for (index_t i = 0; i < n_tensor.shape_[0]; i++) {
+      for (index_t j = 0; j < n_tensor.shape_[1]; j++) {
+        for (index_t k = 0; k < n_tensor.shape_[2]; k++) {
+          for (index_t l = 0; l < n_tensor.shape_[3]; l++) {
+            CHECK_EQ(n_tensor[i][j][k][l], 11);
+          }
+        }
+      }
+    }
+    printf(" Pass!\n");
+
+  }
+}
+
+void test_reduce_with_axis() {
+  std::vector<mshadow::Shape<4> > test_shapes;
+  std::vector<mshadow::Shape<4> > keepdim_output_shapes;
+
+  test_shapes.push_back(mshadow::Shape4(5, 2, 3, 4));
+  test_shapes.push_back(mshadow::Shape4(2, 5, 3, 4));
+  test_shapes.push_back(mshadow::Shape4(2, 3, 5, 4));
+  test_shapes.push_back(mshadow::Shape4(2, 3, 4, 5));
+
+  keepdim_output_shapes.push_back(mshadow::Shape4(1, 2, 3, 4));
+  keepdim_output_shapes.push_back(mshadow::Shape4(2, 1, 3, 4));
+  keepdim_output_shapes.push_back(mshadow::Shape4(2, 3, 1, 4));
+  keepdim_output_shapes.push_back(mshadow::Shape4(2, 3, 4, 1));
+
+  for (int dim = 0; dim < 4; ++dim){
+    mshadow::Tensor<mshadow::cpu, 4> input_tensor(NULL, test_shapes[dim]);
+    mshadow::AllocSpace(&input_tensor);
+    input_tensor = 1;
+    mshadow::Tensor<mshadow::cpu, 3> n_tensor(NULL, mshadow::Shape3(2, 3, 4));
+    mshadow::AllocSpace(&n_tensor);
+    n_tensor = reduce_with_axis<mshadow::red::sum, false, 0>(input_tensor, dim);
+    printf("Test for keepdim = 0, dim = %d", dim);
+    for (index_t i = 0; i < n_tensor.shape_[0]; i++) {
+      for (index_t j = 0; j < n_tensor.shape_[1]; j++) {
+        for (index_t k = 0; k < n_tensor.shape_[2]; k++) {
+          CHECK_EQ(n_tensor[i][j][k], 5);
+        }
+      }
+    }
+    printf(" Pass!\n");
+  }
+
+  for (int dim = 0; dim < 4; ++dim){
+    mshadow::Tensor<mshadow::cpu, 4> input_tensor(NULL, test_shapes[dim]);
+    mshadow::AllocSpace(&input_tensor);
+    input_tensor = 1;
+    mshadow::Tensor<mshadow::cpu, 4> n_tensor(NULL, keepdim_output_shapes[dim]);
+    mshadow::AllocSpace(&n_tensor);
+    n_tensor = reduce_with_axis<mshadow::red::sum, false, 1>(input_tensor, dim);
+    printf("Test for keepdim = 1, dim = %d", dim);
+    for (index_t i = 0; i < n_tensor.shape_[0]; i++) {
+      for (index_t j = 0; j < n_tensor.shape_[1]; j++) {
+        for (index_t k = 0; k < n_tensor.shape_[2]; k++) {
+          for (index_t l = 0; l < n_tensor.shape_[3]; l++) {
+            CHECK_EQ(n_tensor[i][j][k][l], 5);
+          }
+        }
+      }
+    }
+    printf(" Pass!\n");
+  }
+}
+
 int main(void) {
   test_tshape();
+  test_broadcast_with_axis();
+  test_reduce_with_axis();
   return 0;
 }
 
