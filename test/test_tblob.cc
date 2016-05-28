@@ -80,7 +80,7 @@ void test_broadcast_with_axis() {
     input_tensor = 11;
     mshadow::Tensor<mshadow::cpu, 4> n_tensor(NULL, test_shapes[dim + 1]);
     mshadow::AllocSpace(&n_tensor);
-    n_tensor = broadcast_with_axis<0>(input_tensor, dim, 5);
+    n_tensor = broadcast_with_axis(input_tensor, dim, 5);
     printf("Test for keepdim = 0, dim = %d", dim);
     for (index_t i = 0; i < n_tensor.shape_[0]; i++) {
       for (index_t j = 0; j < n_tensor.shape_[1]; j++) {
@@ -100,7 +100,7 @@ void test_broadcast_with_axis() {
     input_tensor = 11;
     mshadow::Tensor<mshadow::cpu, 4> n_tensor(NULL, test_shapes[dim]);
     mshadow::AllocSpace(&n_tensor);
-    n_tensor = broadcast_with_axis<1>(input_tensor, dim, 5);
+    n_tensor = broadcast_keepdim(input_tensor, dim, 5);
     printf("Test for keepdim = 1, dim = %d", dim);
     for (index_t i = 0; i < n_tensor.shape_[0]; i++) {
       for (index_t j = 0; j < n_tensor.shape_[1]; j++) {
@@ -136,7 +136,7 @@ void test_reduce_with_axis() {
     input_tensor = 1;
     mshadow::Tensor<mshadow::cpu, 3> n_tensor(NULL, mshadow::Shape3(2, 3, 4));
     mshadow::AllocSpace(&n_tensor);
-    n_tensor = reduce_with_axis<mshadow::red::sum, false, 0>(input_tensor, dim);
+    n_tensor = reduce_with_axis<mshadow::red::sum, false>(input_tensor, dim);
     printf("Test for keepdim = 0, dim = %d", dim);
     for (index_t i = 0; i < n_tensor.shape_[0]; i++) {
       for (index_t j = 0; j < n_tensor.shape_[1]; j++) {
@@ -154,7 +154,7 @@ void test_reduce_with_axis() {
     input_tensor = 1;
     mshadow::Tensor<mshadow::cpu, 4> n_tensor(NULL, keepdim_output_shapes[dim]);
     mshadow::AllocSpace(&n_tensor);
-    n_tensor = reduce_with_axis<mshadow::red::sum, false, 1>(input_tensor, dim);
+    n_tensor = reduce_keepdim<mshadow::red::sum, false>(input_tensor, dim);
     printf("Test for keepdim = 1, dim = %d", dim);
     for (index_t i = 0; i < n_tensor.shape_[0]; i++) {
       for (index_t j = 0; j < n_tensor.shape_[1]; j++) {
