@@ -34,8 +34,9 @@ struct BroadcastWithAxisExp:
   /*! \brief size of the last dimension of src*/
   index_t last_;
   /*! constructor */
-  BroadcastWithAxisExp(const SrcExp &src, const int axis, const index_t size, int keepdim)
+  BroadcastWithAxisExp(const SrcExp &src, const int axis, const index_t size)
     : src_(src), size_(size) {
+    bool keepdim = (dimsrc == dimdst);
     Shape<dimsrc> src_shape = ShapeCheck<dimsrc, SrcExp>::Check(src_);
     this->trailing_ = 1;
 
@@ -71,19 +72,33 @@ struct BroadcastWithAxisExp:
 };  // struct BroadcastWithAxisExp
 
 /*!
- * \brief Broadcasting the tensor in the given axis. If keepdim is off, insert the broadcasting dim after axis. Otherwise broadcasting axis.
- * \param keepdim whether to keepdim
+ * \brief Broadcasting the tensor after given axis.
  * \param SrcExp source expression
  * \tparam DType data type
  * \tparam etype type of the expression
  */
-template<int keepdim, typename SrcExp, typename DType, int etype>
+template<typename SrcExp, typename DType, int etype>
 inline BroadcastWithAxisExp<SrcExp, DType, ExpInfo<SrcExp>::kDim,
-  ExpInfo<SrcExp>::kDim + 1 - keepdim>
+  ExpInfo<SrcExp>::kDim + 1>
 broadcast_with_axis(const Exp<SrcExp, DType, etype> &src, const int axis, const index_t size) {
   return BroadcastWithAxisExp<SrcExp, DType, ExpInfo<SrcExp>::kDim,
-    ExpInfo<SrcExp>::kDim + 1 - keepdim>(src.self(), axis, size, keepdim);
+    ExpInfo<SrcExp>::kDim + 1>(src.self(), axis, size);
 }
+
+/*!
+* \brief Broadcasting the tensor in the given axis (keepdim turned on)
+* \param SrcExp source expression
+* \tparam DType data type
+* \tparam etype type of the expression
+*/
+template<typename SrcExp, typename DType, int etype>
+inline BroadcastWithAxisExp<SrcExp, DType, ExpInfo<SrcExp>::kDim,
+  ExpInfo<SrcExp>::kDim>
+  broadcast_keepdim(const Exp<SrcExp, DType, etype> &src, const int axis, const index_t size) {
+  return BroadcastWithAxisExp<SrcExp, DType, ExpInfo<SrcExp>::kDim,
+    ExpInfo<SrcExp>::kDim>(src.self(), axis, size);
+}
+
 //----------------------
 // Execution plan
 //----------------------

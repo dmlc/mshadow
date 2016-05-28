@@ -32,8 +32,9 @@ struct ReduceWithAxisExp:
   /*! \brief size of last src dimension */
   index_t last_;
   /*! constructor */
-  explicit ReduceWithAxisExp(const SrcExp &src, int axis, int keepdim)
+  explicit ReduceWithAxisExp(const SrcExp &src, int axis)
     : src_(src) {
+    bool keepdim = (dimsrc == dimdst);
     CHECK(dimsrc > axis) << "reduce axis out of bound";
     Shape<dimsrc> src_shape = ShapeCheck<dimsrc, SrcExp>::Check(src_);
     for (index_t i = 0; i < axis; ++i) {
@@ -63,18 +64,34 @@ struct ReduceWithAxisExp:
  * \brief reduce out the dimension of src labeled by axis.
  * \param Reducer type of the reducing operation
  * \param mask whether to output the unmask indices
- * \param keepdim the keepdim flag
  * \tparam SrcExp source expression
  * \tparam DType data type
  * \tparam etype type of the expression
  */
-template<typename Reducer, bool mask, int keepdim, typename SrcExp, typename DType, int etype>
+template<typename Reducer, bool mask, typename SrcExp, typename DType, int etype>
 inline ReduceWithAxisExp<Reducer, SrcExp, DType, ExpInfo<SrcExp>::kDim, mask,
-  ExpInfo<SrcExp>::kDim + keepdim - 1>
+  ExpInfo<SrcExp>::kDim - 1>
 reduce_with_axis(const Exp<SrcExp, DType, etype> &src, int axis) {
   return ReduceWithAxisExp<Reducer, SrcExp, DType, ExpInfo<SrcExp>::kDim, mask,
-    ExpInfo<SrcExp>::kDim + keepdim - 1>(src.self(), axis, keepdim);
+    ExpInfo<SrcExp>::kDim- 1>(src.self(), axis);
 }
+
+/*!
+* \brief reduce out the dimension of src labeled by axis, keepdim turned on.
+* \param Reducer type of the reducing operation
+* \param mask whether to output the unmask indices
+* \tparam SrcExp source expression
+* \tparam DType data type
+* \tparam etype type of the expression
+*/
+template<typename Reducer, bool mask, typename SrcExp, typename DType, int etype>
+inline ReduceWithAxisExp<Reducer, SrcExp, DType, ExpInfo<SrcExp>::kDim, mask,
+  ExpInfo<SrcExp>::kDim>
+  reduce_keepdim(const Exp<SrcExp, DType, etype> &src, int axis) {
+  return ReduceWithAxisExp<Reducer, SrcExp, DType, ExpInfo<SrcExp>::kDim, mask,
+    ExpInfo<SrcExp>::kDim>(src.self(), axis);
+}
+
 //----------------------
 // Execution plan
 //----------------------
