@@ -27,9 +27,12 @@
 #include "./extension/fill.h"
 #include "./extension/one_hot.h"
 #include "./extension/slice.h"
+#include "./extension/slice_ex.h"
 #include "./extension/take.h"
 #include "./extension/take_grad.h"
 #include "./extension/reduce_with_axis.h"
 #include "./extension/broadcast_with_axis.h"
 #include "./extension/spatial_upsampling_nearest.h"
+#include "./extension/transpose.h"
+#include "./extension/flip.h"
 #endif  // MSHADOW_EXTENSION_H_
