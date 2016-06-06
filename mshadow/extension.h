@@ -35,4 +35,5 @@
 #include "./extension/spatial_upsampling_nearest.h"
 #include "./extension/transpose.h"
 #include "./extension/flip.h"
+#include "./extension/complex.h"
 #endif  // MSHADOW_EXTENSION_H_
