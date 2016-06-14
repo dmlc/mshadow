@@ -233,8 +233,8 @@ template<typename SrcExp, typename DType, int dimsrc>
 struct Plan<BroadcastWithMultiAxesExp<SrcExp, DType, dimsrc>, DType> {
  public:
   explicit Plan(const BroadcastWithMultiAxesExp<SrcExp, DType, dimsrc> &e)
-    : src_(MakePlan(e.src_)), dst_last_(e.dst_last_),
-    trailings_(e.trailings_), sizes_(e.sizes_), last_(e.last_), axesnum_(e.axesnum_) {}
+    : src_(MakePlan(e.src_)), dst_last_(e.dst_last_), last_(e.last_), axesnum_(e.axesnum_),
+    trailings_(e.trailings_), sizes_(e.sizes_) {}
   MSHADOW_XINLINE DType Eval(index_t i, index_t j) const {
     index_t indx = i * dst_last_ + j;
     for (index_t p = 0; p < axesnum_; ++p) {
