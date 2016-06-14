@@ -125,7 +125,7 @@ struct Plan<FlipExp<SrcExp, Device, DType, srcdim>, DType> {
 
  private:
   Plan<SrcExp, DType> src_;
-  const index_t trailing_, stride_, stride_j_;
+  const index_t stride_j_, trailing_, stride_;
 };  // struct Plan
 }  // namespace expr
 }   // namespace mshadow
