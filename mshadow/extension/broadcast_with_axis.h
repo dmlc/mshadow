@@ -1,12 +1,14 @@
 /*!
- * Copyright (c) 2015 by Contributors
- * \file tensor_dot.h
+ * Copyright (c) 2016 by Contributors
+ * \file broadcast_with_axis.h
  * \brief
- * \author Junyuan Xie
+ * \author Junyuan Xie, Xingjian Shi
 */
 #ifndef MSHADOW_EXTENSION_BROADCAST_WITH_AXIS_H_
 #define MSHADOW_EXTENSION_BROADCAST_WITH_AXIS_H_
 
+#include <mshadow/tensor_blob.h>
+#include <vector>
 #include "../extension.h"
 
 namespace mshadow {
@@ -73,7 +75,7 @@ struct BroadcastWithAxisExp:
 
 /*!
  * \brief Broadcasting the tensor after given axis.
- * \param SrcExp source expression
+ * \tparam SrcExp source expression
  * \tparam DType data type
  * \tparam etype type of the expression
  */
@@ -87,7 +89,7 @@ broadcast_with_axis(const Exp<SrcExp, DType, etype> &src, const int axis, const 
 
 /*!
 * \brief Broadcasting the tensor in the given axis (keepdim turned on)
-* \param SrcExp source expression
+* \tparam SrcExp source expression
 * \tparam DType data type
 * \tparam etype type of the expression
 */
@@ -97,6 +99,113 @@ inline BroadcastWithAxisExp<SrcExp, DType, ExpInfo<SrcExp>::kDim,
   broadcast_keepdim(const Exp<SrcExp, DType, etype> &src, const int axis, const index_t size) {
   return BroadcastWithAxisExp<SrcExp, DType, ExpInfo<SrcExp>::kDim,
     ExpInfo<SrcExp>::kDim>(src.self(), axis, size);
+}
+
+/*!
+* \brief Broadcasting the tensor in multiple axes. The dimension of the source tensor
+         in the given axes must be 1.
+* \tparam SrcExp source expression
+* \tparam DType  data type
+* \tparam dimsrc source dimension
+* \tparam axesnum number of broadcasting dimensions
+*/
+template<typename SrcExp, typename DType, int dimsrc>
+struct BroadcastWithMultiAxesExp :
+  public MakeTensorExp<BroadcastWithMultiAxesExp<SrcExp, DType, dimsrc>,
+  SrcExp, dimsrc, DType> {
+  /*! \brief data oprand */
+  const SrcExp &src_;
+  /*! \brief size of the last dimension of dst */
+  index_t dst_last_;
+  /*! \brief number of broadcasting axes*/
+  index_t axesnum_;
+  /*! \brief product of the dimensions after the broadcasting axses */
+  Shape<dimsrc> trailings_;
+  /*! \brief new dimension of the broadcasting axes*/
+  Shape<dimsrc> sizes_;
+  /*! \brief size of the last dimension of src*/
+  index_t last_;
+  /*! constructor */
+  BroadcastWithMultiAxesExp(const SrcExp &src, const TShape& axes, const TShape& sizes)
+    : src_(src) {
+    Shape<dimsrc> src_shape = ShapeCheck<dimsrc, SrcExp>::Check(src_);
+    CHECK(axes.ndim() == sizes.ndim()) << "ndim of axes and sizes must be equal.";
+    this->axesnum_ = axes.ndim();
+    CHECK(this->axesnum_ <= dimsrc) << "Number of broadcasting axes must be smaller than"
+      "the source ndim, number of axes=" << this->axesnum_ << " dimsrc=" << dimsrc;
+    for (index_t i = 0; i < this->axesnum_; i++) {
+      CHECK(dimsrc > axes[i]) << "broadcast axis (keepdim) out of bound, " <<
+        "all axes must be between 0 and" << dimsrc - 1 << ", given axes[" << i << "] = " << axes[i]
+        << ".";
+      CHECK_EQ(src_shape[axes[i]], 1) << "Size of the dimension of the broadcasting axis must be 1"
+        << ", src_shape[" << axes[i] << "]=" << src_shape[axes[i]] << ".";
+      if (i < this->axesnum_ - 1) {
+        CHECK(axes[i] < axes[i + 1]) << "The given axes must be in increasing order.";
+      }
+    }
+    for (index_t i = 0; i < dimsrc; i++) {
+      this->shape_[i] = src_shape[i];
+    }
+    for (index_t i = 0; i < this->axesnum_; i++) {
+      this->shape_[axes[i]] = sizes[i];
+      this->sizes_[i] = sizes[i];
+    }
+    if (this->axesnum_ > 0) {
+      for (index_t i = 0; i < this->axesnum_; i++) {
+        this->trailings_[i] = 1;
+        for (index_t j = axes[i] + 1; j < dimsrc; ++j) {
+          this->trailings_[i] *= this->shape_[j];
+        }
+      }
+    }
+    this->last_ = src_shape[dimsrc - 1];
+    this->dst_last_ = this->shape_[dimsrc - 1];
+  }
+};  // struct BroadcastWithMultiAxesExp
+
+/*!
+* \brief Broadcasting the tensor in the given axis (keepdim turned on)
+* \param src source
+* \param axes broadcasting axes
+* \param sizes sizes of the broadcasting axes
+* \tparam SrcExp source expression
+* \tparam DType data type
+* \tparam etype type of the expression
+*/
+template<typename SrcExp, typename DType, int etype>
+inline BroadcastWithMultiAxesExp<SrcExp, DType, ExpInfo<SrcExp>::kDim>
+broadcast_multi_axes(const Exp<SrcExp, DType, etype> &src,
+const TShape &axes, const TShape &sizes) {
+  return BroadcastWithMultiAxesExp<SrcExp, DType, ExpInfo<SrcExp>::kDim>(src.self(), axes, sizes);
+}
+
+/*!
+* \brief Broadcasting the tensor to the target shape,
+         dimension of different sizes must be 1 in the original tensor.
+* \param src source
+* \param target_shape shape of the target broadcasting tensor
+* \tparam SrcExp source expression
+* \tparam DType data type
+* \tparam etype type of the expression
+*/
+template<typename SrcExp, typename DType, int etype>
+inline BroadcastWithMultiAxesExp<SrcExp, DType, ExpInfo<SrcExp>::kDim>
+broadcast_to(const Exp<SrcExp, DType, etype> &src, const TShape &target_shape) {
+  static const int dimsrc = ExpInfo<SrcExp>::kDim;
+  CHECK_EQ(target_shape.ndim(), dimsrc);
+  std::vector<index_t> axes_vec, sizes_vec;
+  Shape<dimsrc> src_shape = ShapeCheck<dimsrc, SrcExp>::Check(src.self());
+  for (int i = 0; i < dimsrc; ++i) {
+    if (src_shape[i] != target_shape[i]) {
+      CHECK_EQ(src_shape[i], 1) << "broadcasting axis must have size 1, received shape="
+        << src_shape << " target_shape=" << target_shape;
+      axes_vec.push_back(i);
+      sizes_vec.push_back(target_shape[i]);
+    }
+  }
+  TShape axes = TShape(axes_vec.begin(), axes_vec.end());
+  TShape sizes = TShape(sizes_vec.begin(), sizes_vec.end());
+  return BroadcastWithMultiAxesExp<SrcExp, DType, ExpInfo<SrcExp>::kDim>(src.self(), axes, sizes);
 }
 
 //----------------------
@@ -118,6 +227,26 @@ struct Plan<BroadcastWithAxisExp<SrcExp, DType, dimsrc, dimdst>, DType> {
  private:
   Plan<SrcExp, DType> src_;
   const index_t dst_last_, trailing_, size_, last_;
+};
+
+template<typename SrcExp, typename DType, int dimsrc>
+struct Plan<BroadcastWithMultiAxesExp<SrcExp, DType, dimsrc>, DType> {
+ public:
+  explicit Plan(const BroadcastWithMultiAxesExp<SrcExp, DType, dimsrc> &e)
+    : src_(MakePlan(e.src_)), dst_last_(e.dst_last_),
+    trailings_(e.trailings_), sizes_(e.sizes_), last_(e.last_), axesnum_(e.axesnum_) {}
+  MSHADOW_XINLINE DType Eval(index_t i, index_t j) const {
+    index_t indx = i * dst_last_ + j;
+    for (index_t p = 0; p < axesnum_; ++p) {
+      indx = (indx / trailings_[p] / sizes_[p]) * trailings_[p] + (indx % trailings_[p]);
+    }
+    return src_.Eval(indx / last_, indx % last_);
+  }
+
+ private:
+  Plan<SrcExp, DType> src_;
+  const index_t dst_last_, last_, axesnum_;
+  const Shape<dimsrc> trailings_, sizes_;
 };
 }  // namespace expr
 }  // namespace mshadow

@@ -186,7 +186,8 @@ inline void MapExp(TRValue<R, cpu, dim, DType> *dst,
   Shape<dim> eshape = expr::ShapeCheck<dim, E>::Check(exp.self());
   Shape<dim> dshape = expr::ShapeCheck<dim, R>::Check(dst->self());
   CHECK(eshape[0] == 0 || eshape == dshape)
-      << "Assignment: Shape of Tensors are not consistent with target";
+      << "Assignment: Shape of Tensors are not consistent with target, "
+      << "eshape: " << eshape << " dshape:" << dshape;
   MapExpCPUEngine<expr::PacketCheck<E, MSHADOW_DEFAULT_PACKET>::kPass,
                   Saver, R, dim, DType, E, etype>
   ::Map(dst->ptrself(), exp);
@@ -399,8 +400,8 @@ inline void VectorDot(Tensor<Device, 1, DType> dst,
       << "VectorDot: Shape mismatch";
   CHECK_EQ(dst.size(0), 1)
       << "VectorDot: expect dst to be scalar";
-  expr::BLASEngine<Device>::SetStream(lhs.stream_);
-  mshadow::expr::BLASEngine<Device>::dot(
+  expr::BLASEngine<Device, DType>::SetStream(lhs.stream_);
+  mshadow::expr::BLASEngine<Device, DType>::dot(
       lhs.stream_, lhs.size(0), lhs.dptr_, 1, rhs.dptr_, 1, dst.dptr_);
 }
 }  // namespace mshadow

@@ -57,7 +57,6 @@ template<typename SrcExp, typename DType, int etype>
 inline TransposeExExp<SrcExp, DType, ExpInfo<SrcExp>::kDim>
 transpose(const Exp<SrcExp, DType, etype> &src, Shape<ExpInfo<SrcExp>::kDim> axes) {
   typedef ExpInfo<SrcExp> Info;
-  TypeCheckPass<Info::kDim >= 2>::Error_Expression_Does_Not_Meet_Dimension_Req();
   return TransposeExExp<SrcExp, DType, ExpInfo<SrcExp>::kDim>(src.self(), axes);
 }
 

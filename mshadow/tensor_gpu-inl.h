@@ -107,7 +107,8 @@ inline void MapExp(TRValue<R, gpu, dim, DType> *dst,
   Shape<dim> eshape = expr::ShapeCheck<dim, E>::Check(exp.self());
   Shape<dim> dshape = expr::ShapeCheck<dim, R>::Check(dst->self());
   CHECK(eshape[0] == 0 || eshape == dshape)
-    << "Assignment: Shape of Tensors are not consistent with target";
+    << "Assignment: Shape of Tensors are not consistent with target, "
+    << "eshape: " << eshape << " dshape:" << dshape;
   cuda::MapPlan<Saver>(MakePlan(dst->self()),
                        MakePlan(exp.self()),
                        dshape.FlatTo2D(),
