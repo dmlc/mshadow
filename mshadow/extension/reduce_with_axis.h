@@ -116,7 +116,7 @@ struct Plan<ReduceWithAxisExp<Reducer, SrcExp, DType, dimsrc, mask, dimdst>, DTy
           idx = k;
         }
       }
-      return static_cast<DType>(idx);
+      return static_cast<DType>(static_cast<int>(idx));
     } else {
       DType res; Reducer::SetInitValue(res);
       for (index_t k = 0; k < size_; ++k) {
