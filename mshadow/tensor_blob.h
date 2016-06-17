@@ -206,6 +206,26 @@ struct TShape {
     return s;
   }
   /*!
+   * flatten the axis before and after the specified axis, so it becomes 3D tensor
+   * \return the flat 3d shape
+   */
+  inline Shape<3> FlatTo3D(index_t axis) const {
+    Shape<3> s;
+    if (ndim_ == 0) return Shape3(0, 0, 0);
+    const index_t *d = this->data();
+    s.shape_[0] = 1;
+    s.shape_[1] = d[axis];
+    s.shape_[2] = 1;
+
+    for (index_t i = 0; i < axis; ++i) {
+      s.shape_[0] *= d[i];
+    }
+    for (index_t i = axis; i < ndim_; ++i) {
+      s.shape_[2] *= d[i];
+    }
+    return s;
+  }
+  /*!
    * \return product shape in [dimstart,dimend)
    * \param dimstart start dimension
    * \param dimend end dimension
@@ -650,6 +670,19 @@ class TBlob {
                                       shape,
                                       shape[dim - 1],
                                       stream);
+  }
+  /*!
+   * \brief flatten the tensor to 3 dimension,
+   *  collapse the dimension before and after specified axis.
+   * \param stream the possible stream target tensor should reside on
+   * \tparam Device which device the tensor is on
+   * \tparam DType the type of elements in the tensor
+   * \return tensor after flatten
+   */
+  template<typename Device, typename DType>
+  inline Tensor<Device, 3, DType> FlatTo3D(int axis, Stream<Device> *stream = NULL) const {
+    return this->get_with_shape<Device, 3, DType>(
+        this->shape_.FlatTo3D(axis), stream);
   }
 };
 }  // namespace mshadow
