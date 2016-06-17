@@ -221,7 +221,7 @@ struct TShape {
     for (index_t i = 0; i < axis; ++i) {
       s.shape_[0] *= d[i];
     }
-    for (index_t i = axis; i < ndim_; ++i) {
+    for (index_t i = axis + 1; i < ndim_; ++i) {
       s.shape_[2] *= d[i];
     }
     return s;
