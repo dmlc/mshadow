@@ -207,6 +207,7 @@ struct TShape {
   }
   /*!
    * flatten the axis before and after the specified axis, so it becomes 3D tensor
+   * \param axis The axis specified.
    * \return the flat 3d shape
    */
   inline Shape<3> FlatTo3D(index_t axis) const {
@@ -674,6 +675,7 @@ class TBlob {
   /*!
    * \brief flatten the tensor to 3 dimension,
    *  collapse the dimension before and after specified axis.
+   * \param axis The axis specified.
    * \param stream the possible stream target tensor should reside on
    * \tparam Device which device the tensor is on
    * \tparam DType the type of elements in the tensor
