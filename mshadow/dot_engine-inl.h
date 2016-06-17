@@ -397,7 +397,7 @@ struct BLASEngine<gpu, half::half_t> {
 #if MSHADOW_USE_PASCAL == 1
     cublasStatus_t err = cublasHgemm(Stream<gpu>::GetBlasHandle(stream),
                 GetT(transa), GetT(transb), m, n, k, &alpha.cuhalf_,
-                A, lda, B, ldb, &beta.cuhalf_, C, ldc);
+                &A->cuhalf_, lda, &B->cuhalf_, ldb, &beta.cuhalf_, &C->cuhalf_, ldc);
     CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas Hgemm fail";
 #else
     float alpha_f = float(alpha);  // NOLINT(*)

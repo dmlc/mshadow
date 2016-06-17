@@ -9,15 +9,17 @@
 #define MSHADOW_HALF_H_
 #include "./base.h"
 
-#if (MSHADOW_USE_CUDA && CUDA_VERSION >= 7050 && defined(__CUDA_ARCH__))
+#if (MSHADOW_USE_CUDA && CUDA_VERSION >= 7050)
   #define MSHADOW_CUDA_HALF 1
   #include <cuda_fp16.h>
-  /*! \brief __half2float_warp */
-  __host__ __device__ float __half2float_warp(const volatile __half& h) { /* NOLINT(*) */
-    __half val;
-    val.x = h.x;
-    return __half2float(val);
-  }
+  #if defined(__CUDA_ARCH__)
+    /*! \brief __half2float_warp */
+    __host__ __device__ float __half2float_warp(const volatile __half& h) { /* NOLINT(*) */
+      __half val;
+      val.x = h.x;
+      return __half2float(val);
+    }
+  #endif
 #else
   #define MSHADOW_CUDA_HALF 0
 #endif
@@ -49,7 +51,7 @@ namespace half {
     return *this = half_t(float(*this) OP float(a));  /* NOLINT(*)*/      \
   }
 
-#if MSHADOW_CUDA_HALF
+#if (MSHADOW_CUDA_HALF && defined(__CUDA_ARCH__))
 #define MSHADOW_HALF_CONVERSIONOP(T)                                      \
   MSHADOW_XINLINE operator T() const {                                    \
     return T(__half2float(cuhalf_));  /* NOLINT(*)*/                      \
@@ -65,7 +67,7 @@ namespace half {
   MSHADOW_XINLINE operator T() const volatile {                           \
     return T(half2float(half_));  /* NOLINT(*)*/                          \
   }
-#endif  // MSHADOW_CUDA_HALF
+#endif  // (MSHADOW_CUDA_HALF && defined(__CUDA_ARCH__))
 
 class half_t {
  public:
@@ -235,11 +237,11 @@ class half_t {
 
   template<typename T>
   MSHADOW_XINLINE void constructor(const T& value) {
-#if MSHADOW_CUDA_HALF
+#if (MSHADOW_CUDA_HALF && defined(__CUDA_ARCH__))
     cuhalf_ = __float2half(float(value));  // NOLINT(*)
 #else
     half_ = float2half(float(value));  // NOLINT(*)
-#endif  // MSHADOW_CUDA_HALF
+#endif  // (MSHADOW_CUDA_HALF && defined(__CUDA_ARCH__))
   }
 };
 
