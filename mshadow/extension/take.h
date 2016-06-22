@@ -35,10 +35,10 @@ template<typename IndexExp,
          typename SrcExp,
          typename DType,
          int e1, int e2>
-inline TakeExp<IndexExp, SrcExp, default_real_t>
+inline TakeExp<IndexExp, SrcExp, DType>
 take(const Exp<IndexExp, DType, e1> &index,
      const Exp<SrcExp, DType, e2> &src) {
-  return TakeExp<IndexExp, SrcExp, default_real_t>(index.self(), src.self());
+  return TakeExp<IndexExp, SrcExp, DType>(index.self(), src.self());
 }
 
 
