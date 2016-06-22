@@ -37,11 +37,11 @@ template<typename IndexExp,
          typename SrcExp,
          typename DType,
          int e1, int e2>
-inline TakeGradExp<IndexExp, SrcExp, default_real_t>
+inline TakeGradExp<IndexExp, SrcExp, DType>
 take_grad(const Exp<IndexExp, DType, e1> &index,
           const Exp<SrcExp, DType, e2> &src,
           const index_t input_dim) {
-  return TakeGradExp<IndexExp, SrcExp, default_real_t>(index.self(),
+  return TakeGradExp<IndexExp, SrcExp, DType>(index.self(),
                                                        src.self(),
                                                        input_dim);
 }
