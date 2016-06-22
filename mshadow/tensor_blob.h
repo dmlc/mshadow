@@ -386,7 +386,15 @@ inline std::ostream &operator<<(std::ostream &os, const TShape &shape) {
 inline std::istream &operator>>(std::istream &is, TShape &shape) {
   // get (
   while (true) {
-    char ch = is.get();
+    char ch = is.peek();
+    if (isdigit(ch)) {
+      index_t idx;
+      if (is >> idx) {
+        shape.CopyFrom(&idx, &idx + 1);
+      }
+      return is;
+    }
+    is.get();
     if (ch == '(') break;
     if (!isspace(ch)) {
       is.setstate(std::ios::failbit);
@@ -401,6 +409,9 @@ inline std::istream &operator>>(std::istream &is, TShape &shape) {
     do {
       ch = is.get();
     } while (isspace(ch));
+    if (ch == 'L') {
+      ch = is.get();
+    }
     if (ch == ',') {
       while (true) {
         ch = is.peek();
