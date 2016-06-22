@@ -820,7 +820,7 @@ inline void VectorDot(Tensor<Device, 1, DType> dst,
 #include "./tensor_blob.h"
 #include "./random.h"
 // add definition of scalar related operators
-#ifdef MSAHDOW_SCALAR_
+#ifdef MSHADOW_SCALAR_
   #error "MSHADOW_SCALAR_ must not be defined"
 #endif
 // enumerate all the scalar data type we aim to be good at
@@ -831,6 +831,9 @@ inline void VectorDot(Tensor<Device, 1, DType> dst,
 #include "./expr_scalar-inl.h"
 #undef MSHADOW_SCALAR_
 #define MSHADOW_SCALAR_ int
+#include "./expr_scalar-inl.h"
+#undef MSHADOW_SCALAR_
+#define MSHADOW_SCALAR_ mshadow::half::half_t
 #include "./expr_scalar-inl.h"
 #undef MSHADOW_SCALAR_
 #endif  // MSHADOW_TENSOR_H_
