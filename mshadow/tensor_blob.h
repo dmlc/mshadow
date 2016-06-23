@@ -206,25 +206,38 @@ struct TShape {
     return s;
   }
   /*!
+  * flatten the shape into three parts: [0, axis_begin), [axis_begin, axis_end], (axis_end, ndim)
+  * \param axis_begin The beginning axis specified.
+  * \param axis_end The ending axis specified.
+  * \return the flat 3d shape
+  */
+  inline Shape<3> FlatTo3D(index_t axis_begin, index_t axis_end) const {
+    CHECK(axis_end >= axis_begin);
+    Shape<3> s;
+    if (ndim_ == 0) return Shape3(0, 0, 0);
+    const index_t *d = this->data();
+    s.shape_[0] = 1;
+    s.shape_[1] = 1;
+    s.shape_[2] = 1;
+
+    for (index_t i = 0; i < axis_begin; ++i) {
+      s.shape_[0] *= d[i];
+    }
+    for (index_t i = axis_begin; i <= axis_end; ++i) {
+      s.shape_[1] *= d[i];
+    }
+    for (index_t i = axis_end + 1; i < ndim_; ++i) {
+      s.shape_[2] *= d[i];
+    }
+    return s;
+  }
+  /*!
    * flatten the axis before and after the specified axis, so it becomes 3D tensor
    * \param axis The axis specified.
    * \return the flat 3d shape
    */
   inline Shape<3> FlatTo3D(index_t axis) const {
-    Shape<3> s;
-    if (ndim_ == 0) return Shape3(0, 0, 0);
-    const index_t *d = this->data();
-    s.shape_[0] = 1;
-    s.shape_[1] = d[axis];
-    s.shape_[2] = 1;
-
-    for (index_t i = 0; i < axis; ++i) {
-      s.shape_[0] *= d[i];
-    }
-    for (index_t i = axis + 1; i < ndim_; ++i) {
-      s.shape_[2] *= d[i];
-    }
-    return s;
+    return FlatTo3D(axis, axis);
   }
   /*!
    * \return product shape in [dimstart,dimend)
@@ -696,6 +709,22 @@ class TBlob {
   inline Tensor<Device, 3, DType> FlatTo3D(int axis, Stream<Device> *stream = NULL) const {
     return this->get_with_shape<Device, 3, DType>(
         this->shape_.FlatTo3D(axis), stream);
+  }
+  /*!
+   * \brief flatten the tensor to 3 dimension,
+   *  collapse the dimension: [0, axis_begin), [axis_begin, axis_end], (axis_end, ndim).
+   * \param axis_begin The beginning axis specified.
+   * \param axis_end The ending axis specified.
+   * \param stream the possible stream target tensor should reside on
+   * \tparam Device which device the tensor is on
+   * \tparam DType the type of elements in the tensor
+   * \return tensor after flatten
+   */
+  template<typename Device, typename DType>
+  inline Tensor<Device, 3, DType> FlatTo3D(int axis_begin, int axis_end,
+    Stream<Device> *stream = NULL) const {
+    return this->get_with_shape<Device, 3, DType>(
+        this->shape_.FlatTo3D(axis_begin, axis_end), stream);
   }
 };
 }  // namespace mshadow
