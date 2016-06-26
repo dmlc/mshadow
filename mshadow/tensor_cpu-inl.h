@@ -401,6 +401,27 @@ inline void L1_SVM (const DType & margin,
   }
 }
 
+template<typename DType>
+inline void L2_SVM (const DType & margin,
+                    const DType & reg_coef,
+                    Tensor<cpu, 2, DType> dst,
+                    const Tensor<cpu, 1, DType> & label,
+                    const Tensor<cpu, 2, DType> & src) {
+  CHECK_EQ(dst.shape_, src.shape_) << "L2_SVM: shape mismatch";
+  for (index_t y = 0; y < dst.size(0); y++){
+    const index_t k = static_cast<int>(label[y]);
+    for(index_t x = 0; x < dst.size(1); x++){
+      if (x == k){
+        dst[y][k] = margin>src[y][k] ?  2*(margin - src[y][k]) : DType(0.0f);
+        dst[y][k] *= -reg_coef;
+      } else {
+        dst[y][x] = margin>-src[y][x] ? (-2)*(margin + src[y][x]) : DType(0.0f);
+        dst[y][x] *= -reg_coef;
+      }
+    }
+  }
+}
+
 template<typename IndexType, typename DType>
 inline void AddTakeGrad(Tensor<cpu, 2, DType> dst,
                         const Tensor<cpu, 1, IndexType>& index,
