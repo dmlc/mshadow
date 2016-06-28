@@ -1,6 +1,6 @@
 /*!
  *  Copyright (c) 2014 by Contributors
- * \file expression-inl.h
+ * \file expr_scalar-inl.h
  * \brief definitions of operators in expression with respect to scalar
  *  this file will be included several times, each time with MACRO MSHADOW_SCALAR_ to be different types
  *
