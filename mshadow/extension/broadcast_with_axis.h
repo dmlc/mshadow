@@ -145,17 +145,17 @@ struct BroadcastWithMultiAxesExp :
     }
     for (index_t i = 0; i < dimsrc; i++) {
       this->shape_[i] = src_shape[i];
+      this->sizes_[i] = 1;
+      this->trailings_[i] = 1;
     }
     for (index_t i = 0; i < this->axesnum_; i++) {
       this->shape_[axes[i]] = sizes[i];
       this->sizes_[i] = sizes[i];
     }
-    if (this->axesnum_ > 0) {
-      for (index_t i = 0; i < this->axesnum_; i++) {
-        this->trailings_[i] = 1;
-        for (index_t j = axes[i] + 1; j < dimsrc; ++j) {
-          this->trailings_[i] *= this->shape_[j];
-        }
+    for (index_t i = 0; i < this->axesnum_; i++) {
+      this->trailings_[i] = 1;
+      for (index_t j = axes[i] + 1; j < dimsrc; ++j) {
+        this->trailings_[i] *= this->shape_[j];
       }
     }
     this->last_ = src_shape[dimsrc - 1];
@@ -237,7 +237,10 @@ struct Plan<BroadcastWithMultiAxesExp<SrcExp, DType, dimsrc>, DType> {
     trailings_(e.trailings_), sizes_(e.sizes_) {}
   MSHADOW_XINLINE DType Eval(index_t i, index_t j) const {
     index_t indx = i * dst_last_ + j;
-    for (index_t p = 0; p < axesnum_; ++p) {
+    for (index_t p = 0; p < dimsrc; ++p) {
+      if (p >= axesnum_) {
+        break;
+      }
       indx = (indx / trailings_[p] / sizes_[p]) * trailings_[p] + (indx % trailings_[p]);
     }
     return src_.Eval(indx / last_, indx % last_);
