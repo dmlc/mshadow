@@ -1,6 +1,6 @@
 /*!
  *  Copyright (c) 2014 by Contributors
- * \file expression-inl.h
+ * \file expr_scalar-inl.h
  * \brief definitions of operators in expression with respect to scalar
  *  this file will be included several times, each time with MACRO MSHADOW_SCALAR_ to be different types
  *
@@ -58,6 +58,13 @@ template<typename OP, typename TB, int tb>
 inline BinaryMapExp<OP, ScalarExp<MSHADOW_SCALAR_>, TB,
                     MSHADOW_SCALAR_, (tb|type::kMapper)>
 F(const ScalarExp<MSHADOW_SCALAR_> &lhs, const Exp<TB, MSHADOW_SCALAR_, tb> &rhs) {
+  return MakeExp<OP>(lhs, rhs);
+}
+/*! \brief operator overload for const */
+template<typename OP>
+inline BinaryMapExp<OP, ScalarExp<MSHADOW_SCALAR_>, ScalarExp<MSHADOW_SCALAR_>,
+                    MSHADOW_SCALAR_, (1|type::kMapper)>
+F(const ScalarExp<MSHADOW_SCALAR_> &lhs, const ScalarExp<MSHADOW_SCALAR_> &rhs) {
   return MakeExp<OP>(lhs, rhs);
 }
 // constant operators
@@ -123,6 +130,34 @@ template<typename TB, int tb>
 inline BinaryMapExp<op::div, ScalarExp<MSHADOW_SCALAR_>, TB,
                     MSHADOW_SCALAR_, (tb|type::kMapper)>
 operator/(const ScalarExp<MSHADOW_SCALAR_> &lhs, const Exp<TB, MSHADOW_SCALAR_, tb> &rhs) {
+  return MakeExp<op::div>(lhs, rhs);
+}
+// constant operators 3
+/*! \brief operator overload */
+inline BinaryMapExp<op::plus, ScalarExp<MSHADOW_SCALAR_>, ScalarExp<MSHADOW_SCALAR_>,
+                    MSHADOW_SCALAR_, (1|type::kMapper)>
+operator+(const ScalarExp<MSHADOW_SCALAR_> &lhs,
+          const ScalarExp<MSHADOW_SCALAR_> &rhs) {
+  return MakeExp<op::plus>(lhs, rhs);
+}
+/*! \brief operator overload */
+inline BinaryMapExp<op::minus, ScalarExp<MSHADOW_SCALAR_>, ScalarExp<MSHADOW_SCALAR_>,
+                    MSHADOW_SCALAR_, (1|type::kMapper)>
+operator-(const ScalarExp<MSHADOW_SCALAR_> &lhs,
+          const ScalarExp<MSHADOW_SCALAR_> &rhs) {
+  return MakeExp<op::minus>(lhs, rhs);
+}
+/*! \brief operator overload */
+inline BinaryMapExp<op::mul, ScalarExp<MSHADOW_SCALAR_>, ScalarExp<MSHADOW_SCALAR_>,
+                    MSHADOW_SCALAR_, (1|type::kMapper)>
+operator*(const ScalarExp<MSHADOW_SCALAR_> &lhs,
+          const ScalarExp<MSHADOW_SCALAR_> &rhs) {
+  return MakeExp<op::mul>(lhs, rhs);
+}
+/*! \brief operator overload */
+inline BinaryMapExp<op::div, ScalarExp<MSHADOW_SCALAR_>, ScalarExp<MSHADOW_SCALAR_>,
+                    MSHADOW_SCALAR_, (1|type::kMapper)>
+operator/(const ScalarExp<MSHADOW_SCALAR_> &lhs, const ScalarExp<MSHADOW_SCALAR_> &rhs) {
   return MakeExp<op::div>(lhs, rhs);
 }
 }  // namespace expr
