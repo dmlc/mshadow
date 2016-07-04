@@ -292,7 +292,8 @@ struct BLASEngine<cpu, float> {
                          const float *X, int incX,
                          const float *Y, int incY, float *A, int lda, int batch_count) {
     for (int i = 0; i < batch_count; ++i) {
-      ger(stream, m, n, alpha, X + i * m * incX, incX, Y + i * n * incY, incY, A + i * lda * n, lda);
+      ger(stream, m, n, alpha, X + i * m * incX, incX, Y + i * n * incY, incY,
+          A + i * lda * n, lda);
     }
   }
   inline static void dot(Stream<cpu> *stream,
@@ -360,7 +361,8 @@ struct BLASEngine<cpu, double> {
                          const double *X, int incX,
                          const double *Y, int incY, double *A, int lda, int batch_count) {
     for (int i = 0; i < batch_count; ++i) {
-      ger(stream, m, n, alpha, X + i * m * incX, incX, Y + i * n * incY, incY, A + i * lda * n, lda);
+      ger(stream, m, n, alpha, X + i * m * incX, incX, Y + i * n * incY, incY,
+          A + i * lda * n, lda);
     }
   }
   inline static void dot(Stream<cpu> *stream,
@@ -529,7 +531,8 @@ struct BLASEngine<gpu, float> {
                          const float *X, int incX,
                          const float *Y, int incY, float *A, int lda, int batch_count) {
     for (int i = 0; i < batch_count; ++i) {
-      ger(stream, m, n, alpha, X + i * m * incX, incX, Y + i * n * incY, incY, A + i * lda * n, lda);
+      ger(stream, m, n, alpha, X + i * m * incX, incX, Y + i * n * incY, incY,
+          A + i * lda * n, lda);
     }
   }
   inline static void dot(Stream<gpu> *stream,
@@ -612,7 +615,8 @@ struct BLASEngine<gpu, double> {
                          const double *X, int incX,
                          const double *Y, int incY, double *A, int lda, int batch_count) {
     for (int i = 0; i < batch_count; ++i) {
-      ger(stream, m, n, alpha, X + i * m * incX, incX, Y + i * n * incY, incY, A + i * lda * n, lda);
+      ger(stream, m, n, alpha, X + i * m * incX, incX, Y + i * n * incY, incY,
+          A + i * lda * n, lda);
     }
   }
   inline static void dot(Stream<gpu> *stream,
@@ -743,12 +747,12 @@ struct DotEngine<SV, xpu, 3, 3, 3, transpose_left, transpose_right, DType> {
     Shape<3> sleft = GetBatchedShape(lhs.shape_, transpose_left);
     Shape<3> sright = GetBatchedShape(rhs.shape_, transpose_right);
     CHECK(dst.size(0) == sleft[0] && dst.size(0) == sright[0])
-      << "batched_dot-gemm: batchsize must be equal."
+      << "batch_dot-gemm: batchsize must be equal."
       << "dst: " << dst.shape_ << "\n"
       << "lhs: " << sleft << "\n"
       << "rhs: " << sright << "\n";
     CHECK(dst.size(1) == sleft[1] && dst.size(2) == sright[2] && sleft[2] == sright[1])
-      << "batched_dot-gemm: matrix shape mismatch"
+      << "batch_dot-gemm: matrix shape mismatch"
       << "dst: " << dst.shape_ << "\n"
       << "lhs: " << sleft << "\n"
       << "rhs: " << sright << "\n";
