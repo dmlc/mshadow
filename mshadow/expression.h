@@ -241,6 +241,13 @@ inline DotExp<TA, TB, true, true, DType>
 dot(const TransposeExp<TA, DType> &lhs, const TransposeExp<TB, DType> &rhs) {
   return DotExp<TA, TB, true, true, DType>(lhs.exp, rhs.exp, DType(1.0f));
 }
+/*! \brief batch_dot operator def */
+template<bool transpose_left, bool transpose_right, typename TA, typename TB, typename DType>
+inline DotExp<TA, TB, transpose_left, transpose_right, DType>
+batch_dot(const RValueExp<TA, DType> &lhs, const RValueExp<TB, DType> &rhs) {
+  return DotExp<TA, TB, transpose_left, transpose_right, DType>(
+    lhs.self(), rhs.self(), DType(1.0f));
+}
 //---------------
 // BinaryMapExp
 // --------------
