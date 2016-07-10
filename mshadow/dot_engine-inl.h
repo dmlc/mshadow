@@ -114,7 +114,7 @@ struct BLASEngine<cpu, float> {
   }
   inline static void batched_gemm(Stream<cpu> *stream,
                                   bool transa, bool transb,
-                                  int m, int n, int k, DType alpha,
+                                  int m, int n, int k, float alpha,
                                   const float *A, int lda, const float *B, int ldb,
                                   float beta, float *C, int ldc, int batch_count) {
     for (int i = 0; i < batch_count; ++i) {
@@ -191,7 +191,7 @@ struct BLASEngine<cpu, double> {
   }
   inline static void batched_gemm(Stream<cpu> *stream,
                                   bool transa, bool transb,
-                                  int m, int n, int k, DType alpha,
+                                  int m, int n, int k, double alpha,
                                   const double *A, int lda, const double *B, int ldb,
                                   double beta, double *C, int ldc, int batch_count) {
     for (int i = 0; i < batch_count; ++i) {
