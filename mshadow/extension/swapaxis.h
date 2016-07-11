@@ -7,6 +7,7 @@
 #ifndef MSHADOW_EXTENSION_SWAPAXIS_H_
 #define MSHADOW_EXTENSION_SWAPAXIS_H_
 #include <algorithm>
+#include <utility>
 #include "../extension.h"
 namespace mshadow {
 namespace expr {

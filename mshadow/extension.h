@@ -36,4 +36,5 @@
 #include "./extension/transpose.h"
 #include "./extension/flip.h"
 #include "./extension/complex.h"
+#include "./extension/range.h"
 #endif  // MSHADOW_EXTENSION_H_

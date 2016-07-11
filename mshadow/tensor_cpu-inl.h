@@ -7,6 +7,9 @@
 #ifndef MSHADOW_TENSOR_CPU_INL_H_
 #define MSHADOW_TENSOR_CPU_INL_H_
 #include <cstring>
+#include <functional>
+#include <utility>
+#include <vector>
 #include "./base.h"
 #include "./tensor.h"
 #include "./packet-inl.h"
@@ -390,6 +393,47 @@ inline void AddTakeGrad(Tensor<cpu, 2, DType> dst,
   for (index_t y = 0; y < index.size(0); ++y) {
     dst[index[y]] += src[y];
   }
+}
+
+template<typename IndexType, typename DType>
+inline void AddTakeGradLargeBatch(Tensor<cpu, 2, DType> dst,
+                                  const Tensor<cpu, 1, IndexType>& sorted,
+                                  const Tensor<cpu, 1, IndexType>& index,
+                                  const Tensor<cpu, 2, DType> &src) {
+  for (index_t y = 0; y < sorted.size(0); ++y) {
+    dst[sorted[y]] += src[index[y]];
+  }
+}
+
+template<typename KDType, typename VDType>
+inline void SortByKey(Tensor<cpu, 1, KDType> keys, Tensor<cpu, 1, VDType> values,
+                      bool is_ascend) {
+  CHECK_EQ(keys.CheckContiguous(), true);
+  CHECK_EQ(values.CheckContiguous(), true);
+  CHECK_EQ(keys.size(0), values.size(0))
+    << "The sizes of key/value are not equal! keys_size: " << keys.size(0)
+    << "values_size: " << values.size(0);
+  std::vector<std::pair<KDType, VDType> > V;
+  for (int i = 0; i< values.size(0); ++i) {
+    std::pair<KDType, VDType> P = std::make_pair(keys[i], values[i]);
+    V.push_back(P);
+  }
+  if (is_ascend) {
+    std::stable_sort(V.begin(), V.end());
+  } else {
+    std::stable_sort(V.begin(), V.end(), std::greater<std::pair<KDType, VDType> >());
+  }
+  for (int i = 0; i < values.size(0); i++) {
+    keys[i] = V[i].first;
+    values[i] = V[i].second;
+  }
+}
+
+template<typename Device, typename VDType, typename SDType>
+inline void VectorizedSort(Tensor<Device, 1, VDType> values, Tensor<Device, 1, SDType> segments) {
+  // We can sort each segments using two stable sorts
+  SortByKey(values, segments, true);
+  SortByKey(segments, values, true);
 }
 
 // blas related
