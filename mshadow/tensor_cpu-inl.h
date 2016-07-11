@@ -449,5 +449,49 @@ inline void VectorDot(Tensor<Device, 1, DType> dst,
   mshadow::expr::BLASEngine<Device, DType>::dot(
       lhs.stream_, lhs.size(0), lhs.dptr_, 1, rhs.dptr_, 1, dst.dptr_);
 }
+
+template<bool transpose_left, bool transpose_right, typename Device, typename DType>
+inline void BatchGEMM(Tensor<Device, 3, DType> dst,
+                      const Tensor<Device, 3, DType> &lhs,
+                      const Tensor<Device, 3, DType> &rhs,
+                      DType alpha,
+                      DType beta,
+                      Tensor<Device, 1, DType*> workspace) {
+  int batch_size = dst.shape_[0];
+  expr::BLASEngine<Device, DType>::SetStream(dst.stream_);
+  Shape<3> sleft = transpose_left ? Shape3(lhs.shape_[0], lhs.shape_[2], lhs.shape_[1])
+    : lhs.shape_;
+  Shape<3> sright = transpose_right ? Shape3(rhs.shape_[0], rhs.shape_[2], rhs.shape_[1])
+    : rhs.shape_;
+  CHECK_EQ(dst.CheckContiguous(), true);
+  CHECK_EQ(lhs.CheckContiguous(), true);
+  CHECK_EQ(rhs.CheckContiguous(), true);
+  CHECK(sleft[0] == batch_size && sright[0] == batch_size)
+    << "BatchGEMM: batchsize must be equal."
+    << "dst: " << dst.shape_ << "\n"
+    << "lhs: " << sleft << "\n"
+    << "rhs: " << sright << "\n";
+  CHECK(dst.size(1) == sleft[1] && dst.size(2) == sright[2] && sleft[2] == sright[1])
+    << "BatchGEMM: matrix shape mismatch"
+    << "dst: " << dst.shape_ << "\n"
+    << "lhs: " << sleft << "\n"
+    << "rhs: " << sright << "\n";
+  CHECK(workspace.size(0) >= 3 * batch_size)
+    << "Workspace Size must be bigger than " << 3 * batch_size;
+  CHECK_EQ(workspace.CheckContiguous(), true);
+  // use column major argument to compatible with most BLAS
+  expr::BLASEngine<Device, DType>::batched_gemm
+    (dst.stream_,
+    transpose_right, transpose_left,
+    transpose_right ? rhs.size(1) : rhs.size(2),
+    transpose_left ? lhs.size(2) : lhs.size(1),
+    transpose_right ? rhs.size(2) : rhs.size(1),
+    alpha,
+    rhs.dptr_, rhs.stride_,
+    lhs.dptr_, lhs.stride_,
+    beta,
+    dst.dptr_, dst.stride_, batch_size,
+    workspace.dptr_);
+}
 }  // namespace mshadow
 #endif  // MSHADOW_TENSOR_CPU_INL_H_

@@ -855,17 +855,32 @@ template<typename Saver, typename Reducer, int dimkeep,
 inline void MapReduceKeepHighDim(TRValue<R, gpu, 1, DType> *dst,
                                  const expr::Exp<E, DType, etype> &exp,
                                  DType scale = 1);
-
 /*!
  * \brief CPU/GPU: 1 dimension vector dot
  * \param dst Length 1 vector, used to hold the result.
  * \param lhs Left operand vector
- * \param rhs right operand vector
+ * \param rhs Right operand vector
  */
 template<typename Device, typename DType>
 inline void VectorDot(Tensor<Device, 1, DType> dst,
                       const Tensor<Device, 1, DType> &lhs,
                       const Tensor<Device, 1, DType> &rhs);
+/*!
+ * \brief CPU/GPU: dst = alpha * op(lhs) op(rhs) + beta * dst
+ * \param dst Length 3 tensor, used to hold the result
+ * \param lhs Left operand vector
+ * \param rhs Right operand vector
+ * \param alpha multiplier of op(lhs)op(rhs)
+ * \param beta multiplier of dst
+ * \param workspace Workspace for casting DType* to DType** (batched-view), must have size >= 3 * batch_size
+ */
+template<bool transpose_left, bool transpose_right, typename Device, typename DType>
+inline void BatchGEMM(Tensor<Device, 3, DType> dst,
+                      const Tensor<Device, 3, DType> &lhs,
+                      const Tensor<Device, 3, DType> &rhs,
+                      DType alpha,
+                      DType beta,
+                      Tensor<Device, 1, DType*> workspace);
 }  // namespace mshadow
 // include headers
 #include "./stream_gpu-inl.h"
