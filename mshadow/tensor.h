@@ -429,6 +429,8 @@ struct Tensor<Device, 1, DType>:
       : shape_(shape), stream_(NULL) {}
   MSHADOW_XINLINE Tensor(DType *dptr, Shape<1> shape)
       : dptr_(dptr), shape_(shape), stride_(shape[0]), stream_(NULL) {}
+  MSHADOW_XINLINE Tensor(DType *dptr, Shape<1> shape, Stream<Device> *stream)
+      : dptr_(dptr), shape_(shape), stride_(shape[0]), stream_(stream) {}
   MSHADOW_XINLINE Tensor(DType *dptr, Shape<1> shape,
                          index_t stride, Stream<Device> *stream)
       : dptr_(dptr), shape_(shape), stride_(stride), stream_(stream) {}
