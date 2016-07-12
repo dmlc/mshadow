@@ -37,12 +37,6 @@ struct Error : public std::runtime_error {
 #define noexcept(a)
 #endif
 
-#if DMLC_USE_CXX11
-#define DMLC_THROW_EXCEPTION noexcept(false)
-#else
-#define DMLC_THROW_EXCEPTION
-#endif
-
 #if DMLC_USE_GLOG
 #include <glog/logging.h>
 
