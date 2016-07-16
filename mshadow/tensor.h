@@ -671,7 +671,8 @@ inline void SoftmaxGrad(Tensor<gpu, 2, DType> dst,
                         const Tensor<gpu, 2, DType> &src,
                         const Tensor<gpu, 1, DType> &label);
 /*!
- * \brief CPU/GPU: dst += take_grad(index, src);
+ * \brief CPU/GPU: Gradient accumulate of embedding matrix. dst += take_grad(src, index)
+                   Called when the featuredim of src is much larger than the batchsize
  * \param dst destination
  * \param index index to take
  * \param src source output
@@ -681,7 +682,8 @@ inline void AddTakeGrad(Tensor<cpu, 2, DType> dst,
                         const Tensor<cpu, 1, IndexType>& index,
                         const Tensor<cpu, 2, DType> &src);
 /*!
- * \brief CPU/GPU: dst += take_grad(index, src);
+ * \brief CPU/GPU: Gradient accumulate of embedding matrix. dst += take_grad(src, index)
+                   Called when the featuredim of src is much larger than the batchsize
  * \param dst destination
  * \param index index to take
  * \param src source output
@@ -690,6 +692,60 @@ template<typename IndexType, typename DType>
 inline void AddTakeGrad(Tensor<gpu, 2, DType> dst,
                         const Tensor<gpu, 1, IndexType>& index,
                         const Tensor<gpu, 2, DType> &src);
+/*!
+ * \brief CPU/GPU: Gradient accumulate of embedding matrix. dst += take_grad(src, index)
+                   Called when the batchsize of src is larger than the featuredim
+ * \param dst destination
+ * \param sorted the sorted indices
+ * \param index original index of the sorted indices
+ * \param src source output
+ */
+template<typename IndexType, typename DType>
+inline void AddTakeGradLargeBatch(Tensor<cpu, 2, DType> dst,
+                                  const Tensor<gpu, 1, IndexType>& sorted,
+                                  const Tensor<cpu, 1, IndexType>& index,
+                                  const Tensor<cpu, 2, DType> &src);
+/*!
+ * \brief CPU/GPU: Gradient accumulate of embedding matrix. dst += take_grad(src, index)
+                   Called when the batchsize of src is larger than the featuredim
+ * \param dst destination
+ * \param sorted the sorted indices
+ * \param index original index of the sorted indices
+ * \param src source output
+ */
+template<typename IndexType, typename DType>
+inline void AddTakeGradLargeBatch(Tensor<gpu, 2, DType> dst,
+                                  const Tensor<gpu, 1, IndexType>& sorted,
+                                  const Tensor<gpu, 1, IndexType>& index,
+                                  const Tensor<gpu, 2, DType> &src);
+/*!
+* \brief CPU/GPU: Sort key-value pairs stored in separate places. (Stable sort is performed!)
+* \param keys the keys to sort
+* \param values the values that sorts w.r.t the key
+* \param is_ascend whether to sort key in ascending order
+*/
+template<typename KDType, typename VDType>
+inline void SortByKey(Tensor<cpu, 1, KDType> keys, Tensor<cpu, 1, VDType> values,
+                      bool is_ascend = true);
+/*!
+ * \brief CPU/GPU: Sort key-value pairs stored in separate places. (Stable sort is performed!)
+ * \param keys the keys to sort
+ * \param values the values that sorts w.r.t the key
+ * \param is_ascend whether to sort key in ascending order
+ */
+template<typename KDType, typename VDType>
+inline void SortByKey(Tensor<gpu, 1, KDType> keys, Tensor<gpu, 1, VDType> values,
+                      bool is_ascend = true);
+/*!
+ * \brief CPU/GPU: Sort the keys within each segment. (Stable sort is performed!)
+                   Segments is defined as an ascending ordered vector like [0, 0, 0, 1, 1, 2, 3, 3, 3,...]
+                   We sort separately the keys labeled by 0 and 1, 2, 3, etc.
+                   Currently only supports sorting in ascending order !!
+ * \param values the data to sort
+ * \param segments segment indicator
+ */
+template<typename Device, typename VDType, typename SDType>
+inline void VectorizedSort(Tensor<Device, 1, VDType> values, Tensor<Device, 1, SDType> segments);
 
 // function declarations to support expression, no need to understand them
 // these functions do not need to be directly used

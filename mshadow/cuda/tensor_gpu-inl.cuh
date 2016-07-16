@@ -6,6 +6,11 @@
  */
 #ifndef MSHADOW_CUDA_TENSOR_GPU_INL_CUH_
 #define MSHADOW_CUDA_TENSOR_GPU_INL_CUH_
+#include <thrust/device_ptr.h>
+#include <thrust/sort.h>
+#if CUDA_VERSION >= 7000
+#include <thrust/system/cuda/execution_policy.h>
+#endif
 #include "../tensor.h"
 #include "./reduce.cuh"
 
@@ -450,7 +455,6 @@ inline void SoftmaxGrad(Tensor<gpu, 3, DType> &dst,
   Softmax3DGradKernel<kBaseThreadBits, DType><<<dimGrid, dimBlock, 0, stream>>>(dst, src, label, ignore_label);
 }
 
-
 template<int x_bits, typename DType, typename DstPlan, typename SrcPlan1, typename SrcPlan2>
 __global__ void AddTakeGradKernel(DstPlan dst,
                                   SrcPlan1 index, SrcPlan2 src,
@@ -467,6 +471,62 @@ __global__ void AddTakeGradKernel(DstPlan dst,
   }
 }
 
+template<int warp_bits, int SZ, typename DType, typename IdxType>
+__global__ void AddTakeGradLargeBatchKernel(DType* dst,
+                                            const IdxType *sorted, const IdxType *index, const DType *src,
+                                            int ymax, int xmax) {
+  // Based on Torch's Version https://github.com/torch/cunn/blob/master/lib/THCUNN/LookupTable.cu
+  // Each warp is responsible for an input into the LookupTable.
+  // If the preceeding input has the same as this input, then the warp
+  // exits immediately. The warp also processes subsequent inputs with the
+  // same value.
+  // 
+  // Input Warp
+  // 1     <warp 1>
+  // 1     <warp 1> (<warp 2> exits without doing any work)
+  // 5     <warp 3>
+  // 8     <warp 4>
+  // Also, all warp will loop for SZ times to increase the throughput.
+
+  const int warp_size = 1 << warp_bits;
+  int idx = blockIdx.x * blockDim.y + threadIdx.y;
+
+  if (idx < ymax
+    && (idx == 0 || sorted[idx] != sorted[idx - 1])) {
+    do {
+      const int start_feature = threadIdx.x + blockIdx.y * blockDim.x * SZ;
+      const int dst_row = static_cast<int>(sorted[idx]) * xmax;
+      const int src_row = static_cast<int>(index[idx]) * xmax;
+      float grad_out[SZ];
+      float grad_weight[SZ];
+      #pragma unroll
+      for (int ii = 0; ii < SZ; ii++)
+      {
+        int feature_dim = start_feature + ii * warp_size;
+        if (feature_dim < xmax)
+        {
+          grad_out[ii] = src[src_row + feature_dim];
+          grad_weight[ii] = dst[dst_row + feature_dim];
+        }
+      }
+
+      #pragma unroll
+      for (int ii = 0; ii < SZ; ii++) {
+        grad_weight[ii] += grad_out[ii];
+      }
+
+      #pragma unroll
+      for (int ii = 0; ii < SZ; ii++) {
+        int feature_dim = start_feature + ii * warp_size;
+        if (feature_dim < xmax) {
+          dst[dst_row + feature_dim] = grad_weight[ii];
+        }
+      }
+      idx++;
+    } while (idx < ymax && (sorted[idx] == sorted[idx - 1]));
+  }
+}
+
 template<typename IndexType, typename DType>
 inline void AddTakeGrad(Tensor<gpu, 2, DType> dst,
                         const Tensor<gpu, 1, IndexType>& index,
@@ -475,8 +535,8 @@ inline void AddTakeGrad(Tensor<gpu, 2, DType> dst,
   dim3 dimBlock(1 << kUnitBits);
   dim3 dimGrid((dst.size(1) + (1 << kUnitBits) - 1) >> kUnitBits);
 
-  CHECK_EQ(dst.size(1), src.size(1)) << "AddtTakeGrad: shape mismatch";
-  CHECK_EQ(index.size(0), src.size(0)) << "AddtTakeGrad: shape mismatch";
+  CHECK_EQ(dst.size(1), src.size(1)) << "AddTakeGrad: shape mismatch";
+  CHECK_EQ(index.size(0), src.size(0)) << "AddTakeGrad: shape mismatch";
   CheckLaunchParam(dimGrid, dimBlock, "AddTakeGrad");
   cudaStream_t stream = Stream<gpu>::GetStream(dst.stream_);
 
@@ -487,6 +547,70 @@ inline void AddTakeGrad(Tensor<gpu, 2, DType> dst,
        expr::MakePlan(src),
        src.size(0),
        src.size(1));
+}
+
+template<typename IndexType, typename DType>
+inline void AddTakeGradLargeBatch(Tensor<gpu, 2, DType> dst,
+                                  const Tensor<gpu, 1, IndexType>& sorted,
+                                  const Tensor<gpu, 1, IndexType>& index,
+                                  const Tensor<gpu, 2, DType> &src) {
+  const int kWarpBits = kMemUnitBits;
+  const int SZ = 4;
+  const int block_dim_x = 1 << kWarpBits;
+  const int block_dim_y = 4;
+  const int grid_dim_x = (src.size(0) + block_dim_y - 1) / block_dim_y;
+  const int grid_dim_y = (src.size(1) + block_dim_x * SZ - 1) / (block_dim_x * SZ);
+  dim3 dimBlock(block_dim_x, block_dim_y);
+  dim3 dimGrid(grid_dim_x, grid_dim_y);
+
+  CHECK_EQ(dst.size(1), src.size(1)) << "AddTakeGradLargeBatch: shape mismatch";
+  CHECK_EQ(index.size(0), src.size(0)) << "AddTakeGradLargeBatch: shape mismatch";
+  CheckLaunchParam(dimGrid, dimBlock, "AddTakeGradLargeBatch");
+  cudaStream_t stream = Stream<gpu>::GetStream(dst.stream_);
+
+  AddTakeGradLargeBatchKernel<kWarpBits, SZ, DType>
+      <<<dimGrid, dimBlock, 0, stream>>>
+      (dst.dptr_,
+       sorted.dptr_,
+       index.dptr_,
+       src.dptr_,
+       static_cast<int>(src.size(0)),
+       static_cast<int>(src.size(1)));
+}
+
+template<typename KDType, typename VDType>
+inline void SortByKey(Tensor<gpu, 1, KDType> keys, Tensor<gpu, 1, VDType> values,
+                      bool is_ascend) {
+  CHECK_EQ(keys.CheckContiguous(), true);
+  CHECK_EQ(values.CheckContiguous(), true);
+#if CUDA_VERSION >= 7000
+  cudaStream_t stream = Stream<gpu>::GetStream(keys.stream_);
+  thrust::device_ptr<KDType> key_iter = thrust::device_pointer_cast(keys.dptr_);
+  thrust::device_ptr<VDType> value_iter = thrust::device_pointer_cast(values.dptr_);
+  if (is_ascend) {
+    thrust::stable_sort_by_key(
+      thrust::cuda::par.on(stream),
+      key_iter, key_iter + keys.size(0), value_iter, thrust::less<KDType>());
+  } else {
+    thrust::stable_sort_by_key(
+      thrust::cuda::par.on(stream),
+      key_iter, key_iter + keys.size(0), value_iter, thrust::greater<KDType>());
+  }
+#else
+  LOG(FATAL) << "SortByKey is only supported for CUDA version >=7.0!";
+#endif
+}
+
+template<typename DType>
+inline void SortByKey(Tensor<gpu, 1, mshadow::half::half_t> keys, Tensor<gpu, 1, DType> values,
+                      bool is_ascend) {
+  LOG(FATAL) << "SortByKey for half_t is not implemented!";
+}
+
+template<typename DType>
+inline void SortByKey(Tensor<gpu, 1, DType> keys, Tensor<gpu, 1, mshadow::half::half_t> values,
+  bool is_ascend) {
+  LOG(FATAL) << "SortByKey for half_t is not implemented!";
 }
 }  // namespace cuda
 }  // namespace mshadow

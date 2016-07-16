@@ -21,6 +21,7 @@
 #include <cfloat>
 #include <climits>
 #include <algorithm>
+#include <functional>
 #include <sstream>
 #include <string>
 
