@@ -57,6 +57,13 @@ class Random<cpu, DType> {
 #endif
   }
   /*!
+   * \brief get random seed used in random generator
+   * \return seed in unsigned
+   */
+  inline unsigned GetSeed() const {
+    return rseed_;
+  }
+  /*!
    * \brief set the stream of computation
    * \param stream computation stream
    */
