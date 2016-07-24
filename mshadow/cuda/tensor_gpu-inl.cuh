@@ -194,6 +194,27 @@ inline void MapReduceKeepDim1(expr::Plan<DstExp, DType> dst,
       <<<dimGrid, dimBlock, 0, stream>>>(dst, plan, scale, pshape);
 }
 
+template<int x_bits, typename DType>
+__global__ void GetBatchedViewKernel(DType **dst, DType *src, int num, int stride) {
+  const int x_size = 1 << x_bits;
+  const int start = threadIdx.x;
+  // Copy the addresses of src to dst every stride steps
+  for (int i = start; i < num; i += x_size) {
+    dst[i] = src + i * stride;
+  }
+}
+
+template<typename DType>
+inline void GetBatchedView(DType **dst, DType *src, int num, int stride,
+                           Stream<gpu> *stream) {
+  cudaStream_t stream_ = Stream<gpu>::GetStream(stream);
+  dim3 dimBlock(kBaseThreadNum);
+  dim3 dimGrid(1);
+  CheckLaunchParam(dimGrid, dimBlock, "GetBatchedView");
+  GetBatchedViewKernel<kBaseThreadBits, DType>
+    <<<dimGrid, dimBlock, 0, stream_>>> (dst, src, num, stride);
+}
+
 template<int x_bits, typename DType, typename DstPlan, typename SrcPlan1, typename SrcPlan2>
 __global__ void SoftmaxGradKernel(DstPlan dst, SrcPlan1 src, SrcPlan2 label, index_t xmax) {
   const unsigned x_size = 1 << x_bits;
