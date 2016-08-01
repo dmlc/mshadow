@@ -755,7 +755,7 @@ struct DotEngine<SV, xpu, 1, 1, 2, false, transpose_right, DType> {
     // set kernel stream
     // if there is no stream, crush
     BLASEngine<xpu, DType>::SetStream(dst.stream_);
-    Shape<2> sright = GetShape(rhs.shape, transpose_right);
+    Shape<2> sright = GetShape(rhs.shape_, transpose_right);
     CHECK(dst.size(0) == sright[1] && lhs.size(0) == sright[0])
       << "dot-gemv: matrix shape mismatch"
       << "dst: " << dst.shape_ << "\n"
