@@ -45,9 +45,6 @@ inline std::ostream &operator<<(std::ostream &os, const Shape<ndim> &shape); // 
 
 /*!
  * \brief shape of a tensor
- *       IMPORTANT NOTE: this shape is different from numpy.shape
- *       shape[0] gives the lowest dimension, shape[dimension-1] gives the highest dimension
- *       shape[k] corresponds to k-th dimension of tensor
  * \tparam dimension dimension of tensor
  */
 template<int dimension>
