@@ -239,7 +239,7 @@ extern "C" {
   }
 
 #include "./half.h"
-
+#include "./logging.h"
 /*! \brief namespace for mshadow */
 namespace mshadow {
 /*! \brief buffer size for each random number generator */
