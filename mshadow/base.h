@@ -530,5 +530,81 @@ struct minimum {
   }
 };
 }  // namespace red
+
+#define MSHADOW_TYPE_SWITCH(type, DType, ...)       \
+  switch (type) {                                   \
+  case mshadow::kFloat32:                           \
+    {                                               \
+      typedef float DType;                          \
+      {__VA_ARGS__}                                 \
+    }                                               \
+    break;                                          \
+  case mshadow::kFloat64:                           \
+    {                                               \
+      typedef double DType;                         \
+      {__VA_ARGS__}                                 \
+    }                                               \
+    break;                                          \
+  case mshadow::kFloat16:                           \
+    {                                               \
+      typedef mshadow::half::half_t DType;          \
+      {__VA_ARGS__}                                 \
+    }                                               \
+    break;                                          \
+  case mshadow::kUint8:                             \
+    {                                               \
+      typedef uint8_t DType;                        \
+      {__VA_ARGS__}                                 \
+    }                                               \
+    break;                                          \
+  case mshadow::kInt32:                             \
+    {                                               \
+      typedef int32_t DType;                        \
+      {__VA_ARGS__}                                 \
+    }                                               \
+    break;                                          \
+  default:                                          \
+    LOG(FATAL) << "Unknown type enum " << type;     \
+  }
+
+#define MSHADOW_REAL_TYPE_SWITCH(type, DType, ...)  \
+  switch (type) {                                   \
+  case mshadow::kFloat32:                           \
+    {                                               \
+      typedef float DType;                          \
+      {__VA_ARGS__}                                 \
+    }                                               \
+    break;                                          \
+  case mshadow::kFloat64:                           \
+    {                                               \
+      typedef double DType;                         \
+      {__VA_ARGS__}                                 \
+    }                                               \
+    break;                                          \
+  case mshadow::kFloat16:                           \
+    {                                               \
+      typedef mshadow::half::half_t DType;          \
+      {__VA_ARGS__}                                 \
+    }                                               \
+    break;                                          \
+  case mshadow::kUint8:                             \
+    LOG(FATAL) << "This operation only support "    \
+                  "floating point types not uint8"; \
+    break;                                          \
+  case mshadow::kInt32:                             \
+    LOG(FATAL) << "This operation only support "      \
+                  "floating point types, not int32";  \
+    break;                                            \
+  default:                                            \
+    LOG(FATAL) << "Unknown type enum " << type;       \
+  }
+
+/*! \brief get data type size from type enum */
+inline size_t mshadow_sizeof(int type) {
+  int size = 0;
+  MSHADOW_TYPE_SWITCH(type, DType, size = sizeof(DType););
+  return size;
+}
+
 }  // namespace mshadow
 #endif  // MSHADOW_BASE_H_

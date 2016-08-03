@@ -7,7 +7,6 @@
 #ifndef MSHADOW_EXTENSION_BROADCAST_WITH_AXIS_H_
 #define MSHADOW_EXTENSION_BROADCAST_WITH_AXIS_H_
 
-#include <mshadow/tensor_blob.h>
 #include <vector>
 #include "../extension.h"
 
@@ -15,7 +14,7 @@ namespace mshadow {
 namespace expr {
 
   /*!
-  * \brief Broadcasting the tensor in the given axis. If keepdim is off, insert the broadcasting dim after axis. Otherwise broadcasting axis. 
+  * \brief Broadcasting the tensor in the given axis. If keepdim is off, insert the broadcasting dim after axis. Otherwise broadcasting axis.
   * \tparam SrcExp source expression
   * \tparam DType  data type
   * \tparam dimsrc source dimension
@@ -111,7 +110,7 @@ inline BroadcastWithAxisExp<SrcExp, DType, ExpInfo<SrcExp>::kDim,
 */
 template<typename SrcExp, typename DType, int dimsrc>
 struct BroadcastWithMultiAxesExp :
-  public MakeTensorExp<BroadcastWithMultiAxesExp<SrcExp, DType, dimsrc>,
+      public MakeTensorExp<BroadcastWithMultiAxesExp<SrcExp, DType, dimsrc>,
   SrcExp, dimsrc, DType> {
   /*! \brief data oprand */
   const SrcExp &src_;
@@ -126,6 +125,7 @@ struct BroadcastWithMultiAxesExp :
   /*! \brief size of the last dimension of src*/
   index_t last_;
   /*! constructor */
+  template<typename TShape>
   BroadcastWithMultiAxesExp(const SrcExp &src, const TShape& axes, const TShape& sizes)
     : src_(src) {
     Shape<dimsrc> src_shape = ShapeCheck<dimsrc, SrcExp>::Check(src_);
@@ -171,8 +171,9 @@ struct BroadcastWithMultiAxesExp :
 * \tparam SrcExp source expression
 * \tparam DType data type
 * \tparam etype type of the expression
+* \tparam TShape the flexible shape type
 */
-template<typename SrcExp, typename DType, int etype>
+template<typename SrcExp, typename DType, int etype, typename TShape>
 inline BroadcastWithMultiAxesExp<SrcExp, DType, ExpInfo<SrcExp>::kDim>
 broadcast_multi_axes(const Exp<SrcExp, DType, etype> &src,
 const TShape &axes, const TShape &sizes) {
@@ -187,8 +188,9 @@ const TShape &axes, const TShape &sizes) {
 * \tparam SrcExp source expression
 * \tparam DType data type
 * \tparam etype type of the expression
+* \tparam TShape the flexible shape type
 */
-template<typename SrcExp, typename DType, int etype>
+template<typename SrcExp, typename DType, int etype, typename TShape>
 inline BroadcastWithMultiAxesExp<SrcExp, DType, ExpInfo<SrcExp>::kDim>
 broadcast_to(const Exp<SrcExp, DType, etype> &src, const TShape &target_shape) {
   static const int dimsrc = ExpInfo<SrcExp>::kDim;
