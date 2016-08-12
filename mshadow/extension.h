@@ -37,4 +37,5 @@
 #include "./extension/flip.h"
 #include "./extension/complex.h"
 #include "./extension/range.h"
+#include "./extension/mask.h"
 #endif  // MSHADOW_EXTENSION_H_

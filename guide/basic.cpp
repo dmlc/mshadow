@@ -140,6 +140,22 @@ int main(void) {
     printf("\n");
   }
 
+  printf("mask\n");
+  TensorContainer<cpu, 2> mask_data(Shape2(6, 8));
+  TensorContainer<cpu, 2> mask_out(Shape2(6, 8));
+  TensorContainer<cpu, 1> mask_src(Shape1(6));
+
+  mask_data = 1.0f;
+  for (int i = 0; i < 6; ++i) {
+    mask_src[i] = static_cast<float>(i);
+  }
+  mask_out = mask(mask_src, mask_data);
+  for (index_t i = 0; i < mask_out.size(0); ++i) {
+    for (index_t j = 0; j < mask_out.size(1); ++j) {
+      printf("%.2f ", mask_out[i][j]);
+    }
+    printf("\n");
+  }
   ShutdownTensorEngine<cpu>();
   return 0;
 }
