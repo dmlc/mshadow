@@ -414,7 +414,7 @@ inline void SortByKey(Tensor<cpu, 1, KDType> keys, Tensor<cpu, 1, VDType> values
     << "The sizes of key/value are not equal! keys_size: " << keys.size(0)
     << "values_size: " << values.size(0);
   std::vector<std::pair<KDType, VDType> > V;
-  for (int i = 0; i< values.size(0); ++i) {
+  for (index_t i = 0; i < values.size(0); ++i) {
     std::pair<KDType, VDType> P = std::make_pair(keys[i], values[i]);
     V.push_back(P);
   }
@@ -423,7 +423,7 @@ inline void SortByKey(Tensor<cpu, 1, KDType> keys, Tensor<cpu, 1, VDType> values
   } else {
     std::stable_sort(V.begin(), V.end(), std::greater<std::pair<KDType, VDType> >());
   }
-  for (int i = 0; i < values.size(0); i++) {
+  for (index_t i = 0; i < values.size(0); i++) {
     keys[i] = V[i].first;
     values[i] = V[i].second;
   }
