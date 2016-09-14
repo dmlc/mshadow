@@ -448,6 +448,11 @@ template<>
 MSHADOW_XINLINE int MinValue<int>(void) {
   return INT_MIN;
 }
+/*! \brief minimum value of int */
+template<>
+MSHADOW_XINLINE uint8_t MinValue<uint8_t>(void) {
+  return 0;
+}
 }  // namespace limits
 
 /*! \brief sum reducer */
