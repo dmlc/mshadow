@@ -17,7 +17,7 @@ ifndef USE_SSE
 	USE_SSE=1
 endif
 
-ifeq ($USE_SSE), 1)
+ifeq ($(USE_SSE), 1)
 	MSHADOW_CFLAGS += -msse3
 else
 	MSHADOW_CFLAGS += -DMSHADOW_USE_SSE=0
