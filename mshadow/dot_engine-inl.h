@@ -640,6 +640,7 @@ struct BLASEngine<gpu, double> {
                                   double **workspace) {
 #if defined(__CUDACC__) && CUDA_VERSION >= 4010
     // Cast DType* to DType** using workspace as a buffer
+    bool alloc_workspace = false;
     if (workspace == NULL) {
       // Allocate the workspace if it's NULL.
       // TODO(sxjscience) Try to move the allocation inside Tensor, which is thread-safe.
