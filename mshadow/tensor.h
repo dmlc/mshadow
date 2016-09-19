@@ -99,6 +99,15 @@ struct Shape {
     return !(*this == s);
   }
   /*!
+   * flatten the tensor, return a 1D shape
+   * \return the flat 1d shape
+   */
+  MSHADOW_XINLINE Shape<1> FlatTo1D(void) const {
+    Shape<1> s;
+    s[0] = this->Size();
+    return s;
+  }
+  /*!
    * flatten the higher dimension to second dimension, return a 2D shape
    * \return the flat 2d shape
    */
@@ -361,6 +370,13 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
     return shape_[idx];
   }
   /*!
+   * \brief flatten the tensor to 1 dimension
+   * \return tensor after flatten
+   */
+  MSHADOW_XINLINE Tensor<Device, 1, DType> FlatTo1D(void) const {
+    return Tensor<Device, 1, DType>(dptr_, shape_.FlatTo1D(), stride_, stream_);
+  }
+  /*!
    * \brief flatten the tensor to 2 dimension, collapse the higher dimensions together
    * \return tensor after flatten
    */
@@ -433,6 +449,9 @@ struct Tensor<Device, 1, DType>:
       : dptr_(dptr), shape_(shape), stride_(stride), stream_(stream) {}
   inline void set_stream(Stream<Device> *stream) {
     this->stream_ = stream;
+  }
+  MSHADOW_XINLINE Tensor<Device, 1, DType> FlatTo1D(void) const {
+    return *this;
   }
   MSHADOW_XINLINE Tensor<Device, 2, DType> FlatTo2D(void) const {
     return Tensor<Device, 2, DType>(dptr_, shape_.FlatTo2D(), stride_, stream_);
