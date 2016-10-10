@@ -240,6 +240,61 @@ MSHADOW_XINLINE Shape<5> Shape5(index_t s0, index_t s1, index_t s2,
   s[0] = s0; s[1] = s1; s[2] = s2; s[3] = s3; s[4] = s4;
   return s;
 }
+
+inline Shape<4> ConvertLayout(const Shape<4>& src, int src_layout, int dst_layout) {
+  Shape<4> dst;
+  switch (src_layout) {
+   case kNCHW:
+    for (index_t i = 0; i < 4; ++i)
+      dst[LayoutType<kNCHW>::kLayout[i]] = src[i];
+    break;
+   case kNHWC:
+    for (index_t i = 0; i < 4; ++i)
+      dst[LayoutType<kNHWC>::kLayout[i]] = src[i];
+    break;
+   default:
+    LOG(FATAL) << "Invalid layout for 4d shape " << src_layout;
+  }
+  if (dst_layout == kNCHW) return dst;
+  Shape<4> dst2;
+  switch (dst_layout) {
+   case kNHWC:
+    for (index_t i = 0; i < 4; ++i)
+      dst2[i] = dst[LayoutType<kNHWC>::kLayout[i]];
+    break;
+   default:
+    LOG(FATAL) << "Invalid layout for 4d shape " << src_layout;
+  }
+  return dst2;
+}
+
+inline Shape<5> ConvertLayout(const Shape<5>& src, int src_layout, int dst_layout) {
+  Shape<5> dst;
+  switch (src_layout) {
+   case kNCDHW:
+    for (index_t i = 0; i < 5; ++i)
+      dst[LayoutType<kNCDHW>::kLayout[i]] = src[i];
+    break;
+   case kNDHWC:
+    for (index_t i = 0; i < 5; ++i)
+      dst[LayoutType<kNDHWC>::kLayout[i]] = src[i];
+    break;
+   default:
+    LOG(FATAL) << "Invalid layout for 5d shape " << src_layout;
+  }
+  if (dst_layout == kNCDHW) return dst;
+  Shape<5> dst2;
+  switch (dst_layout) {
+   case kNDHWC:
+    for (index_t i = 0; i < 5; ++i)
+      dst2[i] = dst[LayoutType<kNDHWC>::kLayout[i]];
+    break;
+   default:
+    LOG(FATAL) << "Invalid layout for 5d shape " << src_layout;
+  }
+  return dst2;
+}
+
 /*!
  * \brief computaion stream structure, used for asynchronize computation
  */
