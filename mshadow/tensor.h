@@ -245,22 +245,26 @@ inline Shape<4> ConvertLayout(const Shape<4>& src, int src_layout, int dst_layou
   Shape<4> dst;
   switch (src_layout) {
    case kNCHW:
-    for (index_t i = 0; i < 4; ++i)
-      dst[LayoutType<kNCHW>::kLayout[i]] = src[i];
+    dst = src;
     break;
    case kNHWC:
-    for (index_t i = 0; i < 4; ++i)
-      dst[LayoutType<kNHWC>::kLayout[i]] = src[i];
+    dst[0] = src[0];
+    dst[2] = src[1];
+    dst[3] = src[2];
+    dst[1] = src[3];
     break;
    default:
     LOG(FATAL) << "Invalid layout for 4d shape " << src_layout;
   }
-  if (dst_layout == kNCHW) return dst;
   Shape<4> dst2;
   switch (dst_layout) {
+   case kNCHW:
+    return dst;
    case kNHWC:
-    for (index_t i = 0; i < 4; ++i)
-      dst2[i] = dst[LayoutType<kNHWC>::kLayout[i]];
+    dst2[0] = dst[0];
+    dst2[1] = dst[2];
+    dst2[2] = dst[3];
+    dst2[3] = dst[1];
     break;
    default:
     LOG(FATAL) << "Invalid layout for 4d shape " << src_layout;
@@ -272,22 +276,28 @@ inline Shape<5> ConvertLayout(const Shape<5>& src, int src_layout, int dst_layou
   Shape<5> dst;
   switch (src_layout) {
    case kNCDHW:
-    for (index_t i = 0; i < 5; ++i)
-      dst[LayoutType<kNCDHW>::kLayout[i]] = src[i];
+    dst = src;
     break;
    case kNDHWC:
-    for (index_t i = 0; i < 5; ++i)
-      dst[LayoutType<kNDHWC>::kLayout[i]] = src[i];
+    dst[0] = src[0];
+    dst[2] = src[1];
+    dst[3] = src[2];
+    dst[4] = src[3];
+    dst[1] = src[4];
     break;
    default:
     LOG(FATAL) << "Invalid layout for 5d shape " << src_layout;
   }
-  if (dst_layout == kNCDHW) return dst;
   Shape<5> dst2;
   switch (dst_layout) {
+   case kNCDHW:
+    return dst;
    case kNDHWC:
-    for (index_t i = 0; i < 5; ++i)
-      dst2[i] = dst[LayoutType<kNDHWC>::kLayout[i]];
+    dst2[0] = dst[0];
+    dst2[1] = dst[2];
+    dst2[2] = dst[3];
+    dst2[3] = dst[4];
+    dst2[4] = dst[1];
     break;
    default:
     LOG(FATAL) << "Invalid layout for 5d shape " << src_layout;
