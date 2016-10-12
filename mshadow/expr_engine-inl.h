@@ -107,7 +107,7 @@ class Plan<TypecastExp<DstDType, SrcDType, EType, etype>, DstDType> {
 
 // trinary expression
 template<typename OP, typename TA, typename TB,typename TC, int etype, typename DType>
-class Plan<TrinaryMapExp<OP, TA, TB,TC, DType, etype>, DType> {
+class Plan<TernaryMapExp<OP, TA, TB,TC, DType, etype>, DType> {
  public:
   explicit Plan(const Plan<TA, DType> &item1, const Plan<TB, DType> &item2,const Plan<TC, DType> &item3)
       : item1_(item1), item2_(item2),item3_(item3) {}
@@ -178,8 +178,8 @@ inline Plan<BinaryMapExp<OP, TA, TB, DType, etype>, DType>
 MakePlan(const BinaryMapExp<OP, TA, TB, DType, etype> &e);
 
 template<typename OP, typename TA, typename TB, typename TC, typename DType, int etype>
-inline Plan<TrinaryMapExp<OP, TA, TB, TC, DType, etype>, DType>
-MakePlan(const TrinaryMapExp<OP, TA, TB, TC, DType, etype> &e);
+inline Plan<TernaryMapExp<OP, TA, TB, TC, DType, etype>, DType>
+MakePlan(const TernaryMapExp<OP, TA, TB, TC, DType, etype> &e);
  
 template<typename DType>
 inline Plan<ScalarExp<DType>, DType> MakePlan(const ScalarExp<DType> &e) {
@@ -222,11 +222,11 @@ MakePlan(const BinaryMapExp<OP, TA, TB, DType, etype> &e) {
               DType>(MakePlan(e.lhs_), MakePlan(e.rhs_));
 }
 
-//Trinary
+//Ternary
 template<typename OP, typename TA, typename TB, typename TC, typename DType, int etype>
-inline Plan<TrinaryMapExp<OP, TA, TB,TC, DType, etype>, DType>
-MakePlan(const TrinaryMapExp<OP, TA, TB, TC, DType, etype> &e) {
-  return Plan<TrinaryMapExp<OP, TA, TB, TC, DType, etype>,
+inline Plan<TernaryMapExp<OP, TA, TB,TC, DType, etype>, DType>
+MakePlan(const TernaryMapExp<OP, TA, TB, TC, DType, etype> &e) {
+  return Plan<TernaryMapExp<OP, TA, TB, TC, DType, etype>,
               DType>(MakePlan(e.item1_), MakePlan(e.item2_), MakePlan(e.item3_));
 }
 //----------------------------------------------------------------
@@ -286,7 +286,7 @@ struct ExpInfo<BinaryMapExp<OP, TA, TB, DType, etype> > {
   static const int kDevMask = ExpInfo<TA>::kDevMask & ExpInfo<TB>::kDevMask;
 };
 template<typename OP, typename TA, typename TB, typename TC, typename DType, int etype>
-struct ExpInfo<TrinaryMapExp<OP, TA, TB, TC, DType, etype> > {
+struct ExpInfo<TernaryMapExp<OP, TA, TB, TC, DType, etype> > {
   static const int kDimItem1 = ExpInfo<TA>::kDim;
   static const int kDimItem2 = ExpInfo<TB>::kDim;
   static const int kDimItem3 = ExpInfo<TC>::kDim;
@@ -410,9 +410,9 @@ struct ShapeCheck<dim, BinaryMapExp<OP, TA, TB, DType, etype> > {
 
 template<int dim, typename OP, typename TA, typename TB, typename TC,
          typename DType, int etype>
-struct ShapeCheck<dim, TrinaryMapExp<OP, TA, TB, TC, DType, etype> > {
+struct ShapeCheck<dim, TernaryMapExp<OP, TA, TB, TC, DType, etype> > {
   inline static Shape<dim>
-  Check(const TrinaryMapExp<OP, TA, TB, TC, DType, etype> &t) {
+  Check(const TernaryMapExp<OP, TA, TB, TC, DType, etype> &t) {
     Shape<dim> shape1 = ShapeCheck<dim, TA>::Check(t.item1_);
     Shape<dim> shape2 = ShapeCheck<dim, TB>::Check(t.item2_);
     Shape<dim> shape3 = ShapeCheck<dim, TC>::Check(t.item3_);

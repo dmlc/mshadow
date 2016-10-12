@@ -249,17 +249,17 @@ batch_dot(const RValueExp<TA, DType> &lhs, const RValueExp<TB, DType> &rhs) {
     lhs.self(), rhs.self(), DType(1.0f));
 }
 //---------------
-// TrinaryMapExp
+// TernaryMapExp
 // --------------
 /*!
- * \brief trinary map expression
+ * \brief ternary map expression
  * \tparam OP operator
  * \tparam TA type of item1
  * \tparam TB type of item2
  * \tparam etype expression type, sa namespace::type
  */
 template<typename OP, typename TA, typename TB, typename TC, typename DType, int etype>
-struct TrinaryMapExp: public Exp<TrinaryMapExp<OP, TA, TB, TC, DType, etype>,
+struct TernaryMapExp: public Exp<TernaryMapExp<OP, TA, TB, TC, DType, etype>,
                                 DType, etype> {
   /*! \brief first operand */
   const TA &item1_;
@@ -268,15 +268,15 @@ struct TrinaryMapExp: public Exp<TrinaryMapExp<OP, TA, TB, TC, DType, etype>,
   /*! \brief third  operand */
   const TC &item3_;
   /*! \brief constructor */
-  explicit TrinaryMapExp(const TA &item1, const TB &item2, const TC &item3)
+  explicit TernaryMapExp(const TA &item1, const TB &item2, const TC &item3)
       :item1_(item1), item2_(item2), item3_(item3) {}
 };
 
 /*! \brief make expression */
 template<typename OP, typename TA, typename TB, typename TC, typename DType, int ta, int tb, int tc>
-inline TrinaryMapExp<OP, TA, TB, TC, DType, (ta|tb|tc|type::kMapper)>
+inline TernaryMapExp<OP, TA, TB, TC, DType, (ta|tb|tc|type::kMapper)>
 MakeExp(const Exp<TA, DType, ta> &item1, const Exp<TB, DType, tb> &item2, const Exp<TC, DType, tc> &item3) {
-  return TrinaryMapExp<OP, TA, TB, TC, DType,
+  return TernaryMapExp<OP, TA, TB, TC, DType,
                       (ta|tb|tc|type::kMapper)>(item1.self(), item2.self(), item3.self());
 }
 /*!
@@ -295,9 +295,9 @@ MakeExp(const Exp<TA, DType, ta> &item1, const Exp<TB, DType, tb> &item2, const 
  * \sa mshadow::op
  */
 
-//Trinary 
+//Ternary 
 template<typename OP, typename TA, typename TB, typename TC, typename DType, int ta, int tb, int tc>
-inline TrinaryMapExp<OP, TA, TB, TC, DType, (ta|tb|tc|type::kMapper)>
+inline TernaryMapExp<OP, TA, TB, TC, DType, (ta|tb|tc|type::kMapper)>
 F(const Exp<TA, DType, ta> &item1, const Exp<TB, DType, tb> &item2, const Exp<TC, DType, tc> &item3) {
   return MakeExp<OP>(item1, item2, item3);
 }
