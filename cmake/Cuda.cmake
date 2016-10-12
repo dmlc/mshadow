@@ -29,11 +29,16 @@ function(mshadow_detect_installed_gpus out_variable)
       "  }\n"
       "  return 0;\n"
       "}\n")
-
+    if(MSVC)
+      # Add directory of "cl.exe" to system path, otherwise "nvcc --run" will fail with "Cannot find compiler 'cl.exe' in PATH"
+      get_filename_component(CL_DIR ${CMAKE_C_COMPILER} DIRECTORY)
+      set(ENV{PATH} "$ENV{PATH};${CL_DIR}")
+    endif()
     execute_process(COMMAND "${CUDA_NVCC_EXECUTABLE}" "--run" "${__cufile}"
                     WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/CMakeFiles/"
                     RESULT_VARIABLE __nvcc_res OUTPUT_VARIABLE __nvcc_out
-                    ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+                    ERROR_QUIET
+                    OUTPUT_STRIP_TRAILING_WHITESPACE)
 
     if(__nvcc_res EQUAL 0)
       # nvcc outputs text containing line breaks when building with MSVC.
@@ -42,11 +47,13 @@ function(mshadow_detect_installed_gpus out_variable)
       string(REGEX MATCH "([1-9].[0-9])" __nvcc_out "${__nvcc_out}")
       string(REPLACE "2.1" "2.1(2.0)" __nvcc_out "${__nvcc_out}")
       set(CUDA_gpu_detect_output ${__nvcc_out} CACHE INTERNAL "Returned GPU architetures from mshadow_detect_gpus tool" FORCE)
+    else()
+      message(WARNING "Running GPU detection script with nvcc failed: ${__nvcc_out}")
     endif()
   endif()
 
   if(NOT CUDA_gpu_detect_output)
-    message(STATUS "Automatic GPU detection failed. Building for all known architectures.")
+    message(WARNING "Automatic GPU detection failed. Building for all known architectures (${mshadow_known_gpu_archs}).")
     set(${out_variable} ${mshadow_known_gpu_archs} PARENT_SCOPE)
   else()
     set(${out_variable} ${CUDA_gpu_detect_output} PARENT_SCOPE)
@@ -157,6 +164,9 @@ macro(mshadow_cuda_compile objlist_variable)
   endif()
 
   if(MSVC)
+    # disable noisy warnings:
+    # 4819: The file contains a character that cannot be represented in the current code page (number).
+    list(APPEND CUDA_NVCC_FLAGS -Xcompiler "/wd4819")
     foreach(flag_var
         CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
         CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
