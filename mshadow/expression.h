@@ -106,8 +106,7 @@ template<typename DstDType, typename SrcDType,
          typename EType, int etype>
 inline TypecastExp<DstDType, SrcDType, EType, (etype|type::kMapper)>
 tcast(const Exp<EType, SrcDType, etype> &exp) {
-  return TypecastExp<DstDType, SrcDType, EType, 
-                     (etype|type::kMapper)>(exp.self());
+  return TypecastExp<DstDType, SrcDType, EType, (etype|type::kMapper)>(exp.self());
 }
 /*! \brief represent a transpose expression of a container */
 template<typename EType, typename DType>
