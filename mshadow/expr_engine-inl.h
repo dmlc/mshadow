@@ -106,11 +106,11 @@ class Plan<TypecastExp<DstDType, SrcDType, EType, etype>, DstDType> {
 };
 
 // ternary expression
-template<typename OP, typename TA, typename TB,typename TC, int etype, typename DType>
-class Plan<TernaryMapExp<OP, TA, TB,TC, DType, etype>, DType> {
+template<typename OP, typename TA, typename TB, typename TC, int etype, typename DType>
+class Plan<TernaryMapExp<OP, TA, TB, TC, DType, etype>, DType> {
  public:
-  explicit Plan(const Plan<TA, DType> &item1, const Plan<TB, DType> &item2,const Plan<TC, DType> &item3)
-      : item1_(item1), item2_(item2),item3_(item3) {}
+  explicit Plan(const Plan<TA, DType> &item1, const Plan<TB, DType> &item2, const Plan<TC, DType> &item3)
+      : item1_(item1), item2_(item2), item3_(item3) {}
   MSHADOW_XINLINE DType Eval(index_t y, index_t x) const {
     return OP::Map(item1_.Eval(y, x), item2_.Eval(y, x), item3_.Eval(y, x));
   }
@@ -222,9 +222,9 @@ MakePlan(const BinaryMapExp<OP, TA, TB, DType, etype> &e) {
               DType>(MakePlan(e.lhs_), MakePlan(e.rhs_));
 }
 
-//Ternary
+// Ternary
 template<typename OP, typename TA, typename TB, typename TC, typename DType, int etype>
-inline Plan<TernaryMapExp<OP, TA, TB,TC, DType, etype>, DType>
+inline Plan<TernaryMapExp<OP, TA, TB, TC, DType, etype>, DType>
 MakePlan(const TernaryMapExp<OP, TA, TB, TC, DType, etype> &e) {
   return Plan<TernaryMapExp<OP, TA, TB, TC, DType, etype>,
               DType>(MakePlan(e.item1_), MakePlan(e.item2_), MakePlan(e.item3_));

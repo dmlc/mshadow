@@ -106,7 +106,7 @@ template<typename DstDType, typename SrcDType,
          typename EType, int etype>
 inline TypecastExp<DstDType, SrcDType, EType, (etype|type::kMapper)>
 tcast(const Exp<EType, SrcDType, etype> &exp) {
-  return TypecastExp<DstDType, SrcDType, EType,
+  return TypecastExp<DstDType, SrcDType, EType, 
                      (etype|type::kMapper)>(exp.self());
 }
 /*! \brief represent a transpose expression of a container */
@@ -275,7 +275,8 @@ struct TernaryMapExp: public Exp<TernaryMapExp<OP, TA, TB, TC, DType, etype>,
 /*! \brief make expression */
 template<typename OP, typename TA, typename TB, typename TC, typename DType, int ta, int tb, int tc>
 inline TernaryMapExp<OP, TA, TB, TC, DType, (ta|tb|tc|type::kMapper)>
-MakeExp(const Exp<TA, DType, ta> &item1, const Exp<TB, DType, tb> &item2, const Exp<TC, DType, tc> &item3) {
+MakeExp(const Exp<TA, DType, ta> &item1, const Exp<TB, DType, tb> &item2,
+ const Exp<TC, DType, tc> &item3) {
   return TernaryMapExp<OP, TA, TB, TC, DType,
                       (ta|tb|tc|type::kMapper)>(item1.self(), item2.self(), item3.self());
 }
@@ -295,10 +296,11 @@ MakeExp(const Exp<TA, DType, ta> &item1, const Exp<TB, DType, tb> &item2, const 
  * \sa mshadow::op
  */
 
-//Ternary 
+// Ternary 
 template<typename OP, typename TA, typename TB, typename TC, typename DType, int ta, int tb, int tc>
 inline TernaryMapExp<OP, TA, TB, TC, DType, (ta|tb|tc|type::kMapper)>
-F(const Exp<TA, DType, ta> &item1, const Exp<TB, DType, tb> &item2, const Exp<TC, DType, tc> &item3) {
+F(const Exp<TA, DType, ta> &item1, const Exp<TB, DType, tb> &item2,
+ const Exp<TC, DType, tc> &item3) {
   return MakeExp<OP>(item1, item2, item3);
 }
 //---------------
