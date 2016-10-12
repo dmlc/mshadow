@@ -280,12 +280,12 @@ MakeExp(const Exp<TA, DType, ta> &item1, const Exp<TB, DType, tb> &item2, const 
                       (ta|tb|tc|type::kMapper)>(item1.self(), item2.self(), item3.self());
 }
 /*!
- * \brief short hand for MakeExp, usage F<op>(item1,item2,item3). create a trinary operation expression 
+ * \brief short hand for MakeExp, usage F<op>(item1,item2,item3). create a ternary operation expression 
  * \param item1 first operand
  * \param item2 second operand
  * \param item3 third operand
  * \return the result expression
- * \tparam trinary operator 
+ * \tparam ternary operator 
  * \tparam TA item1 expression
  * \tparam ta item1 expression type
  * \tparam TB item2 expression

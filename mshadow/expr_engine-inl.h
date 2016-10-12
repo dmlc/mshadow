@@ -105,7 +105,7 @@ class Plan<TypecastExp<DstDType, SrcDType, EType, etype>, DstDType> {
   Plan<EType, SrcDType> src_;
 };
 
-// trinary expression
+// ternary expression
 template<typename OP, typename TA, typename TB,typename TC, int etype, typename DType>
 class Plan<TernaryMapExp<OP, TA, TB,TC, DType, etype>, DType> {
  public:
