@@ -295,7 +295,7 @@ MakeExp(const Exp<TA, DType, ta> &item1, const Exp<TB, DType, tb> &item2,
  * \sa mshadow::op
  */
 
-// Ternary 
+// Ternary
 template<typename OP, typename TA, typename TB, typename TC, typename DType, int ta, int tb, int tc>
 inline TernaryMapExp<OP, TA, TB, TC, DType, (ta|tb|tc|type::kMapper)>
 F(const Exp<TA, DType, ta> &item1, const Exp<TB, DType, tb> &item2,
