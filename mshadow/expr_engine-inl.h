@@ -112,7 +112,7 @@ class Plan<TernaryMapExp<OP, TA, TB,TC, DType, etype>, DType> {
   explicit Plan(const Plan<TA, DType> &item1, const Plan<TB, DType> &item2,const Plan<TC, DType> &item3)
       : item1_(item1), item2_(item2),item3_(item3) {}
   MSHADOW_XINLINE DType Eval(index_t y, index_t x) const {
-    return OP::Map(item1_.Eval(y, x), item2_.Eval(y, x),item3_.Eval(y,x));
+    return OP::Map(item1_.Eval(y, x), item2_.Eval(y, x),item3_.Eval(y, x));
   }
 
  private:
@@ -417,8 +417,8 @@ struct ShapeCheck<dim, TernaryMapExp<OP, TA, TB, TC, DType, etype> > {
     Shape<dim> shape2 = ShapeCheck<dim, TB>::Check(t.item2_);
     Shape<dim> shape3 = ShapeCheck<dim, TC>::Check(t.item3_);
     bool same = (shape1 == shape2) && (shape2 == shape3);
-    CHECK(same) << "BinaryMapExp: Shapes of operands are not the same, " <<
-      "Shape1=" << shape1 << ", Shape2=" << shape2;
+    CHECK(same) << "TernaryMapExp: Shapes of operands are not the same, " <<
+      "Shape1=" << shape1 << ", Shape2=" << shape2 << ", Shape3=" << shape3;
 
     return shape1;
   }
