@@ -104,6 +104,23 @@ class Plan<TypecastExp<DstDType, SrcDType, EType, etype>, DstDType> {
  private:
   Plan<EType, SrcDType> src_;
 };
+
+// ternary expression
+template<typename OP, typename TA, typename TB, typename TC, int etype, typename DType>
+class Plan<TernaryMapExp<OP, TA, TB, TC, DType, etype>, DType> {
+ public:
+  explicit Plan(const Plan<TA, DType> &item1, const Plan<TB, DType> &item2,
+       const Plan<TC, DType> &item3)
+      : item1_(item1), item2_(item2), item3_(item3) {}
+  MSHADOW_XINLINE DType Eval(index_t y, index_t x) const {
+    return OP::Map(item1_.Eval(y, x), item2_.Eval(y, x), item3_.Eval(y, x));
+  }
+
+ private:
+  Plan<TA, DType> item1_;
+  Plan<TB, DType> item2_;
+  Plan<TC, DType> item3_;
+};
 // binary expression
 template<typename OP, typename TA, typename TB, int etype, typename DType>
 class Plan<BinaryMapExp<OP, TA, TB, DType, etype>, DType> {
@@ -161,6 +178,10 @@ template<typename OP, typename TA, typename TB, typename DType, int etype>
 inline Plan<BinaryMapExp<OP, TA, TB, DType, etype>, DType>
 MakePlan(const BinaryMapExp<OP, TA, TB, DType, etype> &e);
 
+template<typename OP, typename TA, typename TB, typename TC, typename DType, int etype>
+inline Plan<TernaryMapExp<OP, TA, TB, TC, DType, etype>, DType>
+MakePlan(const TernaryMapExp<OP, TA, TB, TC, DType, etype> &e);
+
 template<typename DType>
 inline Plan<ScalarExp<DType>, DType> MakePlan(const ScalarExp<DType> &e) {
   return Plan<ScalarExp<DType>, DType>(e.scalar_);
@@ -200,6 +221,14 @@ inline Plan<BinaryMapExp<OP, TA, TB, DType, etype>, DType>
 MakePlan(const BinaryMapExp<OP, TA, TB, DType, etype> &e) {
   return Plan<BinaryMapExp<OP, TA, TB, DType, etype>,
               DType>(MakePlan(e.lhs_), MakePlan(e.rhs_));
+}
+
+// Ternary
+template<typename OP, typename TA, typename TB, typename TC, typename DType, int etype>
+inline Plan<TernaryMapExp<OP, TA, TB, TC, DType, etype>, DType>
+MakePlan(const TernaryMapExp<OP, TA, TB, TC, DType, etype> &e) {
+  return Plan<TernaryMapExp<OP, TA, TB, TC, DType, etype>,
+              DType>(MakePlan(e.item1_), MakePlan(e.item2_), MakePlan(e.item3_));
 }
 //----------------------------------------------------------------
 // Static Type inference and Type Checking
@@ -257,6 +286,15 @@ struct ExpInfo<BinaryMapExp<OP, TA, TB, DType, etype> > {
        ((kDimRhs == 0 || kDimLhs == kDimRhs) ? kDimLhs : -1)) : -1;
   static const int kDevMask = ExpInfo<TA>::kDevMask & ExpInfo<TB>::kDevMask;
 };
+template<typename OP, typename TA, typename TB, typename TC, typename DType, int etype>
+struct ExpInfo<TernaryMapExp<OP, TA, TB, TC, DType, etype> > {
+  static const int kDimItem1 = ExpInfo<TA>::kDim;
+  static const int kDimItem2 = ExpInfo<TB>::kDim;
+  static const int kDimItem3 = ExpInfo<TC>::kDim;
+  static const int kDim = kDimItem1;
+  static const int kDevMask = ExpInfo<TA>::kDevMask & ExpInfo<TB>::kDevMask & ExpInfo<TC>::kDevMask;
+};
+
 /*! \brief template to do type check */
 template<typename Device, int dim, typename DType, typename E>
 struct TypeCheck {
@@ -355,6 +393,7 @@ struct ShapeCheck<dim, UnaryMapExp<OP, TA, DType, etype> > {
     return s;
   }
 };
+
 template<int dim, typename OP, typename TA, typename TB,
          typename DType, int etype>
 struct ShapeCheck<dim, BinaryMapExp<OP, TA, TB, DType, etype> > {
@@ -369,7 +408,24 @@ struct ShapeCheck<dim, BinaryMapExp<OP, TA, TB, DType, etype> > {
     return shape1;
   }
 };
+
+template<int dim, typename OP, typename TA, typename TB, typename TC,
+         typename DType, int etype>
+struct ShapeCheck<dim, TernaryMapExp<OP, TA, TB, TC, DType, etype> > {
+  inline static Shape<dim>
+  Check(const TernaryMapExp<OP, TA, TB, TC, DType, etype> &t) {
+    Shape<dim> shape1 = ShapeCheck<dim, TA>::Check(t.item1_);
+    Shape<dim> shape2 = ShapeCheck<dim, TB>::Check(t.item2_);
+    Shape<dim> shape3 = ShapeCheck<dim, TC>::Check(t.item3_);
+    bool same = (shape1 == shape2) && (shape2 == shape3);
+    CHECK(same) << "TernaryMapExp: Shapes of operands are not the same, " <<
+      "Shape1=" << shape1 << ", Shape2=" << shape2 << ", Shape3=" << shape3;
+
+    return shape1;
+  }
+};
 }  // namespace expr
+
 }  // namespace mshadow
 // include definition of dot engine
 #include "./dot_engine-inl.h"
