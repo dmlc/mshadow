@@ -114,7 +114,7 @@ struct Plan<SliceExExp<SrcExp, Device, DType, srcdim>, DType> {
     }
     return src_.Eval(idx, j + begin_[srcdim-1]);
   }
-  MSHADOW_XINLINE DType &REval(index_t i, index_t j) const {
+  MSHADOW_XINLINE DType &REval(index_t i, index_t j) {
     index_t idx = 0;
     index_t stride = 1;
     #pragma unroll
