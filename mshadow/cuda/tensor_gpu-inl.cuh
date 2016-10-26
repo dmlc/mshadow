@@ -13,6 +13,7 @@
 #endif
 #include "../tensor.h"
 #include "./reduce.cuh"
+#include "./tensor_gpu_roipooling-inl.cuh"
 
 namespace mshadow {
 namespace cuda {
