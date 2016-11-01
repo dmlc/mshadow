@@ -457,7 +457,7 @@ inline void BatchGEMM(Tensor<Device, 3, DType> dst,
                       DType alpha,
                       DType beta,
                       Tensor<Device, 1, DType*> workspace) {
-  int batch_size = dst.shape_[0];
+  index_t batch_size = dst.shape_[0];
   expr::BLASEngine<Device, DType>::SetStream(dst.stream_);
   Shape<3> sleft = transpose_left ? Shape3(lhs.shape_[0], lhs.shape_[2], lhs.shape_[1])
     : lhs.shape_;

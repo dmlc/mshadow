@@ -37,13 +37,13 @@ struct ReduceWithAxisExp:
     bool keepdim = (dimsrc == dimdst);
     CHECK(dimsrc > axis) << "reduce axis out of bound";
     Shape<dimsrc> src_shape = ShapeCheck<dimsrc, SrcExp>::Check(src_);
-    for (index_t i = 0; i < axis; ++i) {
+    for (int i = 0; i < axis; ++i) {
       this->shape_[i] = src_shape[i];
     }
     this->size_ = src_shape[axis];
     this->trailing_ = 1;
     if (!keepdim) {
-      for (index_t i = axis + 1; i < dimsrc; ++i) {
+      for (int i = axis + 1; i < dimsrc; ++i) {
         this->trailing_ *= src_shape[i];
         this->shape_[i - 1] = src_shape[i];
       }
