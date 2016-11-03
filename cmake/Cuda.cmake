@@ -176,6 +176,14 @@ macro(mshadow_cuda_compile objlist_variable)
     endforeach(flag_var)
   endif()
 
+  # If the build system is a container, make sure the nvcc intermediate files
+  # go into the build output area rather than in /tmp, which may run out of space
+  if(IS_CONTAINER_BUILD)
+    set(CUDA_NVCC_INTERMEDIATE_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+    message(STATUS "Caontainer build enabled, so nvcc intermediate files in: ${CUDA_NVCC_INTERMEDIATE_DIR}")
+    list(APPEND CUDA_NVCC_FLAGS "--keep --keep-dir ${CUDA_NVCC_INTERMEDIATE_DIR}")
+  endif()
+
   cuda_compile(cuda_objcs ${ARGN})
 
   foreach(var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_DEBUG)
@@ -217,7 +225,16 @@ endfunction()
 ###  Non macro section
 ################################################################################################
 
-find_package(CUDA 5.5 QUIET)
+# Try to prime CUDA_TOOLKIT_ROOT_DIR by looking for libcudart.so
+if(NOT CUDA_TOOLKIT_ROOT_DIR)
+  find_library(CUDA_LIBRARY_PATH libcudart.so PATHS ENV LD_LIBRARY_PATH PATH_SUFFIXES lib lib64)
+  if(CUDA_LIBRARY_PATH)
+    get_filename_component(CUDA_LIBRARY_PATH ${CUDA_LIBRARY_PATH} DIRECTORY)
+    set(CUDA_TOOLKIT_ROOT_DIR "${CUDA_LIBRARY_PATH}/..")
+  endif()
+endif()
+
+find_package(CUDA 5.5 QUIET REQUIRED)
 find_cuda_helper_libs(curand)  # cmake 2.8.7 compartibility which doesn't search for curand
 
 if(NOT CUDA_FOUND)
