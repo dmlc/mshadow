@@ -238,6 +238,10 @@ extern "C" {
     }                                                                   \
   }
 
+#if !(MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 5)
+typedef int cudnnTensorFormat_t;
+#endif
+
 #include "./half.h"
 #include "./logging.h"
 /*! \brief namespace for mshadow */
@@ -262,6 +266,7 @@ enum TypeFlag {
 
 template<typename DType>
 struct DataType;
+
 template<>
 struct DataType<float> {
   static const int kFlag = kFloat32;
@@ -297,6 +302,63 @@ struct DataType<int32_t> {
 
 /*! \brief type enum value for default real type */
 const int default_type_flag = DataType<default_real_t>::kFlag;
+
+enum LayoutFlag {
+  kNCHW = 0,
+  kNHWC,
+  kCHWN,
+
+  kNCDHW = 1 << 5,
+  kNDHWC,
+  kCDHWN
+};
+
+template<int layout>
+struct LayoutType;
+
+template<>
+struct LayoutType<kNCHW> {
+  static const index_t kNdim = 4;
+#if (MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 5)
+  static const cudnnTensorFormat_t kCudnnFlag = CUDNN_TENSOR_NCHW;
+#else
+  static const cudnnTensorFormat_t kCudnnFlag = -1;
+#endif
+};
+
+template<>
+struct LayoutType<kNHWC> {
+  static const index_t kNdim = 4;
+#if (MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 5)
+  static const cudnnTensorFormat_t kCudnnFlag = CUDNN_TENSOR_NHWC;
+#else
+  static const cudnnTensorFormat_t kCudnnFlag = -1;
+#endif
+};
+
+const int default_layout = kNCHW;
+
+template<>
+struct LayoutType<kNCDHW> {
+  static const index_t kNdim = 5;
+#if (MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 5)
+  static const cudnnTensorFormat_t kCudnnFlag = CUDNN_TENSOR_NCHW;
+#else
+  static const cudnnTensorFormat_t kCudnnFlag = -1;
+#endif
+};
+
+template<>
+struct LayoutType<kNDHWC> {
+  static const index_t kNdim = 5;
+#if (MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 5)
+  static const cudnnTensorFormat_t kCudnnFlag = CUDNN_TENSOR_NHWC;
+#else
+  static const cudnnTensorFormat_t kCudnnFlag = -1;
+#endif
+};
+
+const int default_layout_5d = kNCDHW;
 
 /*! \brief namespace for operators */
 namespace op {
@@ -602,6 +664,36 @@ struct minimum {
     break;                                            \
   default:                                            \
     LOG(FATAL) << "Unknown type enum " << type;       \
+  }
+
+#define MSHADOW_LAYOUT_SWITCH(layout, Layout, ...)  \
+  switch (layout) {                                 \
+  case mshadow::kNCHW:                              \
+    {                                               \
+      const int Layout = kNCHW;                     \
+      {__VA_ARGS__}                                 \
+    }                                               \
+    break;                                          \
+  case mshadow::kNHWC:                              \
+    {                                               \
+      const int Layout = kNHWC;                     \
+      {__VA_ARGS__}                                 \
+    }                                               \
+    break;                                          \
+  case mshadow::kNCDHW:                             \
+    {                                               \
+      const int Layout = kNCDHW;                    \
+      {__VA_ARGS__}                                 \
+    }                                               \
+    break;                                          \
+  case mshadow::kNDHWC:                             \
+    {                                               \
+      const int Layout = kNDHWC;                    \
+      {__VA_ARGS__}                                 \
+    }                                               \
+    break;                                          \
+  default:                                          \
+    LOG(FATAL) << "Unknown layout enum " << layout; \
   }
 
 /*! \brief get data type size from type enum */
