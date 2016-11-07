@@ -241,65 +241,79 @@ MSHADOW_XINLINE Shape<5> Shape5(index_t s0, index_t s1, index_t s2,
   return s;
 }
 
+/*!
+* \brief Convert shape in src_layout to shape in dst_layout
+* \param src original shape
+* \param src_layout layout of original shape
+* \param dst_layout target layout
+* \return shape in target layout
+*/
 inline Shape<4> ConvertLayout(const Shape<4>& src, int src_layout, int dst_layout) {
   Shape<4> dst;
   switch (src_layout) {
-   case kNCHW:
+  case kNCHW:
     dst = src;
     break;
-   case kNHWC:
+  case kNHWC:
     dst[0] = src[0];
     dst[2] = src[1];
     dst[3] = src[2];
     dst[1] = src[3];
     break;
-   default:
+  default:
     LOG(FATAL) << "Invalid layout for 4d shape " << src_layout;
   }
   Shape<4> dst2;
   switch (dst_layout) {
-   case kNCHW:
+  case kNCHW:
     return dst;
-   case kNHWC:
+  case kNHWC:
     dst2[0] = dst[0];
     dst2[1] = dst[2];
     dst2[2] = dst[3];
     dst2[3] = dst[1];
     break;
-   default:
+  default:
     LOG(FATAL) << "Invalid layout for 4d shape " << src_layout;
   }
   return dst2;
 }
 
+/*!
+* \brief Convert shape in src_layout to shape in dst_layout
+* \param src original shape
+* \param src_layout layout of original shape
+* \param dst_layout target layout
+* \return shape in target layout
+*/
 inline Shape<5> ConvertLayout(const Shape<5>& src, int src_layout, int dst_layout) {
   Shape<5> dst;
   switch (src_layout) {
-   case kNCDHW:
+  case kNCDHW:
     dst = src;
     break;
-   case kNDHWC:
+  case kNDHWC:
     dst[0] = src[0];
     dst[2] = src[1];
     dst[3] = src[2];
     dst[4] = src[3];
     dst[1] = src[4];
     break;
-   default:
+  default:
     LOG(FATAL) << "Invalid layout for 5d shape " << src_layout;
   }
   Shape<5> dst2;
   switch (dst_layout) {
-   case kNCDHW:
+  case kNCDHW:
     return dst;
-   case kNDHWC:
+  case kNDHWC:
     dst2[0] = dst[0];
     dst2[1] = dst[2];
     dst2[2] = dst[3];
     dst2[3] = dst[4];
     dst2[4] = dst[1];
     break;
-   default:
+  default:
     LOG(FATAL) << "Invalid layout for 5d shape " << src_layout;
   }
   return dst2;
