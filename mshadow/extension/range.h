@@ -23,18 +23,18 @@ namespace expr {
 template<typename DType>
 struct RangeExp:
       public Exp<RangeExp<DType>, DType, type::kMapper> {
-  const int start_;
-  const int stop_;
-  const int step_;
+  const float start_;
+  const float stop_;
+  const float step_;
   const int repeat_;
   /*! \brief constructor */
-  RangeExp(int start, int stop, int step, int repeat)
+  RangeExp(float start, float stop, float step, int repeat)
       : start_(start), stop_(stop), step_(step), repeat_(repeat) {}
 };
 
 template<typename DType>
 inline RangeExp<DType>
-range(int start, int stop, int step = 1, int repeat = 1) {
+range(float start, float stop, float step = 1, int repeat = 1) {
   return RangeExp<DType>(start, stop, step, repeat);
 }
 
@@ -51,13 +51,14 @@ struct Plan<RangeExp<DType>, DType> {
         repeat_(e.repeat_) {
   }
   MSHADOW_XINLINE DType Eval(index_t y, index_t x) const {
-    return static_cast<DType>(start_ + (static_cast<int>(x) / repeat_) *  step_);
+    return static_cast<DType>(start_ +
+                              static_cast<float>((static_cast<int>(x) / repeat_)) *  step_);
   }
 
  private:
-  const int start_;
-  const int stop_;
-  const int step_;
+  const float start_;
+  const float stop_;
+  const float step_;
   const int repeat_;
 };
 
@@ -80,11 +81,11 @@ struct ShapeCheck<dim, RangeExp<DType> > {
     if (t.step_ > 0) {
       CHECK(t.start_ < t.stop_) << "RangeExp does not support (start, stop, step) = "
                                 << "(" << t.start_ << "," << t.stop_ << "," << t.step_ << ")";
-      return Shape1(t.repeat_ * ((t.stop_ - 1 - t.start_) / t.step_ + 1));
+      return Shape1(t.repeat_ * ceil((t.stop_ - t.start_) / t.step_));
     } else {
       CHECK(t.start_ > t.stop_) << "RangeExp does not support (start, stop, step)= "
                                 << "(" << t.start_ << "," << t.stop_ << "," << t.step_ << ")";
-      return Shape1(t.repeat_ * ((t.start_ - 1 - t.stop_) / (- t.step_) + 1));
+      return Shape1(t.repeat_ * ceil((t.stop_ - t.start_) / t.step_));
     }
   }
 };
