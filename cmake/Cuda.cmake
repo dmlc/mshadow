@@ -200,7 +200,7 @@ function(detect_cuDNN)
 
   get_filename_component(__libpath_hist ${CUDA_CUDART_LIBRARY} PATH)
   find_library(CUDNN_LIBRARY NAMES cudnn # libcudnn_static.a
-                             PATHS ${CUDNN_ROOT} $ENV{CUDNN_ROOT} ${CUDNN_ROOT}/lib64 ${CUDNN_ROOT}/lib ${__libpath_hist}
+                             PATHS ${CUDNN_ROOT} $ENV{CUDNN_ROOT} ${CUDNN_ROOT}/lib64 ${CUDNN_ROOT}/lib ${CUDNN_ROOT}/lib/x64 ${__libpath_hist}
                              DOC "Path to cuDNN library.")
 
   if(CUDNN_INCLUDE AND CUDNN_LIBRARY)
