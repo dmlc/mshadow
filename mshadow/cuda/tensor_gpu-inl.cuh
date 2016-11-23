@@ -552,6 +552,9 @@ template<typename IndexType, typename DType>
 inline void AddTakeGrad(Tensor<gpu, 2, DType> dst,
                         const Tensor<gpu, 1, IndexType>& index,
                         const Tensor<gpu, 2, DType> &src) {
+  CHECK_EQ(dst.CheckContiguous(), true);
+  CHECK_EQ(index.CheckContiguous(), true);
+  CHECK_EQ(src.CheckContiguous(), true);
   const int kUnitBits = kMemUnitBits + 1;
   dim3 dimBlock(1 << kUnitBits);
   dim3 dimGrid((dst.size(1) + (1 << kUnitBits) - 1) >> kUnitBits);
@@ -575,6 +578,10 @@ inline void AddTakeGradLargeBatch(Tensor<gpu, 2, DType> dst,
                                   const Tensor<gpu, 1, IndexType>& sorted,
                                   const Tensor<gpu, 1, IndexType>& index,
                                   const Tensor<gpu, 2, DType> &src) {
+  CHECK_EQ(dst.CheckContiguous(), true);
+  CHECK_EQ(sorted.CheckContiguous(), true);
+  CHECK_EQ(index.CheckContiguous(), true);
+  CHECK_EQ(src.CheckContiguous(), true);
   const int kWarpBits = kMemUnitBits;
   const int SZ = 4;
   const int block_dim_x = 1 << kWarpBits;
@@ -597,6 +604,45 @@ inline void AddTakeGradLargeBatch(Tensor<gpu, 2, DType> dst,
        src.dptr_,
        static_cast<int>(src.size(0)),
        static_cast<int>(src.size(1)));
+}
+
+template<int warp_bits, typename DType, typename DstPlan, typename IndexPlan, typename SrcPlan>
+__global__ void IndexFillKernel(DstPlan dst,
+                                IndexPlan index, SrcPlan src,
+                                index_t ymax, int xmax) {
+  int src_idx = blockIdx.x * blockDim.y + threadIdx.y;
+  if (src_idx < ymax) {
+    int dst_idx = static_cast<int>(index.Eval(0, src_idx));
+    for (int i = threadIdx.x; i < xmax; i += blockDim.x) {
+      dst.REval(dst_idx, i) = src.Eval(src_idx, i);
+    }
+  }
+}
+
+template<typename IndexType, typename DType>
+inline void IndexFill(Tensor<gpu, 2, DType> dst,
+                      const Tensor<gpu, 1, IndexType>& index,
+                      const Tensor<gpu, 2, DType> &src) {
+  CHECK_EQ(dst.CheckContiguous(), true);
+  CHECK_EQ(index.CheckContiguous(), true);
+  CHECK_EQ(src.CheckContiguous(), true);
+  CHECK_EQ(dst.size(1), src.size(1)) << "IndexFill: shape mismatch";
+  CHECK_EQ(index.size(0), src.size(0)) << "IndexFill: shape mismatch";
+  const int block_dim_x = 1 << kMemUnitBits;
+  const int block_dim_y = 4;
+  const int grid_dim_x = (src.size(0) + block_dim_y - 1) / block_dim_y;
+  dim3 dimBlock(block_dim_x, block_dim_y);
+  dim3 dimGrid(grid_dim_x);
+  CheckLaunchParam(dimGrid, dimBlock, "IndexFill");
+  cudaStream_t stream = Stream<gpu>::GetStream(dst.stream_);
+
+  IndexFillKernel<kMemUnitBits, DType>
+      <<<dimGrid, dimBlock, 0, stream>>>
+      (expr::MakePlan(dst),
+       expr::MakePlan(index),
+       expr::MakePlan(src),
+       src.size(0),
+       src.size(1));
 }
 
 template<typename KDType, typename VDType>

@@ -405,6 +405,17 @@ inline void AddTakeGradLargeBatch(Tensor<cpu, 2, DType> dst,
   }
 }
 
+template<typename IndexType, typename DType>
+inline void IndexFill(Tensor<cpu, 2, DType> dst,
+                      const Tensor<cpu, 1, IndexType>& index,
+                      const Tensor<cpu, 2, DType> &src) {
+  for (index_t y = 0; y < index.size(0); ++y) {
+    for (index_t j = 0; j < src.size(1); j++) {
+      dst[index[y]][j] = src[y][j];
+    }
+  }
+}
+
 template<typename KDType, typename VDType>
 inline void SortByKey(Tensor<cpu, 1, KDType> keys, Tensor<cpu, 1, VDType> values,
                       bool is_ascend) {
@@ -413,19 +424,26 @@ inline void SortByKey(Tensor<cpu, 1, KDType> keys, Tensor<cpu, 1, VDType> values
   CHECK_EQ(keys.size(0), values.size(0))
     << "The sizes of key/value are not equal! keys_size: " << keys.size(0)
     << "values_size: " << values.size(0);
-  std::vector<std::pair<KDType, VDType> > V;
-  for (index_t i = 0; i < values.size(0); ++i) {
-    std::pair<KDType, VDType> P = std::make_pair(keys[i], values[i]);
-    V.push_back(P);
+  std::vector<size_t> idx(keys.size(0));
+  std::vector<KDType> keys_vec(keys.size(0));
+  std::vector<VDType> values_vec(values.size(0));
+  for (int i = 0; i < keys.size(0); i++) {
+    idx[i] = i;
+    keys_vec[i] = keys[i];
+    values_vec[i] = values[i];
   }
   if (is_ascend) {
-    std::stable_sort(V.begin(), V.end());
+    std::stable_sort(idx.begin(), idx.end(),
+                     [&keys_vec](size_t i1, size_t i2)
+                       {return keys_vec[i1] < keys_vec[i2]; });
   } else {
-    std::stable_sort(V.begin(), V.end(), std::greater<std::pair<KDType, VDType> >());
+    std::stable_sort(idx.begin(), idx.end(),
+                     [&keys_vec](size_t i1, size_t i2)
+                       {return keys_vec[i1] > keys_vec[i2]; });
   }
   for (index_t i = 0; i < values.size(0); i++) {
-    keys[i] = V[i].first;
-    values[i] = V[i].second;
+    keys[i] = keys_vec[idx[i]];
+    values[i] = values_vec[idx[i]];
   }
 }
 
