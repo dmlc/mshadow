@@ -766,7 +766,8 @@ inline void SoftmaxGrad(Tensor<gpu, 2, DType> dst,
                         const Tensor<gpu, 2, DType> &src,
                         const Tensor<gpu, 1, DType> &label);
 /*!
- * \brief CPU/GPU: Gradient accumulate of embedding matrix. dst += take_grad(src, index)
+ * \brief CPU/GPU: Gradient accumulate of embedding matrix.
+                   dst[index[i]] += src[i]
                    Called when the featuredim of src is much larger than the batchsize
  * \param dst destination
  * \param index index to take
@@ -777,7 +778,8 @@ inline void AddTakeGrad(Tensor<cpu, 2, DType> dst,
                         const Tensor<cpu, 1, IndexType>& index,
                         const Tensor<cpu, 2, DType> &src);
 /*!
- * \brief CPU/GPU: Gradient accumulate of embedding matrix. dst += take_grad(src, index)
+ * \brief CPU/GPU: Gradient accumulate of embedding matrix.
+                   dst[index[i]] += src[i]
                    Called when the featuredim of src is much larger than the batchsize
  * \param dst destination
  * \param index index to take
@@ -788,7 +790,8 @@ inline void AddTakeGrad(Tensor<gpu, 2, DType> dst,
                         const Tensor<gpu, 1, IndexType>& index,
                         const Tensor<gpu, 2, DType> &src);
 /*!
- * \brief CPU/GPU: Gradient accumulate of embedding matrix. dst += take_grad(src, index)
+ * \brief CPU/GPU: Gradient accumulate of embedding matrix.
+                   dst[sorted[i]] += src[index[i]]
                    Called when the batchsize of src is larger than the featuredim
  * \param dst destination
  * \param sorted the sorted indices
@@ -801,7 +804,8 @@ inline void AddTakeGradLargeBatch(Tensor<cpu, 2, DType> dst,
                                   const Tensor<cpu, 1, IndexType>& index,
                                   const Tensor<cpu, 2, DType> &src);
 /*!
- * \brief CPU/GPU: Gradient accumulate of embedding matrix. dst += take_grad(src, index)
+ * \brief CPU/GPU: Gradient accumulate of embedding matrix.
+                   dst[sorted[i]] += src[index[i]]
                    Called when the batchsize of src is larger than the featuredim
  * \param dst destination
  * \param sorted the sorted indices
@@ -814,11 +818,35 @@ inline void AddTakeGradLargeBatch(Tensor<gpu, 2, DType> dst,
                                   const Tensor<gpu, 1, IndexType>& index,
                                   const Tensor<gpu, 2, DType> &src);
 /*!
-* \brief CPU/GPU: Sort key-value pairs stored in separate places. (Stable sort is performed!)
-* \param keys the keys to sort
-* \param values the values that sorts w.r.t the key
-* \param is_ascend whether to sort key in ascending order
-*/
+ * \brief CPU/GPU: Fill the values of the destination matrix to specific rows in the source matrix.
+                   dst[index[i]] = src[i]
+                   Will use atomicAdd in the inner implementation and the result may not be deterministic.
+ * \param dst destination
+ * \param index the index to accumulate value
+ * \param src source output
+ */
+template<typename IndexType, typename DType>
+inline void IndexFill(Tensor<cpu, 2, DType> dst,
+                      const Tensor<cpu, 1, IndexType>& index,
+                      const Tensor<cpu, 2, DType> &src);
+/*!
+ * \brief CPU/GPU: Fill the values of the destination matrix to specific rows in the source matrix.
+                   dst[index[i]] = src[i]
+                   Will use atomicAdd in the inner implementation and the result may not be deterministic.
+ * \param dst destination
+ * \param index the index to accumulate value
+ * \param src source output
+ */
+template<typename IndexType, typename DType>
+inline void IndexFill(Tensor<gpu, 2, DType> dst,
+                      const Tensor<gpu, 1, IndexType>& index,
+                      const Tensor<gpu, 2, DType> &src);
+/*!
+ * \brief CPU/GPU: Sort key-value pairs stored in separate places. (Stable sort is performed!)
+ * \param keys the keys to sort
+ * \param values the values that sorts w.r.t the key
+ * \param is_ascend whether to sort key in ascending order
+ */
 template<typename KDType, typename VDType>
 inline void SortByKey(Tensor<cpu, 1, KDType> keys, Tensor<cpu, 1, VDType> values,
                       bool is_ascend = true);
