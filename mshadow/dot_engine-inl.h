@@ -811,7 +811,7 @@ struct DotEngine<SV, xpu, 2, 1, 1, true, false, DType> {
            rhs.dptr_, 1, lhs.dptr_, 1, dst.dptr_, dst.stride_);
     } else {
       DotEngine<SV, xpu, 2, 2, 2, true, false,
-                DType>::Eval(dst, lhs.FlatTo2D(), rhs.FlatTo2D(), scale);
+                DType>::Eval(p_dst, lhs.FlatTo2D(), rhs.FlatTo2D(), scale);
     }
   }
 };

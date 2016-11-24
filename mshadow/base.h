@@ -239,6 +239,7 @@ extern "C" {
   }
 
 #if !(MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 5)
+/*! \brief dummy definition when not using cudnn */
 typedef int cudnnTensorFormat_t;
 #endif
 
@@ -303,6 +304,7 @@ struct DataType<int32_t> {
 /*! \brief type enum value for default real type */
 const int default_type_flag = DataType<default_real_t>::kFlag;
 
+/*! layout flag */
 enum LayoutFlag {
   kNCHW = 0,
   kNHWC,
@@ -336,6 +338,7 @@ struct LayoutType<kNHWC> {
 #endif
 };
 
+/*! \brief default layout for 4d tensor */
 const int default_layout = kNCHW;
 
 template<>
@@ -358,6 +361,7 @@ struct LayoutType<kNDHWC> {
 #endif
 };
 
+/*! \brief default layout for 5d tensor */
 const int default_layout_5d = kNCDHW;
 
 /*! \brief namespace for operators */
