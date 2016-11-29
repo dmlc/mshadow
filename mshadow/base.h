@@ -238,7 +238,7 @@ extern "C" {
     }                                                                   \
   }
 
-#if !(MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 5)
+#if !(MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 4)
 /*! \brief dummy definition when not using cudnn */
 typedef int cudnnTensorFormat_t;
 #endif
@@ -321,7 +321,7 @@ struct LayoutType;
 template<>
 struct LayoutType<kNCHW> {
   static const index_t kNdim = 4;
-#if (MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 5)
+#if (MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 4)
   static const cudnnTensorFormat_t kCudnnFlag = CUDNN_TENSOR_NCHW;
 #else
   static const cudnnTensorFormat_t kCudnnFlag = -1;
@@ -331,7 +331,7 @@ struct LayoutType<kNCHW> {
 template<>
 struct LayoutType<kNHWC> {
   static const index_t kNdim = 4;
-#if (MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 5)
+#if (MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 4)
   static const cudnnTensorFormat_t kCudnnFlag = CUDNN_TENSOR_NHWC;
 #else
   static const cudnnTensorFormat_t kCudnnFlag = -1;
@@ -344,7 +344,7 @@ const int default_layout = kNCHW;
 template<>
 struct LayoutType<kNCDHW> {
   static const index_t kNdim = 5;
-#if (MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 5)
+#if (MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 4)
   static const cudnnTensorFormat_t kCudnnFlag = CUDNN_TENSOR_NCHW;
 #else
   static const cudnnTensorFormat_t kCudnnFlag = -1;
@@ -354,7 +354,7 @@ struct LayoutType<kNCDHW> {
 template<>
 struct LayoutType<kNDHWC> {
   static const index_t kNdim = 5;
-#if (MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 5)
+#if (MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 4)
   static const cudnnTensorFormat_t kCudnnFlag = CUDNN_TENSOR_NHWC;
 #else
   static const cudnnTensorFormat_t kCudnnFlag = -1;
