@@ -210,10 +210,18 @@ inline void AddTakeGradLargeBatch(Tensor<gpu, 2, DType> dst,
                                   const Tensor<gpu, 2, DType> &src) {
   cuda::AddTakeGradLargeBatch(dst, sorted, index, src);
 }
+
 template<typename KDType, typename VDType>
 inline void SortByKey(Tensor<gpu, 1, KDType> keys, Tensor<gpu, 1, VDType> values,
                       bool is_ascend) {
   cuda::SortByKey(keys, values, is_ascend);
+}
+
+template<typename IndexType, typename DType>
+inline void IndexFill(Tensor<gpu, 2, DType> dst,
+                      const Tensor<gpu, 1, IndexType>& index,
+                      const Tensor<gpu, 2, DType> &src) {
+  cuda::IndexFill(dst, index, src);
 }
 }  // namespace mshadow
 #endif  // __CUDACC__
