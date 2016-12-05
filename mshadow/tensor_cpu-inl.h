@@ -381,7 +381,7 @@ inline void Softmax(Tensor<cpu, 2, DType> dst,
   CHECK_EQ(dst.shape_, energy.shape_) << "Softmax: shape mismatch";
 #ifdef USE_MKL
 #pragma omp parallel for
-#endif 
+#endif
   for (index_t y = 0; y < dst.size(0); ++y) {
     Softmax(dst[y], energy[y]);
   }
