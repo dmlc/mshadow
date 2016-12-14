@@ -211,9 +211,6 @@ inline void MapReduceKeepLowest(TRValue<R, cpu, 1, DType> *dst,
   // execution
   expr::Plan<R, DType> dplan = MakePlan(dst->self());
   expr::Plan<E, DType> splan = MakePlan(exp.self());
-#ifdef USE_MKL
-#pragma omp parallel for
-#endif
   for (index_t x = 0; x < eshape[1]; ++x) {
     DType res = splan.Eval(0, x);
     for (index_t y = 1; y < eshape[0]; ++y) {
@@ -244,9 +241,6 @@ inline void MapReduceKeepHighDim(TRValue<R, cpu, 1, DType> *dst,
   // execution
   expr::Plan<R, DType> dplan = MakePlan(dst->self());
   expr::Plan<E, DType> splan = MakePlan(exp.self());
-#ifdef USE_MKL
-#pragma omp parallel for
-#endif
   for (index_t c = 0; c < pshape[1]; ++c) {
     DType res; Reducer::SetInitValue(res);
     for (index_t n = 0; n < pshape[0]; ++n) {
