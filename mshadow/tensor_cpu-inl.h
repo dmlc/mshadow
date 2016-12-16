@@ -278,9 +278,7 @@ template<typename DType>
 inline void SoftmaxGrad(Tensor<cpu, 2, DType> dst,
                         const Tensor<cpu, 2, DType> &src,
                         const Tensor<cpu, 1, DType> &label) {
-#ifdef USE_MKL
 #pragma omp parallel for
-#endif
   for (index_t y = 0; y < dst.size(0); ++y) {
     const index_t k = static_cast<int>(label[y]);
     for (index_t x = 0; x < dst.size(1); ++x) {
@@ -298,9 +296,7 @@ inline void SoftmaxGrad(Tensor<cpu, 2, DType> dst,
                         const Tensor<cpu, 2, DType> &src,
                         const Tensor<cpu, 1, DType> &label,
                         const DType &ignore_label) {
-#ifdef USE_MKL
 #pragma omp parallel for
-#endif
   for (index_t y = 0; y < dst.size(0); ++y) {
     const index_t k = static_cast<int>(label[y]);
     for (index_t x = 0; x < dst.size(1); ++x) {
@@ -321,9 +317,7 @@ template<typename DType>
 inline void SoftmaxGrad(Tensor<cpu, 3, DType> dst,
                         const Tensor<cpu, 3, DType> &src,
                         const Tensor<cpu, 2, DType> &label) {
-#ifdef USE_MKL
 #pragma omp parallel for
-#endif
   for (index_t n = 0; n < dst.size(2); ++n) {
     for (index_t y = 0; y < dst.size(0); ++y) {
       const index_t k = static_cast<int>(label[y][n]);
@@ -343,9 +337,7 @@ inline void SoftmaxGrad(Tensor<cpu, 3, DType> dst,
                         const Tensor<cpu, 3, DType> &src,
                         const Tensor<cpu, 2, DType> &label,
                         const DType &ignore_label) {
-#ifdef USE_MKL
 #pragma omp parallel for
-#endif
   for (index_t n = 0; n < dst.size(2); ++n) {
     for (index_t y = 0; y < dst.size(0); ++y) {
       const index_t k = static_cast<int>(label[y][n]);
@@ -370,9 +362,7 @@ template<typename DType>
 inline void Softmax(Tensor<cpu, 2, DType> dst,
                     const Tensor<cpu, 2, DType> &energy) {
   CHECK_EQ(dst.shape_, energy.shape_) << "Softmax: shape mismatch";
-#ifdef USE_MKL
 #pragma omp parallel for
-#endif
   for (index_t y = 0; y < dst.size(0); ++y) {
     Softmax(dst[y], energy[y]);
   }
@@ -382,9 +372,7 @@ template<typename DType>
 inline void Softmax(Tensor<cpu, 3, DType> dst,
                     const Tensor<cpu, 3, DType> &energy) {
   CHECK_EQ(dst.shape_, energy.shape_) << "Softmax: shape mismatch";
-#ifdef USE_MKL
 #pragma omp parallel for
-#endif
   for (index_t y = 0; y < dst.size(0); ++y) {
     for (index_t n = 0; n < dst.size(2); ++n) {
       DType mmax = energy[y][0][n];
