@@ -30,6 +30,7 @@ if(USE_CUDA)
 		message(FATAL_ERROR "-- CUDA is disabled.")
 	endif()
 	add_definitions(-DMSHADOW_USE_CUDA=1)
+	add_definitions(-DMSHADOW_FORCE_STREAM)
 	include_directories(SYSTEM ${CUDA_INCLUDE_DIRS})
     list(APPEND mshadow_LINKER_LIBS ${CUDA_CUDART_LIBRARY}
                               ${CUDA_curand_LIBRARY} ${CUDA_CUBLAS_LIBRARIES})
