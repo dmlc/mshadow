@@ -162,6 +162,10 @@ macro(mshadow_cuda_compile objlist_variable)
   if(APPLE)
     list(APPEND CUDA_NVCC_FLAGS -Xcompiler -Wno-unused-function)
   endif()
+  
+  if(NOT NDEBUG)
+    list(APPEND CUDA_NVCC_FLAGS -G)
+  endif()
 
   if(MSVC)
     # disable noisy warnings:
