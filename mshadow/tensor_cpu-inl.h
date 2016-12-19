@@ -67,6 +67,12 @@ inline void FreeHost_<gpu>(void *dptr) {
 }
 #endif
 
+#ifdef _WIN32
+  typedef int64_t openmp_index_t;
+#else
+  typedef index_t openmp_index_t;
+#endif
+
 template<>
 inline void *AllocHost_<cpu>(size_t size) {
   size_t pitch;
@@ -145,7 +151,6 @@ inline void MapPlan(TRValue<R, cpu, dim, DType> *dst,
                     const expr::Plan<E, DType> &plan) {
   Shape<2> shape = expr::ShapeCheck<dim, R>::Check(dst->self()).FlatTo2D();
   expr::Plan<R, DType> dplan = expr::MakePlan(dst->self());
-  // #pragma omp parallel for
   // temp remove openmp, as default setting throttles CPU
   for (index_t y = 0; y < shape[0]; ++y) {
     for (index_t x = 0; x < shape[1]; ++x) {
@@ -279,7 +284,8 @@ template<typename DType>
 inline void SoftmaxGrad(Tensor<cpu, 2, DType> dst,
                         const Tensor<cpu, 2, DType> &src,
                         const Tensor<cpu, 1, DType> &label) {
-  for (index_t y = 0; y < dst.size(0); ++y) {
+#pragma omp parallel for
+  for (openmp_index_t y = 0; y < dst.size(0); ++y) {
     const index_t k = static_cast<int>(label[y]);
     for (index_t x = 0; x < dst.size(1); ++x) {
       if (x == k) {
@@ -296,7 +302,8 @@ inline void SoftmaxGrad(Tensor<cpu, 2, DType> dst,
                         const Tensor<cpu, 2, DType> &src,
                         const Tensor<cpu, 1, DType> &label,
                         const DType &ignore_label) {
-  for (index_t y = 0; y < dst.size(0); ++y) {
+#pragma omp parallel for
+  for (openmp_index_t y = 0; y < dst.size(0); ++y) {
     const index_t k = static_cast<int>(label[y]);
     for (index_t x = 0; x < dst.size(1); ++x) {
       if (static_cast<int>(ignore_label) == k) {
@@ -316,7 +323,8 @@ template<typename DType>
 inline void SoftmaxGrad(Tensor<cpu, 3, DType> dst,
                         const Tensor<cpu, 3, DType> &src,
                         const Tensor<cpu, 2, DType> &label) {
-  for (index_t n = 0; n < dst.size(2); ++n) {
+#pragma omp parallel for
+  for (openmp_index_t n = 0; n < dst.size(2); ++n) {
     for (index_t y = 0; y < dst.size(0); ++y) {
       const index_t k = static_cast<int>(label[y][n]);
       for (index_t x = 0; x < dst.size(1); ++x) {
@@ -335,7 +343,8 @@ inline void SoftmaxGrad(Tensor<cpu, 3, DType> dst,
                         const Tensor<cpu, 3, DType> &src,
                         const Tensor<cpu, 2, DType> &label,
                         const DType &ignore_label) {
-  for (index_t n = 0; n < dst.size(2); ++n) {
+#pragma omp parallel for
+  for (openmp_index_t n = 0; n < dst.size(2); ++n) {
     for (index_t y = 0; y < dst.size(0); ++y) {
       const index_t k = static_cast<int>(label[y][n]);
       if (k == static_cast<int>(ignore_label)) {
@@ -359,7 +368,8 @@ template<typename DType>
 inline void Softmax(Tensor<cpu, 2, DType> dst,
                     const Tensor<cpu, 2, DType> &energy) {
   CHECK_EQ(dst.shape_, energy.shape_) << "Softmax: shape mismatch";
-  for (index_t y = 0; y < dst.size(0); ++y) {
+#pragma omp parallel for
+  for (openmp_index_t y = 0; y < dst.size(0); ++y) {
     Softmax(dst[y], energy[y]);
   }
 }
@@ -368,7 +378,8 @@ template<typename DType>
 inline void Softmax(Tensor<cpu, 3, DType> dst,
                     const Tensor<cpu, 3, DType> &energy) {
   CHECK_EQ(dst.shape_, energy.shape_) << "Softmax: shape mismatch";
-  for (index_t y = 0; y < dst.size(0); ++y) {
+#pragma omp parallel for
+  for (openmp_index_t y = 0; y < dst.size(0); ++y) {
     for (index_t n = 0; n < dst.size(2); ++n) {
       DType mmax = energy[y][0][n];
       for (index_t x = 1; x < dst.size(1); ++x) {
@@ -405,6 +416,17 @@ inline void AddTakeGradLargeBatch(Tensor<cpu, 2, DType> dst,
   }
 }
 
+template<typename IndexType, typename DType>
+inline void IndexFill(Tensor<cpu, 2, DType> dst,
+                      const Tensor<cpu, 1, IndexType>& index,
+                      const Tensor<cpu, 2, DType> &src) {
+  for (index_t y = 0; y < index.size(0); ++y) {
+    for (index_t j = 0; j < src.size(1); j++) {
+      dst[index[y]][j] = src[y][j];
+    }
+  }
+}
+
 template<typename KDType, typename VDType>
 inline void SortByKey(Tensor<cpu, 1, KDType> keys, Tensor<cpu, 1, VDType> values,
                       bool is_ascend) {
@@ -413,19 +435,26 @@ inline void SortByKey(Tensor<cpu, 1, KDType> keys, Tensor<cpu, 1, VDType> values
   CHECK_EQ(keys.size(0), values.size(0))
     << "The sizes of key/value are not equal! keys_size: " << keys.size(0)
     << "values_size: " << values.size(0);
-  std::vector<std::pair<KDType, VDType> > V;
-  for (index_t i = 0; i < values.size(0); ++i) {
-    std::pair<KDType, VDType> P = std::make_pair(keys[i], values[i]);
-    V.push_back(P);
+  std::vector<size_t> idx(keys.size(0));
+  std::vector<KDType> keys_vec(keys.size(0));
+  std::vector<VDType> values_vec(values.size(0));
+  for (int i = 0; i < keys.size(0); i++) {
+    idx[i] = i;
+    keys_vec[i] = keys[i];
+    values_vec[i] = values[i];
   }
   if (is_ascend) {
-    std::stable_sort(V.begin(), V.end());
+    std::stable_sort(idx.begin(), idx.end(),
+                     [&keys_vec](size_t i1, size_t i2)
+                       {return keys_vec[i1] < keys_vec[i2]; });
   } else {
-    std::stable_sort(V.begin(), V.end(), std::greater<std::pair<KDType, VDType> >());
+    std::stable_sort(idx.begin(), idx.end(),
+                     [&keys_vec](size_t i1, size_t i2)
+                       {return keys_vec[i1] > keys_vec[i2]; });
   }
   for (index_t i = 0; i < values.size(0); i++) {
-    keys[i] = V[i].first;
-    values[i] = V[i].second;
+    keys[i] = keys_vec[idx[i]];
+    values[i] = values_vec[idx[i]];
   }
 }
 
