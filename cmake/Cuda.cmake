@@ -2,6 +2,10 @@ if(NOT USE_CUDA)
   return()
 endif()
 
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag("-std=c++11"   SUPPORT_CXX11)
+
+
 # Known NVIDIA GPU achitectures mshadow can be compiled for.
 # This list will be used for CUDA_ARCH_NAME = All option
 set(mshadow_known_gpu_archs "20 21(20) 30 35 50")
@@ -154,9 +158,11 @@ macro(mshadow_cuda_compile objlist_variable)
     string(REPLACE "/EHa" "" ${var} "${${var}}")
 
   endforeach()
-
   if(UNIX OR APPLE)
     list(APPEND CUDA_NVCC_FLAGS -Xcompiler -fPIC)
+    if(SUPPORT_CXX11)
+      list(APPEND CUDA_NVCC_FLAGS -Xcompiler -fPIC --std=c++11)
+    endif()
   endif()
 
   if(APPLE)
