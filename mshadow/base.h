@@ -238,11 +238,6 @@ extern "C" {
     }                                                                   \
   }
 
-#if !(MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 4)
-/*! \brief dummy definition when not using cudnn */
-typedef int cudnnTensorFormat_t;
-#endif
-
 #include "./half.h"
 #include "./logging.h"
 /*! \brief namespace for mshadow */
@@ -324,7 +319,7 @@ struct LayoutType<kNCHW> {
 #if (MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 4)
   static const cudnnTensorFormat_t kCudnnFlag = CUDNN_TENSOR_NCHW;
 #else
-  static const cudnnTensorFormat_t kCudnnFlag = -1;
+  static const int kCudnnFlag = -1;
 #endif
 };
 
@@ -334,7 +329,7 @@ struct LayoutType<kNHWC> {
 #if (MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 4)
   static const cudnnTensorFormat_t kCudnnFlag = CUDNN_TENSOR_NHWC;
 #else
-  static const cudnnTensorFormat_t kCudnnFlag = -1;
+  static const int kCudnnFlag = -1;
 #endif
 };
 
@@ -347,7 +342,7 @@ struct LayoutType<kNCDHW> {
 #if (MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 4)
   static const cudnnTensorFormat_t kCudnnFlag = CUDNN_TENSOR_NCHW;
 #else
-  static const cudnnTensorFormat_t kCudnnFlag = -1;
+  static const int kCudnnFlag = -1;
 #endif
 };
 
@@ -357,7 +352,7 @@ struct LayoutType<kNDHWC> {
 #if (MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 4)
   static const cudnnTensorFormat_t kCudnnFlag = CUDNN_TENSOR_NHWC;
 #else
-  static const cudnnTensorFormat_t kCudnnFlag = -1;
+  static const int kCudnnFlag = -1;
 #endif
 };
 
