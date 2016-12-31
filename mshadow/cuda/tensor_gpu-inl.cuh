@@ -47,10 +47,13 @@ inline index_t GetAlignStride(index_t xsize) {
 }
 inline void CheckLaunchParam(dim3 dimGrid, dim3 dimBlock, const char *estr = "") {
   if (dimBlock.x * dimBlock.y * dimBlock.z > static_cast<unsigned>(kMaxThreadsPerBlock) ||
-      dimGrid.x > 65535 || dimGrid.y > 65535) {
+      dimGrid.x > kMaxGridNum || dimGrid.y > kMaxGridNum || dimGrid.z > kMaxGridNum) {
     LOG(FATAL) << "too large launch parameter: "
-      << estr << "["
-      << dimBlock.x << ","
+      << estr
+      << "[" << dimGrid.x << ","
+      << dimGrid.y << ","
+      << dimGrid.z << "] "
+      << "[" << dimBlock.x << ","
       << dimBlock.y << ","
       << dimBlock.z << "]";
   }
