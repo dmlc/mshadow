@@ -13,7 +13,12 @@
 #endif
 #include "../tensor.h"
 #include "./reduce.cuh"
-
+#define MSHADOW_CUDA_POST_KERNEL_CHECK(x) \
+  /* Code block avoids redefinition of cudaError_t err */ \
+  do { \
+    cudaError err = cudaPeekAtLastError(); \
+    CHECK_EQ(err, cudaSuccess) << "Kernel: " << #x << " ErrStr:" << cudaGetErrorString(err); \
+  } while (0)
 namespace mshadow {
 namespace cuda {
 /* load unit for memory access, if CUDAARCH not defined, this is advanced nvcc */
@@ -106,6 +111,7 @@ inline void MapPlan(expr::Plan<DstExp, DType> dst,
                        expr::Plan<E, DType> >
         <<<dimGrid, dimBlock, 0, stream>>>(dst, xstride, dshape, plan, repeat);
   }
+  MSHADOW_CUDA_POST_KERNEL_CHECK(MapPlanLargeKernel);
 }
 
 template<typename Saver,typename Reducer, int warp_bits,
@@ -151,6 +157,7 @@ inline void MapReduceKeepLowest(expr::Plan<DstExp, DType> dst,
                          expr::Plan<DstExp, DType>,
                          expr::Plan<E, DType> >
       <<<dimGrid, dimBlock, 0, stream>>>(dst, plan, scale, eshape);
+  MSHADOW_CUDA_POST_KERNEL_CHECK(MapRedKeepLowestKernel);
 }
 
 template<typename Saver, typename Reducer, int block_dim_bits,
@@ -192,6 +199,7 @@ inline void MapReduceKeepDim1(expr::Plan<DstExp, DType> dst,
                           expr::Plan<DstExp, DType>,
                           expr::Plan<E, DType> >
       <<<dimGrid, dimBlock, 0, stream>>>(dst, plan, scale, pshape);
+  MSHADOW_CUDA_POST_KERNEL_CHECK(MapReduceKeepDim1Kernel);
 }
 
 template<int x_bits, typename DType>
@@ -213,6 +221,7 @@ inline void GetBatchedView(DType **dst, DType *src, int num, int stride,
   CheckLaunchParam(dimGrid, dimBlock, "GetBatchedView");
   GetBatchedViewKernel<kBaseThreadBits, DType>
     <<<dimGrid, dimBlock, 0, stream_>>> (dst, src, num, stride);
+  MSHADOW_CUDA_POST_KERNEL_CHECK(GetBatchedViewKernel);
 }
 
 template<int x_bits, typename DType, typename DstPlan, typename SrcPlan1, typename SrcPlan2>
@@ -320,6 +329,7 @@ inline void Softmax(Tensor<gpu, 2, DType> &dst,
       (expr::MakePlan(dst),
        expr::MakePlan(src),
        dst.size(1));
+  MSHADOW_CUDA_POST_KERNEL_CHECK(SoftmaxKernel);
 }
 
 template<typename DType>
@@ -338,6 +348,7 @@ inline void SoftmaxGrad(Tensor<gpu, 2, DType> &dst,
        expr::MakePlan(src),
        expr::MakePlan(label),
        dst.size(1));
+  MSHADOW_CUDA_POST_KERNEL_CHECK(SoftmaxGradKernel);
 }
 
 template<typename DType>
@@ -358,6 +369,7 @@ inline void SoftmaxGrad(Tensor<gpu, 2, DType> &dst,
        expr::MakePlan(label),
        dst.size(1),
        ignore_label);
+  MSHADOW_CUDA_POST_KERNEL_CHECK(SoftmaxGradKernel);
 }
 
 template<int n_bits, typename DType>
@@ -445,6 +457,7 @@ inline void Softmax(Tensor<gpu, 3, DType> &dst,
   CheckLaunchParam(dimGrid, dimBlock, "Softmax");
   cudaStream_t stream = Stream<gpu>::GetStream(dst.stream_);
   Softmax3DKernel<kBaseThreadBits, DType><<<dimGrid, dimBlock, 0, stream>>>(dst, src);
+  MSHADOW_CUDA_POST_KERNEL_CHECK(Softmax3DKernel);
 }
 
 template<typename DType>
@@ -459,6 +472,7 @@ inline void SoftmaxGrad(Tensor<gpu, 3, DType> &dst,
   CheckLaunchParam(dimGrid, dimBlock, "SoftmaxGrad");
   cudaStream_t stream = Stream<gpu>::GetStream(dst.stream_);
   Softmax3DGradKernel<kBaseThreadBits, DType><<<dimGrid, dimBlock, 0, stream>>>(dst, src, label);
+  MSHADOW_CUDA_POST_KERNEL_CHECK(Softmax3DGradKernel);
 }
 
 template<typename DType>
@@ -474,6 +488,7 @@ inline void SoftmaxGrad(Tensor<gpu, 3, DType> &dst,
   CheckLaunchParam(dimGrid, dimBlock, "SoftmaxGrad");
   cudaStream_t stream = Stream<gpu>::GetStream(dst.stream_);
   Softmax3DGradKernel<kBaseThreadBits, DType><<<dimGrid, dimBlock, 0, stream>>>(dst, src, label, ignore_label);
+  MSHADOW_CUDA_POST_KERNEL_CHECK(Softmax3DGradKernel);
 }
 
 template<int x_bits, typename DType, typename DstPlan, typename SrcPlan1, typename SrcPlan2>
@@ -501,7 +516,7 @@ __global__ void AddTakeGradLargeBatchKernel(DType* dst,
   // If the preceeding input has the same as this input, then the warp
   // exits immediately. The warp also processes subsequent inputs with the
   // same value.
-  // 
+  //
   // Input Warp
   // 1     <warp 1>
   // 1     <warp 1> (<warp 2> exits without doing any work)
@@ -571,6 +586,7 @@ inline void AddTakeGrad(Tensor<gpu, 2, DType> dst,
        expr::MakePlan(src),
        src.size(0),
        src.size(1));
+  MSHADOW_CUDA_POST_KERNEL_CHECK(AddTakeGradKernel);
 }
 
 template<typename IndexType, typename DType>
@@ -604,6 +620,7 @@ inline void AddTakeGradLargeBatch(Tensor<gpu, 2, DType> dst,
        src.dptr_,
        static_cast<int>(src.size(0)),
        static_cast<int>(src.size(1)));
+  MSHADOW_CUDA_POST_KERNEL_CHECK(AddTakeGradLargeBatchKernel);
 }
 
 template<int warp_bits, typename DType, typename DstPlan, typename IndexPlan, typename SrcPlan>
@@ -643,6 +660,7 @@ inline void IndexFill(Tensor<gpu, 2, DType> dst,
        expr::MakePlan(src),
        src.size(0),
        src.size(1));
+  MSHADOW_CUDA_POST_KERNEL_CHECK(IndexFillKernel);
 }
 
 template<typename KDType, typename VDType>
@@ -663,6 +681,7 @@ inline void SortByKey(Tensor<gpu, 1, KDType> keys, Tensor<gpu, 1, VDType> values
       thrust::cuda::par.on(stream),
       key_iter, key_iter + keys.size(0), value_iter, thrust::greater<KDType>());
   }
+  MSHADOW_CUDA_POST_KERNEL_CHECK(SortByKey);
 #else
   LOG(FATAL) << "SortByKey is only supported for CUDA version >=7.0!";
 #endif
