@@ -103,6 +103,7 @@ inline void MapPlan(expr::Plan<DstExp, DType> dst,
                   expr::Plan<DstExp, DType>,
                   expr::Plan<E, DType> >
         <<<dimGrid, dimBlock, 0, stream>>>(dst, xstride, dshape, plan);
+    MSHADOW_CUDA_POST_KERNEL_CHECK(MapPlanKernel);
   } else {
     int repeat = (num_block + kBaseGridNum-1) / kBaseGridNum;
     dim3 dimGrid(kBaseGridNum, 1 , 1);
@@ -110,8 +111,8 @@ inline void MapPlan(expr::Plan<DstExp, DType> dst,
                        expr::Plan<DstExp, DType>,
                        expr::Plan<E, DType> >
         <<<dimGrid, dimBlock, 0, stream>>>(dst, xstride, dshape, plan, repeat);
+    MSHADOW_CUDA_POST_KERNEL_CHECK(MapPlanLargeKernel);
   }
-  MSHADOW_CUDA_POST_KERNEL_CHECK(MapPlanLargeKernel);
 }
 
 template<typename Saver,typename Reducer, int warp_bits,
