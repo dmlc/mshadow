@@ -169,10 +169,6 @@ macro(mshadow_cuda_compile objlist_variable)
     list(APPEND CUDA_NVCC_FLAGS -Xcompiler -Wno-unused-function)
   endif()
   
-  if(NOT NDEBUG)
-    list(APPEND CUDA_NVCC_FLAGS -G)
-  endif()
-
   if(MSVC)
     # disable noisy warnings:
     # 4819: The file contains a character that cannot be represented in the current code page (number).
