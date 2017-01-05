@@ -17,7 +17,7 @@
 namespace mshadow {
 /*!
  * \brief dynamic shape class that can hold shape
- *   of arbirary dimension
+ *   of arbitrary dimension
  */
 struct TShape {
  public:
