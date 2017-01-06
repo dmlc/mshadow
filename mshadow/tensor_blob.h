@@ -2,8 +2,8 @@
  *  Copyright (c) 2014 by Contributors
  * \file tensor_blob.h
  * \brief TBlob class that holds common representation of
- *  arbirary dimension tensor, can be used to transformed
- *  to normal fixed dimenson tensor
+ *  arbitrary dimension tensor, can be used to transformed
+ *  to normal fixed dimension tensor
  * \author Tianqi Chen
  */
 #ifndef MSHADOW_TENSOR_BLOB_H_
@@ -17,7 +17,7 @@
 namespace mshadow {
 /*!
  * \brief dynamic shape class that can hold shape
- *   of arbirary dimension
+ *   of arbitrary dimension
  */
 struct TShape {
  public:
@@ -348,7 +348,7 @@ struct TShape {
   // when it is bigger, it will be stored in data_heap_;
   /*! \brief size of in stack space */
   static const index_t kStackCache = 4;
-  /*! \brief number of dimnsion of the shape */
+  /*! \brief number of dimension of the shape */
   index_t ndim_;
   /*! \brief number of cells allocated in data_heap_ */
   index_t num_heap_allocated_;
@@ -453,7 +453,7 @@ inline std::istream &operator>>(std::istream &is, TShape &shape) {
  * \brief tensor blob class that can be used to hold tensor of any dimension,
  *  any device and any data type,
  *  This is a weak type that can be used to transfer data through interface
- *  TBlob itself do not involve any arithmentic operations,
+ *  TBlob itself do not involve any arithmetic operations,
  *  but it can be converted to tensor of fixed dimension for further operations
  *
  *  Like tensor, this data structure is like a pointer class and do not
@@ -566,7 +566,7 @@ class TBlob {
   }
   /*!
    * \brief return size of i-th dimension, start counting from highest dimension
-   * \param idx the dimension count from the highest dimensin
+   * \param idx the dimension count from the highest dimension
    * \return the size
    */
   inline index_t size(index_t idx) const {
