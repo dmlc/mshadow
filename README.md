@@ -3,7 +3,7 @@ mshadow: Matrix Shadow
 [![Build Status](https://travis-ci.org/dmlc/mshadow.svg?branch=master)](https://travis-ci.org/dmlc/mshadow)
 
 MShadow is a lightweight CPU/GPU Matrix/Tensor Template Library in C++/CUDA. The goal of mshadow is to support ***efficient***,
-***device invariant*** and ***simple*** tensor library for machine learning project that aims for maximum performance and control, while also emphasize simplicty.
+***device invariant*** and ***simple*** tensor library for machine learning project that aims for maximum performance and control, while also emphasize simplicity.
 
 MShadow also provides interface that allows writing Multi-GPU and distributed deep learning programs in an easy and unified way.
 
