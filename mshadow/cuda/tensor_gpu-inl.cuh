@@ -17,7 +17,7 @@
   /* Code block avoids redefinition of cudaError_t err */ \
   do { \
     cudaError err = cudaPeekAtLastError(); \
-    CHECK_EQ(err, cudaSuccess) << "Kernel: " << #x << " ErrStr:" << cudaGetErrorString(err); \
+    CHECK_EQ(err, cudaSuccess) << "Name: " << #x << " ErrStr:" << cudaGetErrorString(err); \
   } while (0)
 namespace mshadow {
 namespace cuda {
