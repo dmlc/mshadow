@@ -8,7 +8,7 @@ check_cxx_compiler_flag("-std=c++11"   SUPPORT_CXX11)
 
 # Known NVIDIA GPU achitectures mshadow can be compiled for.
 # This list will be used for CUDA_ARCH_NAME = All option
-set(mshadow_known_gpu_archs "20 21(20) 30 35 50 60 61")
+set(mshadow_known_gpu_archs "20 21(20) 30 35 50 52 60 61")
 
 ################################################################################################
 # A function for automatic detection of GPUs installed  (if autodetection is enabled)
