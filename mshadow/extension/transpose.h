@@ -98,9 +98,9 @@ struct TransposeIndicesExp:
       public Exp<TransposeIndicesExp<SrcExp, DType, dimsrc, etype>, DType, etype> {
   /*! \brief source expression */
   const SrcExp &src_indices_;  // Expression of the source indices
+  Shape<dimsrc> src_shape_;  // Holds the corresponding stride of the source axes in dst
   const Shape<dimsrc> axes_;  // The transpose axes
   Shape<dimsrc> src_in_dst_stride_;  // Holds the corresponding stride of the source axes in dst
-  Shape<dimsrc> src_shape_;  // Holds the corresponding stride of the source axes in dst
   /*! \brief constructor */
   explicit TransposeIndicesExp(const SrcExp &src_indices,
                                Shape<dimsrc> src_shape,

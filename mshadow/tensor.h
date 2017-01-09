@@ -24,7 +24,7 @@ struct cpu {
   /*! \brief device flag number, identifies this device */
   static const int kDevMask = 1 << 0;
 };
-/*! \brief device name CPU */
+/*! \brief device name GPU */
 struct gpu {
   /*! \brief whether this device is CPU or not */
   static const bool kDevCPU = false;

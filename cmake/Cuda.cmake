@@ -2,9 +2,13 @@ if(NOT USE_CUDA)
   return()
 endif()
 
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag("-std=c++11"   SUPPORT_CXX11)
+
+
 # Known NVIDIA GPU achitectures mshadow can be compiled for.
 # This list will be used for CUDA_ARCH_NAME = All option
-set(mshadow_known_gpu_archs "20 21(20) 30 35 50")
+set(mshadow_known_gpu_archs "20 21(20) 30 35 50 52 60 61")
 
 ################################################################################################
 # A function for automatic detection of GPUs installed  (if autodetection is enabled)
@@ -67,7 +71,7 @@ endfunction()
 #   mshadow_select_nvcc_arch_flags(out_variable)
 function(mshadow_select_nvcc_arch_flags out_variable)
   # List of arch names
-  set(__archs_names "Fermi" "Kepler" "Maxwell" "All" "Manual")
+  set(__archs_names "Fermi" "Kepler" "Maxwell" "Pascal" "All" "Manual")
   set(__archs_name_default "All")
   if(NOT CMAKE_CROSSCOMPILING)
     list(APPEND __archs_names "Auto")
@@ -100,6 +104,8 @@ function(mshadow_select_nvcc_arch_flags out_variable)
     set(__cuda_arch_bin "30 35")
   elseif(${CUDA_ARCH_NAME} STREQUAL "Maxwell")
     set(__cuda_arch_bin "50")
+  elseif(${CUDA_ARCH_NAME} STREQUAL "Pascal")
+    set(__cuda_arch_bin "60 61")
   elseif(${CUDA_ARCH_NAME} STREQUAL "All")
     set(__cuda_arch_bin ${mshadow_known_gpu_archs})
   elseif(${CUDA_ARCH_NAME} STREQUAL "Auto")
@@ -154,19 +160,19 @@ macro(mshadow_cuda_compile objlist_variable)
     string(REPLACE "/EHa" "" ${var} "${${var}}")
 
   endforeach()
-
   if(UNIX OR APPLE)
     list(APPEND CUDA_NVCC_FLAGS -Xcompiler -fPIC)
+    if(SUPPORT_CXX11)
+      list(APPEND CUDA_NVCC_FLAGS -Xcompiler -fPIC --std=c++11)
+    endif()
   endif()
 
   if(APPLE)
     list(APPEND CUDA_NVCC_FLAGS -Xcompiler -Wno-unused-function)
   endif()
   
-  if(NOT NDEBUG)
-    list(APPEND CUDA_NVCC_FLAGS -G)
-  endif()
-
+  set(CUDA_NVCC_FLAGS_DEBUG "${CUDA_NVCC_FLAGS_DEBUG} -G -lineinfo")
+  
   if(MSVC)
     # disable noisy warnings:
     # 4819: The file contains a character that cannot be represented in the current code page (number).
