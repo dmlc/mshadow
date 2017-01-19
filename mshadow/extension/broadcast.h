@@ -16,7 +16,7 @@ namespace expr {
  * \tparam SrcExp type of input expression
  * \tparam DType the type of elements
  * \tparam dimdst  target tensor dimension
- * \tparam dimcast_m_dst  dimcast - dimdst
+ * \tparam dimcast_m_dst  dimdst - dimcast
  */
 template<typename SrcExp, typename DType, int dimdst, int dimdst_m_cast>
 struct Broadcast1DExp:
