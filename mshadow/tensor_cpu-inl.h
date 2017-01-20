@@ -406,11 +406,17 @@ inline void AddTakeGrad(Tensor<cpu, 2, DType> dst,
   }
 }
 
+template<typename IndexType>
+inline size_t AddTakeGradLargeBatchWorkspaceSize(size_t num_items, const cpu& dummy) {
+  return 0;
+}
+
 template<typename IndexType, typename DType>
 inline void AddTakeGradLargeBatch(Tensor<cpu, 2, DType> dst,
                                   const Tensor<cpu, 1, IndexType>& sorted,
                                   const Tensor<cpu, 1, IndexType>& index,
-                                  const Tensor<cpu, 2, DType> &src) {
+                                  const Tensor<cpu, 2, DType> &src,
+                                  Tensor<cpu, 1, char>* workspace) {
   for (index_t y = 0; y < sorted.size(0); ++y) {
     dst[sorted[y]] += src[index[y]];
   }
@@ -427,9 +433,22 @@ inline void IndexFill(Tensor<cpu, 2, DType> dst,
   }
 }
 
+template <>
+inline size_t AlignMemArraySize<cpu>(const size_t size) {
+  const size_t kMemAlignBytes = (1 << packet::AlignBytes<MSHADOW_DEFAULT_PACKET>::value);
+  return ((size + kMemAlignBytes - 1)/kMemAlignBytes)*kMemAlignBytes;
+}
+
+template<typename KDType, typename VDType>
+inline size_t SortByKeyWorkspaceSize(size_t num_items, const cpu& dummy) {
+  return 0;
+}
+
+
 template<typename KDType, typename VDType>
 inline void SortByKey(Tensor<cpu, 1, KDType> keys, Tensor<cpu, 1, VDType> values,
-                      bool is_ascend) {
+                      bool is_ascend, Tensor<cpu, 1, char>* workspace,
+                      const int begin_bit, const int end_bit) {
   CHECK_EQ(keys.CheckContiguous(), true);
   CHECK_EQ(values.CheckContiguous(), true);
   CHECK_EQ(keys.size(0), values.size(0))

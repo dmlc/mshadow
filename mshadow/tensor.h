@@ -790,6 +790,18 @@ inline void AddTakeGrad(Tensor<gpu, 2, DType> dst,
                         const Tensor<gpu, 1, IndexType>& index,
                         const Tensor<gpu, 2, DType> &src);
 /*!
+ * \brief CPU/GPU: Return the amount of temporary storage in bytes required by AddTakeGradLargeBatch
+ * \param num_items number of keys
+ */
+template<typename IndexType>
+inline size_t AddTakeGradLargeBatchWorkspaceSize(size_t num_items, const cpu& dummy);
+/*!
+ * \brief CPU/GPU: Return the amount of temporary storage in bytes required by AddTakeGradLargeBatch
+ * \param num_items number of keys
+ */
+template<typename IndexType>
+inline size_t AddTakeGradLargeBatchWorkspaceSize(size_t num_items, const gpu& dummy);
+/*!
  * \brief CPU/GPU: Gradient accumulate of embedding matrix.
                    dst[sorted[i]] += src[index[i]]
                    Called when the batchsize of src is larger than the featuredim
@@ -800,9 +812,10 @@ inline void AddTakeGrad(Tensor<gpu, 2, DType> dst,
  */
 template<typename IndexType, typename DType>
 inline void AddTakeGradLargeBatch(Tensor<cpu, 2, DType> dst,
-                                  const Tensor<gpu, 1, IndexType>& sorted,
+                                  const Tensor<cpu, 1, IndexType>& sorted,
                                   const Tensor<cpu, 1, IndexType>& index,
-                                  const Tensor<cpu, 2, DType> &src);
+                                  const Tensor<cpu, 2, DType> &src,
+                                  Tensor<cpu, 1, char>* workspace = NULL);
 /*!
  * \brief CPU/GPU: Gradient accumulate of embedding matrix.
                    dst[sorted[i]] += src[index[i]]
@@ -816,7 +829,8 @@ template<typename IndexType, typename DType>
 inline void AddTakeGradLargeBatch(Tensor<gpu, 2, DType> dst,
                                   const Tensor<gpu, 1, IndexType>& sorted,
                                   const Tensor<gpu, 1, IndexType>& index,
-                                  const Tensor<gpu, 2, DType> &src);
+                                  const Tensor<gpu, 2, DType> &src,
+                                  Tensor<gpu, 1, char>* workspace = NULL);
 /*!
  * \brief CPU/GPU: Fill the values of the destination matrix to specific rows in the source matrix.
                    dst[index[i]] = src[i]
@@ -849,7 +863,8 @@ inline void IndexFill(Tensor<gpu, 2, DType> dst,
  */
 template<typename KDType, typename VDType>
 inline void SortByKey(Tensor<cpu, 1, KDType> keys, Tensor<cpu, 1, VDType> values,
-                      bool is_ascend = true);
+                      bool is_ascend = true, Tensor<cpu, 1, char>* workspace = NULL,
+                      const int begin_bit = 0, const int end_bit = sizeof(KDType)*8);
 /*!
  * \brief CPU/GPU: Sort key-value pairs stored in separate places. (Stable sort is performed!)
  * \param keys the keys to sort
@@ -858,7 +873,26 @@ inline void SortByKey(Tensor<cpu, 1, KDType> keys, Tensor<cpu, 1, VDType> values
  */
 template<typename KDType, typename VDType>
 inline void SortByKey(Tensor<gpu, 1, KDType> keys, Tensor<gpu, 1, VDType> values,
-                      bool is_ascend = true);
+                      bool is_ascend = true, Tensor<gpu, 1, char>* workspace = NULL,
+                      const int begin_bit = 0, const int end_bit = sizeof(KDType)*8);
+/*!
+ * \brief CPU/GPU: Align memory array size
+ * \param size size of the array
+ */
+template<typename xpu>
+inline size_t AlignMemArraySize(const size_t size);
+/*!
+ * \brief CPU/GPU: Return the amount of temporary storage in bytes required for SortByKey
+ * \param num_keys number of keys to sort
+ */
+template<typename KDType, typename VDType>
+inline size_t SortByKeyWorkspaceSize(size_t num_keys, const cpu& dummy);
+/*!
+ * \brief CPU/GPU: Return the amount of temporary storage in bytes required for SortByKey
+ * \param num_keys number of keys to sort
+ */
+template<typename KDType, typename VDType>
+inline size_t SortByKeyWorkspaceSize(size_t num_keys, const gpu& dummy);
 /*!
  * \brief CPU/GPU: Sort the keys within each segment. (Stable sort is performed!)
                    Segments is defined as an ascending ordered vector like [0, 0, 0, 1, 1, 2, 3, 3, 3,...]
