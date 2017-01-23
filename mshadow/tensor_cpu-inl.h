@@ -67,12 +67,6 @@ inline void FreeHost_<gpu>(void *dptr) {
 }
 #endif
 
-#ifdef _WIN32
-  typedef int64_t openmp_index_t;
-#else
-  typedef index_t openmp_index_t;
-#endif
-
 template<>
 inline void *AllocHost_<cpu>(size_t size) {
   size_t pitch;
