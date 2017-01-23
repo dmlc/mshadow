@@ -398,7 +398,7 @@ inline void MapPacketPlan(Tensor<cpu, dim, DType> _dst,
 #if (MSHADOW_USE_CUDA == 0)
   #pragma omp parallel for
 #endif
-  for (index_t y = 0; y < dst.size(0); ++y) {
+  for (openmp_index_t y = 0; y < dst.size(0); ++y) {
     for (index_t x = 0; x < xlen; x += packet::Packet<DType, Arch>::kSize) {
       packet::Saver<SV, DType, Arch>::Save(&dst[y][x], plan.EvalPacket(y, x));
     }
