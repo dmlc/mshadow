@@ -155,7 +155,7 @@ inline void MapPlan(TRValue<R, cpu, dim, DType> *dst,
   #pragma omp parallel for
 #endif
   // temp remove openmp, as default setting throttles CPU
-  for (index_t y = 0; y < shape[0]; ++y) {
+  for (openmp_index_t y = 0; y < shape[0]; ++y) {
     for (index_t x = 0; x < shape[1]; ++x) {
       // trust your compiler! -_- they will optimize it
       Saver::template Save<DType>(dplan.REval(y, x), plan.Eval(y, x));
@@ -223,7 +223,7 @@ inline void MapReduceKeepLowest(TRValue<R, cpu, 1, DType> *dst,
 #if (MSHADOW_USE_CUDA == 0)
   #pragma omp parallel for
 #endif
-  for (index_t x = 0; x < eshape[1]; ++x) {
+  for (openmp_index_t x = 0; x < eshape[1]; ++x) {
     DType res = splan.Eval(0, x);
     for (index_t y = 1; y < eshape[0]; ++y) {
       Reducer::Reduce(res, splan.Eval(y, x));
@@ -256,7 +256,7 @@ inline void MapReduceKeepHighDim(TRValue<R, cpu, 1, DType> *dst,
 #if (MSHADOW_USE_CUDA == 0)
   #pragma omp parallel for
 #endif
-  for (index_t c = 0; c < pshape[1]; ++c) {
+  for (openmp_index_t c = 0; c < pshape[1]; ++c) {
     DType res; Reducer::SetInitValue(res);
     for (index_t n = 0; n < pshape[0]; ++n) {
       DType tres; Reducer::SetInitValue(tres);
