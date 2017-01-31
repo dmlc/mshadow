@@ -92,7 +92,7 @@ broadcast_scalar(const expr::Exp<SrcExp, DType, etype> &src, Shape<dimdst> shape
   TypeCheckPass<ExpInfo<SrcExp>::kDim == 1>
                 ::Error_Expression_Does_Not_Meet_Dimension_Req();
   typedef ShapeCheck<1, SrcExp> ShapeCheckDim1SrcExp;
-  CHECK_EQ(ShapeCheckDim1SrcExp::Check(src.self())[0], 1)
+  CHECK_EQ(ShapeCheckDim1SrcExp::Check(src.self())[0], 1U)
       << "broadcast_scalar, source need to be scalar expression";
   return BroadcastScalarExp<SrcExp, DType, dimdst>(src.self(), shape);
 }

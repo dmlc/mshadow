@@ -19,3 +19,4 @@ rabit
 dmlc-core
 *.db
 *.bak
+build
