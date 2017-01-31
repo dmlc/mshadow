@@ -8,10 +8,14 @@ check_cxx_compiler_flag("-std=c++11"   SUPPORT_CXX11)
 
 # Known NVIDIA GPU achitectures mshadow can be compiled for.
 # This list will be used for CUDA_ARCH_NAME = All option
-if(${CUDA_VERSION} GREATER 7.5)
-  set(mshadow_known_gpu_archs "20 21(20) 30 35 50 52 60 61")
+if(CUDA_ARCH_ALL)
+  set(mshadow_known_gpu_archs "${CUDA_ARCH_ALL}")
 else()
-  set(mshadow_known_gpu_archs "20 21(20) 30 35 50 52")
+  if(${CUDA_VERSION} GREATER 7.5)
+    set(mshadow_known_gpu_archs "20 21(20) 30 35 50 52 60 61")
+  else()
+    set(mshadow_known_gpu_archs "20 21(20) 30 35 50 52")
+  endif()
 endif()
 
 
@@ -167,17 +171,14 @@ macro(mshadow_cuda_compile objlist_variable)
   endforeach()
   if(UNIX OR APPLE)
     list(APPEND CUDA_NVCC_FLAGS -Xcompiler -fPIC)
-    if(SUPPORT_CXX11)
-      list(APPEND CUDA_NVCC_FLAGS -Xcompiler -fPIC --std=c++11)
-    endif()
   endif()
 
   if(APPLE)
     list(APPEND CUDA_NVCC_FLAGS -Xcompiler -Wno-unused-function)
   endif()
-  
+
   set(CUDA_NVCC_FLAGS_DEBUG "${CUDA_NVCC_FLAGS_DEBUG} -G -lineinfo")
-  
+
   if(MSVC)
     # disable noisy warnings:
     # 4819: The file contains a character that cannot be represented in the current code page (number).
@@ -195,7 +196,7 @@ macro(mshadow_cuda_compile objlist_variable)
   # go into the build output area rather than in /tmp, which may run out of space
   if(IS_CONTAINER_BUILD)
     set(CUDA_NVCC_INTERMEDIATE_DIR "${CMAKE_CURRENT_BINARY_DIR}")
-    message(STATUS "Caontainer build enabled, so nvcc intermediate files in: ${CUDA_NVCC_INTERMEDIATE_DIR}")
+    message(STATUS "Container build enabled, so nvcc intermediate files in: ${CUDA_NVCC_INTERMEDIATE_DIR}")
     list(APPEND CUDA_NVCC_FLAGS "--keep --keep-dir ${CUDA_NVCC_INTERMEDIATE_DIR}")
   endif()
 

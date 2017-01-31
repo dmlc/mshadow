@@ -475,7 +475,7 @@ inline void VectorDot(Tensor<Device, 1, DType> dst,
                       const Tensor<Device, 1, DType> &rhs) {
   CHECK_EQ(lhs.size(0), rhs.size(0))
       << "VectorDot: Shape mismatch";
-  CHECK_EQ(dst.size(0), 1)
+  CHECK_EQ(dst.size(0), 1U)
       << "VectorDot: expect dst to be scalar";
   expr::BLASEngine<Device, DType>::SetStream(lhs.stream_);
   mshadow::expr::BLASEngine<Device, DType>::dot(

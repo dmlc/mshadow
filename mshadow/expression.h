@@ -20,14 +20,14 @@ namespace expr {
 namespace type {
 // type expression type are defined as bitmask
 // subtype relationshop kRValue < kMapper < kPull < kComplex
-/*! 
+/*!
  * \brief this expression directly correspnds to a data class,
- *   can be used to assign data 
+ *   can be used to assign data
  */
 const int kRValue = 0;
-/*! 
+/*!
  * \brief expression contains element-wise tensor operations,
- *   map a expression to same shape 
+ *   map a expression to same shape
  */
 const int kMapper = 1;
 /*!
@@ -70,7 +70,7 @@ struct Exp {
   }
 };
 /*!
- * \brief scalar expression 
+ * \brief scalar expression
  * \tparam DType the data type of the scalar
  */
 template<typename DType>
@@ -280,12 +280,12 @@ MakeExp(const Exp<TA, DType, ta> &item1, const Exp<TB, DType, tb> &item2,
                       (ta|tb|tc|type::kMapper)>(item1.self(), item2.self(), item3.self());
 }
 /*!
- * \brief short hand for MakeExp, usage F<op>(item1,item2,item3). create a ternary operation expression 
+ * \brief short hand for MakeExp, usage F<op>(item1,item2,item3). create a ternary operation expression
  * \param item1 first operand
  * \param item2 second operand
  * \param item3 third operand
  * \return the result expression
- * \tparam ternary operator 
+ * \tparam ternary operator
  * \tparam TA item1 expression
  * \tparam ta item1 expression type
  * \tparam TB item2 expression
@@ -332,11 +332,11 @@ MakeExp(const Exp<TA, DType, ta> &lhs, const Exp<TB, DType, tb> &rhs) {
                       (ta|tb|type::kMapper)>(lhs.self(), rhs.self());
 }
 /*!
- * \brief short hand for MakeExp, usage F<op>(lhs, rhs). create a binary operation expression 
+ * \brief short hand for MakeExp, usage F<op>(lhs, rhs). create a binary operation expression
  * \param lhs left operand
  * \param rhs right operand
  * \return the result expression
- * \tparam binary operator 
+ * \tparam binary operator
  * \tparam TA lhs expression
  * \tparam ta lhs expression type
  * \tparam TB rhs expression
@@ -397,11 +397,11 @@ inline UnaryMapExp<OP, TA, DType, (ta|type::kMapper)>
 MakeExp(const Exp<TA, DType, ta> &src) {
   return UnaryMapExp<OP, TA, DType, (ta|type::kMapper)>(src.self());
 }
-/*! 
- * \brief short hand for MakeExp, usage F<op>(src), create a unary operation expression 
+/*!
+ * \brief short hand for MakeExp, usage F<op>(src), create a unary operation expression
  * \param src source expression
  * \return the result expression
- * \tparam operator 
+ * \tparam operator
  * \tparam TA source expression
  * \tparam ta source expression type
  * \sa mshadow::op
