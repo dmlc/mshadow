@@ -33,7 +33,7 @@ function(mshadow_detect_installed_gpus out_variable)
       get_filename_component(CL_DIR ${CMAKE_C_COMPILER} DIRECTORY)
       set(ENV{PATH} "$ENV{PATH};${CL_DIR}")
     endif()
-    execute_process(COMMAND "${CUDA_NVCC_EXECUTABLE}" "--run" "${__cufile}"
+    execute_process(COMMAND ${CUDA_NVCC_EXECUTABLE} --run ${__cufile} -L${CUDA_LIBRARY_PATH}
                     WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/CMakeFiles/"
                     RESULT_VARIABLE __nvcc_res OUTPUT_VARIABLE __nvcc_out
                     ERROR_QUIET
