@@ -10,6 +10,7 @@ check_cxx_compiler_flag("-std=c++11"   SUPPORT_CXX11)
 # Usage:
 #   mshadow_detect_installed_gpus(out_variable)
 function(mshadow_detect_installed_gpus out_variable)
+set(CUDA_gpu_detect_output "")
   if(NOT CUDA_gpu_detect_output)
     set(__cufile ${PROJECT_BINARY_DIR}/detect_cuda_archs.cu)
 
@@ -29,15 +30,21 @@ function(mshadow_detect_installed_gpus out_variable)
       "  return 0;\n"
       "}\n")
     if(MSVC)
-      # Add directory of "cl.exe" to system path, otherwise "nvcc --run" will fail with "Cannot find compiler 'cl.exe' in PATH"
-      get_filename_component(CL_DIR ${CMAKE_C_COMPILER} DIRECTORY)
-      set(ENV{PATH} "$ENV{PATH};${CL_DIR}")
+      #find vcvarsall.bat and run it building msvc environment
+      get_filename_component(MY_COMPILER_DIR ${CMAKE_CXX_COMPILER} DIRECTORY) 
+      find_file(MY_VCVARSALL_BAT vcvarsall.bat "${MY_COMPILER_DIR}/.." "${MY_COMPILER_DIR}/../..")     
+      execute_process(COMMAND ${MY_VCVARSALL_BAT} && ${CUDA_NVCC_EXECUTABLE} -arch sm_30 --run  ${__cufile}
+                      WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/CMakeFiles/"
+                      RESULT_VARIABLE __nvcc_res OUTPUT_VARIABLE __nvcc_out
+                      ERROR_QUIET
+                      OUTPUT_STRIP_TRAILING_WHITESPACE)
+    else()
+      execute_process(COMMAND ${CUDA_NVCC_EXECUTABLE} -arch sm_30 --run ${__cufile}
+                      WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/CMakeFiles/"
+                      RESULT_VARIABLE __nvcc_res OUTPUT_VARIABLE __nvcc_out
+                      ERROR_QUIET
+                      OUTPUT_STRIP_TRAILING_WHITESPACE)
     endif()
-    execute_process(COMMAND ${CUDA_NVCC_EXECUTABLE} --run ${__cufile} -L${CUDA_LIBRARY_PATH}
-                    WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/CMakeFiles/"
-                    RESULT_VARIABLE __nvcc_res OUTPUT_VARIABLE __nvcc_out
-                    ERROR_QUIET
-                    OUTPUT_STRIP_TRAILING_WHITESPACE)
 
     if(__nvcc_res EQUAL 0)
       # nvcc outputs text containing line breaks when building with MSVC.
