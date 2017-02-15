@@ -193,13 +193,13 @@ const TShape &axes, const TShape &sizes) {
 template<typename SrcExp, typename DType, int etype, typename TShape>
 inline BroadcastWithMultiAxesExp<SrcExp, DType, ExpInfo<SrcExp>::kDim>
 broadcast_to(const Exp<SrcExp, DType, etype> &src, const TShape &target_shape) {
-  static const int dimsrc = ExpInfo<SrcExp>::kDim;
+  static const size_t dimsrc = ExpInfo<SrcExp>::kDim;
   CHECK_EQ(target_shape.ndim(), dimsrc);
   std::vector<index_t> axes_vec, sizes_vec;
   Shape<dimsrc> src_shape = ShapeCheck<dimsrc, SrcExp>::Check(src.self());
-  for (int i = 0; i < dimsrc; ++i) {
+  for (size_t i = 0; i < dimsrc; ++i) {
     if (src_shape[i] != target_shape[i]) {
-      CHECK_EQ(src_shape[i], 1) << "broadcasting axis must have size 1, received shape="
+      CHECK_EQ(src_shape[i], 1U) << "broadcasting axis must have size 1, received shape="
         << src_shape << " target_shape=" << target_shape;
       axes_vec.push_back(i);
       sizes_vec.push_back(target_shape[i]);

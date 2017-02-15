@@ -2,15 +2,15 @@ if(NOT USE_CUDA)
   return()
 endif()
 
-# Known NVIDIA GPU achitectures mshadow can be compiled for.
-# This list will be used for CUDA_ARCH_NAME = All option
-set(mshadow_known_gpu_archs "20 21(20) 30 35 50")
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag("-std=c++11"   SUPPORT_CXX11)
 
 ################################################################################################
 # A function for automatic detection of GPUs installed  (if autodetection is enabled)
 # Usage:
 #   mshadow_detect_installed_gpus(out_variable)
 function(mshadow_detect_installed_gpus out_variable)
+set(CUDA_gpu_detect_output "")
   if(NOT CUDA_gpu_detect_output)
     set(__cufile ${PROJECT_BINARY_DIR}/detect_cuda_archs.cu)
 
@@ -30,15 +30,21 @@ function(mshadow_detect_installed_gpus out_variable)
       "  return 0;\n"
       "}\n")
     if(MSVC)
-      # Add directory of "cl.exe" to system path, otherwise "nvcc --run" will fail with "Cannot find compiler 'cl.exe' in PATH"
-      get_filename_component(CL_DIR ${CMAKE_C_COMPILER} DIRECTORY)
-      set(ENV{PATH} "$ENV{PATH};${CL_DIR}")
+      #find vcvarsall.bat and run it building msvc environment
+      get_filename_component(MY_COMPILER_DIR ${CMAKE_CXX_COMPILER} DIRECTORY) 
+      find_file(MY_VCVARSALL_BAT vcvarsall.bat "${MY_COMPILER_DIR}/.." "${MY_COMPILER_DIR}/../..")     
+      execute_process(COMMAND ${MY_VCVARSALL_BAT} && ${CUDA_NVCC_EXECUTABLE} -arch sm_30 --run  ${__cufile}
+                      WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/CMakeFiles/"
+                      RESULT_VARIABLE __nvcc_res OUTPUT_VARIABLE __nvcc_out
+                      ERROR_QUIET
+                      OUTPUT_STRIP_TRAILING_WHITESPACE)
+    else()
+      execute_process(COMMAND ${CUDA_NVCC_EXECUTABLE} -arch sm_30 --run ${__cufile}
+                      WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/CMakeFiles/"
+                      RESULT_VARIABLE __nvcc_res OUTPUT_VARIABLE __nvcc_out
+                      ERROR_QUIET
+                      OUTPUT_STRIP_TRAILING_WHITESPACE)
     endif()
-    execute_process(COMMAND "${CUDA_NVCC_EXECUTABLE}" "--run" "${__cufile}"
-                    WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/CMakeFiles/"
-                    RESULT_VARIABLE __nvcc_res OUTPUT_VARIABLE __nvcc_out
-                    ERROR_QUIET
-                    OUTPUT_STRIP_TRAILING_WHITESPACE)
 
     if(__nvcc_res EQUAL 0)
       # nvcc outputs text containing line breaks when building with MSVC.
@@ -67,7 +73,7 @@ endfunction()
 #   mshadow_select_nvcc_arch_flags(out_variable)
 function(mshadow_select_nvcc_arch_flags out_variable)
   # List of arch names
-  set(__archs_names "Fermi" "Kepler" "Maxwell" "All" "Manual")
+  set(__archs_names "Fermi" "Kepler" "Maxwell" "Pascal" "All" "Manual")
   set(__archs_name_default "All")
   if(NOT CMAKE_CROSSCOMPILING)
     list(APPEND __archs_names "Auto")
@@ -100,6 +106,8 @@ function(mshadow_select_nvcc_arch_flags out_variable)
     set(__cuda_arch_bin "30 35")
   elseif(${CUDA_ARCH_NAME} STREQUAL "Maxwell")
     set(__cuda_arch_bin "50")
+  elseif(${CUDA_ARCH_NAME} STREQUAL "Pascal")
+    set(__cuda_arch_bin "60 61")
   elseif(${CUDA_ARCH_NAME} STREQUAL "All")
     set(__cuda_arch_bin ${mshadow_known_gpu_archs})
   elseif(${CUDA_ARCH_NAME} STREQUAL "Auto")
@@ -154,7 +162,6 @@ macro(mshadow_cuda_compile objlist_variable)
     string(REPLACE "/EHa" "" ${var} "${${var}}")
 
   endforeach()
-
   if(UNIX OR APPLE)
     list(APPEND CUDA_NVCC_FLAGS -Xcompiler -fPIC)
   endif()
@@ -162,6 +169,8 @@ macro(mshadow_cuda_compile objlist_variable)
   if(APPLE)
     list(APPEND CUDA_NVCC_FLAGS -Xcompiler -Wno-unused-function)
   endif()
+
+  set(CUDA_NVCC_FLAGS_DEBUG "${CUDA_NVCC_FLAGS_DEBUG} -G -lineinfo")
 
   if(MSVC)
     # disable noisy warnings:
@@ -174,6 +183,14 @@ macro(mshadow_cuda_compile objlist_variable)
         string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
       endif(${flag_var} MATCHES "/MD")
     endforeach(flag_var)
+  endif()
+
+  # If the build system is a container, make sure the nvcc intermediate files
+  # go into the build output area rather than in /tmp, which may run out of space
+  if(IS_CONTAINER_BUILD)
+    set(CUDA_NVCC_INTERMEDIATE_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+    message(STATUS "Container build enabled, so nvcc intermediate files in: ${CUDA_NVCC_INTERMEDIATE_DIR}")
+    list(APPEND CUDA_NVCC_FLAGS "--keep --keep-dir ${CUDA_NVCC_INTERMEDIATE_DIR}")
   endif()
 
   cuda_compile(cuda_objcs ${ARGN})
@@ -217,7 +234,16 @@ endfunction()
 ###  Non macro section
 ################################################################################################
 
-find_package(CUDA 5.5 QUIET)
+# Try to prime CUDA_TOOLKIT_ROOT_DIR by looking for libcudart.so
+if(NOT CUDA_TOOLKIT_ROOT_DIR)
+  find_library(CUDA_LIBRARY_PATH libcudart.so PATHS ENV LD_LIBRARY_PATH PATH_SUFFIXES lib lib64)
+  if(CUDA_LIBRARY_PATH)
+    get_filename_component(CUDA_LIBRARY_PATH ${CUDA_LIBRARY_PATH} DIRECTORY)
+    set(CUDA_TOOLKIT_ROOT_DIR "${CUDA_LIBRARY_PATH}/..")
+  endif()
+endif()
+
+find_package(CUDA 5.5 QUIET REQUIRED)
 find_cuda_helper_libs(curand)  # cmake 2.8.7 compartibility which doesn't search for curand
 
 if(NOT CUDA_FOUND)
@@ -229,6 +255,18 @@ message(STATUS "CUDA detected: " ${CUDA_VERSION})
 include_directories(SYSTEM ${CUDA_INCLUDE_DIRS})
 list(APPEND mshadow_LINKER_LIBS ${CUDA_CUDART_LIBRARY}
                               ${CUDA_curand_LIBRARY} ${CUDA_CUBLAS_LIBRARIES})
+
+# Known NVIDIA GPU achitectures mshadow can be compiled for.
+# This list will be used for CUDA_ARCH_NAME = All option
+if(CUDA_ARCH_ALL)
+  set(mshadow_known_gpu_archs "${CUDA_ARCH_ALL}")
+else()
+  if(${CUDA_VERSION} GREATER 7.5)
+    set(mshadow_known_gpu_archs "30 35 50 52 60 61")
+  else()
+    set(mshadow_known_gpu_archs "30 35 50 52")
+  endif()
+endif()
 
 # cudnn detection
 if(USE_CUDNN)
