@@ -1,6 +1,8 @@
 # set LD_LIBRARY_PATH
 export CC  = gcc
+ifndef CXX
 export CXX = g++
+endif
 export NVCC =nvcc
 include config.mk
 include ../make/mshadow.mk
