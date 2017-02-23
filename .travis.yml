@@ -6,7 +6,7 @@ env:
   matrix:
     - TASK=lint LINT_LANG=cpp
     - TASK=doc
-    - TASK=build CXX=g++
+    - TASK=build CXX=clang++
 
 # dependent apt packages
 addons:
