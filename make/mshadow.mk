@@ -11,7 +11,7 @@
 MSHADOW_CFLAGS = -funroll-loops -Wno-unused-variable -Wno-unused-parameter -Wno-unknown-pragmas -Wno-unused-local-typedefs
 MSHADOW_LDFLAGS = -lm
 MSHADOW_NVCCFLAGS =
-MKLROOT =
+
 
 ifndef USE_SSE
 	USE_SSE=1
