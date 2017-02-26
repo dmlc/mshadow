@@ -72,7 +72,8 @@ endif
 ifeq ($(USE_BLAS), openblas)
 	MSHADOW_LDFLAGS += -lopenblas
 else ifeq ($(USE_BLAS), atlas)
-	MSHADOW_LDFLAGS += -lcblas
+	MSHADOW_CFLAGS += -I/usr/include/atlas/
+	MSHADOW_LDFLAGS += -lcblas -llapack_atlas
 else ifeq ($(USE_BLAS), blas)
 	MSHADOW_LDFLAGS += -lblas
 else ifeq ($(USE_BLAS), apple)
