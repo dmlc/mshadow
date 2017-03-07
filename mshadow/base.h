@@ -136,7 +136,7 @@ extern "C" {
     #include <cblas.h>
 }
 #elif MSHADOW_USE_MKL
-  #include <mkl.h>
+  #include <mkl_blas.h>
   #include <mkl_cblas.h>
   #include <mkl_vsl.h>
   #include <mkl_vsl_functions.h>

@@ -11,7 +11,7 @@
 MSHADOW_CFLAGS = -funroll-loops -Wno-unused-variable -Wno-unused-parameter -Wno-unknown-pragmas -Wno-unused-local-typedefs
 MSHADOW_LDFLAGS = -lm
 MSHADOW_NVCCFLAGS =
-MKLROOT =
+
 
 ifndef USE_SSE
 	USE_SSE=1
@@ -54,12 +54,19 @@ else
 endif
 	MSHADOW_LDFLAGS += -L${MKLROOT}/../compiler/lib/intel64 -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_intel_thread.a -Wl,--end-group -liomp5 -ldl -lpthread -lm
 else
-	MSHADOW_LDFLAGS += -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5
+ifneq ($(USE_MKLML), 1)
+  MSHADOW_LDFLAGS += -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5
+endif
 endif
 else
 ifneq ($(USE_BLAS), NONE)
 	MSHADOW_CFLAGS += -DMSHADOW_USE_CBLAS=1 -DMSHADOW_USE_MKL=0
 endif
+endif
+
+ifeq ($(USE_MKLML), 1)
+	MSHADOW_CFLAGS += -I$(MKLROOT)/include
+	MSHADOW_LDFLAGS += -Wl,--as-needed -lmklml_intel -lmklml_gnu -liomp5 -L$(MKLROOT)/lib/
 endif
 
 ifeq ($(USE_BLAS), openblas)
@@ -108,6 +115,6 @@ else
 	MSHADOW_CFLAGS+= -DMSHADOW_DIST_PS=0
 endif
 
-# Set MSDHADOW_USE_PASCAL to one to enable nvidia pascal gpu features.
+# Set MSHADOW_USE_PASCAL to one to enable nvidia pascal gpu features.
 # Like cublasHgemm
-MSHADOW_CFLAGS += -DMSDHADOW_USE_PASCAL=0
+MSHADOW_CFLAGS += -DMSHADOW_USE_PASCAL=0
