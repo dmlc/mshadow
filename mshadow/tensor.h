@@ -248,6 +248,42 @@ MSHADOW_XINLINE Shape<5> Shape5(index_t s0, index_t s1, index_t s2,
 * \param dst_layout target layout
 * \return shape in target layout
 */
+inline Shape<3> ConvertLayout(const Shape<3>& src, int src_layout, int dst_layout) {
+  Shape<3> dst;
+  switch (src_layout) {
+  case kNCW:
+    dst = src;
+    break;
+  case kNWC:
+    dst[0] = src[0];
+    dst[1] = src[2];
+    dst[2] = src[1];
+    break;
+  default:
+    LOG(FATAL) << "Invalid layout for 3d shape " << src_layout;
+  }
+  Shape<3> dst2;
+  switch (dst_layout) {
+  case kNCW:
+    return dst;
+  case kNWC:
+    dst2[0] = dst[0];
+    dst2[1] = dst[2];
+    dst2[2] = dst[1];
+    break;
+  default:
+    LOG(FATAL) << "Invalid layout for 3d shape " << src_layout;
+  }
+  return dst2;
+}
+
+/*!
+* \brief Convert shape in src_layout to shape in dst_layout
+* \param src original shape
+* \param src_layout layout of original shape
+* \param dst_layout target layout
+* \return shape in target layout
+*/
 inline Shape<4> ConvertLayout(const Shape<4>& src, int src_layout, int dst_layout) {
   Shape<4> dst;
   switch (src_layout) {

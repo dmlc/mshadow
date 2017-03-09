@@ -314,6 +314,10 @@ enum LayoutFlag {
   kNHWC,
   kCHWN,
 
+  kNCW = 1 << 3,
+  kNWC,
+  kCWN,
+
   kNCDHW = 1 << 5,
   kNDHWC,
   kCDHWN
