@@ -39,7 +39,10 @@ set(CUDA_gpu_detect_output "")
                       ERROR_QUIET
                       OUTPUT_STRIP_TRAILING_WHITESPACE)
     else()
-      execute_process(COMMAND ${CUDA_NVCC_EXECUTABLE} -arch sm_30 --run ${__cufile} -L${CUDA_LIBRARY_PATH}
+      if(CUDA_LIBRARY_PATH)
+        set(CUDA_LINK_LIBRARY_PATH "-L${CUDA_LIBRARY_PATH}")
+      endif()
+      execute_process(COMMAND ${CUDA_NVCC_EXECUTABLE} -arch sm_30 --run ${__cufile} ${CUDA_LINK_LIBRARY_PATH}
                       WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/CMakeFiles/"
                       RESULT_VARIABLE __nvcc_res OUTPUT_VARIABLE __nvcc_out
                       ERROR_QUIET
