@@ -262,19 +262,18 @@ inline Shape<3> ConvertLayout(const Shape<3>& src, int src_layout, int dst_layou
   default:
     LOG(FATAL) << "Invalid layout for 3d shape " << src_layout;
   }
-  Shape<3> dst2;
   switch (dst_layout) {
   case kNCW:
     return dst;
   case kNWC:
-    dst2[0] = dst[0];
-    dst2[1] = dst[2];
-    dst2[2] = dst[1];
+    dst[1] = dst[1] ^ dst[2];
+    dst[2] = dst[1] ^ dst[2];
+    dst[1] = dst[1] ^ dst[2];
     break;
   default:
     LOG(FATAL) << "Invalid layout for 3d shape " << src_layout;
   }
-  return dst2;
+  return dst;
 }
 
 /*!
