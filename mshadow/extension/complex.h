@@ -14,7 +14,6 @@ namespace op {
 namespace complex {
 enum BinaryCalculationType { kBinaryCC, kBinaryCR, kBinaryRC};
 enum UnitaryCalculationType { kUnitaryC2R, kUnitaryC2C, kUnitaryR2C };
-    
 struct mul {
   /*! \brief map a_real, a_imag, b_real, b_imag to result using defined operation */
   template<typename DType>
@@ -82,7 +81,7 @@ struct pad_imag {
     return 0;
   }
 };
-    
+
 // c2r operator
 struct toreal {
   template<typename TA, typename DType>
@@ -92,7 +91,7 @@ struct toreal {
     return real_val;
   }
 };
-    
+
 struct abs_square {
   template<typename TA, typename DType>
   MSHADOW_XINLINE static DType RealMap(const expr::Plan<TA, DType> &src_,
@@ -283,7 +282,7 @@ inline ComplexUnitaryExp<op::complex::kUnitaryC2R, op::complex::toreal,
 complex_toreal(const Exp<SrcExp, DType, e1> &src) {
   return ComplexF<op::complex::kUnitaryC2R, op::complex::toreal>(src);
 }
-    
+
 /*!
 * \brief complex_abs_square calculate the square of the modulus of A where A is a complex tensor
 * \param src source tensor
@@ -357,8 +356,7 @@ struct ShapeCheck<dim, ComplexUnitaryExp<calctype, OP, TA, DType, etype> > {
       Shape<dim> s_ret = s;
       s_ret[dim-1] *= 2;
       return s_ret;
-    }
-      else {
+    } else {
       LOG(FATAL) << "ComplexUnitaryExp: Unexpected Calculation Type!";
       return s;
     }
@@ -460,20 +458,20 @@ class Plan<ComplexUnitaryExp<op::complex::kUnitaryR2C, OP, TA, DType, etype>, DT
   explicit Plan(const Plan<TA, DType> &src) : src_(src) {}
   MSHADOW_XINLINE DType Eval(index_t y, index_t x) const {
     const index_t real_x = static_cast<index_t>(x / 2);
-    if (0 == x%2){
+    if (0 == x%2) {
       // x,y should be coordinates in the complex matrix
-      // this defines how we will give value to the real part from the real matrix src_, thus the index has only 2 dimensions
+      // this defines how we will give value to the real part from the real matrix src_, 
+      // thus the index has only 2 dimensions
       return OP::RealMap(src_, y, real_x);
     } else {
       return OP::ImagMap(src_, y, real_x);
     }
-    
   }
 
  private:
   Plan<TA, DType> src_;
 };
-    
+
 // complex unitary expression (c2r)
 template<typename OP, typename TA, int etype, typename DType>
 class Plan<ComplexUnitaryExp<op::complex::kUnitaryC2R, OP, TA, DType, etype>, DType> {
