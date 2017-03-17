@@ -460,7 +460,7 @@ class Plan<ComplexUnitaryExp<op::complex::kUnitaryR2C, OP, TA, DType, etype>, DT
     const index_t real_x = static_cast<index_t>(x / 2);
     if (0 == x%2) {
       // x,y should be coordinates in the complex matrix
-      // this defines how we will give value to the real part from the real matrix src_, 
+      // this defines how we will give value to the real part from the real matrix src_,
       // thus the index has only 2 dimensions
       return OP::RealMap(src_, y, real_x);
     } else {
