@@ -13,8 +13,7 @@ namespace mshadow {
 namespace op {
 namespace complex {
 enum BinaryCalculationType { kBinaryCC, kBinaryCR, kBinaryRC};
-enum UnitaryCalculationType { kUnitaryC2R, kUnitaryC2C };
-
+enum UnitaryCalculationType { kUnitaryC2R, kUnitaryC2C, kUnitaryR2C };
 struct mul {
   /*! \brief map a_real, a_imag, b_real, b_imag to result using defined operation */
   template<typename DType>
@@ -66,6 +65,30 @@ struct exchange {
   MSHADOW_XINLINE static DType ImagMap(const expr::Plan<TA, DType> &src_,
     index_t real_i, index_t real_j, index_t imag_i, index_t imag_j) {
     return src_.Eval(real_i, real_j);
+  }
+};
+
+// r2c operator
+struct pad_imag {
+  template<typename TA, typename DType>
+  MSHADOW_XINLINE static DType RealMap(const expr::Plan<TA, DType> &src_,
+    index_t real_i, index_t real_j) {
+    return src_.Eval(real_i, real_j);
+  }
+  template<typename TA, typename DType>
+  MSHADOW_XINLINE static DType ImagMap(const expr::Plan<TA, DType> &src_,
+    index_t real_i, index_t real_j) {
+    return 0;
+  }
+};
+
+// c2r operator
+struct toreal {
+  template<typename TA, typename DType>
+  MSHADOW_XINLINE static DType RealMap(const expr::Plan<TA, DType> &src_,
+    index_t real_i, index_t real_j, index_t imag_i, index_t imag_j) {
+    DType real_val = src_.Eval(real_i, real_j);
+    return real_val;
   }
 };
 
@@ -237,6 +260,30 @@ complex_exchange(const Exp<SrcExp, DType, e1> &src) {
 }
 
 /*!
+* \brief complex_pad_imag Transform real matrix into complex matrix
+* \param src source tensor
+* \tparam e1 type of source expression
+*/
+template<typename SrcExp, typename DType, int e1>
+inline ComplexUnitaryExp<op::complex::kUnitaryR2C, op::complex::pad_imag,
+  SrcExp, DType, (e1|type::kMapper)>
+complex_pad_imag(const Exp<SrcExp, DType, e1> &src) {
+  return ComplexF<op::complex::kUnitaryR2C, op::complex::pad_imag>(src);
+}
+
+/*!
+* \brief complex_toreal convert complex matrix to real matrix, keep only real part
+* \param src source tensor
+* \tparam e1 type of source expression
+*/
+template<typename SrcExp, typename DType, int e1>
+inline ComplexUnitaryExp<op::complex::kUnitaryC2R, op::complex::toreal,
+  SrcExp, DType, (e1 | type::kMapper)>
+complex_toreal(const Exp<SrcExp, DType, e1> &src) {
+  return ComplexF<op::complex::kUnitaryC2R, op::complex::toreal>(src);
+}
+
+/*!
 * \brief complex_abs_square calculate the square of the modulus of A where A is a complex tensor
 * \param src source tensor
 * \tparam e1 type of source expression
@@ -304,6 +351,10 @@ struct ShapeCheck<dim, ComplexUnitaryExp<calctype, OP, TA, DType, etype> > {
     } else if (calctype == op::complex::kUnitaryC2R) {
       Shape<dim> s_ret = s;
       s_ret[dim - 1] /= 2;
+      return s_ret;
+    } else if (calctype == op::complex::kUnitaryR2C) {
+      Shape<dim> s_ret = s;
+      s_ret[dim-1] *= 2;
       return s_ret;
     } else {
       LOG(FATAL) << "ComplexUnitaryExp: Unexpected Calculation Type!";
@@ -393,6 +444,27 @@ class Plan<ComplexUnitaryExp<op::complex::kUnitaryC2C, OP, TA, DType, etype>, DT
       return OP::RealMap(src_, y, base_x, y, base_x + 1);
     } else {
       return OP::ImagMap(src_, y, base_x, y, base_x + 1);
+    }
+  }
+
+ private:
+  Plan<TA, DType> src_;
+};
+
+// complex unitary expression (r2c)
+template<typename OP, typename TA, int etype, typename DType>
+class Plan<ComplexUnitaryExp<op::complex::kUnitaryR2C, OP, TA, DType, etype>, DType> {
+ public:
+  explicit Plan(const Plan<TA, DType> &src) : src_(src) {}
+  MSHADOW_XINLINE DType Eval(index_t y, index_t x) const {
+    const index_t real_x = static_cast<index_t>(x / 2);
+    if (0 == x%2) {
+      // x,y should be coordinates in the complex matrix
+      // this defines how we will give value to the real part from the real matrix src_,
+      // thus the index has only 2 dimensions
+      return OP::RealMap(src_, y, real_x);
+    } else {
+      return OP::ImagMap(src_, y, real_x);
     }
   }
 
