@@ -110,7 +110,7 @@ struct TransposeIndicesExp:
     Shape<dimsrc> dst_stride_;
     bool axes_checking_flag[dimsrc] = { 0 };
     for (int i = 0; i < dimsrc; ++i) {
-      CHECK_LT((int)axes[i], dimsrc)
+      CHECK_LT(static_cast<int>(axes[i]), dimsrc)
         << "Invalid axes input! All elements of axes must be between 0 and " << dimsrc
         << ", find axes=" << axes;
       dst_shape_[i] = src_shape[axes[i]];
