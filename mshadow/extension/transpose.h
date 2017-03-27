@@ -16,9 +16,9 @@ namespace expr {
  * output: Tensor<Device,dimdst> oshape[a1],oshape[a2] = ishape[a2],oshape[a1]
  *
  * \tparam SrcExp type of source expression
- * \tparam DType the type of elements 
+ * \tparam DType the type of elements
  * \tparam dimsrc source dimension, assert a1 > a2
- * \tparam m_a1 one dimension to be swapped, encoded by dimsrc - a1 
+ * \tparam m_a1 one dimension to be swapped, encoded by dimsrc - a1
  * \tparam a2 second dimension to be swapped, encoded by a2
  */
 template<typename SrcExp, typename DType, int dimsrc>
@@ -50,7 +50,7 @@ struct TransposeExExp:
  * \tparam a1 higher dimension to be swapped, assert a1 > a2
  * \tparam a2 lower dimension to be swapped
  * \tparam SrcExp source expression
- * \tparam DType the type of elements 
+ * \tparam DType the type of elements
  * \tparam etype source expression type
  */
 template<typename SrcExp, typename DType, int etype>
@@ -110,7 +110,7 @@ struct TransposeIndicesExp:
     Shape<dimsrc> dst_stride_;
     bool axes_checking_flag[dimsrc] = { 0 };
     for (int i = 0; i < dimsrc; ++i) {
-      CHECK_LT(axes[i], dimsrc)
+      CHECK_LT(static_cast<int>(axes[i]), dimsrc)
         << "Invalid axes input! All elements of axes must be between 0 and " << dimsrc
         << ", find axes=" << axes;
       dst_shape_[i] = src_shape[axes[i]];

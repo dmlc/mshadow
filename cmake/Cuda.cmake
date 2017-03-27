@@ -31,21 +31,23 @@ set(CUDA_gpu_detect_output "")
       "}\n")
     if(MSVC)
       #find vcvarsall.bat and run it building msvc environment
-      get_filename_component(MY_COMPILER_DIR ${CMAKE_CXX_COMPILER} DIRECTORY) 
-      find_file(MY_VCVARSALL_BAT vcvarsall.bat "${MY_COMPILER_DIR}/.." "${MY_COMPILER_DIR}/../..")     
+      get_filename_component(MY_COMPILER_DIR ${CMAKE_CXX_COMPILER} DIRECTORY)
+      find_file(MY_VCVARSALL_BAT vcvarsall.bat "${MY_COMPILER_DIR}/.." "${MY_COMPILER_DIR}/../..")
       execute_process(COMMAND ${MY_VCVARSALL_BAT} && ${CUDA_NVCC_EXECUTABLE} -arch sm_30 --run  ${__cufile}
                       WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/CMakeFiles/"
                       RESULT_VARIABLE __nvcc_res OUTPUT_VARIABLE __nvcc_out
                       ERROR_QUIET
                       OUTPUT_STRIP_TRAILING_WHITESPACE)
     else()
-      execute_process(COMMAND ${CUDA_NVCC_EXECUTABLE} -arch sm_30 --run ${__cufile}
+      if(CUDA_LIBRARY_PATH)
+        set(CUDA_LINK_LIBRARY_PATH "-L${CUDA_LIBRARY_PATH}")
+      endif()
+      execute_process(COMMAND ${CUDA_NVCC_EXECUTABLE} -arch sm_30 --run ${__cufile} ${CUDA_LINK_LIBRARY_PATH}
                       WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/CMakeFiles/"
                       RESULT_VARIABLE __nvcc_res OUTPUT_VARIABLE __nvcc_out
                       ERROR_QUIET
                       OUTPUT_STRIP_TRAILING_WHITESPACE)
     endif()
-
     if(__nvcc_res EQUAL 0)
       # nvcc outputs text containing line breaks when building with MSVC.
       # The line below prevents CMake from inserting a variable with line

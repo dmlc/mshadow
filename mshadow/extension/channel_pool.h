@@ -57,7 +57,7 @@ inline ChannelPoolingExp<Reducer, SrcExp, DType, ExpInfo<SrcExp>::kDim>
 chpool(const Exp<SrcExp, DType, etype> &src, index_t nsize) {
   TypeCheckPass<ExpInfo<SrcExp>::kDim >= 3>
       ::Error_Expression_Does_Not_Meet_Dimension_Req();
-  CHECK_EQ(nsize % 2, 1) << "chpool: if no pad is specified, local size must be odd";
+  CHECK_EQ(nsize % 2, 1U) << "chpool: if no pad is specified, local size must be odd";
   return ChannelPoolingExp<Reducer, SrcExp,
                            DType, ExpInfo<SrcExp>::kDim>(src.self(), nsize, 1, nsize / 2);
 }

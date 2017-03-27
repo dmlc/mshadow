@@ -55,7 +55,7 @@ struct BroadcastWithAxisExp:
     } else {
       CHECK(dimdst > axis && axis >= 0) << "broadcast axis (keepdim) out of bound, " <<
         "axis must be between 0 and" << dimdst - 1 << ", given=" << axis << ".";
-      CHECK_EQ(src_shape[axis], 1) << "Size of the dimension of the broadcasting axis must be 1" <<
+      CHECK_EQ(src_shape[axis], 1U) << "Size of the dimension of the broadcasting axis must be 1" <<
         " when keepdim is on, src_shape[" << axis << "]=" << src_shape[axis] << ".";
       for (int i = 0; i <= axis - 1; ++i) {
         this->shape_[i] = src_shape[i];
@@ -137,7 +137,7 @@ struct BroadcastWithMultiAxesExp :
       CHECK(dimsrc > axes[i]) << "broadcast axis (keepdim) out of bound, " <<
         "all axes must be between 0 and" << dimsrc - 1 << ", given axes[" << i << "] = " << axes[i]
         << ".";
-      CHECK_EQ(src_shape[axes[i]], 1) << "Size of the dimension of the broadcasting axis must be 1"
+      CHECK_EQ(src_shape[axes[i]], 1U) << "Size of the dimension of the broadcasting axis must be 1"
         << ", src_shape[" << axes[i] << "]=" << src_shape[axes[i]] << ".";
       if (i < this->axesnum_ - 1) {
         CHECK(axes[i] < axes[i + 1]) << "The given axes must be in increasing order.";
