@@ -33,6 +33,11 @@ ifneq ($(USE_CUDA_PATH), NONE)
 	MSHADOW_LDFLAGS += -L$(USE_CUDA_PATH)/lib64 -L$(USE_CUDA_PATH)/lib
 endif
 
+ifneq ($(USE_CUDNN_PATH), NONE)
+       MSHADOW_CFLAGS += -I$(USE_CUDNN_PATH)/include
+       MSHADOW_LDFLAGS += -L$(USE_CUDNN_PATH)/lib64 -L$(USE_CUDNN_PATH)/lib
+endif
+
 ifeq ($(USE_BLAS), mkl)
 ifneq ($(USE_INTEL_PATH), NONE)
 	UNAME_S := $(shell uname -s)
