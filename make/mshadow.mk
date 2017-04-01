@@ -71,6 +71,8 @@ endif
 
 ifeq ($(USE_BLAS), openblas)
 	MSHADOW_LDFLAGS += -lopenblas
+else ifeq ($(USE_BLAS), perfblas)
+	MSHADOW_LDFLAGS += -lperfblas
 else ifeq ($(USE_BLAS), atlas)
 	MSHADOW_LDFLAGS += -lcblas
 else ifeq ($(USE_BLAS), blas)
