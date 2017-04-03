@@ -214,7 +214,7 @@ class PacketPlan {
  public:
   /*!
    * \brief evaluate the expression at index [y][x],
-   * x will be aligned to Packet<DType, Arch>::kSize
+   * x will be aligned to Packet<DType, Arch>::Size()
    */
   MSHADOW_CINLINE packet::Packet<DType, Arch> EvalPacket(index_t y, index_t x) const;
   MSHADOW_CINLINE DType Eval(index_t y, index_t x) const;
@@ -395,12 +395,12 @@ inline void MapPacketPlan(Tensor<cpu, dim, DType> _dst,
                           const expr::PacketPlan<E, DType, Arch>& plan) {
   Tensor<cpu, 2, DType> dst = _dst.FlatTo2D();
   const index_t xlen = packet::LowerAlign<DType, Arch>(dst.size(1));
-  const index_t kSize = packet::Packet<DType, Arch>::Size();
+  const size_t packetSize = packet::Packet<DType, Arch>::Size();
 #if (MSHADOW_USE_CUDA == 0)
   #pragma omp parallel for
 #endif
   for (openmp_index_t y = 0; y < dst.size(0); ++y) {
-    for (index_t x = 0; x < xlen; x += kSize) {
+    for (index_t x = 0; x < xlen; x += packetSize) {
       packet::Saver<SV, DType, Arch>::Save(&dst[y][x], plan.EvalPacket(y, x));
     }
     for (index_t x = xlen; x < dst.size(1); ++x) {

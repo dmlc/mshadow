@@ -67,14 +67,15 @@ struct Plan<ImplicitGEMMExp<LhsExp, RhsExp, DType>, DType> {
     typedef packet::Packet<DType> Packet;
     Packet sum = Packet::Fill(0);
 
-    DType lhs_temp[Packet::kSize], rhs_temp[Packet::kSize];
+    const size_t packetSize = Packet::Size();
+    DType lhs_temp[packetSize], rhs_temp[packetSize];
 
-    for (index_t i = 0; i < prod_size_lower_align_; i += packet::Packet<DType>::kSize) {
+    for (index_t i = 0; i < prod_size_lower_align_; i += packetSize) {
       // unroll
-      for (index_t j = 0; j < Packet::kSize; ++j) {
+      for (index_t j = 0; j < packetSize; ++j) {
         lhs_temp[j] = lhs_.Eval(y, i + j);
       }
-      for (index_t j = 0; j < Packet::kSize; ++j) {
+      for (index_t j = 0; j < packetSize; ++j) {
         rhs_temp[j] = rhs_.Eval(i + j, x);
       }
       sum = sum + Packet::LoadUnAligned(lhs_temp) * Packet::LoadUnAligned(rhs_temp);

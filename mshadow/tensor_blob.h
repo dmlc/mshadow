@@ -259,7 +259,8 @@ struct TShape {
    */
   template<int dim>
   inline Shape<dim> get(void) const {
-    CHECK_EQ(dim, static_cast<int>(ndim_)) << "dimension do not match target dimension " << dim << " vs " << ndim_;
+    CHECK_EQ(dim, static_cast<int>(ndim_)) << "dimension do not match target dimension "
+      << dim << " vs " << ndim_;
     const index_t *d = this->data();
     Shape<dim> s;
     for (int i = 0; i < dim; ++i) {
