@@ -14,7 +14,6 @@
 *~
 doc/html
 doc/latex
-test*
 rabit
 dmlc-core
 *.db

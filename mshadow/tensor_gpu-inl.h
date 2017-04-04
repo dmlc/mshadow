@@ -126,7 +126,7 @@ inline void MapReduceKeepLowest(TRValue<R, gpu, 1, DType> *dst,
       ::Check(exp.self()).FlatTo2D();
   Shape<1> dshape = expr::ShapeCheck<1, R>::Check(dst->self());
   CHECK_EQ(eshape[1], dshape[0]) << "MapReduceKeepLowest::reduction dimension do not match";
-  CHECK_NE(eshape[0], 0) << "can not reduce over empty tensor";
+  CHECK_NE(eshape[0], 0U) << "can not reduce over empty tensor";
   cuda::MapReduceKeepLowest<Saver, Reducer>
       (MakePlan(dst->self()), MakePlan(exp.self()), scale, eshape,
        Stream<gpu>::GetStream(expr::StreamInfo<gpu, R>::Get(dst->self())));
