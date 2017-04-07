@@ -90,11 +90,11 @@ class Random<cpu, DType> {
   template<int dim, class Sampler>
   inline void SampleDistribution(Tensor<cpu, dim, DType> *dst, Sampler sampler) {
     if (dst->CheckContiguous()) {
-      std::generate_n(dst->dptr_, dst->shape_.Size(),sampler);
+      std::generate_n(dst->dptr_, dst->shape_.Size(), sampler);
     } else {
       Tensor<cpu, 2, DType> mat = dst->FlatTo2D();
       for (index_t i = 0; i < mat.size(0); ++i) {
-        std::generate_n(mat[i].dptr_, mat.size(1),sampler);
+        std::generate_n(mat[i].dptr_, mat.size(1), sampler);
       }
     }
   }
@@ -110,12 +110,13 @@ class Random<cpu, DType> {
   inline void SampleUniform(Tensor<cpu, dim, DType> *dst,
                             PType a , PType b ) {
     // Ensure that half_t is handled correctly.
-    typedef typename std::conditional<std::is_floating_point<DType>::value,DType,double>::type FType;
+    typedef typename std::conditional<std::is_floating_point<DType>::value,
+                                      DType,double>::type FType;
     typedef typename std::conditional<std::is_integral<DType>::value,
                                       std::uniform_int_distribution<DType>,
                                       std::uniform_real_distribution<FType>>::type GType;
     GType dist_uniform(a, b);
-    SampleDistribution(dst,[&](){ return dist_uniform(rnd_engine_);});
+    SampleDistribution(dst, [&](){ return dist_uniform(rnd_engine_);});
   }
 
   /*!
@@ -131,11 +132,13 @@ class Random<cpu, DType> {
     if (sigma <= 0) {
       *dst = mu; return;
     }
-    CHECK_EQ(std::is_floating_point<DType>::value, true)<<"Normal distribution must have floating point target type";
+    CHECK_EQ(std::is_floating_point<DType>::value, true)
+       << "Normal distribution must have floating point target type";
     // Avoid problems with static check during compilation for integral types.
-    typedef typename std::conditional<std::is_floating_point<DType>::value,DType,double>::type GType;
+    typedef typename std::conditional<std::is_floating_point<DType>::value,
+                                      DType, double>::type GType;
     std::normal_distribution<GType> dist_normal(mu, sigma);
-    SampleDistribution(dst,[&](){ return dist_normal(rnd_engine_);});
+    SampleDistribution(dst, [&](){ return dist_normal(rnd_engine_);});
   }
 
   /*!
@@ -148,11 +151,13 @@ class Random<cpu, DType> {
   template<int dim, typename PType>
   inline void SampleGamma(Tensor<cpu, dim, DType> *dst,
                           PType alpha, PType beta) {
-    CHECK_EQ(std::is_floating_point<DType>::value, true)<<"Gamma distribution must have floating point target type";
+    CHECK_EQ(std::is_floating_point<DType>::value, true)
+       << "Gamma distribution must have floating point target type";
     // Avoid problems with static check during compilation for integral types.
-    typedef typename std::conditional<std::is_floating_point<DType>::value,DType,double>::type GType;
+    typedef typename std::conditional<std::is_floating_point<DType>::value, 
+                                      DType, double>::type GType;
     std::gamma_distribution<GType> dist_gamma(alpha, beta);
-    SampleDistribution(dst,[&](){ return dist_gamma(rnd_engine_);});
+    SampleDistribution(dst, [&](){ return dist_gamma(rnd_engine_);});
   }
 
   /*!
@@ -163,11 +168,13 @@ class Random<cpu, DType> {
    */
   template<int dim, typename PType>
   inline void SampleExponential(Tensor<cpu, dim, DType> *dst, PType lambda ) {
-    CHECK_EQ(std::is_floating_point<DType>::value, true)<<"Exponential distribution must have floating point target type";
+    CHECK_EQ(std::is_floating_point<DType>::value, true) 
+      << "Exponential distribution must have floating point target type";
     // Avoid problems with static check during compilation for integral types.
-    typedef typename std::conditional<std::is_floating_point<DType>::value,DType,double>::type GType;
+    typedef typename std::conditional<std::is_floating_point<DType>::value, 
+                                      DType, double>::type GType;
     std::exponential_distribution<GType> dist_exp(lambda);
-    SampleDistribution(dst,[&](){ return dist_exp(rnd_engine_);});
+    SampleDistribution(dst, [&](){ return dist_exp(rnd_engine_);});
   }
 
   /*!
@@ -178,9 +185,9 @@ class Random<cpu, DType> {
    */
   template<int dim, typename PType>
   inline void SamplePoisson(Tensor<cpu, dim, DType> *dst, PType lambda) {
-    typedef typename std::conditional<std::is_integral<DType>::value,DType,int>::type GType;
+    typedef typename std::conditional<std::is_integral<DType>::value, DType, int>::type GType;
     std::poisson_distribution<GType> dist_poisson(lambda);
-    SampleDistribution(dst,[&](){ return static_cast<DType>(dist_poisson(rnd_engine_));});
+    SampleDistribution(dst, [&](){ return static_cast<DType>(dist_poisson(rnd_engine_));});
   }
 
   /*!
@@ -192,9 +199,9 @@ class Random<cpu, DType> {
    */
   template<int dim, typename PType1, typename PType2>
   inline void SampleNegativeBinomial(Tensor<cpu, dim, DType> *dst, PType1 k, PType2 p) {
-    typedef typename std::conditional<std::is_integral<DType>::value,DType,int>::type GType;
-    std::negative_binomial_distribution<GType> dist_negbinomial(k,p);
-    SampleDistribution(dst,[&](){ return static_cast<DType>(dist_negbinomial(rnd_engine_));});
+    typedef typename std::conditional<std::is_integral<DType>::value, DType, int>::type GType;
+    std::negative_binomial_distribution<GType> dist_negbinomial(k, p);
+    SampleDistribution(dst, [&](){ return static_cast<DType>(dist_negbinomial(rnd_engine_));});
   }
 
   /*!
@@ -206,17 +213,19 @@ class Random<cpu, DType> {
    * \tparam dim dimension of tensor
    */
   template<int dim, typename PType>
-  inline void SampleGeneralizedNegativeBinomial(Tensor<cpu, dim, DType> *dst, PType mu, PType alpha) {
+  inline void SampleGeneralizedNegativeBinomial(Tensor<cpu, dim, DType> *dst,
+                                                PType mu, PType alpha) {
     if (alpha == PType(0)) {
-      SamplePoisson(dst, mu); // limit of Poisson
+      SamplePoisson(dst, mu);  // limit of Poisson
     } else {
-      PType r( PType(1) / alpha );
+      PType r(PType(1) / alpha);
       PType beta = mu * alpha;
       std::gamma_distribution<> dist_gamma(r, beta);
-      typedef typename std::conditional<std::is_integral<DType>::value,DType,int>::type GType;
-  	  SampleDistribution(dst,[&](){ std::poisson_distribution<GType> dist_poisson(dist_gamma(rnd_engine_));
-	                                  return static_cast<DType>(dist_poisson(rnd_engine_));});
-	  }
+      typedef typename std::conditional<std::is_integral<DType>::value, DType, int>::type GType;
+      SampleDistribution(dst,
+        [&](){ std::poisson_distribution<GType> dist_poisson(dist_gamma(rnd_engine_));
+               return static_cast<DType>(dist_poisson(rnd_engine_));});
+    }
   }
 #endif
 
