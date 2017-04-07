@@ -111,7 +111,7 @@ class Random<cpu, DType> {
                             PType a , PType b ) {
     // Ensure that half_t is handled correctly.
     typedef typename std::conditional<std::is_floating_point<DType>::value,
-                                      DType,double>::type FType;
+                                      DType, double>::type FType;
     typedef typename std::conditional<std::is_integral<DType>::value,
                                       std::uniform_int_distribution<DType>,
                                       std::uniform_real_distribution<FType>>::type GType;
@@ -154,7 +154,7 @@ class Random<cpu, DType> {
     CHECK_EQ(std::is_floating_point<DType>::value, true)
        << "Gamma distribution must have floating point target type";
     // Avoid problems with static check during compilation for integral types.
-    typedef typename std::conditional<std::is_floating_point<DType>::value, 
+    typedef typename std::conditional<std::is_floating_point<DType>::value,
                                       DType, double>::type GType;
     std::gamma_distribution<GType> dist_gamma(alpha, beta);
     SampleDistribution(dst, [&](){ return dist_gamma(rnd_engine_);});
@@ -168,10 +168,10 @@ class Random<cpu, DType> {
    */
   template<int dim, typename PType>
   inline void SampleExponential(Tensor<cpu, dim, DType> *dst, PType lambda ) {
-    CHECK_EQ(std::is_floating_point<DType>::value, true) 
+    CHECK_EQ(std::is_floating_point<DType>::value, true)
       << "Exponential distribution must have floating point target type";
     // Avoid problems with static check during compilation for integral types.
-    typedef typename std::conditional<std::is_floating_point<DType>::value, 
+    typedef typename std::conditional<std::is_floating_point<DType>::value,
                                       DType, double>::type GType;
     std::exponential_distribution<GType> dist_exp(lambda);
     SampleDistribution(dst, [&](){ return dist_exp(rnd_engine_);});
