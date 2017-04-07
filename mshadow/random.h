@@ -85,7 +85,7 @@ class Random<cpu, DType> {
    * \brief generate data from a distribution
    * \param dst destination
    * \tparam dim dimension of tensor
-   * \param Sampler sampler of the distribution
+   * \param sampler sampler of the distribution
    */
   template<int dim, class Sampler>
   inline void SampleDistribution(Tensor<cpu, dim, DType> *dst, Sampler sampler) {
