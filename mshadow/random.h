@@ -108,7 +108,7 @@ class Random<cpu, DType> {
    */
   template<int dim, typename PType>
   inline void SampleUniform(Tensor<cpu, dim, DType> *dst,
-                            PType a , PType b ) {
+                            PType a = 0.0f , PType b = 1.0f ) {
     // Ensure that half_t is handled correctly.
     typedef typename std::conditional<std::is_floating_point<DType>::value,
                                       DType, double>::type FType;
@@ -128,7 +128,7 @@ class Random<cpu, DType> {
    */
   template<int dim, typename PType>
   inline void SampleGaussian(Tensor<cpu, dim, DType> *dst,
-                             PType mu, PType sigma ) {
+                             PType mu = 0.0f, PType sigma = 1.0f ) {
     if (sigma <= 0) {
       *dst = mu; return;
     }
