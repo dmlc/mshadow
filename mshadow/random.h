@@ -9,6 +9,7 @@
 #define MSHADOW_RANDOM_H_
 
 #include <cstdlib>
+#include <algorithm>
 #include "./base.h"
 #include "./tensor.h"
 #include "./tensor_container.h"
@@ -68,6 +69,36 @@ class Random<cpu, DType> {
    */
   inline void set_stream(Stream<cpu> *stream) {
   }
+
+// These samplers are only avail in C++11.
+#if MSHADOW_IN_CXX11
+
+  /*!
+   * \brief get some random integer
+   * \return integer as unsigned
+   */
+  inline unsigned GetRandInt() {
+    return rnd_engine_();
+  }
+
+  /*!
+   * \brief generate data from a distribution
+   * \param dst destination
+   * \tparam dim dimension of tensor
+   * \param sampler sampler of the distribution
+   */
+  template<int dim, class Sampler>
+  inline void SampleDistribution(Tensor<cpu, dim, DType> *dst, Sampler sampler) {
+    if (dst->CheckContiguous()) {
+      std::generate_n(dst->dptr_, dst->shape_.Size(), sampler);
+    } else {
+      Tensor<cpu, 2, DType> mat = dst->FlatTo2D();
+      for (index_t i = 0; i < mat.size(0); ++i) {
+        std::generate_n(mat[i].dptr_, mat.size(1), sampler);
+      }
+    }
+  }
+
   /*!
    * \brief generate data from uniform [a,b)
    * \param dst destination
@@ -75,18 +106,19 @@ class Random<cpu, DType> {
    * \param b upper bound of uniform
    * \tparam dim dimension of tensor
    */
-  template<int dim>
+  template<int dim, typename PType>
   inline void SampleUniform(Tensor<cpu, dim, DType> *dst,
-                            DType a = 0.0f, DType b = 1.0f) {
-    if (dst->CheckContiguous()) {
-      this->GenUniform(dst->dptr_, dst->shape_.Size(), a, b);
-    } else {
-      Tensor<cpu, 2, DType> mat = dst->FlatTo2D();
-      for (index_t i = 0; i < mat.size(0); ++i) {
-        this->GenUniform(mat[i].dptr_, mat.size(1), a, b);
-      }
-    }
+                            PType a = 0.0f , PType b = 1.0f ) {
+    // Ensure that half_t is handled correctly.
+    typedef typename std::conditional<std::is_floating_point<DType>::value,
+                                      DType, double>::type FType;
+    typedef typename std::conditional<std::is_integral<DType>::value,
+                                      std::uniform_int_distribution<DType>,
+                                      std::uniform_real_distribution<FType>>::type GType;
+    GType dist_uniform(a, b);
+    SampleDistribution(dst, [&](){ return dist_uniform(rnd_engine_);});
   }
+
   /*!
    * \brief generate data from standard gaussian
    * \param dst destination
@@ -94,21 +126,109 @@ class Random<cpu, DType> {
    * \param sigma standard deviation
    * \tparam dim dimension of tensor
    */
-  template<int dim>
+  template<int dim, typename PType>
   inline void SampleGaussian(Tensor<cpu, dim, DType> *dst,
-                             DType mu = 0.0f, DType sigma = 1.0f) {
-    if (sigma <= 0.0f) {
+                             PType mu = 0.0f, PType sigma = 1.0f ) {
+    if (sigma <= 0) {
       *dst = mu; return;
     }
-    if (dst->CheckContiguous()) {
-      this->GenGaussian(dst->dptr_, dst->shape_.Size(), mu, sigma);
+    CHECK_EQ(std::is_floating_point<DType>::value, true)
+       << "Normal distribution must have floating point target type";
+    // Avoid problems with static check during compilation for integral types.
+    typedef typename std::conditional<std::is_floating_point<DType>::value,
+                                      DType, double>::type GType;
+    std::normal_distribution<GType> dist_normal(mu, sigma);
+    SampleDistribution(dst, [&](){ return dist_normal(rnd_engine_);});
+  }
+
+  /*!
+   * \brief generate data from a gamma distribution
+   * \param dst destination
+   * \param alpha (shape) parameter
+   * \param beta (scale) parameter
+   * \tparam dim dimension of tensor
+   */
+  template<int dim, typename PType>
+  inline void SampleGamma(Tensor<cpu, dim, DType> *dst,
+                          PType alpha, PType beta) {
+    CHECK_EQ(std::is_floating_point<DType>::value, true)
+       << "Gamma distribution must have floating point target type";
+    // Avoid problems with static check during compilation for integral types.
+    typedef typename std::conditional<std::is_floating_point<DType>::value,
+                                      DType, double>::type GType;
+    std::gamma_distribution<GType> dist_gamma(alpha, beta);
+    SampleDistribution(dst, [&](){ return dist_gamma(rnd_engine_);});
+  }
+
+  /*!
+   * \brief generate data from an exponential distribution
+   * \param dst destination
+   * \param lambda parameter (rate) of the distribution
+   * \tparam dim dimension of tensor
+   */
+  template<int dim, typename PType>
+  inline void SampleExponential(Tensor<cpu, dim, DType> *dst, PType lambda ) {
+    CHECK_EQ(std::is_floating_point<DType>::value, true)
+      << "Exponential distribution must have floating point target type";
+    // Avoid problems with static check during compilation for integral types.
+    typedef typename std::conditional<std::is_floating_point<DType>::value,
+                                      DType, double>::type GType;
+    std::exponential_distribution<GType> dist_exp(lambda);
+    SampleDistribution(dst, [&](){ return dist_exp(rnd_engine_);});
+  }
+
+  /*!
+   * \brief generate data from a poisson distribution
+   * \param dst destination
+   * \param lambda parameter (rate) of the distribution
+   * \tparam dim dimension of tensor
+   */
+  template<int dim, typename PType>
+  inline void SamplePoisson(Tensor<cpu, dim, DType> *dst, PType lambda) {
+    typedef typename std::conditional<std::is_integral<DType>::value, DType, int>::type GType;
+    std::poisson_distribution<GType> dist_poisson(lambda);
+    SampleDistribution(dst, [&](){ return static_cast<DType>(dist_poisson(rnd_engine_));});
+  }
+
+  /*!
+   * \brief generate data from a negative binomial distribution
+   * \param dst destination
+   * \param k limit on number of failures
+   * \param p success probability
+   * \tparam dim dimension of tensor
+   */
+  template<int dim, typename PType1, typename PType2>
+  inline void SampleNegativeBinomial(Tensor<cpu, dim, DType> *dst, PType1 k, PType2 p) {
+    typedef typename std::conditional<std::is_integral<DType>::value, DType, int>::type GType;
+    std::negative_binomial_distribution<GType> dist_negbinomial(k, p);
+    SampleDistribution(dst, [&](){ return static_cast<DType>(dist_negbinomial(rnd_engine_));});
+  }
+
+  /*!
+   * \brief generate data from a generalized negative binomial distribution
+   * \param dst destination
+   * \param mu parameter (mean) of the distribution
+   * \param alpha parameter (over dispersion) of the distribution
+   *   (for alpha=0 this gives a Poisson)
+   * \tparam dim dimension of tensor
+   */
+  template<int dim, typename PType>
+  inline void SampleGeneralizedNegativeBinomial(Tensor<cpu, dim, DType> *dst,
+                                                PType mu, PType alpha) {
+    if (alpha == PType(0)) {
+      SamplePoisson(dst, mu);  // limit of Poisson
     } else {
-      Tensor<cpu, 2, DType> mat = dst->FlatTo2D();
-      for (index_t i = 0; i < mat.size(0); ++i) {
-        this->GenGaussian(mat[i].dptr_, mat.size(1), mu, sigma);
-      }
+      PType r(PType(1) / alpha);
+      PType beta = mu * alpha;
+      std::gamma_distribution<> dist_gamma(r, beta);
+      typedef typename std::conditional<std::is_integral<DType>::value, DType, int>::type GType;
+      SampleDistribution(dst,
+        [&](){ std::poisson_distribution<GType> dist_poisson(dist_gamma(rnd_engine_));
+               return static_cast<DType>(dist_poisson(rnd_engine_));});
     }
   }
+#endif
+
   /*!
    * \brief return a temporal expression storing standard gaussian random variables
    *        the temporal tensor is only valid before next call of gaussian or uniform
@@ -152,24 +272,39 @@ class Random<cpu, DType> {
   std::mt19937 rnd_engine_;
   /*! \brief random number seed used in random engine */
   unsigned rseed_;
-  // implementing generators.
-  inline void GenUniform(DType *dptr, index_t size, DType a, DType b) {
-    std::uniform_real_distribution<DType> dist_uniform(a, b);
-    for (size_t i = 0; i < size; ++i) {
-      dptr[i] = dist_uniform(rnd_engine_);
-    }
-  }
-  inline void GenGaussian(DType *dptr, index_t size, DType mu, DType sigma) {
-    std::normal_distribution<DType> dist_normal(mu, sigma);
-    for (size_t i = 0; i < size; ++i) {
-      dptr[i] = dist_normal(rnd_engine_);
-    }
-  }
 
 #else
+
   /*! \brief random number seed used by PRNG */
   unsigned rseed_;
   // functions
+  template<int dim>
+  inline void SampleUniform(Tensor<cpu, dim, DType> *dst,
+                            DType a = 0.0f, DType b = 1.0f) {
+    if (dst->CheckContiguous()) {
+      this->GenUniform(dst->dptr_, dst->shape_.Size(), a, b);
+    } else {
+      Tensor<cpu, 2, DType> mat = dst->FlatTo2D();
+      for (index_t i = 0; i < mat.size(0); ++i) {
+        this->GenUniform(mat[i].dptr_, mat.size(1), a, b);
+      }
+    }
+  }
+  template<int dim>
+  inline void SampleGaussian(Tensor<cpu, dim, DType> *dst,
+                             DType mu = 0.0f, DType sigma = 1.0f) {
+    if (sigma <= 0.0f) {
+      *dst = mu; return;
+    }
+    if (dst->CheckContiguous()) {
+      this->GenGaussian(dst->dptr_, dst->shape_.Size(), mu, sigma);
+    } else {
+      Tensor<cpu, 2, DType> mat = dst->FlatTo2D();
+      for (index_t i = 0; i < mat.size(0); ++i) {
+        this->GenGaussian(mat[i].dptr_, mat.size(1), mu, sigma);
+      }
+    }
+  }
   inline void GenUniform(float *dptr, index_t size, float a, float b) {
     for (index_t j = 0; j < size; ++j) {
       dptr[j] = static_cast<float>(RandNext()) * (b - a) + a;
