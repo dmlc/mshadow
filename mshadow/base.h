@@ -274,6 +274,7 @@ struct DataType;
 
 template<>
 struct DataType<float> {
+  static constexpr const char* kName = "float32";
   static const int kFlag = kFloat32;
 #if (MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1)
   static const cudnnDataType_t kCudnnFlag = CUDNN_DATA_FLOAT;
@@ -282,6 +283,7 @@ struct DataType<float> {
 };
 template<>
 struct DataType<double> {
+  static constexpr const char* kName = "float64";
   static const int kFlag = kFloat64;
 #if (MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1)
   static const cudnnDataType_t kCudnnFlag = CUDNN_DATA_DOUBLE;
@@ -290,6 +292,7 @@ struct DataType<double> {
 };
 template<>
 struct DataType<half::half_t> {
+  static constexpr const char* kName = "float16";
   static const int kFlag = kFloat16;
 #if (MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1)
   static const cudnnDataType_t kCudnnFlag = CUDNN_DATA_HALF;
@@ -298,10 +301,12 @@ struct DataType<half::half_t> {
 };
 template<>
 struct DataType<uint8_t> {
+  static constexpr const char* kName = "uint8";
   static const int kFlag = kUint8;
 };
 template<>
 struct DataType<int32_t> {
+  static constexpr const char* kName = "int32";
   static const int kFlag = kInt32;
 };
 
