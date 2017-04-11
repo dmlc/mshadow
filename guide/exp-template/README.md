@@ -275,7 +275,7 @@ struct Vec: public Exp<Vec>{
     return dptr[i];
   }
 };
-// template add, works for any expressions
+// template binary operation, works for any expressions
 template<typename OP, typename TLhs, typename TRhs>
 inline BinaryMapExp<OP, TLhs, TRhs>
 F(const Exp<TLhs>& lhs, const Exp<TRhs>& rhs) {
