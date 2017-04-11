@@ -39,6 +39,8 @@ const int kBaseThreadBits = 8;
 const int kBaseThreadNum  = 1 << kBaseThreadBits;
 /*! \brief maximum value of grid */
 const int kMaxGridNum = 2147483647;
+/*! \brief maximum value of grid within each dimension */
+const int kMaxGridDim = 65535;
 /*! \brief suggested grid number for mapping kernel */
 const int kBaseGridNum = 1024;
 /*! \brief get align stride for given size in x dimension */
@@ -52,9 +54,11 @@ inline index_t GetAlignStride(index_t xsize) {
 }
 inline void CheckLaunchParam(dim3 dimGrid, dim3 dimBlock, const char *estr = "") {
   if (dimBlock.x * dimBlock.y * dimBlock.z > static_cast<unsigned>(kMaxThreadsPerBlock) ||
-      dimGrid.x > 65535 || dimGrid.y > 65535) {
+      dimGrid.x > kMaxGridDim || dimGrid.y > kMaxGridDim) {
     LOG(FATAL) << "too large launch parameter: "
       << estr << "["
+      << dimGrid.x << ","
+      << dimGrid.y << "], ["
       << dimBlock.x << ","
       << dimBlock.y << ","
       << dimBlock.z << "]";
