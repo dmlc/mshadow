@@ -210,7 +210,7 @@ inline void MapReduceKeepLowest(TRValue<R, cpu, 1, DType> *dst,
       ::Check(exp.self()).FlatTo2D();
   Shape<1> dshape = expr::ShapeCheck<1, R>::Check(dst->self());
   CHECK_EQ(eshape[1], dshape[0]) << "MapReduceKeepLowest::reduction dimension do not match";
-  CHECK_NE(eshape[0], 0) << "can not reduce over empty tensor";
+  CHECK_NE(eshape[0], 0U) << "can not reduce over empty tensor";
   // execution
   expr::Plan<R, DType> dplan = MakePlan(dst->self());
   expr::Plan<E, DType> splan = MakePlan(exp.self());
