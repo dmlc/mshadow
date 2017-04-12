@@ -199,9 +199,8 @@ inline void SoftmaxGrad(Tensor<gpu, 3, DType> dst,
 template<typename IndexType, typename DType>
 inline void AddTakeGrad(Tensor<gpu, 2, DType> dst,
                         const Tensor<gpu, 1, IndexType>& index,
-                        const Tensor<gpu, 2, DType> &src,
-                        const int K) {
-  cuda::AddTakeGrad(dst, index, src, K);
+                        const Tensor<gpu, 2, DType> &src) {
+  cuda::AddTakeGrad(dst, index, src);
 }
 
 template<typename IndexType, typename DType>

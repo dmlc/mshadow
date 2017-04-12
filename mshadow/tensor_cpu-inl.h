@@ -403,8 +403,8 @@ inline void Softmax(Tensor<cpu, 3, DType> dst,
 template<typename IndexType, typename DType>
 inline void AddTakeGrad(Tensor<cpu, 2, DType> dst,
                         const Tensor<cpu, 1, IndexType>& index,
-                        const Tensor<cpu, 2, DType> &src,
-                        const int K) {
+                        const Tensor<cpu, 2, DType> &src) {
+  const int K = dst.shape_[0];
   for (index_t y = 0; y < index.size(0); ++y) {
     int j = index[y];
     if (j <= 0) j = 0;

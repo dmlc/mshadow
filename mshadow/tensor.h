@@ -809,13 +809,11 @@ inline void SoftmaxGrad(Tensor<gpu, 2, DType> dst,
  * \param dst destination
  * \param index index to take
  * \param src source output
- * \param K max index is K-1
  */
 template<typename IndexType, typename DType>
 inline void AddTakeGrad(Tensor<cpu, 2, DType> dst,
                         const Tensor<cpu, 1, IndexType>& index,
-                        const Tensor<cpu, 2, DType> &src,
-                        const int K);
+                        const Tensor<cpu, 2, DType> &src);
 /*!
  * \brief CPU/GPU: Gradient accumulate of embedding matrix.
                    dst[index[i]] += src[i]
@@ -823,13 +821,11 @@ inline void AddTakeGrad(Tensor<cpu, 2, DType> dst,
  * \param dst destination
  * \param index index to take
  * \param src source output
- * \param K max index is K-1
  */
 template<typename IndexType, typename DType>
 inline void AddTakeGrad(Tensor<gpu, 2, DType> dst,
                         const Tensor<gpu, 1, IndexType>& index,
-                        const Tensor<gpu, 2, DType> &src,
-                        const int K);
+                        const Tensor<gpu, 2, DType> &src);
 /*!
  * \brief CPU/GPU: Gradient accumulate of embedding matrix.
                    dst[sorted[i]] += src[index[i]]

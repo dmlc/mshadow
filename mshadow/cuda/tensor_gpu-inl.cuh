@@ -575,8 +575,7 @@ __global__ void AddTakeGradLargeBatchKernel(DType* dst,
 template<typename IndexType, typename DType>
 inline void AddTakeGrad(Tensor<gpu, 2, DType> dst,
                         const Tensor<gpu, 1, IndexType>& index,
-                        const Tensor<gpu, 2, DType> &src,
-                        const int K) {
+                        const Tensor<gpu, 2, DType> &src) {
   CHECK_EQ(dst.CheckContiguous(), true);
   CHECK_EQ(index.CheckContiguous(), true);
   CHECK_EQ(src.CheckContiguous(), true);
@@ -588,6 +587,7 @@ inline void AddTakeGrad(Tensor<gpu, 2, DType> dst,
   CHECK_EQ(index.size(0), src.size(0)) << "AddTakeGrad: shape mismatch";
   CheckLaunchParam(dimGrid, dimBlock, "AddTakeGrad");
   cudaStream_t stream = Stream<gpu>::GetStream(dst.stream_);
+  const int K = dst.shape_[0];
 
   AddTakeGradKernel<kUnitBits, DType>
       <<<dimGrid, dimBlock, 0, stream>>>
