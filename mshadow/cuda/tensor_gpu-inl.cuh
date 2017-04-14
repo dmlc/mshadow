@@ -39,6 +39,8 @@ const int kBaseThreadBits = 8;
 const int kBaseThreadNum  = 1 << kBaseThreadBits;
 /*! \brief maximum value of grid */
 const int kMaxGridNum = 2147483647;
+/*! \brief maximum value of grid within each dimension */
+const int kMaxGridDim = 65535;
 /*! \brief suggested grid number for mapping kernel */
 const int kBaseGridNum = 1024;
 /*! \brief get align stride for given size in x dimension */
@@ -52,9 +54,11 @@ inline index_t GetAlignStride(index_t xsize) {
 }
 inline void CheckLaunchParam(dim3 dimGrid, dim3 dimBlock, const char *estr = "") {
   if (dimBlock.x * dimBlock.y * dimBlock.z > static_cast<unsigned>(kMaxThreadsPerBlock) ||
-      dimGrid.x > 65535 || dimGrid.y > 65535) {
+      dimGrid.x > kMaxGridDim || dimGrid.y > kMaxGridDim) {
     LOG(FATAL) << "too large launch parameter: "
       << estr << "["
+      << dimGrid.x << ","
+      << dimGrid.y << "], ["
       << dimBlock.x << ","
       << dimBlock.y << ","
       << dimBlock.z << "]";
@@ -495,12 +499,16 @@ inline void SoftmaxGrad(Tensor<gpu, 3, DType> &dst,
 template<int x_bits, typename DType, typename DstPlan, typename SrcPlan1, typename SrcPlan2>
 __global__ void AddTakeGradKernel(DstPlan dst,
                                   SrcPlan1 index, SrcPlan2 src,
-                                  index_t ymax, index_t xmax) {
+                                  index_t ymax, index_t xmax, const int K) {
   const unsigned x_size = 1 << x_bits;
   const int xindex = blockIdx.x * x_size + threadIdx.x;
   __shared__ int ptr;
   for (unsigned y = 0; y < ymax; ++y) {
-    if (threadIdx.x == 0)  ptr = index.Eval(0, y);
+    if (threadIdx.x == 0) {
+      ptr = index.Eval(0, y);
+      if (ptr <= 0) ptr = 0;
+      else if (ptr >= K) ptr = K - 1;
+    }
     __syncthreads();
     if (xindex < xmax) {
       dst.REval(ptr, xindex) += src.Eval(y, xindex);
@@ -579,6 +587,7 @@ inline void AddTakeGrad(Tensor<gpu, 2, DType> dst,
   CHECK_EQ(index.size(0), src.size(0)) << "AddTakeGrad: shape mismatch";
   CheckLaunchParam(dimGrid, dimBlock, "AddTakeGrad");
   cudaStream_t stream = Stream<gpu>::GetStream(dst.stream_);
+  const int K = dst.shape_[0];
 
   AddTakeGradKernel<kUnitBits, DType>
       <<<dimGrid, dimBlock, 0, stream>>>
@@ -586,7 +595,7 @@ inline void AddTakeGrad(Tensor<gpu, 2, DType> dst,
        expr::MakePlan(index),
        expr::MakePlan(src),
        src.size(0),
-       src.size(1));
+       src.size(1), K);
   MSHADOW_CUDA_POST_KERNEL_CHECK(AddTakeGradKernel);
 }
 
