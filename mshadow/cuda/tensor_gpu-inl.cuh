@@ -38,7 +38,7 @@ const int kBaseThreadBits = 8;
 /*! \brief suggested thread number for mapping kernel */
 const int kBaseThreadNum  = 1 << kBaseThreadBits;
 /*! \brief maximum value of grid */
-const int kMaxGridNum = 65535;
+const int kMaxGridNum = 2147483647;
 /*! \brief suggested grid number for mapping kernel */
 const int kBaseGridNum = 1024;
 /*! \brief get align stride for given size in x dimension */
