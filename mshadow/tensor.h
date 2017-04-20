@@ -646,11 +646,12 @@ inline void SetDevice(int devid);
  */
 template<typename Device>
 inline Stream<Device> *NewStream(bool create_blas_handle,
-                                 bool create_dnn_handle);
+                                 bool create_dnn_handle,
+                                 int dev_id);
 /*! \brief default behavior: create cublas handle */
 template<typename Device>
-inline Stream<Device> *NewStream() {
-  return NewStream<Device>(true, false);
+inline Stream<Device> *NewStream(int dev_id) {
+  return NewStream<Device>(true, false, dev_id);
 }
 /*!
  * \brief delete the computing stream
