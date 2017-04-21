@@ -429,30 +429,30 @@ struct BLASEngine<gpu, half::half_t> {
                           const half::half_t *B, int ldb, half::half_t beta,
                           half::half_t *C, int ldc) {
 #if defined(CUDA_VERSION) && CUDA_VERSION >= 7050
-	  if (stream->prop.major <= 5 && stream->prop.minor <= 2) {
-	    // Not PASCAL
-	    float alpha_f = float(alpha);  // NOLINT(*)
-	    float beta_f = float(beta);  // NOLINT(*)
-	  #if CUDA_VERSION >= 8000
-	    cublasStatus_t err = cublasSgemmEx(Stream<gpu>::GetBlasHandle(stream),
-	                                       GetT(transa), GetT(transb), m, n, k, &alpha_f,
-	                                       A, CUDA_R_16F, lda, B, CUDA_R_16F,
-	                                       ldb, &beta_f, C, CUDA_R_16F, ldc);
-	    CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas SgemmEx fail";
-	  #else
-	    cublasStatus_t err = cublasSgemmEx(Stream<gpu>::GetBlasHandle(stream),
-	                                       GetT(transa), GetT(transb), m, n, k, &alpha_f,
-	                                       A, CUBLAS_DATA_HALF, lda, B, CUBLAS_DATA_HALF,
-	                                       ldb, &beta_f, C, CUBLAS_DATA_HALF, ldc);
-	    CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas SgemmEx fail";
-	  #endif  // CUDA_VERSION >= 8000
-	  } else {
-	    //PASCAL
-	    cublasStatus_t err = cublasHgemm(Stream<gpu>::GetBlasHandle(stream),
-	                                     GetT(transa), GetT(transb), m, n, k, &alpha.cuhalf_,
-	                                     &A->cuhalf_, lda, &B->cuhalf_, ldb, &beta.cuhalf_, &C->cuhalf_, ldc);
-	    CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas Hgemm fail";
-	  }
+   if (stream->prop.major <= 5 && stream->prop.minor <= 2) {
+     // Not PASCAL
+     float alpha_f = float(alpha);  // NOLINT(*)
+     float beta_f = float(beta);  // NOLINT(*)
+   #if CUDA_VERSION >= 8000
+     cublasStatus_t err = cublasSgemmEx(Stream<gpu>::GetBlasHandle(stream),
+                                        GetT(transa), GetT(transb), m, n, k, &alpha_f,
+                                        A, CUDA_R_16F, lda, B, CUDA_R_16F,
+                                        ldb, &beta_f, C, CUDA_R_16F, ldc);
+     CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas SgemmEx fail";
+   #else
+     cublasStatus_t err = cublasSgemmEx(Stream<gpu>::GetBlasHandle(stream),
+                                        GetT(transa), GetT(transb), m, n, k, &alpha_f,
+                                        A, CUBLAS_DATA_HALF, lda, B, CUBLAS_DATA_HALF,
+                                        ldb, &beta_f, C, CUBLAS_DATA_HALF, ldc);
+     CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas SgemmEx fail";
+   #endif  // CUDA_VERSION >= 8000
+   } else {
+     //PASCAL
+     cublasStatus_t err = cublasHgemm(Stream<gpu>::GetBlasHandle(stream),
+                                      GetT(transa), GetT(transb), m, n, k, &alpha.cuhalf_,
+                                      &A->cuhalf_, lda, &B->cuhalf_, ldb, &beta.cuhalf_, &C->cuhalf_, ldc);
+     CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas Hgemm fail";
+   }
 #else
     LOG(FATAL) << "Require CUDA version >= 7.5!";
 #endif  // defined(CUDA_VERSION) && CUDA_VERSION >= 7050
