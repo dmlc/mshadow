@@ -739,7 +739,7 @@ class LocalModel : public ISharedModel<xpu, DType> {
     // allocate stream resources
     for (size_t i = 0; i < devices.size(); ++i) {
       SetDevice<xpu>(devices[i]);
-      pull_stream[i] = NewStream<xpu>();
+      pull_stream[i] = NewStream<xpu>(devices[i]);
     }
     this->PullProc(&pull_queues[0]);
     // free resources

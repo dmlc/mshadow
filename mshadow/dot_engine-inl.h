@@ -447,7 +447,7 @@ struct BLASEngine<gpu, half::half_t> {
     CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas SgemmEx fail";
   #endif  // CUDA_VERSION >= 8000
   } else {
-    //PASCAL
+    // PASCAL
     cublasStatus_t err = cublasHgemm(Stream<gpu>::GetBlasHandle(stream),
                                      GetT(transa), GetT(transb), m, n, k, &alpha.cuhalf_,
                                      &A->cuhalf_, lda, &B->cuhalf_, ldb,
