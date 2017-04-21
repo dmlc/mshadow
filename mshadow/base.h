@@ -277,6 +277,7 @@ struct DataType;
 template<>
 struct DataType<float> {
   static const int kFlag = kFloat32;
+  static const int kPack = 1;
 #if (MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1)
   static const cudnnDataType_t kCudnnFlag = CUDNN_DATA_FLOAT;
   typedef float ScaleType;
@@ -285,6 +286,7 @@ struct DataType<float> {
 template<>
 struct DataType<double> {
   static const int kFlag = kFloat64;
+  static const int kPack = 1;
 #if (MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1)
   static const cudnnDataType_t kCudnnFlag = CUDNN_DATA_DOUBLE;
   typedef double ScaleType;
@@ -293,6 +295,7 @@ struct DataType<double> {
 template<>
 struct DataType<half::half_t> {
   static const int kFlag = kFloat16;
+  static const int kPack = 1;
 #if (MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1)
   static const cudnnDataType_t kCudnnFlag = CUDNN_DATA_HALF;
   typedef float ScaleType;
@@ -301,14 +304,17 @@ struct DataType<half::half_t> {
 template<>
 struct DataType<half::half2_t> {
   static const int kFlag = kFloat16;
+  static const int kPack = 2;
 };
 template<>
 struct DataType<uint8_t> {
   static const int kFlag = kUint8;
+  static const int kPack = 1;
 };
 template<>
 struct DataType<int32_t> {
   static const int kFlag = kInt32;
+  static const int kPack = 1;
 };
 
 /*! \brief type enum value for default real type */
