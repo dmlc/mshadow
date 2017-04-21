@@ -28,7 +28,7 @@ inline void RunWorkerThread(int devid,
                             mshadow::ps::ISharedModel<xpu, float> *ps) {
   // initialize tensor engine
   mshadow::InitTensorEngine<xpu>(devid);
-  mshadow::Stream<xpu> *stream  = mshadow::NewStream<xpu>();
+  mshadow::Stream<xpu> *stream  = mshadow::NewStream<xpu>(devid);
   // allocate tensor on xpu
   mshadow::TensorContainer<xpu, 2> data(mshadow::Shape2(2, 3));
   // set the computation stream to the new allocated stream
