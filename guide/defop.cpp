@@ -28,7 +28,7 @@ int main(void) {
   // intialize tensor engine before using tensor operation, needed for CuBLAS
   InitTensorEngine<cpu>();
   // take first subscript of the tensor
-  Stream<cpu> *stream_ = NewStream<cpu>();
+  Stream<cpu> *stream_ = NewStream<cpu>(0);
   Tensor<cpu,2, float> mat = NewTensor<cpu>(Shape2(2,3), 0.0f, stream_);
   Tensor<cpu,2, float> mat2= NewTensor<cpu>(Shape2(2,3), 0.0f, stream_);
 

@@ -664,7 +664,7 @@ class LocalModel : public ISharedModel<xpu, DType> {
     // allocate stream resources
     for (size_t i = 0; i < devices.size(); ++i) {
       SetDevice<xpu>(devices[i]);
-      push_stream[i] = NewStream<xpu>();
+      push_stream[i] = NewStream<xpu>(devices[i]);
     }
     this->PushProc(&push_queues[0]);
     // free resources
@@ -678,7 +678,7 @@ class LocalModel : public ISharedModel<xpu, DType> {
     CHECK_EQ(push_queues.size(), devices.size()) << "must have one pull_queue per device";
     // allocate stream resources
     SetDevice<xpu>(devices[tid]);
-    push_stream[tid] = NewStream<xpu>();
+    push_stream[tid] = NewStream<xpu>(devices[tid]);
     this->PushProc(&push_queues[tid]);
     SetDevice<xpu>(devices[tid]);
     DeleteStream(push_stream[tid]);
@@ -739,7 +739,7 @@ class LocalModel : public ISharedModel<xpu, DType> {
     // allocate stream resources
     for (size_t i = 0; i < devices.size(); ++i) {
       SetDevice<xpu>(devices[i]);
-      pull_stream[i] = NewStream<xpu>();
+      pull_stream[i] = NewStream<xpu>(devices[i]);
     }
     this->PullProc(&pull_queues[0]);
     // free resources
@@ -753,7 +753,7 @@ class LocalModel : public ISharedModel<xpu, DType> {
     CHECK_EQ(pull_queues.size(), devices.size()) << "must have one pull_queue per device";
     // allocate stream resources
     SetDevice<xpu>(devices[tid]);
-    pull_stream[tid] = NewStream<xpu>();
+    pull_stream[tid] = NewStream<xpu>(devices[tid]);
     this->PullProc(&pull_queues[tid]);
     SetDevice<xpu>(devices[tid]);
     DeleteStream(pull_stream[tid]);
