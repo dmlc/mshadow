@@ -648,7 +648,7 @@ inline void SetDevice(int devid);
 template<typename Device>
 inline Stream<Device> *NewStream(bool create_blas_handle,
                                  bool create_dnn_handle,
-                                 int dev_id);
+                                 int dev_id = -1);
 /*! \brief default behavior: create cublas handle 
  *  \param dev_id device id
  *  \return a pointer to the created stream
