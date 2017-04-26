@@ -107,7 +107,7 @@ MSHADOW_HALF2_INLINE half2_t operator*(half2_t a, half2_t b) {
   return half2_t(a.half_t2[0] * b.half_t2[0], a.half_t2[1] * b.half_t2[1]);
 #endif
 }
-/*! \brief overloaded * operator for half2_t */
+/*! \brief overloaded / operator for half2_t */
 MSHADOW_HALF2_INLINE half2_t operator/(half2_t a, half2_t b) {
 #if MSHADOW_CUDA_HALF2
   return half2_t(h2div(a.half2_, b.half2_));
@@ -115,7 +115,7 @@ MSHADOW_HALF2_INLINE half2_t operator/(half2_t a, half2_t b) {
   return half2_t(a.half_t2[0] / b.half_t2[0], a.half_t2[1] / b.half_t2[1]);
 #endif
 }
-/*! \brief overloaded * operator for half2_t */
+/*! \brief overloaded == operator for half2_t */
 MSHADOW_HALF2_INLINE bool operator==(half2_t a, half2_t b) {
 #if MSHADOW_CUDA_HALF2
   return __hbeq2(a.half2_, b.half2_);
