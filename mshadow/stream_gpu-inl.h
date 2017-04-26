@@ -35,6 +35,8 @@ struct Stream<gpu> {
   HandleState dnn_handle_ownership_;
   /*! \brief cudaDeviceProp */
   cudaDeviceProp prop;
+  /*! \brief dev id */
+  int dev_id;
 
   Stream(void) : stream_(0),
                  blas_handle_ownership_(NoHandle),
@@ -143,7 +145,10 @@ inline Stream<gpu> *NewStream<gpu>(bool create_blas_handle,
   if (create_dnn_handle) {
     st->CreateDnnHandle();
   }
-  MSHADOW_CUDA_CALL(cudaGetDeviceProperties(&st->prop, dev_id));
+  st->dev_id = dev_id;
+  if (dev_id != -1) {
+    MSHADOW_CUDA_CALL(cudaGetDeviceProperties(&st->prop, dev_id));
+  }
   return st;
 }
 template<>

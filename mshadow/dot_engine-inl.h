@@ -429,7 +429,11 @@ struct BLASEngine<gpu, half::half_t> {
                           const half::half_t *B, int ldb, half::half_t beta,
                           half::half_t *C, int ldc) {
 #if defined(CUDA_VERSION) && CUDA_VERSION >= 7050
-  if (stream->prop.major <= 5 && stream->prop.minor <= 2) {
+  if (
+#if MSHADOW_USE_PASCAL == 1
+      false ||
+#endif
+      stream->dev_id == -1 || (stream->prop.major <= 5 && stream->prop.minor <= 2)) {
     // Not PASCAL
     float alpha_f = float(alpha);  // NOLINT(*)
     float beta_f = float(beta);  // NOLINT(*)
