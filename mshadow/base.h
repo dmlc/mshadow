@@ -683,7 +683,7 @@ struct minimum {
   case mshadow::kFloat32:                           \
     {                                               \
       typedef float DType$;                         \
-      typedef double DLargeType$;                   \
+      typedef float DLargeType$;                    \
       {__VA_ARGS__}                                 \
     }                                               \
     break;                                          \
