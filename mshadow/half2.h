@@ -55,6 +55,15 @@ public:
   }
 #endif
 
+  MSHADOW_HALF2_INLINE explicit half2_t(int a) {
+#if MSHADOW_CUDA_HALF2
+    half2_ = __half2half2(__int2half_rz(a));
+#else
+    half_t2[0] = (half_t)a;
+    half_t2[1] = (half_t)a;
+#endif
+  }
+
   MSHADOW_HALF2_INLINE half2_t operator+() {
     return *this;
   }

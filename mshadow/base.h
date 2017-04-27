@@ -266,7 +266,6 @@ enum TypeFlag {
   kFloat32,
   kFloat64,
   kFloat16,
-  kFloat16x2,
   kUint8,
   kInt32
 };
@@ -658,79 +657,41 @@ struct minimum {
     LOG(FATAL) << "Unknown type enum " << type;     \
   }
 
-#ifdef __CUDACC__
-#define MSHADOW_TYPE_SWITCH2(type, DType, ...)      \
-  switch (type) {                                   \
-  case mshadow::kFloat32:                           \
-    {                                               \
-      typedef float DType;                          \
-      {__VA_ARGS__}                                 \
-    }                                               \
-    break;                                          \
-  case mshadow::kFloat64:                           \
-    {                                               \
-      typedef double DType;                         \
-      {__VA_ARGS__}                                 \
-    }                                               \
-    break;                                          \
-  case mshadow::kFloat16:                           \
-    {                                               \
-      typedef mshadow::half::half2_t DType;         \
-      {__VA_ARGS__}                                 \
-    }                                               \
-    break;                                          \
-  case mshadow::kUint8:                             \
-    {                                               \
-      typedef uint8_t DType;                        \
-      {__VA_ARGS__}                                 \
-    }                                               \
-    break;                                          \
-  case mshadow::kInt32:                             \
-    {                                               \
-      typedef int32_t DType;                        \
-      {__VA_ARGS__}                                 \
-    }                                               \
-    break;                                          \
-  default:                                          \
-    LOG(FATAL) << "Unknown type enum " << type;     \
+#define MSHADOW_TYPE_SWITCH_WITH_HALF2(type, DType, ...)  \
+  switch (type) {                                         \
+  case mshadow::kFloat32:                                 \
+    {                                                     \
+      typedef float DType;                                \
+      {__VA_ARGS__}                                       \
+    }                                                     \
+    break;                                                \
+  case mshadow::kFloat64:                                 \
+    {                                                     \
+      typedef double DType;                               \
+      {__VA_ARGS__}                                       \
+    }                                                     \
+    break;                                                \
+  case mshadow::kFloat16:                                 \
+    {                                                     \
+      typedef mshadow::half::half2_t DType;               \
+      {__VA_ARGS__}                                       \
+    }                                                     \
+    break;                                                \
+  case mshadow::kUint8:                                   \
+    {                                                     \
+      typedef uint8_t DType;                              \
+      {__VA_ARGS__}                                       \
+    }                                                     \
+    break;                                                \
+  case mshadow::kInt32:                                   \
+    {                                                     \
+      typedef int32_t DType;                              \
+      {__VA_ARGS__}                                       \
+    }                                                     \
+    break;                                                \
+  default:                                                \
+    LOG(FATAL) << "Unknown type enum " << type;           \
   }
-#else
-#define MSHADOW_TYPE_SWITCH2(type, DType, ...)       \
-  switch (type) {                                   \
-  case mshadow::kFloat32:                           \
-    {                                               \
-      typedef float DType;                          \
-      {__VA_ARGS__}                                 \
-    }                                               \
-    break;                                          \
-  case mshadow::kFloat64:                           \
-    {                                               \
-      typedef double DType;                         \
-      {__VA_ARGS__}                                 \
-    }                                               \
-    break;                                          \
-  case mshadow::kFloat16:                           \
-    {                                               \
-      typedef mshadow::half::half_t DType;          \
-      {__VA_ARGS__}                                 \
-    }                                               \
-    break;                                          \
-  case mshadow::kUint8:                             \
-    {                                               \
-      typedef uint8_t DType;                        \
-      {__VA_ARGS__}                                 \
-    }                                               \
-    break;                                          \
-  case mshadow::kInt32:                             \
-    {                                               \
-      typedef int32_t DType;                        \
-      {__VA_ARGS__}                                 \
-    }                                               \
-    break;                                          \
-  default:                                          \
-    LOG(FATAL) << "Unknown type enum " << type;     \
-  }
-#endif
 
 #define MSHADOW_REAL_TYPE_SWITCH(type, DType, ...)  \
   switch (type) {                                   \
