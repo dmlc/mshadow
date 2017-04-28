@@ -121,8 +121,10 @@ inline void MapPlan(expr::Plan<DstExp, DType> dst,
 
 template<typename Saver,typename Reducer, int warp_bits,
          typename DType, typename DstPlan, typename Plan>
-__global__ void MapRedKeepLowestKernel(DstPlan dst, Plan plan,
-                                       DType scale, Shape<2> eshape) {
+__global__ void
+__launch_bounds__(kMemUnit*kMemUnit, 1)
+MapRedKeepLowestKernel(DstPlan dst, Plan plan,
+                       DType scale, Shape<2> eshape) {
   const unsigned warp_size = 1 << warp_bits;
   const unsigned x = (blockIdx.x << warp_bits) + threadIdx.x;
   // to avoid bank conflict
