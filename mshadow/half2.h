@@ -11,14 +11,6 @@
 #if (defined(__CUDACC__) && __CUDA_ARCH__ >= 530 && MSHADOW_USE_CUDA && CUDA_VERSION >= 7050)
   #define MSHADOW_CUDA_HALF2 1
   #include <cuda_fp16.h>
-  // #if defined(__CUDA_ARCH__)
-  //   /*! \brief __half2float_warp */
-  //   __host__ __device__ float __half2float_warp(const volatile __half& h) { /* NOLINT(*) */
-  //     __half val;
-  //     val.x = h.x;
-  //     return __half2float(val);
-  //   }
-  // #endif
 #else
   #define MSHADOW_CUDA_HALF2 0
 #endif
@@ -135,5 +127,5 @@ MSHADOW_HALF2_INLINE bool operator==(half2_t a, half2_t b) {
 
 }  // namespace half
 }  // namespace mshadow
-#endif  // MSHADOW_HALF_H_
+#endif  // MSHADOW_HALF2_H_
 
