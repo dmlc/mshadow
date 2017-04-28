@@ -303,6 +303,10 @@ struct DataType<uint8_t> {
 template<>
 struct DataType<int32_t> {
   static const int kFlag = kInt32;
+#if (MSHADOW_USE_CUDA && MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 6)
+  static const cudnnDataType_t kCudnnFlag = CUDNN_DATA_INT32;
+  typedef int32_t ScaleType;
+#endif
 };
 
 /*! \brief type enum value for default real type */
