@@ -11,16 +11,16 @@
 #if (defined(__CUDACC__) && __CUDA_ARCH__ >= 530 && MSHADOW_USE_CUDA && CUDA_VERSION >= 7050)
   #define MSHADOW_CUDA_HALF2 1
   #include <cuda_fp16.h>
+  #define MSHADOW_HALF2_INLINE MSHADOW_FORCE_INLINE __device__
 #else
   #define MSHADOW_CUDA_HALF2 0
+  #define MSHADOW_HALF2_INLINE MSHADOW_FORCE_INLINE
 #endif
 
 /*! \brief namespace for mshadow */
 namespace mshadow {
 /* \brief name space for host/device portable half-precision floats */
 namespace half {
-
-#define MSHADOW_HALF2_INLINE MSHADOW_FORCE_INLINE __device__
 
 #define MSHADOW_HALF2_ASSIGNOP(AOP, OP)                                   \
   template<typename T>                                                    \
@@ -29,7 +29,7 @@ namespace half {
   }                                                                       \
 
 class half2_t {
-public:
+ public:
 #if MSHADOW_CUDA_HALF2
   half2 half2_;
 #else
