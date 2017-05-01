@@ -38,7 +38,7 @@ const int kBaseThreadBits = 8;
 /*! \brief suggested thread number for mapping kernel */
 const int kBaseThreadNum  = 1 << kBaseThreadBits;
 /*! \brief maximum value of grid */
-const int kMaxGridNum = 2147483647;
+const int kMaxGridNum = 65535;
 /*! \brief maximum value of grid within each dimension */
 const int kMaxGridDim = 65535;
 /*! \brief suggested grid number for mapping kernel */
