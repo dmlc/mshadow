@@ -553,20 +553,20 @@ template<>
 MSHADOW_XINLINE half::half_t MinValue<half::half_t>(void) {
   return MSHADOW_HALF_MIN;
 }
-/*! \brief minimum value of int32_t */
+/*! \brief minimum value of uint8_t */
 template<>
-MSHADOW_XINLINE int MinValue<int32_t>(void) {
-  return INT_MIN;
+MSHADOW_XINLINE uint8_t MinValue<uint8_t>(void) {
+  return 0;
 }
 /*! \brief minimum value of int8_t */
 template<>
 MSHADOW_XINLINE int8_t MinValue<int8_t>(void) {
   return SCHAR_MIN;
 }
-/*! \brief minimum value of int */
+/*! \brief minimum value of int32_t */
 template<>
-MSHADOW_XINLINE uint8_t MinValue<uint8_t>(void) {
-  return 0;
+MSHADOW_XINLINE int MinValue<int32_t>(void) {
+  return INT_MIN;
 }
 }  // namespace limits
 
@@ -671,9 +671,9 @@ struct minimum {
       {__VA_ARGS__}                                 \
     }                                               \
     break;                                          \
-  case mshadow::kInt32:                             \
+  case mshadow::kUint8:                             \
     {                                               \
-      typedef int32_t DType;                        \
+      typedef uint8_t DType;                        \
       {__VA_ARGS__}                                 \
     }                                               \
     break;                                          \
@@ -683,9 +683,9 @@ struct minimum {
       {__VA_ARGS__}                                 \
     }                                               \
     break;                                          \
-  case mshadow::kUint8:                             \
+  case mshadow::kInt32:                             \
     {                                               \
-      typedef uint8_t DType;                        \
+      typedef int32_t DType;                        \
       {__VA_ARGS__}                                 \
     }                                               \
     break;                                          \
@@ -713,17 +713,17 @@ struct minimum {
       {__VA_ARGS__}                                 \
     }                                               \
     break;                                          \
-  case mshadow::kInt32:                             \
+  case mshadow::kUint8:                             \
     LOG(FATAL) << "This operation only support "    \
-                  "floating point types, not int32";\
+                  "floating point types not uint8"; \
     break;                                          \
   case mshadow::kInt8:                              \
     LOG(FATAL) << "This operation only support "    \
                   "floating point types not int8";  \
     break;                                          \
-  case mshadow::kUint8:                             \
+  case mshadow::kInt32:                             \
     LOG(FATAL) << "This operation only support "    \
-                  "floating point types not uint8"; \
+                  "floating point types, not int32";\
     break;                                          \
   default:                                          \
     LOG(FATAL) << "Unknown type enum " << type;     \
@@ -752,17 +752,17 @@ struct minimum {
       {__VA_ARGS__}                                 \
     }                                               \
     break;                                          \
-  case mshadow::kInt32:                             \
+  case mshadow::kUint8:                             \
     LOG(FATAL) << "This operation only support "    \
-                  "floating point types, not int32";\
+                  "floating point types not uint8"; \
     break;                                          \
   case mshadow::kInt8:                              \
     LOG(FATAL) << "This operation only support "    \
                   "floating point types not int8";  \
     break;                                          \
-  case mshadow::kUint8:                             \
+  case mshadow::kInt32:                             \
     LOG(FATAL) << "This operation only support "    \
-                  "floating point types not uint8"; \
+                  "floating point types, not int32";\
     break;                                          \
   default:                                          \
     LOG(FATAL) << "Unknown type enum " << type$;    \
