@@ -266,8 +266,8 @@ enum TypeFlag {
   kFloat64 = 1,
   kFloat16 = 2,
   kUint8 = 3,
-  kInt8  = 4,
-  kInt32 = 6 // `5` is preserved for kUint32
+  kInt32 = 4,
+  kInt8  = 5
 };
 
 template<typename DType>
@@ -310,7 +310,7 @@ template<>
 struct DataType<uint8_t> {
   static const int kFlag = kUint8;
 #if MSHADOW_USE_CUDA
-  static const cudaDataType_t kCudaFlag = CUDA_R_32I;
+  static const cudaDataType_t kCudaFlag = CUDA_R_8U;
 #if (MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 6)
   // no uint8 in cudnn for now
   static const cudnnDataType_t kCudnnFlag = CUDNN_DATA_INT8;
