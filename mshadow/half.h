@@ -94,6 +94,7 @@ class half_t {
 
   MSHADOW_XINLINE half_t(const float& value) { constructor(value); }
   MSHADOW_XINLINE explicit half_t(const double& value) { constructor(value); }
+  MSHADOW_XINLINE explicit half_t(const int8_t& value) { constructor(value); }
   MSHADOW_XINLINE explicit half_t(const uint8_t& value) { constructor(value); }
   MSHADOW_XINLINE explicit half_t(const int32_t& value) { constructor(value); }
   MSHADOW_XINLINE explicit half_t(const uint32_t& value) { constructor(value); }
