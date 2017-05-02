@@ -277,7 +277,7 @@ struct DataType;
 template<>
 struct DataType<float> {
   static const int kFlag = kFloat32;
-  static const int kPack = 1;
+  static const int kLanes = 1;
 #if MSHADOW_USE_CUDA
   static const cudaDataType_t kCudaFlag = CUDA_R_32F;
 #if MSHADOW_USE_CUDNN
@@ -289,7 +289,7 @@ struct DataType<float> {
 template<>
 struct DataType<double> {
   static const int kFlag = kFloat64;
-  static const int kPack = 1;
+  static const int kLanes = 1;
 #if MSHADOW_USE_CUDA
   static const cudaDataType_t kCudaFlag = CUDA_R_64F;
 #if MSHADOW_USE_CUDNN
@@ -301,7 +301,7 @@ struct DataType<double> {
 template<>
 struct DataType<half::half_t> {
   static const int kFlag = kFloat16;
-  static const int kPack = 1;
+  static const int kLanes = 1;
 #if MSHADOW_USE_CUDA
   static const cudaDataType_t kCudaFlag = CUDA_R_16F;
 #if MSHADOW_USE_CUDNN
@@ -313,12 +313,12 @@ struct DataType<half::half_t> {
 template<>
 struct DataType<half::half2_t> {
   static const int kFlag = kFloat16;
-  static const int kPack = 2;
+  static const int kLanes = 2;
 };
 template<>
 struct DataType<uint8_t> {
   static const int kFlag = kUint8;
-  static const int kPack = 1;
+  static const int kLanes = 1;
 #if MSHADOW_USE_CUDA
   static const cudaDataType_t kCudaFlag = CUDA_R_8U;
 #if (MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 6)
@@ -331,6 +331,7 @@ struct DataType<uint8_t> {
 template<>
 struct DataType<int8_t> {
   static const int kFlag = kInt8;
+  static const int kLanes = 1;
 #if MSHADOW_USE_CUDA
   static const cudaDataType_t kCudaFlag = CUDA_R_8I;
 #if (MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 6)
@@ -338,14 +339,11 @@ struct DataType<int8_t> {
   typedef int8_t ScaleType;
 #endif
 #endif
->>>>>>> origin/master
 };
 template<>
 struct DataType<int32_t> {
   static const int kFlag = kInt32;
-<<<<<<< HEAD
-  static const int kPack = 1;
-=======
+  static const int kLanes = 1;
 #if MSHADOW_USE_CUDA
   static const cudaDataType_t kCudaFlag = CUDA_R_32I;
 #if (MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 6)
@@ -353,7 +351,6 @@ struct DataType<int32_t> {
   typedef int32_t ScaleType;
 #endif
 #endif
->>>>>>> origin/master
 };
 
 /*! \brief type enum value for default real type */
