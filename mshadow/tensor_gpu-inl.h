@@ -203,18 +203,35 @@ inline void AddTakeGrad(Tensor<gpu, 2, DType> dst,
   cuda::AddTakeGrad(dst, index, src);
 }
 
+template<typename IndexType>
+inline size_t AddTakeGradLargeBatchWorkspaceSize(size_t num_items, const gpu& dummy) {
+  return cuda::AddTakeGradLargeBatchWorkspaceSize<IndexType>(num_items);
+}
+
 template<typename IndexType, typename DType>
 inline void AddTakeGradLargeBatch(Tensor<gpu, 2, DType> dst,
                                   const Tensor<gpu, 1, IndexType>& sorted,
                                   const Tensor<gpu, 1, IndexType>& index,
-                                  const Tensor<gpu, 2, DType> &src) {
-  cuda::AddTakeGradLargeBatch(dst, sorted, index, src);
+                                  const Tensor<gpu, 2, DType> &src,
+                                  Tensor<gpu, 1, char>* workspace) {
+  cuda::AddTakeGradLargeBatch(dst, sorted, index, src, workspace);
 }
 
 template<typename KDType, typename VDType>
 inline void SortByKey(Tensor<gpu, 1, KDType> keys, Tensor<gpu, 1, VDType> values,
-                      bool is_ascend) {
-  cuda::SortByKey(keys, values, is_ascend);
+                      bool is_ascend, Tensor<gpu, 1, char>* workspace,
+                      const int begin_bit, const int end_bit) {
+  cuda::SortByKey(keys, values, is_ascend, workspace, begin_bit, end_bit);
+}
+
+template<typename KDType, typename VDType>
+inline size_t SortByKeyWorkspaceSize(size_t num_items, const gpu& dummy) {
+  return cuda::SortByKeyWorkspaceSize<KDType, VDType>(num_items);
+}
+
+template<>
+inline size_t AlignMemArraySize<gpu>(const size_t size) {
+  return cuda::AlignMemArraySize(size);
 }
 
 template<typename IndexType, typename DType>
