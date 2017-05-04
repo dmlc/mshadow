@@ -580,6 +580,38 @@ template<>
 MSHADOW_XINLINE int MinValue<int32_t>(void) {
   return INT_MIN;
 }
+
+/*!
+ * \brief maximum value of certain types
+ * \tparam DType data type
+ */
+template<typename DType>
+MSHADOW_XINLINE DType MaxValue(void);
+/*! \brief maximum value of float */
+template<>
+MSHADOW_XINLINE float MaxValue<float>(void) {
+  return FLT_MAX;
+}
+/*! \brief maximum value of double */
+template<>
+MSHADOW_XINLINE double MaxValue<double>(void) {
+  return DBL_MAX;
+}
+/*! \brief maximum value of uint8_t */
+template<>
+MSHADOW_XINLINE uint8_t MaxValue<uint8_t>(void) {
+  return UCHAR_MAX;
+}
+/*! \brief maximum value of int8_t */
+template<>
+MSHADOW_XINLINE int8_t MaxValue<int8_t>(void) {
+  return SCHAR_MAX;
+}
+/*! \brief maximum value of int32_t */
+template<>
+MSHADOW_XINLINE int MaxValue<int32_t>(void) {
+  return INT_MAX;
+}
 }  // namespace limits
 
 /*! \brief sum reducer */
