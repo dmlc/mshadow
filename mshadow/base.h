@@ -239,6 +239,7 @@ extern "C" {
   }
 
 #include "./half.h"
+#include "./half2.h"
 #include "./logging.h"
 /*! \brief namespace for mshadow */
 namespace mshadow {
@@ -276,6 +277,7 @@ struct DataType;
 template<>
 struct DataType<float> {
   static const int kFlag = kFloat32;
+  static const int kLanes = 1;
 #if MSHADOW_USE_CUDA
   static const cudaDataType_t kCudaFlag = CUDA_R_32F;
 #if MSHADOW_USE_CUDNN
@@ -287,6 +289,7 @@ struct DataType<float> {
 template<>
 struct DataType<double> {
   static const int kFlag = kFloat64;
+  static const int kLanes = 1;
 #if MSHADOW_USE_CUDA
   static const cudaDataType_t kCudaFlag = CUDA_R_64F;
 #if MSHADOW_USE_CUDNN
@@ -298,6 +301,7 @@ struct DataType<double> {
 template<>
 struct DataType<half::half_t> {
   static const int kFlag = kFloat16;
+  static const int kLanes = 1;
 #if MSHADOW_USE_CUDA
   static const cudaDataType_t kCudaFlag = CUDA_R_16F;
 #if MSHADOW_USE_CUDNN
@@ -307,8 +311,14 @@ struct DataType<half::half_t> {
 #endif
 };
 template<>
+struct DataType<half::half2_t> {
+  static const int kFlag = kFloat16;
+  static const int kLanes = 2;
+};
+template<>
 struct DataType<uint8_t> {
   static const int kFlag = kUint8;
+  static const int kLanes = 1;
 #if MSHADOW_USE_CUDA
   static const cudaDataType_t kCudaFlag = CUDA_R_8U;
 #if (MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 6)
@@ -321,6 +331,7 @@ struct DataType<uint8_t> {
 template<>
 struct DataType<int8_t> {
   static const int kFlag = kInt8;
+  static const int kLanes = 1;
 #if MSHADOW_USE_CUDA
   static const cudaDataType_t kCudaFlag = CUDA_R_8I;
 #if (MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 6)
@@ -332,6 +343,7 @@ struct DataType<int8_t> {
 template<>
 struct DataType<int32_t> {
   static const int kFlag = kInt32;
+  static const int kLanes = 1;
 #if MSHADOW_USE_CUDA
   static const cudaDataType_t kCudaFlag = CUDA_R_32I;
 #if (MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 6)
@@ -691,6 +703,42 @@ struct minimum {
     break;                                          \
   default:                                          \
     LOG(FATAL) << "Unknown type enum " << type;     \
+  }
+
+#define MSHADOW_TYPE_SWITCH_WITH_HALF2(type, DType, ...)  \
+  switch (type) {                                         \
+  case mshadow::kFloat32:                                 \
+    {                                                     \
+      typedef float DType;                                \
+      {__VA_ARGS__}                                       \
+    }                                                     \
+    break;                                                \
+  case mshadow::kFloat64:                                 \
+    {                                                     \
+      typedef double DType;                               \
+      {__VA_ARGS__}                                       \
+    }                                                     \
+    break;                                                \
+  case mshadow::kFloat16:                                 \
+    {                                                     \
+      typedef mshadow::half::half2_t DType;               \
+      {__VA_ARGS__}                                       \
+    }                                                     \
+    break;                                                \
+  case mshadow::kUint8:                                   \
+    {                                                     \
+      typedef uint8_t DType;                              \
+      {__VA_ARGS__}                                       \
+    }                                                     \
+    break;                                                \
+  case mshadow::kInt32:                                   \
+    {                                                     \
+      typedef int32_t DType;                              \
+      {__VA_ARGS__}                                       \
+    }                                                     \
+    break;                                                \
+  default:                                                \
+    LOG(FATAL) << "Unknown type enum " << type;           \
   }
 
 #define MSHADOW_REAL_TYPE_SWITCH(type, DType, ...)  \
