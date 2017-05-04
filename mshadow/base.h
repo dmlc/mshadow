@@ -568,6 +568,11 @@ template<>
 MSHADOW_XINLINE int MinValue<int32_t>(void) {
   return INT_MIN;
 }
+
+/*!
+ * \brief maximum value of certain types
+ * \tparam DType data type
+ */
 template<typename DType>
 MSHADOW_XINLINE DType MaxValue(void);
 /*! \brief maximum value of float */
