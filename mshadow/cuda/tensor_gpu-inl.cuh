@@ -658,7 +658,7 @@ inline void IndexFill(Tensor<gpu, 2, DType> dst,
   CHECK_EQ(dst.size(1), src.size(1)) << "IndexFill: shape mismatch";
   CHECK_EQ(index.size(0), src.size(0)) << "IndexFill: shape mismatch";
   const int block_dim_x = 1 << kMemUnitBits;
-  const int block_dim_y = 4;
+  const int block_dim_y = 1 << kMemUnitBits;
   const int grid_dim_x = (src.size(0) + block_dim_y - 1) / block_dim_y;
   dim3 dimBlock(block_dim_x, block_dim_y);
   dim3 dimGrid(grid_dim_x);
