@@ -279,7 +279,9 @@ struct DataType<float> {
   static const int kFlag = kFloat32;
   static const int kLanes = 1;
 #if MSHADOW_USE_CUDA
+#if (CUDA_VERSION >= 8000)
   static const cudaDataType_t kCudaFlag = CUDA_R_32F;
+#endif
 #if MSHADOW_USE_CUDNN
   static const cudnnDataType_t kCudnnFlag = CUDNN_DATA_FLOAT;
   typedef float ScaleType;
@@ -291,7 +293,9 @@ struct DataType<double> {
   static const int kFlag = kFloat64;
   static const int kLanes = 1;
 #if MSHADOW_USE_CUDA
+#if (CUDA_VERSION >= 8000)
   static const cudaDataType_t kCudaFlag = CUDA_R_64F;
+#endif
 #if MSHADOW_USE_CUDNN
   static const cudnnDataType_t kCudnnFlag = CUDNN_DATA_DOUBLE;
   typedef double ScaleType;
@@ -303,7 +307,9 @@ struct DataType<half::half_t> {
   static const int kFlag = kFloat16;
   static const int kLanes = 1;
 #if MSHADOW_USE_CUDA
+#if (CUDA_VERSION >= 8000)
   static const cudaDataType_t kCudaFlag = CUDA_R_16F;
+#endif
 #if MSHADOW_USE_CUDNN
   static const cudnnDataType_t kCudnnFlag = CUDNN_DATA_HALF;
   typedef float ScaleType;
@@ -320,7 +326,9 @@ struct DataType<uint8_t> {
   static const int kFlag = kUint8;
   static const int kLanes = 1;
 #if MSHADOW_USE_CUDA
+#if (CUDA_VERSION >= 8000)
   static const cudaDataType_t kCudaFlag = CUDA_R_8U;
+#endif
 #if (MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 6)
   // no uint8 in cudnn for now
   static const cudnnDataType_t kCudnnFlag = CUDNN_DATA_INT8;
@@ -333,7 +341,9 @@ struct DataType<int8_t> {
   static const int kFlag = kInt8;
   static const int kLanes = 1;
 #if MSHADOW_USE_CUDA
+#if (CUDA_VERSION >= 8000)
   static const cudaDataType_t kCudaFlag = CUDA_R_8I;
+#endif
 #if (MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 6)
   static const cudnnDataType_t kCudnnFlag = CUDNN_DATA_INT8;
   typedef int8_t ScaleType;
@@ -345,7 +355,9 @@ struct DataType<int32_t> {
   static const int kFlag = kInt32;
   static const int kLanes = 1;
 #if MSHADOW_USE_CUDA
+#if (CUDA_VERSION >= 8000)
   static const cudaDataType_t kCudaFlag = CUDA_R_32I;
+#endif
 #if (MSHADOW_USE_CUDNN == 1 && CUDNN_MAJOR >= 6)
   static const cudnnDataType_t kCudnnFlag = CUDNN_DATA_INT32;
   typedef int32_t ScaleType;
