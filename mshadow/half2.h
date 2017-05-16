@@ -11,10 +11,8 @@
 #if (defined(__CUDACC__) && __CUDA_ARCH__ >= 530 && MSHADOW_USE_CUDA && CUDA_VERSION >= 7050)
   #define MSHADOW_CUDA_HALF2 1
   #include <cuda_fp16.h>
-  #define MSHADOW_HALF2_INLINE MSHADOW_FORCE_INLINE __device__
 #else
   #define MSHADOW_CUDA_HALF2 0
-  #define MSHADOW_HALF2_INLINE MSHADOW_FORCE_INLINE
 #endif
 
 /*! \brief namespace for mshadow */
@@ -36,18 +34,18 @@ class half2_t {
   half_t half_t2[2];
 #endif
 
-  MSHADOW_HALF2_INLINE half2_t() {}
+  MSHADOW_XINLINE half2_t() {}
 
 #if MSHADOW_CUDA_HALF2
-  MSHADOW_HALF2_INLINE explicit half2_t(half2 a) : half2_(a) {}
+  MSHADOW_XINLINE explicit half2_t(half2 a) : half2_(a) {}
 #else
-  MSHADOW_HALF2_INLINE explicit half2_t(half_t a, half_t b) {
+  MSHADOW_XINLINE explicit half2_t(half_t a, half_t b) {
     half_t2[0] = a;
     half_t2[1] = b;
   }
 #endif
 
-  MSHADOW_HALF2_INLINE explicit half2_t(int a) {
+  MSHADOW_XINLINE explicit half2_t(int a) {
 #if MSHADOW_CUDA_HALF2
     half2_ = __half2half2(__int2half_rz(a));
 #else
@@ -56,11 +54,11 @@ class half2_t {
 #endif
   }
 
-  MSHADOW_HALF2_INLINE half2_t operator+() {
+  MSHADOW_XINLINE half2_t operator+() {
     return *this;
   }
 
-  MSHADOW_HALF2_INLINE half2_t operator-() {
+  MSHADOW_XINLINE half2_t operator-() {
 #if MSHADOW_CUDA_HALF2
     return half2_t(__hneg2(half2_));
 #else
@@ -68,7 +66,7 @@ class half2_t {
 #endif
   }
 
-  MSHADOW_HALF2_INLINE half2_t operator=(const half2_t& a) {
+  MSHADOW_XINLINE half2_t operator=(const half2_t& a) {
 #if MSHADOW_CUDA_HALF2
     half2_ = a.half2_;
 #else
@@ -85,7 +83,7 @@ class half2_t {
 };
 
 /*! \brief overloaded + operator for half2_t */
-MSHADOW_HALF2_INLINE half2_t operator+(half2_t a, half2_t b) {
+MSHADOW_XINLINE half2_t operator+(half2_t a, half2_t b) {
 #if MSHADOW_CUDA_HALF2
   return half2_t(__hadd2(a.half2_, b.half2_));
 #else
@@ -93,7 +91,7 @@ MSHADOW_HALF2_INLINE half2_t operator+(half2_t a, half2_t b) {
 #endif
 }
 /*! \brief overloaded - operator for half2_t */
-MSHADOW_HALF2_INLINE half2_t operator-(half2_t a, half2_t b) {
+MSHADOW_XINLINE half2_t operator-(half2_t a, half2_t b) {
 #if MSHADOW_CUDA_HALF2
   return half2_t(__hsub2(a.half2_, b.half2_));
 #else
@@ -101,7 +99,7 @@ MSHADOW_HALF2_INLINE half2_t operator-(half2_t a, half2_t b) {
 #endif
 }
 /*! \brief overloaded * operator for half2_t */
-MSHADOW_HALF2_INLINE half2_t operator*(half2_t a, half2_t b) {
+MSHADOW_XINLINE half2_t operator*(half2_t a, half2_t b) {
 #if MSHADOW_CUDA_HALF2
   return half2_t(__hmul2(a.half2_, b.half2_));
 #else
@@ -109,7 +107,7 @@ MSHADOW_HALF2_INLINE half2_t operator*(half2_t a, half2_t b) {
 #endif
 }
 /*! \brief overloaded / operator for half2_t */
-MSHADOW_HALF2_INLINE half2_t operator/(half2_t a, half2_t b) {
+MSHADOW_XINLINE half2_t operator/(half2_t a, half2_t b) {
 #if MSHADOW_CUDA_HALF2
   return half2_t(h2div(a.half2_, b.half2_));
 #else
@@ -117,7 +115,7 @@ MSHADOW_HALF2_INLINE half2_t operator/(half2_t a, half2_t b) {
 #endif
 }
 /*! \brief overloaded == operator for half2_t */
-MSHADOW_HALF2_INLINE bool operator==(half2_t a, half2_t b) {
+MSHADOW_XINLINE bool operator==(half2_t a, half2_t b) {
 #if MSHADOW_CUDA_HALF2
   return __hbeq2(a.half2_, b.half2_);
 #else
