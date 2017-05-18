@@ -890,6 +890,30 @@ struct minimum {
     LOG(FATAL) << "Unknown layout enum " << layout; \
   }
 
+#define MSHADOW_INT_TYPE_SWITCH(type, DType, ...)   \
+  switch (type) {                                   \
+  case mshadow::kUint8:                             \
+    {                                               \
+      typedef uint8_t DType;                        \
+      {__VA_ARGS__}                                 \
+    }                                               \
+    break;                                          \
+  case mshadow::kInt8:                              \
+    {                                               \
+      typedef int8_t DType;                         \
+      {__VA_ARGS__}                                 \
+    }                                               \
+    break;                                          \
+  case mshadow::kInt32:                             \
+    {                                               \
+      typedef int32_t DType;                        \
+      {__VA_ARGS__}                                 \
+    }                                               \
+    break;                                          \
+  default:                                          \
+    LOG(FATAL) << "Unknown type enum " << type;     \
+  }
+
 /*! \brief get data type size from type enum */
 inline size_t mshadow_sizeof(int type) {
   int size = 0;
