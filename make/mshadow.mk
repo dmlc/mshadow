@@ -74,9 +74,9 @@ ifeq ($(USE_BLAS), openblas)
 else ifeq ($(USE_BLAS), perfblas)
 	MSHADOW_LDFLAGS += -lperfblas
 else ifeq ($(USE_BLAS), atlas)
-	MSHADOW_LDFLAGS += -lcblas
+	MSHADOW_LDFLAGS += -lcblas -llapack
 else ifeq ($(USE_BLAS), blas)
-	MSHADOW_LDFLAGS += -lblas
+	MSHADOW_LDFLAGS += -lblas -llapack
 else ifeq ($(USE_BLAS), apple)
 	MSHADOW_CFLAGS += -I/System/Library/Frameworks/Accelerate.framework/Versions/Current/Frameworks/vecLib.framework/Versions/Current/Headers/
 	MSHADOW_LDFLAGS += -framework Accelerate
