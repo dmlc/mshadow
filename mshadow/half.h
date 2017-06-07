@@ -16,7 +16,11 @@
     /*! \brief __half2float_warp */
     __host__ __device__ float __half2float_warp(const volatile __half& h) { /* NOLINT(*) */
       __half val;
+#if CUDA_VERSION >= 9000
+      val = const_cast<__half&>(h);
+#else
       val.x = h.x;
+#endif
       return __half2float(val);
     }
   #endif
