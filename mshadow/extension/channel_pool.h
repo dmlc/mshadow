@@ -90,7 +90,7 @@ struct Plan<ChannelPoolingExp<Reducer, SrcExp, DType, srcdim>, DType> {
     const index_t n = i / channel_;
     const index_t x = j;
     const index_t cstart = c * stride_ < pad_ ? 0  : c * stride_ - pad_;
-    const index_t cend   = min(cstart + hnsize_, channel_);
+    const index_t cend   = min(c * stride_ - pad_ + hnsize_, channel_);
     DType res; Reducer::SetInitValue(res);
     for (index_t cc = cstart; cc < cend; ++cc) {
       Reducer::Reduce(res, src_.Eval((n * src_channel_ + cc) * height_ + y, x));
