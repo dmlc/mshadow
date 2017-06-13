@@ -268,7 +268,8 @@ enum TypeFlag {
   kFloat16 = 2,
   kUint8 = 3,
   kInt32 = 4,
-  kInt8  = 5
+  kInt8  = 5,
+  kInt64 = 6,
 };
 
 template<typename DType>
@@ -363,6 +364,11 @@ struct DataType<int32_t> {
   typedef int32_t ScaleType;
 #endif
 #endif
+};
+template<>
+struct DataType<int64_t> {
+  static const int kFlag = kInt64;
+  static const int kLanes = 1;
 };
 
 /*! \brief type enum value for default real type */
@@ -592,6 +598,11 @@ template<>
 MSHADOW_XINLINE int MinValue<int32_t>(void) {
   return INT_MIN;
 }
+/*! \brief minimum value of int64_t */
+template<>
+MSHADOW_XINLINE int64_t MinValue<int64_t>(void) {
+  return LLONG_MIN;
+}
 
 /*!
  * \brief maximum value of certain types
@@ -623,6 +634,11 @@ MSHADOW_XINLINE int8_t MaxValue<int8_t>(void) {
 template<>
 MSHADOW_XINLINE int MaxValue<int32_t>(void) {
   return INT_MAX;
+}
+/*! \brief maximum value of int64_t */
+template<>
+MSHADOW_XINLINE int64_t MaxValue<int64_t>(void) {
+  return LLONG_MAX;
 }
 }  // namespace limits
 
@@ -745,6 +761,12 @@ struct minimum {
       {__VA_ARGS__}                                 \
     }                                               \
     break;                                          \
+  case mshadow::kInt64:                             \
+    {                                               \
+      typedef int64_t DType;                        \
+      {__VA_ARGS__}                                 \
+    }                                               \
+    break;                                          \
   default:                                          \
     LOG(FATAL) << "Unknown type enum " << type;     \
   }
@@ -778,6 +800,12 @@ struct minimum {
   case mshadow::kInt32:                                   \
     {                                                     \
       typedef int32_t DType;                              \
+      {__VA_ARGS__}                                       \
+    }                                                     \
+    break;                                                \
+  case mshadow::kInt64:                                   \
+    {                                                     \
+      typedef int64_t DType;                              \
       {__VA_ARGS__}                                       \
     }                                                     \
     break;                                                \
@@ -817,6 +845,10 @@ struct minimum {
     LOG(FATAL) << "This operation only support "    \
                   "floating point types, not int32";\
     break;                                          \
+  case mshadow::kInt64:                             \
+    LOG(FATAL) << "This operation only support "    \
+                  "floating point types, not int64";\
+    break;                                          \
   default:                                          \
     LOG(FATAL) << "Unknown type enum " << type;     \
   }
@@ -855,6 +887,10 @@ struct minimum {
   case mshadow::kInt32:                             \
     LOG(FATAL) << "This operation only support "    \
                   "floating point types, not int32";\
+    break;                                          \
+  case mshadow::kInt64:                             \
+    LOG(FATAL) << "This operation only support "    \
+                  "floating point types, not int64";\
     break;                                          \
   default:                                          \
     LOG(FATAL) << "Unknown type enum " << type$;    \
@@ -907,6 +943,12 @@ struct minimum {
   case mshadow::kInt32:                             \
     {                                               \
       typedef int32_t DType;                        \
+      {__VA_ARGS__}                                 \
+    }                                               \
+    break;                                          \
+  case mshadow::kInt64:                             \
+    {                                               \
+      typedef int64_t DType;                        \
       {__VA_ARGS__}                                 \
     }                                               \
     break;                                          \
