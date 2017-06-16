@@ -202,7 +202,7 @@ inline void MapReduceKeepDim1(expr::Plan<DstExp, DType> dst,
   dim3 dimBlock(kBaseThreadNum);
   dim3 dimGrid(pshape[1]);
   CheckLaunchParam(dimGrid, dimBlock, "MapReduceKeepDim1");
-  MapReduceKeepDim1Kernel<Saver,Reducer, kBaseThreadBits, DType,
+  MapReduceKeepDim1Kernel<Saver, Reducer, kBaseThreadBits, DType,
                           expr::Plan<DstExp, DType>,
                           expr::Plan<E, DType> >
       <<<dimGrid, dimBlock, 0, stream>>>(dst, plan, scale, pshape);
