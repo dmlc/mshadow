@@ -72,10 +72,10 @@ __device__ void MapPlanProc(DstPlan dst, index_t xstride,
   const int y = tid / xstride;
   const int x = tid % xstride;
   if (y < dshape[0] && x < dshape[1]) {
-    Saver::Save(dst.REval(y, x), exp.Eval(y,x));
+    Saver::Save(dst.REval(y, x), exp.Eval(y, x));
   }
 }
-template<typename Saver,int block_dim_bits,
+template<typename Saver, int block_dim_bits,
          typename DstPlan, typename Plan>
 __global__ void MapPlanKernel(DstPlan dst, index_t xstride,
                               Shape<2> dshape, const Plan exp) {
@@ -119,7 +119,7 @@ inline void MapPlan(expr::Plan<DstExp, DType> dst,
   }
 }
 
-template<typename Saver,typename Reducer, int warp_bits,
+template<typename Saver, typename Reducer, int warp_bits,
          typename DType, typename DstPlan, typename Plan>
 __global__ void
 __launch_bounds__(kMemUnit*kMemUnit, 1)
@@ -200,9 +200,9 @@ inline void MapReduceKeepDim1(expr::Plan<DstExp, DType> dst,
                               DType scale, Shape<4> pshape,
                               cudaStream_t stream) {
   dim3 dimBlock(kBaseThreadNum);
-  dim3 dimGrid (pshape[1]);
+  dim3 dimGrid(pshape[1]);
   CheckLaunchParam(dimGrid, dimBlock, "MapReduceKeepDim1");
-  MapReduceKeepDim1Kernel<Saver,Reducer,kBaseThreadBits, DType,
+  MapReduceKeepDim1Kernel<Saver, Reducer, kBaseThreadBits, DType,
                           expr::Plan<DstExp, DType>,
                           expr::Plan<E, DType> >
       <<<dimGrid, dimBlock, 0, stream>>>(dst, plan, scale, pshape);
@@ -547,11 +547,9 @@ __global__ void AddTakeGradLargeBatchKernel(DType* dst,
       float grad_out[SZ];
       float grad_weight[SZ];
       #pragma unroll
-      for (int ii = 0; ii < SZ; ii++)
-      {
+      for (int ii = 0; ii < SZ; ii++) {
         int feature_dim = start_feature + ii * warp_size;
-        if (feature_dim < xmax)
-        {
+        if (feature_dim < xmax) {
           grad_out[ii] = src[src_row + feature_dim];
           grad_weight[ii] = dst[dst_row + feature_dim];
         }
