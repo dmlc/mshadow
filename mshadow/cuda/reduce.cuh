@@ -32,9 +32,11 @@ Reduce1DNotAlign(volatile DType buf[1 << xmax_bits], int xsize);
 //  no need to read if only use the functions
 // --------------------------------------------------
 #ifdef  __DEVICE_EMULATION__
-#define __MSHADOW_EMUSYNC__ __syncthreads()
+#define __syncwarp() __syncthreads()
 #else
-#define __MSHADOW_EMUSYNC__
+#if CUDA_VERSION < 9000
+#define __syncwarp()
+#endif
 #endif
 
 template<typename Reducer, int x_bits, typename DType>
@@ -65,24 +67,24 @@ inline __device__ void ReduceX(volatile DType  buf[], int tid) {
 #if MSHADOW_OLD_CUDA
     __syncthreads();
 #else
-    __MSHADOW_EMUSYNC__;
+    __syncwarp();
 #endif
   }
   if (x_bits >= 4) {
     if (tid < 8) Reducer::Reduce(buf[tid] , buf[tid + 8]);
-    __MSHADOW_EMUSYNC__;
+    __syncwarp();
   }
   if (x_bits >= 3) {
     if (tid < 4) Reducer::Reduce(buf[tid] , buf[tid + 4]);
-    __MSHADOW_EMUSYNC__;
+    __syncwarp();
   }
   if (x_bits >= 2) {
     if (tid < 2) Reducer::Reduce(buf[tid] , buf[tid + 2]);
-    __MSHADOW_EMUSYNC__;
+    __syncwarp();
   }
   if (x_bits >= 1) {
     if (tid < 1) Reducer::Reduce(buf[tid] , buf[tid + 1]);
-    __MSHADOW_EMUSYNC__;
+    __syncwarp();
   }
 }
 template<typename Reducer, int x_bits, typename DType>
