@@ -620,6 +620,11 @@ template<>
 MSHADOW_XINLINE double MaxValue<double>(void) {
   return DBL_MAX;
 }
+/*! \brief maximum value of half */
+template<>
+MSHADOW_XINLINE half::half_t MaxValue<half::half_t>(void) {
+  return MSHADOW_HALF_MAX;
+}
 /*! \brief maximum value of uint8_t */
 template<>
 MSHADOW_XINLINE uint8_t MaxValue<uint8_t>(void) {
@@ -718,7 +723,7 @@ struct minimum {
    */
   template<typename DType>
   MSHADOW_XINLINE static void SetInitValue(DType &initv) { // NOLINT(*)
-    initv = -limits::MinValue<DType>();
+    initv = limits::MaxValue<DType>();
   }
 };
 }  // namespace red
