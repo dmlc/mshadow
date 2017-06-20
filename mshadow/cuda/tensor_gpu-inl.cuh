@@ -712,7 +712,8 @@ inline void SortByKey(Tensor<gpu, 1, DType> keys, Tensor<gpu, 1, mshadow::half::
 }
 
 // break ambiguous template deduction for <half_t, half_t>
-inline void SortByKey(Tensor<gpu, 1, mshadow::half::half_t> keys, Tensor<gpu, 1, mshadow::half::half_t> values,
+inline void SortByKey(Tensor<gpu, 1, mshadow::half::half_t> keys,
+  Tensor<gpu, 1, mshadow::half::half_t> values,
   bool is_ascend) {
   LOG(FATAL) << "SortByKey for half_t is not implemented!";
 }
