@@ -15,6 +15,8 @@
   #define MSHADOW_CUDA_HALF2 0
 #endif
 
+#include<math.h>
+
 /*! \brief namespace for mshadow */
 namespace mshadow {
 /* \brief name space for host/device portable half-precision floats */
@@ -116,6 +118,15 @@ MSHADOW_XINLINE half2_t operator/(half2_t a, half2_t b) {
                                    __high2float(a.half2_) / __high2float(b.half2_)));
 #else
   return half2_t(a.half_t2[0] / b.half_t2[0], a.half_t2[1] / b.half_t2[1]);
+#endif
+}
+/*! \brief overloaded % operator for half2_t */
+MSHADOW_XINLINE half2_t operator%(half2_t a, half2_t b) {
+#if MSHADOW_CUDA_HALF2
+  return half2_t(__floats2half2_rn(::fmod(__low2float(a.half2_), __low2float(b.half2_)),
+                                   ::fmod(__high2float(a.half2_), __high2float(b.half2_))));
+#else
+  return half2_t(::fmod(a.half_t2[0], b.half_t2[0]), ::fmod(a.half_t2[1], b.half_t2[1]));
 #endif
 }
 /*! \brief overloaded == operator for half2_t */

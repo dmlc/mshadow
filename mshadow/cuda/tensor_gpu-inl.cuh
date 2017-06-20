@@ -72,10 +72,10 @@ __device__ void MapPlanProc(DstPlan dst, index_t xstride,
   const int y = tid / xstride;
   const int x = tid % xstride;
   if (y < dshape[0] && x < dshape[1]) {
-    Saver::Save(dst.REval(y, x), exp.Eval(y,x));
+    Saver::Save(dst.REval(y, x), exp.Eval(y, x));
   }
 }
-template<typename Saver,int block_dim_bits,
+template<typename Saver, int block_dim_bits,
          typename DstPlan, typename Plan>
 __global__ void MapPlanKernel(DstPlan dst, index_t xstride,
                               Shape<2> dshape, const Plan exp) {
@@ -119,7 +119,7 @@ inline void MapPlan(expr::Plan<DstExp, DType> dst,
   }
 }
 
-template<typename Saver,typename Reducer, int warp_bits,
+template<typename Saver, typename Reducer, int warp_bits,
          typename DType, typename DstPlan, typename Plan>
 __global__ void
 __launch_bounds__(kMemUnit*kMemUnit, 1)
@@ -200,9 +200,9 @@ inline void MapReduceKeepDim1(expr::Plan<DstExp, DType> dst,
                               DType scale, Shape<4> pshape,
                               cudaStream_t stream) {
   dim3 dimBlock(kBaseThreadNum);
-  dim3 dimGrid (pshape[1]);
+  dim3 dimGrid(pshape[1]);
   CheckLaunchParam(dimGrid, dimBlock, "MapReduceKeepDim1");
-  MapReduceKeepDim1Kernel<Saver,Reducer,kBaseThreadBits, DType,
+  MapReduceKeepDim1Kernel<Saver, Reducer, kBaseThreadBits, DType,
                           expr::Plan<DstExp, DType>,
                           expr::Plan<E, DType> >
       <<<dimGrid, dimBlock, 0, stream>>>(dst, plan, scale, pshape);
@@ -324,7 +324,7 @@ __global__ void SoftmaxKernel(DstPlan dst, SrcPlan src, index_t xmax) {
 }
 
 template<typename DType>
-inline void Softmax(Tensor<gpu, 2, DType> &dst,
+inline void Softmax(const Tensor<gpu, 2, DType> &dst,
                     const Tensor<gpu, 2, DType> &src) {
   dim3 dimBlock(kBaseThreadNum);
   dim3 dimGrid(dst.size(0));
@@ -340,7 +340,7 @@ inline void Softmax(Tensor<gpu, 2, DType> &dst,
 }
 
 template<typename DType>
-inline void SoftmaxGrad(Tensor<gpu, 2, DType> &dst,
+inline void SoftmaxGrad(const Tensor<gpu, 2, DType> &dst,
                         const Tensor<gpu, 2, DType> &src,
                         const Tensor<gpu, 1, DType> &label) {
   dim3 dimBlock(kBaseThreadNum);
@@ -359,7 +359,7 @@ inline void SoftmaxGrad(Tensor<gpu, 2, DType> &dst,
 }
 
 template<typename DType>
-inline void SoftmaxGrad(Tensor<gpu, 2, DType> &dst,
+inline void SoftmaxGrad(const Tensor<gpu, 2, DType> &dst,
                         const Tensor<gpu, 2, DType> &src,
                         const Tensor<gpu, 1, DType> &label,
                         const DType &ignore_label) {
@@ -441,7 +441,7 @@ __global__ void Softmax3DKernel(Tensor<gpu, 3, DType> dst,
   for (index_t n_index = n; n_index < nmax; n_index += n_size) {
     DType smax = src[y][0][n_index];
     for (index_t i = 1; i < xmax; ++i) {
-      smax = max(smax, src[y][i][n_index]);
+      smax = max(smax, src[y][i][n_index]);  // NOLINT(*)
     }
     DType ssum = 0.0f;
     for (index_t i = 0; i < xmax; ++i) {
@@ -456,7 +456,7 @@ __global__ void Softmax3DKernel(Tensor<gpu, 3, DType> dst,
 }
 
 template<typename DType>
-inline void Softmax(Tensor<gpu, 3, DType> &dst,
+inline void Softmax(const Tensor<gpu, 3, DType> &dst,
                     const Tensor<gpu, 3, DType> &src) {
   dim3 dimBlock(kBaseThreadNum);
   dim3 dimGrid(dst.size(0));
@@ -468,7 +468,7 @@ inline void Softmax(Tensor<gpu, 3, DType> &dst,
 }
 
 template<typename DType>
-inline void SoftmaxGrad(Tensor<gpu, 3, DType> &dst,
+inline void SoftmaxGrad(const Tensor<gpu, 3, DType> &dst,
                         const Tensor<gpu, 3, DType> &src,
                         const Tensor<gpu, 2, DType> &label) {
   dim3 dimBlock(kBaseThreadNum);
@@ -483,7 +483,7 @@ inline void SoftmaxGrad(Tensor<gpu, 3, DType> &dst,
 }
 
 template<typename DType>
-inline void SoftmaxGrad(Tensor<gpu, 3, DType> &dst,
+inline void SoftmaxGrad(const Tensor<gpu, 3, DType> &dst,
                         const Tensor<gpu, 3, DType> &src,
                         const Tensor<gpu, 2, DType> &label,
                         const DType &ignore_label) {
@@ -494,7 +494,8 @@ inline void SoftmaxGrad(Tensor<gpu, 3, DType> &dst,
   CHECK_EQ(dst.size(2), label.size(1)) << "SoftmaxGrad: label shape mismatch";
   CheckLaunchParam(dimGrid, dimBlock, "SoftmaxGrad");
   cudaStream_t stream = Stream<gpu>::GetStream(dst.stream_);
-  Softmax3DGradKernel<kBaseThreadBits, DType><<<dimGrid, dimBlock, 0, stream>>>(dst, src, label, ignore_label);
+  Softmax3DGradKernel<kBaseThreadBits, DType><<<dimGrid, dimBlock, 0, stream>>>(
+    dst, src, label, ignore_label);
   MSHADOW_CUDA_POST_KERNEL_CHECK(Softmax3DGradKernel);
 }
 
@@ -520,7 +521,8 @@ __global__ void AddTakeGradKernel(DstPlan dst,
 
 template<int warp_bits, int SZ, typename DType, typename IdxType>
 __global__ void AddTakeGradLargeBatchKernel(DType* dst,
-                                            const IdxType *sorted, const IdxType *index, const DType *src,
+                                            const IdxType *sorted, const IdxType *index,
+                                            const DType *src,
                                             int ymax, int xmax) {
   // Based on Torch's Version https://github.com/torch/cunn/blob/master/lib/THCUNN/LookupTable.cu
   // Each warp is responsible for an input into the LookupTable.
@@ -547,11 +549,9 @@ __global__ void AddTakeGradLargeBatchKernel(DType* dst,
       float grad_out[SZ];
       float grad_weight[SZ];
       #pragma unroll
-      for (int ii = 0; ii < SZ; ii++)
-      {
+      for (int ii = 0; ii < SZ; ii++) {
         int feature_dim = start_feature + ii * warp_size;
-        if (feature_dim < xmax)
-        {
+        if (feature_dim < xmax) {
           grad_out[ii] = src[src_row + feature_dim];
           grad_weight[ii] = dst[dst_row + feature_dim];
         }
@@ -687,11 +687,11 @@ inline void SortByKey(Tensor<gpu, 1, KDType> keys, Tensor<gpu, 1, VDType> values
   if (is_ascend) {
     thrust::stable_sort_by_key(
       thrust::cuda::par.on(stream),
-      key_iter, key_iter + keys.size(0), value_iter, thrust::less<KDType>());
+      key_iter, key_iter + keys.size(0), value_iter, thrust::less<KDType>());  // NOLINT(*)
   } else {
     thrust::stable_sort_by_key(
       thrust::cuda::par.on(stream),
-      key_iter, key_iter + keys.size(0), value_iter, thrust::greater<KDType>());
+      key_iter, key_iter + keys.size(0), value_iter, thrust::greater<KDType>());  // NOLINT(*)
   }
   MSHADOW_CUDA_POST_KERNEL_CHECK(SortByKey);
 #else
