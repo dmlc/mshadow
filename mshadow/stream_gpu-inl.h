@@ -6,10 +6,10 @@
  */
 #ifndef MSHADOW_STREAM_GPU_INL_H_
 #define MSHADOW_STREAM_GPU_INL_H_
+#include <memory>
 #include "./base.h"
 #include "./tensor.h"
 #include "./logging.h"
-#include <memory>
 
 namespace mshadow {
 #if MSHADOW_USE_CUDA == 1
