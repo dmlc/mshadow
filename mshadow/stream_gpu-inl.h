@@ -143,7 +143,7 @@ struct Stream<gpu> {
 };
 template<>
 inline void DeleteStream<gpu>(Stream<gpu> *stream) {
-  if(stream) {
+  if (stream) {
     MSHADOW_CUDA_CALL(cudaStreamDestroy(stream->stream_));
     stream->DestoryBlasHandle();
     stream->DestroyDnnHandle();
