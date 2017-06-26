@@ -5,7 +5,7 @@ We will explain how it will affect the performance of compiled code. Expression 
 
 How to write efficient machine learning code
 ====
-Before we start, let us think of the question above. Assume we want to write down the update rule
+Before we start, let us think of the question above. Assume we want to write down the update rule (for illustration purpose here, while typical update would be `weight += - eta * (grad + lambda * weight)` )
 ```c++
 weight =  - eta * (grad + lambda * weight);
 ```
