@@ -639,7 +639,7 @@ template<typename Device>
 inline void SetDevice(int devid);
 /*!
  * \brief create a new stream from system
- * \param create_blas_handle whether create blas handle in stream
+ * \param create_blas_handle whether create blas & cusolver handle in stream
  * \param create_dnn_handle whether create cudnn handle in stream
  * \param dev_id device id
  * \return a pointer to the created stream

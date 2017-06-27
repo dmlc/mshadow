@@ -26,7 +26,7 @@ endif
 ifeq ($(USE_CUDA), 0)
 	MSHADOW_CFLAGS += -DMSHADOW_USE_CUDA=0
 else
-	MSHADOW_LDFLAGS += -lcudart -lcublas -lcurand
+	MSHADOW_LDFLAGS += -lcudart -lcublas -lcurand -lcusolver
 endif
 ifneq ($(USE_CUDA_PATH), NONE)
 	MSHADOW_CFLAGS += -I$(USE_CUDA_PATH)/include
