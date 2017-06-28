@@ -931,26 +931,12 @@ struct minimum {
     LOG(FATAL) << "Unknown layout enum " << layout; \
   }
 
-#define MSHADOW_INT_TYPE_SWITCH(type, DType, ...)   \
+/*!
+ * \brief Only supports int64 index type for aux_data
+ * in NDArray class fow now.
+ */
+#define MSHADOW_IDX_TYPE_SWITCH(type, DType, ...)   \
   switch (type) {                                   \
-  case mshadow::kUint8:                             \
-    {                                               \
-      typedef uint8_t DType;                        \
-      {__VA_ARGS__}                                 \
-    }                                               \
-    break;                                          \
-  case mshadow::kInt8:                              \
-    {                                               \
-      typedef int8_t DType;                         \
-      {__VA_ARGS__}                                 \
-    }                                               \
-    break;                                          \
-  case mshadow::kInt32:                             \
-    {                                               \
-      typedef int32_t DType;                        \
-      {__VA_ARGS__}                                 \
-    }                                               \
-    break;                                          \
   case mshadow::kInt64:                             \
     {                                               \
       typedef int64_t DType;                        \
