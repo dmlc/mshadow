@@ -818,23 +818,23 @@ struct minimum {
     LOG(FATAL) << "Unknown type enum " << type;           \
   }
 
-#define MSHADOW_SINGLE_DOUBLE_TYPE_SWITCH(type, DType, ...)  \
-  switch (type) {                                            \
-  case mshadow::kFloat32:                                    \
-    {                                                        \
-      typedef float DType;                                   \
-      {__VA_ARGS__}                                          \
-    }                                                        \
-    break;                                                   \
-  case mshadow::kFloat64:                                    \
-    {                                                        \
-      typedef double DType;                                  \
-      {__VA_ARGS__}                                          \
-    }                                                        \
-    break;                                                   \
-  default:                                                   \
-    LOG(FATAL) << "This operation only supports "            \
-                  "32- and 64-bit floating point";           \
+#define MSHADOW_SGL_DBL_TYPE_SWITCH(type, DType, ...)  \
+  switch (type) {                                      \
+  case mshadow::kFloat32:                              \
+    {                                                  \
+      typedef float DType;                             \
+      {__VA_ARGS__}                                    \
+    }                                                  \
+    break;                                             \
+  case mshadow::kFloat64:                              \
+    {                                                  \
+      typedef double DType;                            \
+      {__VA_ARGS__}                                    \
+    }                                                  \
+    break;                                             \
+  default:                                             \
+    LOG(FATAL) << "This operation only supports "      \
+                  "32- and 64-bit floating point";     \
   }
 
 #define MSHADOW_REAL_TYPE_SWITCH(type, DType, ...)  \
