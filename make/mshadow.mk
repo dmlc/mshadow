@@ -13,6 +13,14 @@ MSHADOW_LDFLAGS = -lm
 MSHADOW_NVCCFLAGS =
 
 
+# atlas blas library has different name on CentOS
+OS := $(shell cat /etc/system-release 2>/dev/null)
+ifeq ($(findstring CentOS,$(OS)), CentOS)
+  ATLAS_LDFLAGS := -lsatlas -L/usr/lib64/atlas
+else
+  ATLAS_LDFLAGS := -lcblas
+endif
+
 ifndef USE_SSE
 	USE_SSE=1
 endif
@@ -74,7 +82,7 @@ ifeq ($(USE_BLAS), openblas)
 else ifeq ($(USE_BLAS), perfblas)
 	MSHADOW_LDFLAGS += -lperfblas
 else ifeq ($(USE_BLAS), atlas)
-	MSHADOW_LDFLAGS += -lcblas
+	MSHADOW_LDFLAGS += $(ATLAS_LDFLAGS)
 else ifeq ($(USE_BLAS), blas)
 	MSHADOW_LDFLAGS += -lblas
 else ifeq ($(USE_BLAS), apple)
