@@ -11,7 +11,7 @@
 namespace mshadow {
 /*!
  * \brief namespace for abstract expressions and expressions template,
- *        have no dependecy on tensor.h,
+ *        have no dependency on tensor.h,
  *        These data structure takes no charge in computations,
  *        they are only used to define operations and represent expression in a symbolic way
  */
