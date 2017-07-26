@@ -102,6 +102,13 @@ typedef unsigned __int64 uint64_t;
 #endif
 
 /*!
+ * \brief use CUSOLVER support
+ */
+#ifndef MSHADOW_USE_CUSOLVER
+  #define MSHADOW_USE_CUSOLVER MSHADOW_USE_CUDA
+#endif
+
+/*!
  * \brief seems CUDAARCH is deprecated in future NVCC
  * set this to 1 if you want to use CUDA version smaller than 2.0
  */
@@ -150,6 +157,10 @@ extern "C" {
 
 #if MSHADOW_USE_CUDNN == 1
   #include <cudnn.h>
+#endif
+
+#if MSHADOW_USE_CUSOLVER == 1
+  #include <cusolverDn.h>
 #endif
 
 #if MSHADOW_USE_NVML

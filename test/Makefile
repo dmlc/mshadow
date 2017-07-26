@@ -3,7 +3,7 @@ export CC  = gcc
 export CXX = g++
 export NVCC =nvcc
 export CFLAGS = -Wall -O3 -g -msse3 -Wno-unknown-pragmas -funroll-loops -I../
-export LDFLAGS= -g -lm -lcublas -lcudart
+export LDFLAGS= -g -lm -lcublas -lcudart -lcusolver
 export NVCCFLAGS = -O3 --use_fast_math -ccbin $(CXX)
 
 # specify tensor path
