@@ -299,6 +299,7 @@ inline Shape<4> ConvertLayout(const Shape<4>& src, int src_layout, int dst_layou
     break;
   default:
     LOG(FATAL) << "Invalid layout for 4d shape " << src_layout;
+    dst = src;  // fixes compiler warning
   }
   Shape<4> dst2;
   switch (dst_layout) {
@@ -312,6 +313,7 @@ inline Shape<4> ConvertLayout(const Shape<4>& src, int src_layout, int dst_layou
     break;
   default:
     LOG(FATAL) << "Invalid layout for 4d shape " << src_layout;
+    dst2 = src;  // fixes compiler warning
   }
   return dst2;
 }
