@@ -666,7 +666,7 @@ inline void IndexFill(Tensor<gpu, 2, DType> dst,
   int grid_dim_x = (src.size(0) * src.size(1) + block_size - 1) / block_size;
   int grid_dim_y = 1;
   while (grid_dim_x > kMaxGridDim) {
-    grid_dim_x = (grid_dim_x+1)/2;
+    grid_dim_x = (grid_dim_x + 1) / 2;
     grid_dim_y *= 2;
   }
   dim3 dimBlock(block_dim_x, block_dim_y);
