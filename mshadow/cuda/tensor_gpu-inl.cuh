@@ -637,14 +637,17 @@ inline void AddTakeGradLargeBatch(Tensor<gpu, 2, DType> dst,
 
 template<int warp_bits, typename DType, typename DstPlan, typename IndexPlan, typename SrcPlan>
 __global__ void IndexFillKernel(DstPlan dst,
-                                IndexPlan index, SrcPlan src,
-                                index_t ymax, int xmax) {
-  int src_idx = blockIdx.x * blockDim.y + threadIdx.y;
-  if (src_idx < ymax) {
-    int dst_idx = static_cast<int>(index.Eval(0, src_idx));
-    for (int i = threadIdx.x; i < xmax; i += blockDim.x) {
-      dst.REval(dst_idx, i) = src.Eval(src_idx, i);
-    }
+                                const IndexPlan index,
+                                const SrcPlan src,
+                                const int ymax,
+                                const int xmax) {
+  int bid = blockIdx.y * blockDim.x + blockIdx.x;
+  int tid = bid * blockDim.x * blockDim.y + threadIdx.y * blockDim.x + threadIdx.x;
+  if (tid < ymax * xmax) {
+    int i = tid / xmax;
+    int j = tid % xmax;
+    int k = static_cast<int>(index.Eval(0, i));
+    dst.REval(k, j) = src.Eval(i, j);
   }
 }
 
@@ -659,9 +662,15 @@ inline void IndexFill(Tensor<gpu, 2, DType> dst,
   CHECK_EQ(index.size(0), src.size(0)) << "IndexFill: shape mismatch";
   const int block_dim_x = 1 << kMemUnitBits;
   const int block_dim_y = 1 << kMemUnitBits;
-  const int grid_dim_x = (src.size(0) + block_dim_y - 1) / block_dim_y;
+  const int block_size = block_dim_x * block_dim_y;
+  int grid_dim_x = (src.size(0) * src.size(1) + block_size - 1) / block_size;
+  int grid_dim_y = 1;
+  while (grid_dim_x > kMaxGridDim) {
+    grid_dim_x = (grid_dim_x + 1) / 2;
+    grid_dim_y *= 2;
+  }
   dim3 dimBlock(block_dim_x, block_dim_y);
-  dim3 dimGrid(grid_dim_x);
+  dim3 dimGrid(grid_dim_x, grid_dim_y);
   CheckLaunchParam(dimGrid, dimBlock, "IndexFill");
   cudaStream_t stream = Stream<gpu>::GetStream(dst.stream_);
 
