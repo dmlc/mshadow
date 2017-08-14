@@ -430,12 +430,13 @@ struct BLASEngine<gpu, half::half_t> {
                           const half::half_t *B, int ldb, half::half_t beta,
                           half::half_t *C, int ldc) {
 #if defined(CUDA_VERSION) && CUDA_VERSION >= 7050
-  if (
-#if MSHADOW_USE_PASCAL == 1
-      false ||
-#endif
-      stream->dev_id == -1 || (stream->prop.major <= 5 && stream->prop.minor <= 2)) {
-    // Not PASCAL
+  // Fp16 math is supported with GPU compute capability 5.3 and above.
+  // Assume not supported if device id is negative (it defaults to -1).
+  bool gpu_supports_fp16_math =
+    (stream->dev_id >= 0) &&
+    (stream->prop.major > 5 || (stream->prop.major == 5 && stream->prop.minor > 2));
+  if (MSHADOW_USE_PASCAL == 0 || !gpu_supports_fp16_math) {
+    // pseudo-fp16 (fp32 math with fp16 I/O)
     float alpha_f = float(alpha);  // NOLINT(*)
     float beta_f = float(beta);  // NOLINT(*)
   #if CUDA_VERSION >= 8000
@@ -452,7 +453,7 @@ struct BLASEngine<gpu, half::half_t> {
     CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas SgemmEx fail";
   #endif  // CUDA_VERSION >= 8000
   } else {
-    // PASCAL
+    // true-fp16 (fp16 math with fp16 I/O)
     cublasStatus_t err = cublasHgemm(Stream<gpu>::GetBlasHandle(stream),
                                      GetT(transa), GetT(transb), m, n, k, &alpha.cuhalf_,
                                      &A->cuhalf_, lda, &B->cuhalf_, ldb,
