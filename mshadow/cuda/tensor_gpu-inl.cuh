@@ -172,7 +172,7 @@ template<typename Saver, typename Reducer, int block_dim_bits,
 __global__ void MapReduceKeepDim1Kernel(DstPlan dst, Plan plan, DType scale, Shape<4> pshape) {
   const int block_size = 1 << block_dim_bits;
   __shared__ DType s_rec[block_size];
-  const int c = blockIdx.x;
+  const int c = blockIdx.x + blockIdx.y * gridDim.x;
   const index_t tot = pshape[3] * pshape[2] * pshape[0];
 
   DType res; Reducer::SetInitValue(res);
@@ -200,7 +200,10 @@ inline void MapReduceKeepDim1(expr::Plan<DstExp, DType> dst,
                               DType scale, Shape<4> pshape,
                               cudaStream_t stream) {
   dim3 dimBlock(kBaseThreadNum);
-  dim3 dimGrid(pshape[1]);
+  const int grid_dim_x = (pshape[1] > kMaxGridNum) ? kMaxGridNum : pshape[1];
+  const int grid_dim_y = (pshape[1] > kMaxGridNum) ? (pshape[1] + kMaxGridNum - 1) / kMaxGridNum
+                                                   : 1;
+  dim3 dimGrid(grid_dim_x, grid_dim_y);
   CheckLaunchParam(dimGrid, dimBlock, "MapReduceKeepDim1");
   MapReduceKeepDim1Kernel<Saver, Reducer, kBaseThreadBits, DType,
                           expr::Plan<DstExp, DType>,
