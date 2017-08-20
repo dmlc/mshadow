@@ -68,11 +68,11 @@ MakePlan(const RangeExp<DType> &exp) {
 }
 
 inline int RangeOutSize(float start, float stop, float step, int repeat) {
-  return repeat * int(ceil((stop - start) / step));
+  return repeat * static_cast<int>(ceil((stop - start) / step));
 }
 
 inline int RangeOutSize(double start, double stop, float step, int repeat) {
-  return repeat * int(ceil((stop - start) / step));
+  return repeat * static_cast<int>(ceil((stop - start) / step));
 }
 
 inline int RangeOutSize(int start, int stop, int step, int repeat) {
