@@ -5,7 +5,7 @@ fi
 
 if [ ${TASK} == "doc" ]; then
     doxygen doc/Doxyfile 2>log.txt
-    (cat log.txt| grep -v ENABLE_PREPROCESSING |grep -v "unsupported tag" |grep warninxg) && exit -1
+    (cat log.txt| grep -v ENABLE_PREPROCESSING |grep -v "unsupported tag") && exit -1
 fi
 
 if [ ${TASK} == "build" ]; then
