@@ -175,22 +175,24 @@ __global__ void MapReduceKeepDim1Kernel(DstPlan dst, Plan plan, DType scale, Sha
   const int c = blockIdx.x + blockIdx.y * gridDim.x;
   const index_t tot = pshape[3] * pshape[2] * pshape[0];
 
-  DType res; Reducer::SetInitValue(res);
-  for (index_t i_offset = 0; i_offset < tot; i_offset += block_size) {
-    index_t i = i_offset + threadIdx.x;
-    if (i< tot) {
-      const index_t x = i % pshape[3];
-      i /= pshape[3];
-      const index_t y = i % pshape[2];
-      const index_t n = i / pshape[2];
-      Reducer::Reduce(res, plan.Eval((n * pshape[1] + c) * pshape[2] + y, x));
+  if (c < pshape[1]) {
+    DType res; Reducer::SetInitValue(res);
+    for (index_t i_offset = 0; i_offset < tot; i_offset += block_size) {
+      index_t i = i_offset + threadIdx.x;
+      if (i< tot) {
+        const index_t x = i % pshape[3];
+        i /= pshape[3];
+        const index_t y = i % pshape[2];
+        const index_t n = i / pshape[2];
+        Reducer::Reduce(res, plan.Eval((n * pshape[1] + c) * pshape[2] + y, x));
+      }
     }
-  }
-  s_rec[threadIdx.x] = res;
-  __syncthreads();
-  Reduce1D<Reducer, block_dim_bits>(s_rec);
-  if (threadIdx.x == 0) {
-    Saver::Save(dst.REval(0, c), DType(s_rec[0] * scale));
+    s_rec[threadIdx.x] = res;
+    __syncthreads();
+    Reduce1D<Reducer, block_dim_bits>(s_rec);
+    if (threadIdx.x == 0) {
+      Saver::Save(dst.REval(0, c), DType(s_rec[0] * scale));
+    }
   }
 }
 
