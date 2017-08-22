@@ -524,7 +524,7 @@ struct BLASEngine<gpu, float> {
                                   const float *A, int lda, const float *B, int ldb,
                                   float beta, float *C, int ldc, int batch_count,
                                   float **workspace) {
-#if defined(__CUDACC__) && CUDA_VERSION >= 4010
+#if defined(__CUDACC__) && CUDA_VERSION >= 4010 && CUDA_VERSION < 8000
     // Cast DType* to DType** using workspace as a buffer
     bool alloc_workspace = false;
     if (workspace == NULL) {
@@ -546,6 +546,14 @@ struct BLASEngine<gpu, float> {
     if (alloc_workspace) {
       cudaFree(workspace);
     }
+#elif defined(__CUDACC__) && CUDA_VERSION >= 8000
+    cublasStatus_t err = cublasSgemmStridedBatched(Stream<gpu>::GetBlasHandle(stream),
+      GetT(transa), GetT(transb), m, n, k, &alpha,
+      A, lda, m * k,
+      B, ldb, k * n,
+      &beta, C, ldc, m * n,
+      batch_count);
+    CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas: SgemmStridedBatched fail";
 #else
     for (int i = 0; i < batch_count; ++i) {
       gemm(stream, transa, transb, m, n, k, alpha,
@@ -633,7 +641,7 @@ struct BLASEngine<gpu, double> {
                                   const double *A, int lda, const double *B, int ldb,
                                   double beta, double *C, int ldc, int batch_count,
                                   double **workspace) {
-#if defined(__CUDACC__) && CUDA_VERSION >= 4010
+#if defined(__CUDACC__) && CUDA_VERSION >= 4010 && CUDA_VERSION < 8000
     // Cast DType* to DType** using workspace as a buffer
     bool alloc_workspace = false;
     if (workspace == NULL) {
@@ -655,6 +663,14 @@ struct BLASEngine<gpu, double> {
     if (alloc_workspace) {
       cudaFree(workspace);
     }
+#elif defined(__CUDACC__) && CUDA_VERSION >= 8000
+    cublasStatus_t err = cublasDgemmStridedBatched(Stream<gpu>::GetBlasHandle(stream),
+      GetT(transa), GetT(transb), m, n, k, &alpha,
+      A, lda, m * k,
+      B, ldb, k * n,
+      &beta, C, ldc, m * n,
+      batch_count);
+    CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas: DgemmStridedBatched fail";
 #else
     for (int i = 0; i < batch_count; ++i) {
       gemm(stream, transa, transb, m, n, k, alpha,
