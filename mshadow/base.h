@@ -845,7 +845,7 @@ struct minimum {
     break;                                             \
   default:                                             \
     LOG(FATAL) << "This operation only supports "      \
-                  "32- and 64-bit floating point";     \
+                  "32-bit and 64-bit floating point";  \
   }
 
 #define MSHADOW_REAL_TYPE_SWITCH(type, DType, ...)  \
