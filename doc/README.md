@@ -134,7 +134,7 @@ void ExampleBroadcast(void) {
 ```
 ======
 ##### repmat
-* ```repmat(Tensor<xpu, 1> src, int nrows) ````
+* ```repmat(Tensor<xpu, 1> src, int nrows) ```
 * special case of broadcast, repeat 1d tensor over rows
 * input parameters:
   - src: input vector
@@ -152,7 +152,7 @@ void ExampleRepmat(void) {
 ```
 ======
 ##### sumall_except_dim
-* ```sumall_except_dim<dimkeep>(Expr<xpu,dim> src) ````
+* ```sumall_except_dim<dimkeep>(Expr<xpu,dim> src) ```
 * sum over all dimensions, except dimkeep
 * input parameters:
   - src: input mapper expression
@@ -169,7 +169,7 @@ void ExampleSumAllExceptDim(void) {
 ```
 ======
 ##### sum_rows
-* ```sum_rows(Expr<xpu, 2> src) ````
+* ```sum_rows(Expr<xpu, 2> src) ```
 * sum of rows in the matrix
 * input parameters:
   - src: input mapper  expression
@@ -186,7 +186,7 @@ void ExampleSumRows(void) {
 ```
 ======
 ##### unpack_patch2col
-* ```unpack_patch2col(Expr<xpu,3> img, int psize_y, int p_size_x, int pstride) ````
+* ```unpack_patch2col(Expr<xpu,3> img, int psize_y, int p_size_x, int pstride) ```
 * unpack local (overlap) patches of image to column of mat, can be used to implement convolution, after getting unpacked mat, we can use: ```output = dot(weight, mat)``` to get covolved results, the relations:
   - weight; shape[0]: out_channel, shape[1]: ichannel * psize_y * psize_x
   - output; shape[0]: out_channel, shape[1]: out_height * out_width * num_of_images
