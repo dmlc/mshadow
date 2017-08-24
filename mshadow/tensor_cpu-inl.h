@@ -309,7 +309,7 @@ inline void SoftmaxGrad(Tensor<cpu, 2, DType> dst,
 #pragma omp parallel for
   for (openmp_index_t y = 0; y < dst.size(0); ++y) {
     const int k = static_cast<int>(label[y]);
-    for (int x = 0; x < dst.size(1); ++x) {
+    for (int x = 0; x < static_cast<int>(dst.size(1)); ++x) {
       if (static_cast<int>(ignore_label) == k) {
         dst[y][x] = 0.0f;
       } else {
@@ -331,7 +331,7 @@ inline void SoftmaxGrad(Tensor<cpu, 3, DType> dst,
   for (openmp_index_t n = 0; n < dst.size(2); ++n) {
     for (index_t y = 0; y < dst.size(0); ++y) {
       const int k = static_cast<int>(label[y][n]);
-      for (int x = 0; x < dst.size(1); ++x) {
+      for (int x = 0; x < static_cast<int>(dst.size(1)); ++x) {
         if (x == k) {
           dst[y][k][n] = src[y][k][n] - 1.0f;
         } else {
@@ -352,11 +352,11 @@ inline void SoftmaxGrad(Tensor<cpu, 3, DType> dst,
     for (index_t y = 0; y < dst.size(0); ++y) {
       const int k = static_cast<int>(label[y][n]);
       if (k == static_cast<int>(ignore_label)) {
-        for (int x = 0; x < dst.size(1); ++x) {
+        for (int x = 0; x < static_cast<int>(dst.size(1)); ++x) {
           dst[y][x][n] = DType(0.0f);
         }
       } else {
-        for (int x = 0; x < dst.size(1); ++x) {
+        for (int x = 0; x < static_cast<int>(dst.size(1)); ++x) {
           if (x == k) {
             dst[y][k][n] = src[y][k][n] - 1.0f;
           } else {
