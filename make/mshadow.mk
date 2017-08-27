@@ -74,7 +74,12 @@ endif
 
 ifeq ($(USE_MKLML), 1)
 	MSHADOW_CFLAGS += -I$(MKLROOT)/include
-	MSHADOW_LDFLAGS += -Wl,--as-needed -lmklml_intel -lmklml_gnu -lmklml -liomp5 -L$(MKLROOT)/lib/
+	ifneq ($(shell uname),Darwin)
+		MSHADOW_LDFLAGS += -Wl,--as-needed -lmklml_intel -lmklml_gnu
+	else
+		MSHADOW_LDFLAGS += -lmklml
+	endif
+	MSHADOW_LDFLAGS += -liomp5 -L$(MKLROOT)/lib/
 endif
 
 ifeq ($(USE_BLAS), openblas)
