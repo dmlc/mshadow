@@ -806,7 +806,7 @@ inline void SoftmaxGrad(Tensor<cpu, 2, DType> dst,
  * \param label label info
  */
 template<typename DType>
-inline void SoftmaxGrad(Tensor<gpu, 2, DType> dst,
+inline void SoftmaxGrad(const Tensor<gpu, 2, DType> &dst,
                         const Tensor<gpu, 2, DType> &src,
                         const Tensor<gpu, 1, DType> &label);
 /*!

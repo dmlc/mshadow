@@ -256,6 +256,27 @@ __global__ void SoftmaxGradKernel(DstPlan dst, SrcPlan1 src, SrcPlan2 label, ind
 }
 
 template<int x_bits, typename DType, typename DstPlan, typename SrcPlan1, typename SrcPlan2>
+__global__ void SmoothSoftmaxGradKernel(DstPlan dst, SrcPlan1 src, SrcPlan2 label, index_t xmax,
+                                        float alpha) {
+  const unsigned x_size = 1 << x_bits;
+  const int y = blockIdx.x;
+  const int k = static_cast<int>(label.Eval(0, y));
+  const float smooth_grad = (alpha / (xmax - 1));
+
+  // calculate normalizer, with writeback
+  for (unsigned x = 0; x < xmax; x += x_size) {
+    const unsigned xindex = x + threadIdx.x;
+    if (xindex < xmax) {
+      if (xindex == k) {
+        dst.REval(y, xindex) = src.Eval(y, xindex) - 1.0f + alpha;
+      } else {
+        dst.REval(y, xindex) = src.Eval(y, xindex) - smooth_grad;
+      }
+    }
+  }
+}
+
+template<int x_bits, typename DType, typename DstPlan, typename SrcPlan1, typename SrcPlan2>
 __global__ void SoftmaxGradKernel(DstPlan dst, SrcPlan1 src, SrcPlan2 label, index_t xmax,
                                   DType ignore_label) {
   const unsigned x_size = 1 << x_bits;
@@ -273,6 +294,31 @@ __global__ void SoftmaxGradKernel(DstPlan dst, SrcPlan1 src, SrcPlan2 label, ind
           dst.REval(y, xindex) = src.Eval(y, xindex) - 1.0f;
         } else {
           dst.REval(y, xindex) = src.Eval(y, xindex);
+        }
+      }
+    }
+  }
+}
+
+template<int x_bits, typename DType, typename DstPlan, typename SrcPlan1, typename SrcPlan2>
+__global__ void SmoothSoftmaxGradKernel(DstPlan dst, SrcPlan1 src, SrcPlan2 label, index_t xmax,
+                                  DType ignore_label, float alpha) {
+  const unsigned x_size = 1 << x_bits;
+  const int y = blockIdx.x;
+  const int k = static_cast<int>(label.Eval(0, y));
+  const float smooth_grad = (alpha / (xmax - 1));
+
+  // calculate normalizer, with writeback
+  for (unsigned x = 0; x < xmax; x += x_size) {
+    const unsigned xindex = x + threadIdx.x;
+    if (xindex < xmax) {
+      if (static_cast<int>(ignore_label) == k) {
+        dst.REval(y, xindex) = 0.0f;
+      } else {
+        if (xindex == k) {
+          dst.REval(y, xindex) = src.Eval(y, xindex) - 1.0f + alpha;
+        } else {
+          dst.REval(y, xindex) = src.Eval(y, xindex) - smooth_grad;
         }
       }
     }
@@ -364,6 +410,27 @@ inline void SoftmaxGrad(const Tensor<gpu, 2, DType> &dst,
 }
 
 template<typename DType>
+inline void SmoothSoftmaxGrad(const Tensor<gpu, 2, DType> &dst,
+                              const Tensor<gpu, 2, DType> &src,
+                              const Tensor<gpu, 1, DType> &label,
+                              const float alpha) {
+  dim3 dimBlock(kBaseThreadNum);
+  dim3 dimGrid(dst.size(0));
+  CHECK_EQ(dst.shape_, src.shape_) << "SoftmaxGrad: shape mismatch";
+  CHECK_EQ(dst.size(0), label.size(0)) << "SoftmaxGrad: label shape mismatch";
+  CheckLaunchParam(dimGrid, dimBlock, "SoftmaxGrad");
+  cudaStream_t stream = Stream<gpu>::GetStream(dst.stream_);
+  SmoothSoftmaxGradKernel<kBaseThreadBits, DType>
+      <<<dimGrid, dimBlock, 0, stream>>>
+      (expr::MakePlan(dst),
+       expr::MakePlan(src),
+       expr::MakePlan(label),
+       dst.size(1),
+       alpha);
+  MSHADOW_CUDA_POST_KERNEL_CHECK(SoftmaxGradKernel);
+}
+
+template<typename DType>
 inline void SoftmaxGrad(const Tensor<gpu, 2, DType> &dst,
                         const Tensor<gpu, 2, DType> &src,
                         const Tensor<gpu, 1, DType> &label,
@@ -381,6 +448,29 @@ inline void SoftmaxGrad(const Tensor<gpu, 2, DType> &dst,
        expr::MakePlan(label),
        dst.size(1),
        ignore_label);
+  MSHADOW_CUDA_POST_KERNEL_CHECK(SoftmaxGradKernel);
+}
+
+template<typename DType>
+inline void SmoothSoftmaxGrad(const Tensor<gpu, 2, DType> &dst,
+                              const Tensor<gpu, 2, DType> &src,
+                              const Tensor<gpu, 1, DType> &label,
+                              const DType &ignore_label,
+                              const float alpha) {
+  dim3 dimBlock(kBaseThreadNum);
+  dim3 dimGrid(dst.size(0));
+  CHECK_EQ(dst.shape_, src.shape_) << "SoftmaxGrad: shape mismatch";
+  CHECK_EQ(dst.size(0), label.size(0)) << "SoftmaxGrad: label shape mismatch";
+  CheckLaunchParam(dimGrid, dimBlock, "SoftmaxGrad");
+  cudaStream_t stream = Stream<gpu>::GetStream(dst.stream_);
+  SmoothSoftmaxGradKernel<kBaseThreadBits, DType>
+      <<<dimGrid, dimBlock, 0, stream>>>
+      (expr::MakePlan(dst),
+       expr::MakePlan(src),
+       expr::MakePlan(label),
+       dst.size(1),
+       ignore_label,
+       alpha);
   MSHADOW_CUDA_POST_KERNEL_CHECK(SoftmaxGradKernel);
 }
 

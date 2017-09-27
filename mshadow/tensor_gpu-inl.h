@@ -167,14 +167,22 @@ inline void Softmax(Tensor<gpu, 3, DType> dst,
 }
 
 template<typename DType>
-inline void SoftmaxGrad(Tensor<gpu, 2, DType> dst,
+inline void SoftmaxGrad(const Tensor<gpu, 2, DType> &dst,
                         const Tensor<gpu, 2, DType> &src,
                         const Tensor<gpu, 1, DType> &label) {
   cuda::SoftmaxGrad(dst, src, label);
 }
 
 template<typename DType>
-inline void SoftmaxGrad(Tensor<gpu, 2, DType> dst,
+inline void SmoothSoftmaxGrad(const Tensor<gpu, 2, DType> &dst,
+                              const Tensor<gpu, 2, DType> &src,
+                              const Tensor<gpu, 1, DType> &label,
+                              const float alpha) {
+  cuda::SmoothSoftmaxGrad(dst, src, label, alpha);
+}
+
+template<typename DType>
+inline void SoftmaxGrad(const Tensor<gpu, 2, DType> &dst,
                         const Tensor<gpu, 2, DType> &src,
                         const Tensor<gpu, 1, DType> &label,
                         const DType &ignore_label) {
@@ -182,14 +190,23 @@ inline void SoftmaxGrad(Tensor<gpu, 2, DType> dst,
 }
 
 template<typename DType>
-inline void SoftmaxGrad(Tensor<gpu, 3, DType> dst,
+inline void SmoothSoftmaxGrad(const Tensor<gpu, 2, DType> &dst,
+                              const Tensor<gpu, 2, DType> &src,
+                              const Tensor<gpu, 1, DType> &label,
+                              const DType &ignore_label,
+                              const float alpha){
+  cuda::SmoothSoftmaxGrad(dst, src, label, ignore_label, alpha);
+}
+
+template<typename DType>
+inline void SoftmaxGrad(const Tensor<gpu, 3, DType> &dst,
                         const Tensor<gpu, 3, DType> &src,
                         const Tensor<gpu, 2, DType> &label) {
   cuda::SoftmaxGrad(dst, src, label);
 }
 
 template<typename DType>
-inline void SoftmaxGrad(Tensor<gpu, 3, DType> dst,
+inline void SoftmaxGrad(const Tensor<gpu, 3, DType> &dst,
                         const Tensor<gpu, 3, DType> &src,
                         const Tensor<gpu, 2, DType> &label,
                         const DType &ignore_label) {
