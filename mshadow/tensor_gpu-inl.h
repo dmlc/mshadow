@@ -194,7 +194,7 @@ inline void SmoothSoftmaxGrad(const Tensor<gpu, 2, DType> &dst,
                               const Tensor<gpu, 2, DType> &src,
                               const Tensor<gpu, 1, DType> &label,
                               const DType &ignore_label,
-                              const float alpha){
+                              const float alpha) {
   cuda::SmoothSoftmaxGrad(dst, src, label, ignore_label, alpha);
 }
 

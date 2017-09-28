@@ -261,6 +261,7 @@ __global__ void SmoothSoftmaxGradKernel(DstPlan dst, SrcPlan1 src, SrcPlan2 labe
   const unsigned x_size = 1 << x_bits;
   const int y = blockIdx.x;
   const int k = static_cast<int>(label.Eval(0, y));
+  // xmax is the number of classes in our distribution
   const float smooth_grad = (alpha / (xmax - 1));
 
   // calculate normalizer, with writeback
@@ -306,6 +307,7 @@ __global__ void SmoothSoftmaxGradKernel(DstPlan dst, SrcPlan1 src, SrcPlan2 labe
   const unsigned x_size = 1 << x_bits;
   const int y = blockIdx.x;
   const int k = static_cast<int>(label.Eval(0, y));
+  // xmax is the number of classes in our distribution
   const float smooth_grad = (alpha / (xmax - 1));
 
   // calculate normalizer, with writeback
