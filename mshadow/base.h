@@ -669,6 +669,14 @@ struct sum {
   MSHADOW_XINLINE static void Reduce(volatile DType& dst,  volatile DType src) { // NOLINT(*)
     dst += src;
   }
+  /*! \brief do stable reduction into dst */
+  template<typename DType>
+  MSHADOW_XINLINE static void Reduce(volatile DType& dst,  volatile DType src, volatile DType& residual) { // NOLINT(*)
+    DType y = src - residual;
+    DType t = dst + y;
+    residual = (t - dst) - y;
+    dst = t;
+  }
   /*!
    *\brief calculate gradient of redres with respect to redsrc,
    * redres: reduced result, redsrc: one of reduction element
@@ -684,6 +692,14 @@ struct sum {
   MSHADOW_XINLINE static void SetInitValue(DType &initv) { // NOLINT(*)
     initv = 0;
   }
+  /*!
+   *\brief set the initial value during reduction
+   */
+  template<typename DType>
+  MSHADOW_XINLINE static void SetInitValue(DType &initv, DType &residual) { // NOLINT(*)
+    SetInitValue(initv);
+    residual = 0;
+  }
 };
 /*! \brief maximum reducer */
 struct maximum {
@@ -697,6 +713,12 @@ struct maximum {
     dst = max(dst, src);
 #endif  // __CUDACC__
   }
+  /*! \brief do reduction into dst */
+  template<typename DType>
+  MSHADOW_XINLINE static void Reduce(volatile DType& dst,  volatile DType src, volatile DType &none) { // NOLINT(*)
+    Reduce(dst, src);
+  }
+
   /*!
    * \brief calculate gradient of redres with respect to redsrc,
    * redres: reduced result, redsrc: one of reduction element
@@ -712,6 +734,13 @@ struct maximum {
   MSHADOW_XINLINE static void SetInitValue(DType &initv) { // NOLINT(*)
     initv = limits::MinValue<DType>();
   }
+  /*!
+   *\brief set the initial value during reduction
+   */
+  template<typename DType>
+  MSHADOW_XINLINE static void SetInitValue(DType &initv, DType &none) { // NOLINT(*)
+    SetInitValue(initv);
+  }
 };
 /*! \brief minimum reducer */
 struct minimum {
@@ -724,6 +753,11 @@ struct minimum {
 #else
     dst = min(dst, src);
 #endif  // __CUDACC__
+  }
+  /*! \brief do reduction into dst */
+  template<typename DType>
+  MSHADOW_XINLINE static void Reduce(volatile DType& dst,  volatile DType src, volatile DType &none) { // NOLINT(*)
+    Reduce(dst, src);
   }
   /*!
    * \brief calculate gradient of redres with respect to redsrc,
@@ -739,6 +773,13 @@ struct minimum {
   template<typename DType>
   MSHADOW_XINLINE static void SetInitValue(DType &initv) { // NOLINT(*)
     initv = limits::MaxValue<DType>();
+  }
+  /*!
+   *\brief set the initial value during reduction
+   */
+  template<typename DType>
+  MSHADOW_XINLINE static void SetInitValue(DType &initv, DType &none) { // NOLINT(*)
+    SetInitValue(initv);
   }
 };
 }  // namespace red
