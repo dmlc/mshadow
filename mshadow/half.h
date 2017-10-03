@@ -73,7 +73,7 @@ namespace half {
   }
 #endif  // (MSHADOW_CUDA_HALF && defined(__CUDA_ARCH__))
 
-class half_t {
+class MSHADOW_ALIGNED(2) half_t {
  public:
   union {
     uint16_t half_;
@@ -272,4 +272,3 @@ MSHADOW_HALF_OPERATOR(bool, <=)
 }  // namespace half
 }  // namespace mshadow
 #endif  // MSHADOW_HALF_H_
-

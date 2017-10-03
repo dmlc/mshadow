@@ -28,7 +28,7 @@ namespace half {
     return *this = half2_t(*this OP a);  /* NOLINT(*)*/                   \
   }                                                                       \
 
-class half2_t {
+class MSHADOW_ALIGNED(4) half2_t {
  public:
 #if MSHADOW_CUDA_HALF2
   half2 half2_;
@@ -141,4 +141,3 @@ MSHADOW_XINLINE bool operator==(half2_t a, half2_t b) {
 }  // namespace half
 }  // namespace mshadow
 #endif  // MSHADOW_HALF2_H_
-
