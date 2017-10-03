@@ -73,7 +73,7 @@ namespace half {
   }
 #endif  // (MSHADOW_CUDA_HALF && defined(__CUDA_ARCH__))
 
-class alignas(2) half_t {
+class half_t {
  public:
   union {
     uint16_t half_;

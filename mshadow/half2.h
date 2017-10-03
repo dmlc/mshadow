@@ -28,7 +28,7 @@ namespace half {
     return *this = half2_t(*this OP a);  /* NOLINT(*)*/                   \
   }                                                                       \
 
-class alignas(4) half2_t {
+class half2_t {
  public:
 #if MSHADOW_CUDA_HALF2
   half2 half2_;
