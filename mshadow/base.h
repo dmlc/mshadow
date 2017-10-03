@@ -222,6 +222,12 @@ extern "C" {
 #define MSHADOW_NO_EXCEPTION
 #endif
 
+#if defined(_MSC_VER)
+#define MSHADOW_ALIGNED(x) __declspec(align(x))
+#else
+#define MSHADOW_ALIGNED(x) __attribute__ ((aligned(x)))
+#endif
+
 /*!
  * \brief Protected cuda call in mshadow
  * \param func Expression to call.
