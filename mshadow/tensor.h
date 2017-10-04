@@ -359,20 +359,20 @@ inline Shape<5> ConvertLayout(const Shape<5>& src, int src_layout, int dst_layou
 }
 
 /*!
- * \brief computaion stream structure, used for asynchronize computation
+ * \brief computaion stream structure, used for asynchronous computations
  */
 template<typename Device>
 struct Stream {
   // this is only a dummy implementation for CPU
   // for GPU, the actual implementation will be specialized in tensor_gpu-inl.h
   /*!
-   * \brief wait for all the computation associated
+   * \brief wait for all the computations associated
    *  with this stream to complete
    */
   inline void Wait(void) {}
   /*!
    * \brief query whether the the stream is idle
-   * \return true if the stream is idle and all the job have been completed
+   * \return true if the stream is idle and all the jobs have been completed
    */
   inline bool CheckIdle(void) {
     return true;
