@@ -82,6 +82,13 @@ class Random<cpu, DType> {
   }
 
   /*!
+   * \brief get a set of random integers
+   */
+  inline void GetRandInt(const Tensor<cpu, 1, unsigned>& dst) {
+    std::generate_n(dst.dptr_, dst.size(0), rnd_engine_);
+  }
+
+  /*!
    * \brief generate data from a distribution
    * \param dst destination
    * \tparam dim dimension of tensor
@@ -396,6 +403,13 @@ class Random<gpu, DType> {
     CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "Set CURAND seed failed.";
   }
   /*!
+   * \brief get a set of random integers
+   */
+  inline void GetRandInt(const Tensor<gpu, 1, unsigned>& dst) {
+    curandStatus_t status = curandGenerate(gen_, dst.dptr_, dst.size(0));
+    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen rand ints failed.";
+  }
+  /*!
    * \brief generate data from uniform [a,b)
    * \param dst destination
    * \param a lower bound of uniform
@@ -476,7 +490,7 @@ class Random<gpu, DType> {
     CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Uniform double failed."
                                             << " size = " << size;
   }
-  /*! \brief random numbeer generator */
+  /*! \brief random number generator */
   curandGenerator_t gen_;
   /*! \brief templ buffer */
   TensorContainer<gpu, 1, DType> buffer_;
