@@ -302,6 +302,26 @@ inline void SoftmaxGrad(Tensor<cpu, 2, DType> dst,
 }
 
 template<typename DType>
+inline void SmoothSoftmaxGrad(Tensor<cpu, 2, DType> dst,
+                        const Tensor<cpu, 2, DType> &src,
+                        const Tensor<cpu, 1, DType> &label,
+                        const float alpha) {
+  const float smooth_grad = (alpha / (dst.size(1) - 1));
+#pragma omp parallel for
+  for (openmp_index_t y = 0; y < dst.size(0); ++y) {
+    const index_t k = static_cast<int>(label[y]);
+    for (index_t x = 0; x < dst.size(1); ++x) {
+      if (x == k) {
+        dst[y][k] = src[y][k] - 1.0f + alpha;
+      } else {
+        dst[y][x] = src[y][x] - smooth_grad;
+      }
+    }
+  }
+}
+
+
+template<typename DType>
 inline void SoftmaxGrad(Tensor<cpu, 2, DType> dst,
                         const Tensor<cpu, 2, DType> &src,
                         const Tensor<cpu, 1, DType> &label,
@@ -317,6 +337,30 @@ inline void SoftmaxGrad(Tensor<cpu, 2, DType> dst,
           dst[y][k] = src[y][k] - 1.0f;
         } else {
           dst[y][x] = src[y][x];
+        }
+      }
+    }
+  }
+}
+
+template<typename DType>
+inline void SmoothSoftmaxGrad(Tensor<cpu, 2, DType> dst,
+                              const Tensor<cpu, 2, DType> &src,
+                              const Tensor<cpu, 1, DType> &label,
+                              const DType &ignore_label,
+                              const float alpha) {
+  const float smooth_grad = (alpha / (dst.size(1) - 1));
+#pragma omp parallel for
+  for (openmp_index_t y = 0; y < dst.size(0); ++y) {
+    const int k = static_cast<int>(label[y]);
+    for (int x = 0; x < static_cast<int>(dst.size(1)); ++x) {
+      if (static_cast<int>(ignore_label) == k) {
+        dst[y][x] = 0.0f;
+      } else {
+        if (x == k) {
+          dst[y][k] = src[y][k] - 1.0f + alpha;
+        } else {
+          dst[y][x] = src[y][x] - smooth_grad;
         }
       }
     }
@@ -343,6 +387,27 @@ inline void SoftmaxGrad(Tensor<cpu, 3, DType> dst,
 }
 
 template<typename DType>
+inline void SmoothSoftmaxGrad(Tensor<cpu, 3, DType> dst,
+                        const Tensor<cpu, 3, DType> &src,
+                        const Tensor<cpu, 2, DType> &label,
+                        const float alpha) {
+  const float smooth_grad = (alpha / (dst.size(1) - 1));
+#pragma omp parallel for
+  for (openmp_index_t n = 0; n < dst.size(2); ++n) {
+    for (index_t y = 0; y < dst.size(0); ++y) {
+      const int k = static_cast<int>(label[y][n]);
+      for (int x = 0; x < static_cast<int>(dst.size(1)); ++x) {
+        if (x == k) {
+          dst[y][k][n] = src[y][k][n] - 1.0f + alpha;
+        } else {
+          dst[y][x][n] = src[y][x][n] - smooth_grad;
+        }
+      }
+    }
+  }
+}
+
+template<typename DType>
 inline void SoftmaxGrad(Tensor<cpu, 3, DType> dst,
                         const Tensor<cpu, 3, DType> &src,
                         const Tensor<cpu, 2, DType> &label,
@@ -361,6 +426,34 @@ inline void SoftmaxGrad(Tensor<cpu, 3, DType> dst,
             dst[y][k][n] = src[y][k][n] - 1.0f;
           } else {
             dst[y][x][n] = src[y][x][n];
+          }
+        }
+      }
+    }
+  }
+}
+
+template<typename DType>
+inline void SmoothSoftmaxGrad(Tensor<cpu, 3, DType> dst,
+                        const Tensor<cpu, 3, DType> &src,
+                        const Tensor<cpu, 2, DType> &label,
+                        const DType &ignore_label,
+                        const float alpha) {
+  const float smooth_grad = (alpha / (dst.size(1) - 1));
+#pragma omp parallel for
+  for (openmp_index_t n = 0; n < dst.size(2); ++n) {
+    for (index_t y = 0; y < dst.size(0); ++y) {
+      const int k = static_cast<int>(label[y][n]);
+      if (k == static_cast<int>(ignore_label)) {
+        for (int x = 0; x < static_cast<int>(dst.size(1)); ++x) {
+          dst[y][x][n] = DType(0.0f);
+        }
+      } else {
+        for (int x = 0; x < static_cast<int>(dst.size(1)); ++x) {
+          if (x == k) {
+            dst[y][k][n] = src[y][k][n] - 1.0f + alpha;
+          } else {
+            dst[y][x][n] = src[y][x][n] - smooth_grad;
           }
         }
       }
