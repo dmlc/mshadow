@@ -85,7 +85,7 @@ class Random<cpu, DType> {
    * \brief get a set of random integers
    */
   inline void GetRandInt(const Tensor<cpu, 1, unsigned>& dst) {
-    std::generate_n(dst.dptr_, dst.size(0), rnd_engine_);
+    std::generate_n(dst.dptr_, dst.size(0), [&](){ return rnd_engine_(); });
   }
 
   /*!
