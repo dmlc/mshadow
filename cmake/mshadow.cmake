@@ -42,6 +42,12 @@ elseif(BLAS STREQUAL "apple")
   add_definitions(-DMSHADOW_USE_CBLAS=1)
 endif()
 
+if(USE_SSE)
+	add_definitions(-DMSHADOW_USE_SSE=1)
+else()
+	add_definitions(-DMSHADOW_USE_SSE=0)
+endif()
+
 if(USE_CUDA)
 	find_package(CUDA 5.5 QUIET)
 	find_cuda_helper_libs(curand)
