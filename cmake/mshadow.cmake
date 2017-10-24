@@ -42,7 +42,7 @@ elseif(BLAS STREQUAL "apple")
   add_definitions(-DMSHADOW_USE_CBLAS=1)
 endif()
 
-if(USE_SSE)
+if(SUPPORT_MSSE2)
 	add_definitions(-DMSHADOW_USE_SSE=1)
 else()
 	add_definitions(-DMSHADOW_USE_SSE=0)
