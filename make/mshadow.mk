@@ -32,9 +32,15 @@ else
 endif
 
 ifeq ($(USE_CUDA), 0)
-	MSHADOW_CFLAGS += -DMSHADOW_USE_CUDA=0
+  MSHADOW_CFLAGS += -DMSHADOW_USE_CUDA=0
 else
-	MSHADOW_LDFLAGS += -lcudart -lcublas -lcurand -lcusolver
+  MSHADOW_LDFLAGS += -lcudart -lcublas -lcurand
+  ifeq ($(USE_CUSOLVER), 1)
+    MSHADOW_CFLAGS += -DMSHADOW_USE_CUSOLVER=1
+    MSHADOW_LDFLAGS += -lcusolver
+  else
+    MSHADOW_CFLAGS += -DMSHADOW_USE_CUSOLVER=0
+  endif
 endif
 ifneq ($(USE_CUDA_PATH), NONE)
 	MSHADOW_CFLAGS += -I$(USE_CUDA_PATH)/include
