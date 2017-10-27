@@ -398,7 +398,7 @@ class Random<gpu, DType> {
       CreateGenerator();
     // Now set the seed.
     curandStatus_t status;
-    status = curandSetPseudoRandomGeneratorSeed(gen_, static_cast<unsigned long long>(seed));
+    status = curandSetPseudoRandomGeneratorSeed(gen_, static_cast<uint64>(seed));
     CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "Set CURAND seed failed.";
   }
   /*!
