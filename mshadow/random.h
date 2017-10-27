@@ -371,17 +371,12 @@ class Random<gpu, DType> {
    * \brief constructor of random engine
    * \param seed random number seed
    */
-  explicit Random(int seed) {
-    curandStatus_t status;
-    status = curandCreateGenerator(&gen_, CURAND_RNG_PSEUDO_DEFAULT);
-    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "Can not create CURAND Generator";
+  explicit Random(int seed) : gen_(NULL) {
     this->Seed(seed);
     buffer_.Resize(Shape1(kRandBufferSize));
   }
   ~Random(void) MSHADOW_THROW_EXCEPTION {
-    curandStatus_t status;
-    status = curandDestroyGenerator(gen_);
-    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "Destory CURAND Gen failed";
+    DeleteGenerator();
   }
   /*!
    * \brief set the stream of computation
@@ -398,8 +393,12 @@ class Random<gpu, DType> {
    * \param seed seed of prng
    */
   inline void Seed(int seed) {
+    // Create a new rng, either initially or if the RNG type can't reset its offset.
+    if (gen_ == NULL || (curandSetGeneratorOffset(gen_, 0ULL) != CURAND_STATUS_SUCCESS))
+      CreateGenerator();
+    // Now set the seed.
     curandStatus_t status;
-    status = curandSetPseudoRandomGeneratorSeed(gen_, seed);
+    status = curandSetPseudoRandomGeneratorSeed(gen_, static_cast<unsigned long long>(seed));
     CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "Set CURAND seed failed.";
   }
   /*!
@@ -489,6 +488,21 @@ class Random<gpu, DType> {
     status = curandGenerateUniformDouble(gen_, dptr, size);
     CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Uniform double failed."
                                             << " size = " << size;
+  }
+  inline void CreateGenerator() {
+    if (gen_ != NULL)
+      DeleteGenerator();
+    curandStatus_t status;
+    status = curandCreateGenerator(&gen_, CURAND_RNG_PSEUDO_DEFAULT);
+    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "Cannot create CURAND Generator";
+  }
+  inline void DeleteGenerator() {
+    if (gen_ != NULL) {
+      curandStatus_t status;
+      status = curandDestroyGenerator(gen_);
+      CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "Destory CURAND Gen failed";
+      gen_ = NULL;
+    }
   }
   /*! \brief random number generator */
   curandGenerator_t gen_;
