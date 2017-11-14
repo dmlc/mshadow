@@ -264,6 +264,10 @@ class Random<cpu, DType> {
     return expr::reshape(buffer_, shape);
   }
 
+  std::mt19937& GetRndEngine()
+  {
+    return rnd_engine_;
+  }
  private:
 #if MSHADOW_IN_CXX11
   /*! \brief use c++11 random engine. */
