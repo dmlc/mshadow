@@ -10,6 +10,7 @@
 
 #include <cstdlib>
 #include <algorithm>
+#include <random>
 #include "./base.h"
 #include "./tensor.h"
 #include "./tensor_container.h"
