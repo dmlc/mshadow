@@ -264,8 +264,7 @@ class Random<cpu, DType> {
     return expr::reshape(buffer_, shape);
   }
 
-  std::mt19937& GetRndEngine()
-  {
+  std::mt19937 &GetRndEngine() {
     return rnd_engine_;
   }
  private:
