@@ -10,6 +10,7 @@
 
 #include <cstdlib>
 #include <algorithm>
+#include <random>
 #include "./base.h"
 #include "./tensor.h"
 #include "./tensor_container.h"
@@ -262,6 +263,10 @@ class Random<cpu, DType> {
     buffer_.Resize(Shape1(shape.Size()));
     this->SampleUniform(&buffer_, 0.0f, 1.0f);
     return expr::reshape(buffer_, shape);
+  }
+
+  std::mt19937 &GetRndEngine() {
+    return rnd_engine_;
   }
 
  private:
