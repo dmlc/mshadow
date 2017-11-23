@@ -24,6 +24,9 @@ struct cpu {
   /*! \brief device flag number, identifies this device */
   static const int kDevMask = 1 << 0;
 };
+const bool cpu::kDevCPU;
+const int cpu::kDevMask;
+
 /*! \brief device name GPU */
 struct gpu {
   /*! \brief whether this device is CPU or not */
@@ -31,6 +34,11 @@ struct gpu {
   /*! \brief device flag number, identifies this device */
   static const int kDevMask = 1 << 1;
 };
+const bool gpu::kDevCPU;
+const int gpu::kDevMask;
+
+
+
 template<int ndim>
 struct Shape;
 
