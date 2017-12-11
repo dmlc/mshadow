@@ -17,7 +17,7 @@ template<>
 struct Packet<float, kSSE2> {
  public:
   /*! \brief number of float in vector */
-  static inline index_t Size() { return 4; }
+  static constexpr index_t size = 4;
   /*! \brief The internal data */
   __m128 data_;
   // enable default copy constructor
@@ -63,7 +63,7 @@ struct Packet<float, kSSE2> {
 template<>
 struct Packet<double, kSSE2> {
   /*! \brief number of float in vector */
-  static inline index_t Size() { return 2; }
+  static constexpr index_t size = 2;
   // internal data
   __m128d data_;
   // constructor
