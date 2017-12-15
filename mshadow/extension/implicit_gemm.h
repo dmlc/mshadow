@@ -67,7 +67,7 @@ struct Plan<ImplicitGEMMExp<LhsExp, RhsExp, DType>, DType> {
     typedef packet::Packet<DType> Packet;
     Packet sum = Packet::Fill(0);
 
-    const size_t packetSize = Packet::Size();
+    const size_t packetSize = Packet::size;
     DType lhs_temp[packetSize], rhs_temp[packetSize];
 
     for (index_t i = 0; i < prod_size_lower_align_; i += packetSize) {
