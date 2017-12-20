@@ -267,8 +267,8 @@ MSHADOW_HALF_OPERATOR(bool, >=)
 /*! \brief overloaded <= operator for half_t */
 MSHADOW_HALF_OPERATOR(bool, <=)
 
-#define MSHADOW_HALF_MIN mshadow::half::half_t::Binary(0x0400);
-#define MSHADOW_HALF_MAX mshadow::half::half_t::Binary(0x7AFF);
+#define MSHADOW_HALF_MIN mshadow::half::half_t::Binary(0xFBFF);
+#define MSHADOW_HALF_MAX mshadow::half::half_t::Binary(0x7BFF);
 }  // namespace half
 }  // namespace mshadow
 #endif  // MSHADOW_HALF_H_
