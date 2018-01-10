@@ -204,7 +204,7 @@ extern "C" {
  *  template arguments can be detected
  */
 #ifndef MSHADOW_DEFAULT_DTYPE
-#define MSHADOW_DEFAULT_DTYPE = default_real_t
+#define MSHADOW_DEFAULT_DTYPE = ::mshadow::default_real_t
 #endif
 
 /*!
