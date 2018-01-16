@@ -67,28 +67,28 @@ inline void CheckLaunchParam(dim3 dimGrid, dim3 dimBlock, const char *estr = "")
 template<typename Saver, typename DstPlan,
          typename Plan, int block_dim_bits>
 __device__ void MapPlanProc(DstPlan dst, index_t xstride,
-                            Shape<2> dshape, const Plan exp, int block_idx) {
+                            Shape<2> dshape, const Plan plan, int block_idx) {
   const index_t tid = (block_idx << block_dim_bits) + threadIdx.x;
   const int y = tid / xstride;
   const int x = tid % xstride;
   if (y < dshape[0] && x < dshape[1]) {
-    Saver::Save(dst.REval(y, x), exp.Eval(y, x));
+    Saver::Save(dst.REval(y, x), plan.Eval(y, x));
   }
 }
 template<typename Saver, int block_dim_bits,
          typename DstPlan, typename Plan>
 __global__ void MapPlanKernel(DstPlan dst, index_t xstride,
-                              Shape<2> dshape, const Plan exp) {
+                              Shape<2> dshape, const Plan plan) {
   MapPlanProc<Saver, DstPlan, Plan, block_dim_bits>
-      (dst, xstride, dshape, exp, blockIdx.x);
+      (dst, xstride, dshape, plan, blockIdx.x);
 }
 template<typename Saver, int block_dim_bits, int grid_size,
          typename DstPlan, typename Plan>
 __global__ void MapPlanLargeKernel(DstPlan dst, index_t xstride,
-                                   Shape<2> dshape, const Plan exp, int repeat) {
+                                   Shape<2> dshape, const Plan plan, int repeat) {
   for (int i = 0; i < repeat; ++i) {
   MapPlanProc<Saver, DstPlan, Plan, block_dim_bits>
-      (dst, xstride, dshape, exp, blockIdx.x + i * grid_size);
+      (dst, xstride, dshape, plan, blockIdx.x + i * grid_size);
   }
 }
 
