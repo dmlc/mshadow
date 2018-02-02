@@ -12,15 +12,18 @@ check_cxx_compiler_flag("-std=c++11"   SUPPORT_CXX11)
 function(mshadow_detect_installed_gpus out_variable)
 set(CUDA_gpu_detect_output "")
   if(NOT CUDA_gpu_detect_output)
+    message(STATUS "Running GPU architecture autodetection")
     set(__cufile ${PROJECT_BINARY_DIR}/detect_cuda_archs.cu)
 
     file(WRITE ${__cufile} ""
       "#include <cstdio>\n"
+      "#include <iostream>\n"
+      "using namespace std;\n"
       "int main()\n"
       "{\n"
       "  int count = 0;\n"
-      "  if (cudaSuccess != cudaGetDeviceCount(&count)) return -1;\n"
-      "  if (count == 0) return -1;\n"
+      "  if (cudaSuccess != cudaGetDeviceCount(&count)) { return -1; }\n"
+      "  if (count == 0) { cerr << \"No cuda devices detected\" << endl; return -1; }\n"
       "  for (int device = 0; device < count; ++device)\n"
       "  {\n"
       "    cudaDeviceProp prop;\n"
@@ -36,7 +39,6 @@ set(CUDA_gpu_detect_output "")
       execute_process(COMMAND ${MY_VCVARSALL_BAT} && ${CUDA_NVCC_EXECUTABLE} -arch sm_30 --run  ${__cufile}
                       WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/CMakeFiles/"
                       RESULT_VARIABLE __nvcc_res OUTPUT_VARIABLE __nvcc_out
-                      ERROR_QUIET
                       OUTPUT_STRIP_TRAILING_WHITESPACE)
     else()
       if(CUDA_LIBRARY_PATH)
@@ -45,13 +47,13 @@ set(CUDA_gpu_detect_output "")
       execute_process(COMMAND ${CUDA_NVCC_EXECUTABLE} -arch sm_30 --run ${__cufile} ${CUDA_LINK_LIBRARY_PATH}
                       WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/CMakeFiles/"
                       RESULT_VARIABLE __nvcc_res OUTPUT_VARIABLE __nvcc_out
-                      ERROR_QUIET
                       OUTPUT_STRIP_TRAILING_WHITESPACE)
     endif()
     if(__nvcc_res EQUAL 0)
       # nvcc outputs text containing line breaks when building with MSVC.
       # The line below prevents CMake from inserting a variable with line
       # breaks in the cache
+      message(STATUS "Found CUDA arch ${__nvcc_out}")
       string(REGEX MATCH "([1-9].[0-9])" __nvcc_out "${__nvcc_out}")
       string(REPLACE "2.1" "2.1(2.0)" __nvcc_out "${__nvcc_out}")
       set(CUDA_gpu_detect_output ${__nvcc_out} CACHE INTERNAL "Returned GPU architetures from mshadow_detect_gpus tool" FORCE)
@@ -172,7 +174,7 @@ macro(mshadow_cuda_compile objlist_variable)
     list(APPEND CUDA_NVCC_FLAGS -Xcompiler -Wno-unused-function)
   endif()
 
-  set(CUDA_NVCC_FLAGS_DEBUG "${CUDA_NVCC_FLAGS_DEBUG} -G -lineinfo")
+  set(CUDA_NVCC_FLAGS_DEBUG "${CUDA_NVCC_FLAGS_DEBUG} -G")
 
   if(MSVC)
     # disable noisy warnings:
