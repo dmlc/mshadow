@@ -140,4 +140,16 @@ MSHADOW_XINLINE bool operator==(half2_t a, half2_t b) {
 
 }  // namespace half
 }  // namespace mshadow
+
+namespace std {
+  template <> struct hash<mshadow::half::half_t> {
+    size_t operator()(const mshadow::half::half_t& x) const {
+#if MSHADOW_CUDA_HALF
+      LOG(FATAL) << "std::hash<__half> is undefined";
+#endif  // MSHADOW_CUDA_HALF
+      return std::hash<uint16_t>()(x.half_);
+    }
+  };
+}
+
 #endif  // MSHADOW_HALF2_H_
