@@ -275,7 +275,7 @@ MSHADOW_HALF_OPERATOR(bool, <=)
 namespace std {
 // specialization for std::hash<mshadow::half::half_t>
 template <> struct hash<mshadow::half::half_t> {
-  size_t operator()(const mshadow::half::half_t& x) const {
+  MSHADOW_XINLINE size_t operator()(const mshadow::half::half_t& x) const {
 #if MSHADOW_CUDA_HALF
     return std::hash<__half>()(x.cuhalf_);
 #endif  // MSHADOW_CUDA_HALF
