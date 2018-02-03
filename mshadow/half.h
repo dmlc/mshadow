@@ -271,4 +271,17 @@ MSHADOW_HALF_OPERATOR(bool, <=)
 #define MSHADOW_HALF_MAX mshadow::half::half_t::Binary(0x7BFF);
 }  // namespace half
 }  // namespace mshadow
+
+namespace std {
+// specialization for std::hash<mshadow::half::half_t>
+template <> struct hash<mshadow::half::half_t> {
+  size_t operator()(const mshadow::half::half_t& x) const {
+#if MSHADOW_CUDA_HALF
+    return std::hash<__half>()(x.cuhalf_);
+#endif  // MSHADOW_CUDA_HALF
+    return std::hash<uint16_t>()(x.half_);
+  }
+};
+}  // namespace std
+
 #endif  // MSHADOW_HALF_H_
