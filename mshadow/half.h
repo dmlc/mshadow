@@ -276,7 +276,7 @@ namespace std {
 // specialization for std::hash<mshadow::half::half_t>
 template <> struct hash<mshadow::half::half_t> {
   MSHADOW_XINLINE size_t operator()(const mshadow::half::half_t& x) const {
-#if MSHADOW_CUDA_HALF
+#if (MSHADOW_CUDA_HALF && defined(__CUDA_ARCH__))
     return std::hash<__half>()(x.cuhalf_);
 #endif  // MSHADOW_CUDA_HALF
     return std::hash<uint16_t>()(x.half_);
