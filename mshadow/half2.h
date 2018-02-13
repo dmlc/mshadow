@@ -140,5 +140,4 @@ MSHADOW_XINLINE bool operator==(half2_t a, half2_t b) {
 
 }  // namespace half
 }  // namespace mshadow
-
 #endif  // MSHADOW_HALF2_H_
