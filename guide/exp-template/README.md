@@ -244,8 +244,8 @@ struct mul{
 // and put its own type into the template argument
 template<typename OP, typename TLhs, typename TRhs>
 struct BinaryMapExp: public Exp<BinaryMapExp<OP, TLhs, TRhs> >{
-  const TLhs& lhs;
-  const TRhs& rhs;
+  const TLhs lhs;
+  const TRhs rhs;
   BinaryMapExp(const TLhs& lhs, const TRhs& rhs)
       :lhs(lhs), rhs(rhs) {}
   // evaluation function, evaluate this expression at position i
