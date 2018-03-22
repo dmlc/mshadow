@@ -132,6 +132,12 @@ typedef unsigned __int64 uint64_t;
 #ifndef MSHADOW_USE_SSE
   #define MSHADOW_USE_SSE 1
 #endif
+
+/*! \brief whether use SSE */
+#ifndef MSHADOW_USE_F16C
+#define MSHADOW_USE_F16C 1
+#endif
+
 /*! \brief whether use NVML to get dynamic info */
 #ifndef MSHADOW_USE_NVML
   #define MSHADOW_USE_NVML 0

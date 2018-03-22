@@ -48,6 +48,12 @@ else()
 	add_definitions(-DMSHADOW_USE_SSE=0)
 endif()
 
+if(SUPPORT_MF16C)
+    add_definitions(-DMSHADOW_USE_F16C=1)
+else()
+    add_definitions(-DMSHADOW_USE_F16C=0)
+endif()
+
 if(USE_CUDA)
 	find_package(CUDA 5.5 QUIET)
 	find_cuda_helper_libs(curand)

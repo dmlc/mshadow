@@ -25,10 +25,20 @@ ifndef USE_SSE
 	USE_SSE=1
 endif
 
+ifndef USE_F16C
+    USE_F16C=1
+endif
+
 ifeq ($(USE_SSE), 1)
 	MSHADOW_CFLAGS += -msse3
 else
 	MSHADOW_CFLAGS += -DMSHADOW_USE_SSE=0
+endif
+
+ifeq ($(USE_F16C), 1)
+	MSHADOW_CFLAGS += -mf16c
+else
+	MSHADOW_CFLAGS += -DMSHADOW_USE_F16C=0
 endif
 
 ifeq ($(USE_CUDA), 0)

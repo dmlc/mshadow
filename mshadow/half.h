@@ -8,7 +8,9 @@
 #ifndef MSHADOW_HALF_H_
 #define MSHADOW_HALF_H_
 #include "./base.h"
-
+#if MSHADOW_USE_F16C
+#include <x86intrin.h>
+#endif // MSHADOW_USE_F16C
 #if (MSHADOW_USE_CUDA && CUDA_VERSION >= 7050)
   #define MSHADOW_CUDA_HALF 1
   #include <cuda_fp16.h>
@@ -61,12 +63,20 @@ namespace half {
     return T(__half2float(cuhalf_));  /* NOLINT(*)*/                      \
   }                                                                       \
   MSHADOW_XINLINE operator T() const volatile {                           \
-    return T(__half2float_warp(cuhalf_));  /* NOLINT(*)*/                      \
+    return T(__half2float_warp(cuhalf_));  /* NOLINT(*)*/                 \
+  }
+#elif (MSHADOW_USE_F16C)
+#define MSHADOW_HALF_CONVERSIONOP(T)                                      \
+  MSHADOW_XINLINE operator T() const {                                    \
+    return T(_cvtsh_ss(half_));   /* NOLINT(*)*/                          \
+  }                                                                       \
+  MSHADOW_XINLINE operator T() const volatile {                           \
+    return T(_cvtsh_ss(half_));   /* NOLINT(*)*/                          \
   }
 #else
 #define MSHADOW_HALF_CONVERSIONOP(T)                                      \
   MSHADOW_XINLINE operator T() const {                                    \
-    return T(half2float(half_));  /* NOLINT(*)*/                          \
+  return T(half2float(half_));  /* NOLINT(*)*/                            \
   }                                                                       \
   MSHADOW_XINLINE operator T() const volatile {                           \
     return T(half2float(half_));  /* NOLINT(*)*/                          \
@@ -244,9 +254,11 @@ class MSHADOW_ALIGNED(2) half_t {
   MSHADOW_XINLINE void constructor(const T& value) {
 #if (MSHADOW_CUDA_HALF && defined(__CUDA_ARCH__))
     cuhalf_ = __float2half(float(value));  // NOLINT(*)
-#else
+#elif (MSHADOW_USE_F16C)
+    half_ = _cvtss_sh(value, 0);
+#else /* !MSHADOW_CUDA_HALF and !MSHADOW_USE_F16C */
     half_ = float2half(float(value));  // NOLINT(*)
-#endif  // (MSHADOW_CUDA_HALF && defined(__CUDA_ARCH__))
+#endif /* !MSHADOW_CUDA_HALF and !MSHADOW_USE_F16C */
   }
 };
 
