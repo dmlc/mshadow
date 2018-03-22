@@ -11,7 +11,7 @@
 
 #if MSHADOW_USE_F16C
   #include <x86intrin.h>
-#endif // MSHADOW_USE_F16C
+#endif  // MSHADOW_USE_F16C
 
 #if (MSHADOW_USE_CUDA && CUDA_VERSION >= 7050)
   #define MSHADOW_CUDA_HALF 1
