@@ -14,7 +14,9 @@
 #ifndef _CRT_SECURE_NO_DEPRECATE
 #define _CRT_SECURE_NO_DEPRECATE
 #endif
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #endif
 #include <cmath>
 #include <cstdio>
