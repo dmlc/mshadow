@@ -8,9 +8,11 @@
 #ifndef MSHADOW_HALF_H_
 #define MSHADOW_HALF_H_
 #include "./base.h"
+
 #if MSHADOW_USE_F16C
-#include <x86intrin.h>
+  #include <x86intrin.h>
 #endif // MSHADOW_USE_F16C
+
 #if (MSHADOW_USE_CUDA && CUDA_VERSION >= 7050)
   #define MSHADOW_CUDA_HALF 1
   #include <cuda_fp16.h>
@@ -76,7 +78,7 @@ namespace half {
 #else
 #define MSHADOW_HALF_CONVERSIONOP(T)                                      \
   MSHADOW_XINLINE operator T() const {                                    \
-  return T(half2float(half_));  /* NOLINT(*)*/                            \
+    return T(half2float(half_));  /* NOLINT(*)*/                          \
   }                                                                       \
   MSHADOW_XINLINE operator T() const volatile {                           \
     return T(half2float(half_));  /* NOLINT(*)*/                          \
@@ -256,9 +258,9 @@ class MSHADOW_ALIGNED(2) half_t {
     cuhalf_ = __float2half(float(value));  // NOLINT(*)
 #elif (MSHADOW_USE_F16C)
     half_ = _cvtss_sh((float) value, 0);
-#else /* !MSHADOW_CUDA_HALF and !MSHADOW_USE_F16C */
+#else /* !MSHADOW_CUDA_HALF && !MSHADOW_USE_F16C */
     half_ = float2half(float(value));  // NOLINT(*)
-#endif /* !MSHADOW_CUDA_HALF and !MSHADOW_USE_F16C */
+#endif /* !MSHADOW_CUDA_HALF && !MSHADOW_USE_F16C */
   }
 };
 
