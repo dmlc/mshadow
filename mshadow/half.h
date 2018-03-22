@@ -255,7 +255,7 @@ class MSHADOW_ALIGNED(2) half_t {
 #if (MSHADOW_CUDA_HALF && defined(__CUDA_ARCH__))
     cuhalf_ = __float2half(float(value));  // NOLINT(*)
 #elif (MSHADOW_USE_F16C)
-    half_ = _cvtss_sh(value, 0);
+    half_ = _cvtss_sh((float) value, 0);
 #else /* !MSHADOW_CUDA_HALF and !MSHADOW_USE_F16C */
     half_ = float2half(float(value));  // NOLINT(*)
 #endif /* !MSHADOW_CUDA_HALF and !MSHADOW_USE_F16C */
