@@ -67,7 +67,7 @@ namespace half {
   MSHADOW_XINLINE operator T() const volatile {                           \
     return T(__half2float_warp(cuhalf_));  /* NOLINT(*)*/                 \
   }
-#elif (MSHADOW_USE_F16C)
+#elif(MSHADOW_USE_F16C)
 #define MSHADOW_HALF_CONVERSIONOP(T)                                      \
   MSHADOW_XINLINE operator T() const {                                    \
     return T(_cvtsh_ss(half_));   /* NOLINT(*)*/                          \
@@ -256,8 +256,8 @@ class MSHADOW_ALIGNED(2) half_t {
   MSHADOW_XINLINE void constructor(const T& value) {
 #if (MSHADOW_CUDA_HALF && defined(__CUDA_ARCH__))
     cuhalf_ = __float2half(float(value));  // NOLINT(*)
-#elif (MSHADOW_USE_F16C)
-    half_ = _cvtss_sh((float) value, 0);
+#elif(MSHADOW_USE_F16C)
+    half_ = _cvtss_sh(static_cast<float>(value), 0);
 #else /* !MSHADOW_CUDA_HALF && !MSHADOW_USE_F16C */
     half_ = float2half(float(value));  // NOLINT(*)
 #endif /* !MSHADOW_CUDA_HALF && !MSHADOW_USE_F16C */
