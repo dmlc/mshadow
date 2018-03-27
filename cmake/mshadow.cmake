@@ -48,6 +48,24 @@ else()
 	add_definitions(-DMSHADOW_USE_SSE=0)
 endif()
 
+if(NOT DEFINED SUPPORT_MF16C)
+    check_cxx_compiler_flag("-mf16c"     COMPILER_SUPPORT_MF16C)
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        execute_process(COMMAND cat /proc/cpuinfo
+                COMMAND grep flags
+                COMMAND tail grep f16c
+                OUTPUT_VARIABLE CPU_SUPPORT_F16C)
+    elseif(CMAKE_SYSTEM_NAME_STREQUAL "Darwin")
+        execute_process(COMMAND sysctl -a
+                COMMAND grep machdep.cpu.features
+                COMMAND F16C
+                OUTPUT_VARIABLE CPU_SUPPORT_F16C)
+    endif()
+    if(CPU_SUPPORT_F16C AND COMPILER_SUPPORT_MF16C)
+        set(SUPPORT_MF16C TRUE)
+    endif()
+endif()
+
 if(SUPPORT_MF16C)
     add_definitions(-DMSHADOW_USE_F16C=1)
 else()
