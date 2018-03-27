@@ -25,10 +25,6 @@ ifndef USE_SSE
 	USE_SSE=1
 endif
 
-ifndef USE_F16C
-    USE_F16C=1
-endif
-
 ifeq ($(USE_SSE), 1)
 	MSHADOW_CFLAGS += -msse3
 else
@@ -44,7 +40,7 @@ ifndef USE_F16C
         ifeq ($(detected_OS),Linux)
             F16C_SUPP = $(shell cat /proc/cpuinfo | grep flags | grep f16c)
         endif
-        ifneq ($(F16C_SUPP), NONE)
+	ifneq ($(F16C_SUPP), NONE)
                 USE_F16C=1
         else
                 USE_F16C=0
