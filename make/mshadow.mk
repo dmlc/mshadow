@@ -35,10 +35,30 @@ else
 	MSHADOW_CFLAGS += -DMSHADOW_USE_SSE=0
 endif
 
+ifndef USE_F16C
+    ifneq ($(OS),Windows_NT)
+        detected_OS := $(shell uname -s)
+        ifeq ($(detected_OS),Darwin)
+            F16C_SUPP = $(shell sysctl -a | grep machdep.cpu.features | grep F16C)
+        endif
+        ifeq ($(detected_OS),Linux)
+            F16C_SUPP = $(shell cat /proc/cpuinfo | grep flags | grep f16c)
+        endif
+        ifneq ($(F16C_SUPP), NONE)
+                USE_F16C=1
+        else
+                USE_F16C=0
+        endif
+    endif
+    # if OS is Windows, check if your processor supports F16C architecture.
+    # One way to do that is to download the tool https://docs.microsoft.com/en-us/sysinternals/downloads/coreinfo.
+    # If coreinfo -c shows F16C then you can set F16C=1 explicitly to leverage that capability"
+endif
+
 ifeq ($(USE_F16C), 1)
-	MSHADOW_CFLAGS += -mf16c
+        MSHADOW_CFLAGS += -mf16c
 else
-	MSHADOW_CFLAGS += -DMSHADOW_USE_F16C=0
+        MSHADOW_CFLAGS += -DMSHADOW_USE_F16C=0
 endif
 
 ifeq ($(USE_CUDA), 0)
