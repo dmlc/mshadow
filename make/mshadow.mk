@@ -48,7 +48,7 @@ ifndef USE_F16C
     endif
     # if OS is Windows, check if your processor supports F16C architecture.
     # One way to do that is to download the tool https://docs.microsoft.com/en-us/sysinternals/downloads/coreinfo.
-    # If coreinfo -c shows F16C then you can set F16C=1 explicitly to leverage that capability"
+    # If coreinfo -c shows F16C then you can set USE_F16C=1 explicitly to leverage that capability"
 endif
 
 ifeq ($(USE_F16C), 1)
