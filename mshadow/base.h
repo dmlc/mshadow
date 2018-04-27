@@ -137,7 +137,13 @@ typedef unsigned __int64 uint64_t;
 
 /*! \brief whether use F16C instruction set architecture extension */
 #ifndef MSHADOW_USE_F16C
-#define MSHADOW_USE_F16C 1
+  #if defined(_MSC_VER)
+    #define MSHADOW_USE_F16C 0
+  #elif defined(__APPLE__) && ((__clang_major__ < 8) || ((__clang_major__ == 8) && (__clang_minor__ < 1)))
+    #define MSHADOW_USE_F16C 0  
+  #else
+    #define MSHADOW_USE_F16C 1
+  #endif
 #endif
 
 /*! \brief whether use NVML to get dynamic info */
