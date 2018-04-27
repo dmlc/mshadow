@@ -139,9 +139,9 @@ typedef unsigned __int64 uint64_t;
 #ifndef MSHADOW_USE_F16C
   #if defined(_MSC_VER)
     #define MSHADOW_USE_F16C 0
-  #elif defined(__clang__) && 
+  #elif defined(__clang__) && \
         ((__clang_major__ < 8) || ((__clang_major__ == 8) && (__clang_minor__ < 1)))
-    #define MSHADOW_USE_F16C 0  
+    #define MSHADOW_USE_F16C 0
   #else
     #define MSHADOW_USE_F16C 1
   #endif
