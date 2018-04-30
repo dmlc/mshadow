@@ -42,7 +42,7 @@ ifndef USE_F16C
         ifeq ($(detected_OS),Linux)
             F16C_SUPP = $(shell cat /proc/cpuinfo | grep flags | grep f16c)
         endif
-	ifneq ($(F16C_SUPP),)
+	ifneq ($(strip $(F16C_SUPP)),)
                 USE_F16C=1
         else
                 USE_F16C=0
