@@ -31,6 +31,8 @@ else
 	MSHADOW_CFLAGS += -DMSHADOW_USE_SSE=0
 endif
 
+# whether to use F16C instruction set extension for fast fp16 compute on CPU
+# if cross compiling you may want to explicitly turn it off if target system does not support it
 ifndef USE_F16C
     ifneq ($(OS),Windows_NT)
         detected_OS := $(shell uname -s)
@@ -46,9 +48,11 @@ ifndef USE_F16C
                 USE_F16C=0
         endif
     endif
-    # if OS is Windows, check if your processor supports F16C architecture.
-    # One way to do that is to download the tool https://docs.microsoft.com/en-us/sysinternals/downloads/coreinfo.
-    # If coreinfo -c shows F16C then you can set USE_F16C=1 explicitly to leverage that capability"
+    # if OS is Windows, check if your processor and compiler support F16C architecture.
+    # One way to check if processor supports it is to download the tool 
+    # https://docs.microsoft.com/en-us/sysinternals/downloads/coreinfo.
+    # If coreinfo -c shows F16C and compiler supports it, 
+    # then you can set USE_F16C=1 explicitly to leverage that capability"
 endif
 
 ifeq ($(USE_F16C), 1)
