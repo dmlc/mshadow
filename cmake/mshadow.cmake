@@ -70,7 +70,6 @@ if(NOT DEFINED SUPPORT_F16C AND NOT MSVC)
 endif()
 
 if(SUPPORT_F16C)
-    add_definitions(-DMSHADOW_USE_F16C=1)
     set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -mf16c")
 else()
     add_definitions(-DMSHADOW_USE_F16C=0)
