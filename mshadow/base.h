@@ -137,7 +137,7 @@ typedef unsigned __int64 uint64_t;
 
 /*! \brief whether use F16C instruction set architecture extension */
 #ifndef MSHADOW_USE_F16C
-  #if defined(_MSC_VER) || defined(__CUDACC__)
+  #if defined(_MSC_VER) || defined(__CUDACC__) || defined(__arm__)
     #define MSHADOW_USE_F16C 0
   #elif defined(__clang__) && \
         ((__clang_major__ < 8) || ((__clang_major__ == 8) && (__clang_minor__ < 1)))
