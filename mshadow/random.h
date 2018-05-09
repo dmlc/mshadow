@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <algorithm>
 #include <random>
+#include <limits>
 #include "./base.h"
 #include "./tensor.h"
 #include "./tensor_container.h"
@@ -23,12 +24,294 @@
 #define rand_r(x) rand()
 #endif
 
-
 namespace mshadow {
+
+#include <cstdint>
+#include <limits>
+
+#if MSHADOW_IN_CXX11
+
+/*!
+ * \brief PCG random number generator introduced by
+ *        "PCG: A Family of Simple Fast Space-Efficient Statistically Good Algorithms for
+ *        Random Number Generation" (Melissa E. O'Neill, 2014).
+ *        This generator provides 2^64 statistically independent "streams."
+ *        Generators with different streams are statistically independent regardless of seeds.
+ *        Here we use the term "sequence" instead of "stream" to avoid confusion with cuda stream.
+ */
+struct PCG32 {
+  /*!
+   * \brief seed this generator
+   * \param seed seed
+   * \param m sequence
+   */
+  MSHADOW_XINLINE void seed(uint64_t s, uint64_t m) {
+    sequence = (m << 1u) | 1u;
+    state = 0U;
+    generate();
+    state += s;
+    generate();
+  }
+
+  /*!
+   * \brief generate a 32-bit random number
+   */
+  MSHADOW_XINLINE uint32_t generate() {
+    uint64_t s = state;
+    state = s * 6364136223846793005ull + sequence;
+    uint32_t x = ((s >> 18u) ^ s) >> 27u;
+    uint32_t y = s >> 59u;
+    return (x >> y) | (x << ((-y) & 31));
+  }
+
+  uint64_t state;
+  uint64_t sequence;
+};
+
+/*!
+ * C++11 style PCG random number generator for 32 random bits.
+ */
+class PCGRandom32 {
+ public:
+  typedef uint32_t result_type;
+
+  /*!
+    * \brief constructor.
+    * \param seed random number seed. 2^64 different seeds are allowed.
+    * \param m sequence id of the generator. 2^64 different sequence ids are allowed.
+    */
+  MSHADOW_XINLINE
+  explicit PCGRandom32(uint64_t s = default_seed, uint64_t m = default_sequence) {
+    seed(s, m);
+  }
+
+  /*!
+    * \brief seed the generator.
+    * \param seed random number seed. 2^64 different seeds are allowed.
+    * \param m sequence id of the generator. 2^64 different sequence ids are allowed.
+    */
+  MSHADOW_XINLINE void seed(uint64_t s = default_seed, uint64_t m = default_sequence) {
+    pcg.seed(s, m);
+  }
+
+  /*!
+    * \brief Not implemented. Seeding with uint64_t is sufficient.
+    */
+  template<typename SeedSeq>
+  void seed(SeedSeq& sseq);
+
+  MSHADOW_XINLINE result_type operator()() {
+    return pcg.generate();
+  }
+
+  MSHADOW_XINLINE static constexpr result_type min() {
+    return 0;
+  }
+
+  MSHADOW_XINLINE static constexpr result_type max() {
+    return 0xfffffffful;
+  }
+
+ public:
+  static constexpr uint32_t default_seed = 3917ull;
+  static constexpr uint32_t default_sequence = 0ull;
+
+ private:
+  PCG32 pcg;
+};
+
+/*!
+ * C++11 style PCG random number generator for 64 random bits.
+ * This implementation uses two 32-bit generators to avoid the use of 128-bit arithmetic.
+ */
+class PCGRandom64 {
+ public:
+  typedef uint64_t result_type;
+
+  /*!
+    * \brief constructor.
+    * \param seed random number seed. 2^64 different seeds are allowed.
+    * \param m sequence id of the generator. 2^64 different sequence ids are allowed.
+    */
+  MSHADOW_XINLINE
+  explicit PCGRandom64(uint64_t s = default_seed, uint64_t m = default_sequence) {
+    seed(s, m);
+  }
+
+  /*!
+    * \brief seed the generator
+    * \param seed random number seed. 2^64 different seeds are allowed.
+    * \param m sequence id of the generator. 2^64 different sequence ids are allowed.
+    */
+  MSHADOW_XINLINE void seed(uint64_t s = default_seed, uint64_t m = default_sequence) {
+    pcg0.seed(s, m);
+    pcg1.seed(splitmix64(s), ~m);
+  }
+
+  /*!
+    * \brief (Not implemented) Seed the generator with 128 bits.
+    * \param seed 128-bit seed
+    */
+  template<typename SeedSeq>
+  void seed(SeedSeq&);
+
+  MSHADOW_XINLINE result_type operator()() {
+    return static_cast<uint64_t>(pcg0.generate()) << 32 | pcg1.generate();
+  }
+
+  MSHADOW_XINLINE static constexpr result_type min() {
+    return 0;
+  }
+
+  MSHADOW_XINLINE static constexpr result_type max() {
+    return 0xffffffffffffffffull;
+  }
+
+ public:
+  static constexpr uint64_t default_seed = 81917ull;
+  static constexpr uint64_t default_sequence = 10920ull;
+
+ private:
+  MSHADOW_XINLINE uint64_t splitmix64(uint64_t s) {
+    uint64_t z = (s += 0x9e3779b97f4a7c15);
+    z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
+    z = (z ^ (z >> 27)) * 0x94d049bb133111eb;
+    return z ^ (z >> 31);
+  }
+
+  PCG32 pcg0;
+  PCG32 pcg1;
+};
+
+template<typename DType>
+struct RandomBitGeneratorTrait {
+  // 32-bit generator is used for types with smaller size also.
+  using type = typename std::conditional<sizeof(DType) <= 4, PCGRandom32, PCGRandom64>::type;
+};
+
+
+template<typename Rng, typename FPType>
+struct RandomReal;
+
+template<>
+struct RandomReal<PCGRandom32, float> {
+  using UIType = uint32_t;
+  using FPType = float;
+  MSHADOW_XINLINE static FPType Generate(PCGRandom32& rng) {
+    constexpr FPType e = FPType(1) / (UIType(1) << 24);
+    return (rng() >> 8) * e;
+  }
+};
+
+template<>
+struct RandomReal<PCGRandom32, double> {
+  using UIType = uint64_t;
+  using FPType = double;
+  MSHADOW_XINLINE static FPType Generate(PCGRandom32& rng) {
+    constexpr FPType e = FPType(1) / (UIType(1) << 53);
+    uint64_t u = (uint64_t(rng()) << 32) | rng();
+    return (u >> 11) * e;
+  }
+};
+
+template<>
+struct RandomReal<PCGRandom64, float> {
+  using UIType = uint32_t;
+  using FPType = float;
+  MSHADOW_XINLINE static FPType Generate(PCGRandom64& rng) {
+    constexpr FPType e = FPType(1) / (UIType(1) << 24);
+    return (UIType(rng()) >> 8) * e;
+  }
+};
+
+template<>
+struct RandomReal<PCGRandom64, double> {
+  using UIType = uint64_t;
+  using FPType = double;
+  MSHADOW_XINLINE static FPType Generate(PCGRandom64& rng) {
+    constexpr FPType e = FPType(1) / (UIType(1) << 53);
+    return (rng() >> 11) * e;
+  }
+};
+
+template<typename Device, typename Rng, typename DType>
+struct UniformRealDistribution;
+
+template<typename Rng, typename DType>
+struct UniformRealDistribution<cpu, Rng, DType> {
+
+  using result_type = DType;
+
+  MSHADOW_FORCE_INLINE explicit UniformRealDistribution(result_type a = 0, result_type b = 1)
+  : a(a), b(b), w(FType(b) - FType(a)) {
+  }
+
+  /*!
+   * \brief return a uniform random number assuming that `g` generates the full range of ingeters.
+   */
+  MSHADOW_FORCE_INLINE result_type operator()(Rng& g) const {
+    DType r;
+    do {
+      r = a + w * RandomReal<Rng, FType>::Generate(g);
+    } while (b <= r);  // This can happen due to floating point rounding.
+    return r;
+  }
+
+  private:
+    using FType = typename std::conditional<sizeof(DType) <= 4, float, double>::type;
+
+    FType a;
+    DType b;
+    FType w;
+};
+
+template<typename Device, typename Rng, typename DType>
+struct GaussianDistribution;
+
+template<typename Rng, typename DType>
+struct GaussianDistribution<cpu, Rng, DType> {
+  using result_type = DType;
+
+  MSHADOW_FORCE_INLINE explicit GaussianDistribution(result_type mean = 0, result_type stddev = 1)
+  : mean(mean), stddev(stddev), spare(0), has_spare(false) {
+  }
+
+  /*!
+   * \brief return a Gaussian random number assuming that `g` generates the full range of ingeters.
+   */
+  MSHADOW_FORCE_INLINE result_type operator()(Rng& g) {
+    // Marsaglia polar method
+    if (has_spare) {
+      has_spare = false;
+      return mean + spare;
+    }
+    FType u, v, s;
+    do {
+      u = RandomReal<Rng, FType>::Generate(g) * 2 - 1;
+      v = RandomReal<Rng, FType>::Generate(g) * 2 - 1;
+      s = u * u + v * v;
+    } while (s >= 1 || s == 0);
+    const FType t = stddev * sqrt(-FType(2) * log(s) / s);
+    spare = v * t;
+    has_spare = true;
+    return static_cast<result_type>(mean + u * t);
+  }
+
+ private:
+  using FType = typename std::conditional<sizeof(DType) <= 4, float, double>::type;
+
+  FType mean;
+  FType stddev;
+  FType spare;
+  bool has_spare;
+};
+
+#endif
+
 /*!
  * \brief random number generator
  * \tparam Device the device of random number generator
- * \tparam DType the target data type of random number can be float for double
+ * \tparam DType the target data type of random number
  */
 template<typename Device, typename DType MSHADOW_DEFAULT_DTYPE>
 class Random {};
@@ -37,23 +320,31 @@ class Random {};
 template<typename DType>
 class Random<cpu, DType> {
  public:
+#if MSHADOW_IN_CXX11
+  using RandomBitGenerator = typename RandomBitGeneratorTrait<DType>::type;
+#endif
+
   /*!
    * \brief constructor of random engine
    * \param seed random number seed
+   * \param sequence_id generators with different sequence ids are statistically independent.
    */
-  explicit Random(int seed) {
-    this->Seed(seed);
+  explicit Random(int seed, uint64_t sequence_id = 0) {
+    this->Seed(seed, sequence_id);
     buffer_.Resize(Shape1(kRandBufferSize));
   }
+
   ~Random(void) {
   }
+
   /*!
    * \brief seed random number generator using this seed
    * \param seed seed of prng
+   * \param sequence_id generators with different sequence ids are statistically independent.
    */
-  inline void Seed(int seed) {
+  inline void Seed(int seed, uint64_t sequence_id = 0) {
 #if MSHADOW_IN_CXX11
-    rnd_engine_.seed(seed);
+    rnd_engine_.seed(seed, sequence_id);
 #endif
     this->rseed_ = static_cast<unsigned>(seed);
   }
@@ -75,17 +366,12 @@ class Random<cpu, DType> {
 #if MSHADOW_IN_CXX11
 
   /*!
-   * \brief get some random integer
-   * \return integer as unsigned
+   * \brief get a set of random integers in the range of [0, 2^32 - 1]
+   *        if sizeof(DType) <= 4 or [0, 2^64 - 1] otherwise.
+   * \tparam IntType integer type
    */
-  inline unsigned GetRandInt() {
-    return rnd_engine_();
-  }
-
-  /*!
-   * \brief get a set of random integers
-   */
-  inline void GetRandInt(const Tensor<cpu, 1, unsigned>& dst) {
+  template<typename IntType>
+  inline void GetRandInt(Tensor<cpu, 1, IntType>& dst) {
     std::generate_n(dst.dptr_, dst.size(0), [&](){ return rnd_engine_(); });
   }
 
@@ -108,21 +394,20 @@ class Random<cpu, DType> {
   }
 
   /*!
-   * \brief generate data from uniform [a,b)
+   * \brief generate uniform random numbers. The lower bound is inclusive.
+   *        The upper bound is inclusive for integers and exclusive for floating point numbers.
    * \param dst destination
-   * \param a lower bound of uniform
-   * \param b upper bound of uniform
+   * \param a lower bound of the uniform distribution
+   * \param b upper bound of the uniform distribution
    * \tparam dim dimension of tensor
    */
   template<int dim, typename PType>
   inline void SampleUniform(Tensor<cpu, dim, DType> *dst,
                             PType a = 0.0f , PType b = 1.0f ) {
-    // Ensure that half_t is handled correctly.
-    typedef typename std::conditional<std::is_floating_point<DType>::value,
-                                      DType, double>::type FType;
-    typedef typename std::conditional<std::is_integral<DType>::value,
-                                      std::uniform_int_distribution<DType>,
-                                      std::uniform_real_distribution<FType>>::type GType;
+    typedef typename std::conditional<
+      mshadow::IsIntegral<DType>::value,
+      std::uniform_int_distribution<DType>,
+      mshadow::UniformRealDistribution<cpu, RandomBitGenerator, DType>>::type GType;
     GType dist_uniform(a, b);
     SampleDistribution(dst, [&](){ return dist_uniform(rnd_engine_);});
   }
@@ -140,9 +425,9 @@ class Random<cpu, DType> {
     if (sigma <= 0) {
       *dst = mu; return;
     }
-    typedef typename std::conditional<std::is_floating_point<DType>::value,
+    typedef typename std::conditional<mshadow::IsFloatingPoint<DType>::value,
                                       DType, double>::type GType;
-    std::normal_distribution<GType> dist_normal(mu, sigma);
+    mshadow::GaussianDistribution<cpu, RandomBitGenerator, GType> dist_normal(mu, sigma);
     SampleDistribution(dst, [&](){ return dist_normal(rnd_engine_);});
   }
 
@@ -177,7 +462,7 @@ class Random<cpu, DType> {
   }
 
   /*!
-   * \brief generate data from a poisson distribution
+   * \brief generate data from a Poisson distribution
    * \param dst destination
    * \param lambda parameter (rate) of the distribution
    * \tparam dim dimension of tensor
@@ -226,6 +511,11 @@ class Random<cpu, DType> {
                return static_cast<DType>(dist_poisson(rnd_engine_));});
     }
   }
+
+  RandomBitGenerator &GetRndEngine() {
+    return rnd_engine_;
+  }
+
 #endif
 
   /*!
@@ -265,14 +555,10 @@ class Random<cpu, DType> {
     return expr::reshape(buffer_, shape);
   }
 
-  std::mt19937 &GetRndEngine() {
-    return rnd_engine_;
-  }
-
  private:
 #if MSHADOW_IN_CXX11
   /*! \brief use c++11 random engine. */
-  std::mt19937 rnd_engine_;
+  RandomBitGenerator rnd_engine_;
   /*! \brief random number seed used in random engine */
   unsigned rseed_;
 
@@ -366,90 +652,102 @@ class Random<cpu, DType> {
   TensorContainer<cpu, 1, DType> buffer_;
 };  // class Random<cpu, DType>
 
-// only allow GPU PRNG when cuda is enabled
+}  // namespace mshadow
+
+
 #if MSHADOW_USE_CUDA
-/*! \brief GPU random number generator */
+
+#include "./cuda/random_gpu.cuh"
+
+namespace mshadow {
+
 template<typename DType>
-class Random<gpu, DType> {
- public:
+struct Random<gpu, DType> {
+
+  /*! \brief default number of internal parallel random number generators */
+  static const unsigned DEFAULT_NUMBER_OF_RNGS = 4096;
+
   /*!
-   * \brief constructor of random engine
+   * \brief constructor of random number generator
    * \param seed random number seed
+   * \param sequence_id generators with different sequence ids are statistically independent
+   * \param n_rngs number of internal parallel generators
+   * \param s stream
    */
-  explicit Random(int seed) : gen_(NULL) {
-    this->Seed(seed);
-    buffer_.Resize(Shape1(kRandBufferSize));
+  explicit Random(
+    uint64_t seed,
+    uint32_t sequence_id = 0,
+    unsigned n_rngs = DEFAULT_NUMBER_OF_RNGS,
+    Stream<gpu>* s = nullptr
+  ) {
+    stream = s ? Stream<gpu>::GetStream(s) : nullptr;
+    Impl::AllocState(0, &impl, seed, sequence_id, n_rngs);
   }
-  ~Random(void) MSHADOW_THROW_EXCEPTION {
-    DeleteGenerator();
+
+  ~Random() {
+    Impl::FreeState(&impl);
   }
+
+  /*!
+   * \brief seed this random number generator
+   * \param seed random number seed
+   * \param sequence_id generators with different sequence ids are statistically independent.
+   */
+  inline void Seed(uint64_t seed, uint32_t sequence_id = 0) {
+    impl.Seed(0, seed, sequence_id);
+  }
+
   /*!
    * \brief set the stream of computation
-   * \param stream computation stream
+   * \param s computation stream
    */
-  inline void set_stream(Stream<gpu> *stream) {
-    curandStatus_t status;
-    status = curandSetStream(gen_, Stream<gpu>::GetStream(stream));
+  inline void set_stream(Stream<gpu> *s) {
+    stream = Stream<gpu>::GetStream(s);
+  }
 
-    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "set_stream CURAND failed";
-  }
   /*!
-   * \brief seed random number generator using this seed
-   * \param seed seed of prng
+   * \brief get a set of random integers in the range of [0, 2^32 - 1]
+   *        if sizeof(DType) <= 4 or [0, 2^64 - 1] otherwise.
+   * \tparam IntType integer type
    */
-  inline void Seed(int seed) {
-    // Create a new rng, either initially or if the RNG type can't reset its offset.
-    if (gen_ == NULL || (curandSetGeneratorOffset(gen_, 0ULL) != CURAND_STATUS_SUCCESS))
-      CreateGenerator();
-    // Now set the seed.
-    curandStatus_t status;
-    status = curandSetPseudoRandomGeneratorSeed(gen_, static_cast<uint64_t>(seed));
-    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "Set CURAND seed failed.";
+  template<typename IntType>
+  inline void GetRandInt(Tensor<gpu, 1, IntType>& dst) {
+    impl.GenerateInt(stream, dst.dptr_, dst.shape_.Size());
   }
+
   /*!
-   * \brief get a set of random integers
-   */
-  inline void GetRandInt(const Tensor<gpu, 1, unsigned>& dst) {
-    curandStatus_t status = curandGenerate(gen_, dst.dptr_, dst.size(0));
-    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen rand ints failed.";
-  }
-  /*!
-   * \brief generate data from uniform [a,b)
+   * \brief generate uniform random numbers. The lower bound is inclusive.
+   *        The upper bound is inclusive for integers and exclusive for floating point numbers.
    * \param dst destination
    * \param a lower bound of uniform
    * \param b upper bound of uniform
    * \tparam dim dimension of tensor
    */
   template<int dim>
-  inline void SampleUniform(Tensor<gpu, dim, DType> *dst,
-                            DType a = 0.0f, DType b = 1.0f);
+  inline void SampleUniform(Tensor<gpu, dim, DType>* dst, DType a = 0, DType b = 1) {
+    if (dst->CheckContiguous()) {
+      impl.GenerateUniform(stream, dst->dptr_, dst->shape_.Size(), a, b);
+    } else {
+      *dst = uniform(dst->shape_, a, b);
+    }
+  }
 
   /*!
-   * \brief generate data from standard gaussian
+   * \brief generate data from Gaussian distribution
    * \param dst destination
-   * \param mu mean variable
-   * \param sigma standard deviation
+   * \param mean mean variable
+   * \param stddev standard deviation
    * \tparam dim dimension of tensor
    */
   template<int dim>
-  inline void SampleGaussian(Tensor<gpu, dim, DType> *dst,
-                             DType mu = 0.0f, DType sigma = 1.0f);
-  /*!
-   * \brief return a temporal expression storing standard gaussian random variables
-   *        the temporal tensor is only valid before next call of gaussian or uniform
-   *        can be used as part of expression
-   *  Caution: this means expression such as A = gaussian(s1) * gaussian(s2) will give invalid result,
-   *           since second call of gaussian(s2) makes gaussian(s1) invalid
-   *           A = gaussian(s1)*B+C; is correct; use one gaussian/uniform in each expression
-   * \param shape shape of the tensor
-   * \param mu mean
-   * \param sigma variance
-   * \return a temporal expression storing standard gaussian random variables
-   * \tparam dim dimension of tensor
-   */
-  template<int dim>
-  inline expr::ReshapeExp<Tensor<gpu, 1, DType>, DType, dim, 1>
-  gaussian(Shape<dim> shape, DType mu = 0.0f, DType sigma = 1.0f);
+  inline void SampleGaussian(Tensor<gpu, dim, DType>* dst, DType mean = 0, DType stddev = 1) {
+    if (dst->CheckContiguous()) {
+      impl.GenerateGaussian(stream, dst->dptr_, dst->shape_.Size(), mean, stddev);
+    } else {
+      *dst = gaussian(dst->shape_, mean, stddev);
+    }
+  }
+
   /*!
    * \brief return a temporal expression storing standard uniform [0,1)
    *        the temporal tensor is only valid before next call of gaussian or uniform
@@ -463,108 +761,48 @@ class Random<gpu, DType> {
    */
   template<int dim>
   inline expr::ReshapeExp<Tensor<gpu, 1, DType>, DType, dim, 1>
-  uniform(Shape<dim> shape);
+  uniform(Shape<dim> shape, DType a = 0, DType b = 1) {
+    buffer_.Resize(Shape1(shape.Size()));
+    impl.GenerateUniform(stream, buffer_.dptr_, buffer_.shape_.Size(), a, b);
+    return expr::reshape(buffer_, shape);
+  }
+
+  /*!
+   * \brief return a temporal expression storing standard gaussian random variables
+   *        the temporal tensor is only valid before next call of gaussian or uniform
+   *        can be used as part of expression
+   *  Caution: this means expression such as A = gaussian(s1) * gaussian(s2) will give invalid result,
+   *           since second call of gaussian(s2) makes gaussian(s1) invalid
+   *           A = gaussian(s1)*B+C; is correct; use one gaussian/uniform in each expression
+   * \param shape shape of the tensor
+   * \param mean mean
+   * \param stddev standard deviation
+   * \return a temporal expression storing standard gaussian random variables
+   * \tparam dim dimension of tensor
+   */
+  template<int dim>
+  inline expr::ReshapeExp<Tensor<gpu, 1, DType>, DType, dim, 1>
+  gaussian(Shape<dim> shape, DType mean = 0, DType stddev = 1) {
+    size_t aligned_sz = ((shape.Size() + 1UL) >> 1) << 1;
+    // allocate alligned size
+    buffer_.Resize(Shape1(aligned_sz));
+    buffer_.Resize(Shape1(shape.Size()));
+    impl.GenerateGaussian(stream, buffer_.dptr_, buffer_.shape_.Size(), mean, stddev);
+    return expr::reshape(buffer_, shape);
+  }
 
  private:
-  inline void GenGaussian(float *dptr, size_t size, float mu, float sigma) {
-    curandStatus_t status;
-    status = curandGenerateNormal(gen_, dptr, size, mu, sigma);
-    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Normal float failed."
-                                            << " size = " << size
-                                            << ",mu = " << mu
-                                            << ",sigma = " << sigma;
-  }
-  inline void GenGaussian(double *dptr, size_t size, double mu, double sigma) {
-    curandStatus_t status;
-    status = curandGenerateNormalDouble(gen_, dptr, size, mu, sigma);
-    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Normal double failed."
-                                            << " size = " << size
-                                            << ",mu = " << mu
-                                            << ",sigma = " << sigma;
-  }
-  inline void GenUniform(float *dptr, size_t size) {
-    curandStatus_t status;
-    status = curandGenerateUniform(gen_, dptr, size);
-    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Uniform float failed."
-                                            << " size = " << size;
-  }
-  inline void GenUniform(double *dptr, size_t size) {
-    curandStatus_t status;
-    status = curandGenerateUniformDouble(gen_, dptr, size);
-    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "CURAND Gen Uniform double failed."
-                                            << " size = " << size;
-  }
-  inline void CreateGenerator() {
-    if (gen_ != NULL)
-      DeleteGenerator();
-    curandStatus_t status;
-    status = curandCreateGenerator(&gen_, CURAND_RNG_PSEUDO_DEFAULT);
-    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "Cannot create CURAND Generator";
-  }
-  inline void DeleteGenerator() {
-    if (gen_ != NULL) {
-      curandStatus_t status;
-      status = curandDestroyGenerator(gen_);
-      CHECK_EQ(status, CURAND_STATUS_SUCCESS) << "Destory CURAND Gen failed";
-      gen_ = NULL;
-    }
-  }
-  /*! \brief random number generator */
-  curandGenerator_t gen_;
-  /*! \brief templ buffer */
+  using Impl = cuda::GPURandomImpl<typename RandomBitGeneratorTrait<DType>::type, DType>;
+
+  /*! \brief temporal buffer */
   TensorContainer<gpu, 1, DType> buffer_;
-};  // class Random<gpu, DType>
+  /*! \brief implementation calling cuda kernels */
+  Impl impl;
+  /*! \brief cuda stream */
+  cudaStream_t stream;
+};
+
+}  // namespace mshadow
 #endif  // MSHADOW_USE_CUDA
 
-#ifdef __CUDACC__
-// implementations that depends on cuda kernels
-template<typename DType>
-template<int dim>
-inline void Random<gpu, DType>::SampleUniform(
-    Tensor<gpu, dim, DType> *dst, DType a, DType b) {
-  if (a == 0.0f && b == 1.0f) {
-    if (dst->CheckContiguous()) {
-      this->GenUniform(dst->dptr_, dst->shape_.Size());
-    } else {
-      *dst = this->uniform(dst->shape_);
-    }
-  } else {
-    *dst = this->uniform(dst->shape_) * (b - a) + a;
-  }
-}
-template<typename DType>
-template<int dim>
-inline void Random<gpu, DType>::SampleGaussian(
-    Tensor<gpu, dim, DType> *dst, DType mu, DType sigma) {
-  // We need to check whether the shape size is even since CuRand supports only normal distribution
-  // generation of even number of elements.
-  if (dst->CheckContiguous() && (dst->shape_.Size() % 2 == 0)) {
-    this->GenGaussian(dst->dptr_, dst->shape_.Size(), mu, sigma);
-  } else {
-    *dst = this->gaussian(dst->shape_, mu, sigma);
-  }
-}
-
-template<typename DType>
-template<int dim>
-inline expr::ReshapeExp<Tensor<gpu, 1, DType>, DType, dim, 1>
-Random<gpu, DType>::gaussian(Shape<dim> shape, DType mu, DType sigma) {
-  size_t aligned_sz = ((shape.Size() + 1UL) >> 1) << 1;
-  // allocate alligned size
-  buffer_.Resize(Shape1(aligned_sz));
-  buffer_.Resize(Shape1(shape.Size()));
-  this->GenGaussian(buffer_.dptr_, aligned_sz, mu, sigma);
-  return expr::reshape(buffer_, shape);
-}
-
-template<typename DType>
-template<int dim>
-inline expr::ReshapeExp<Tensor<gpu, 1, DType>, DType, dim, 1>
-Random<gpu, DType>::uniform(Shape<dim> shape) {
-  buffer_.Resize(Shape1(shape.Size()));
-  this->GenUniform(buffer_.dptr_, buffer_.size(0));
-  return expr::reshape(buffer_, shape);
-}
-#endif  // __CUDACC__
-}  // namespace mshadow
 #endif  // MSHADOW_RANDOM_H_

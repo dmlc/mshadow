@@ -410,6 +410,36 @@ struct DataType<int64_t> {
 /*! \brief type enum value for default real type */
 const int default_type_flag = DataType<default_real_t>::kFlag;
 
+#if MSHADOW_IN_CXX11
+
+/*! \brief replace std::is_integral to support half_t */
+template<typename T>
+struct IsIntegral {
+  using value_type = bool;
+  constexpr static value_type value = std::is_integral<T>::value;
+};
+
+template<>
+struct IsIntegral<half::half_t> {
+  using value_type = bool;
+  constexpr static value_type value = false;
+};
+
+/*! \brief replace std::is_floating_point to support half_t */
+template<typename T>
+struct IsFloatingPoint {
+  using value_type = bool;
+  constexpr static value_type value = std::is_floating_point<T>::value;
+};
+
+template<>
+struct IsFloatingPoint<half::half_t> {
+  using value_type = bool;
+  constexpr static value_type value = true;
+};
+
+#endif
+
 /*! layout flag */
 enum LayoutFlag {
   kNCHW = 0,
