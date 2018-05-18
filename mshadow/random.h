@@ -94,12 +94,6 @@ class PCGRandom32 {
     pcg.seed(s, m);
   }
 
-  /*!
-    * \brief Not implemented. Seeding with uint64_t is sufficient.
-    */
-  template<typename SeedSeq>
-  void seed(SeedSeq& sseq);
-
   MSHADOW_XINLINE result_type operator()() {
     return pcg.generate();
   }
@@ -148,13 +142,6 @@ class PCGRandom64 {
     pcg1.seed(splitmix64(s), ~m);
   }
 
-  /*!
-    * \brief (Not implemented) Seed the generator with 128 bits.
-    * \param seed 128-bit seed
-    */
-  template<typename SeedSeq>
-  void seed(SeedSeq&);
-
   MSHADOW_XINLINE result_type operator()() {
     return static_cast<uint64_t>(pcg0.generate()) << 32 | pcg1.generate();
   }
@@ -183,13 +170,6 @@ class PCGRandom64 {
   PCG32 pcg1;
 };
 
-template<typename DType>
-struct RandomBitGeneratorTrait {
-  // 32-bit generator is used for types with smaller size also.
-  using type = typename std::conditional<sizeof(DType) <= 4, PCGRandom32, PCGRandom64>::type;
-};
-
-
 template<typename Rng, typename FPType>
 struct RandomReal;
 
@@ -197,7 +177,7 @@ template<>
 struct RandomReal<PCGRandom32, float> {
   using UIType = uint32_t;
   using FPType = float;
-  MSHADOW_XINLINE static FPType Generate(PCGRandom32& rng) {
+  MSHADOW_XINLINE static FPType Generate(PCGRandom32& rng) {  // NOLINT(runtime/references)
     constexpr FPType e = FPType(1) / (UIType(1) << 24);
     return (rng() >> 8) * e;
   }
@@ -207,7 +187,7 @@ template<>
 struct RandomReal<PCGRandom32, double> {
   using UIType = uint64_t;
   using FPType = double;
-  MSHADOW_XINLINE static FPType Generate(PCGRandom32& rng) {
+  MSHADOW_XINLINE static FPType Generate(PCGRandom32& rng) {  // NOLINT(runtime/references)
     constexpr FPType e = FPType(1) / (UIType(1) << 53);
     uint64_t u = (uint64_t(rng()) << 32) | rng();
     return (u >> 11) * e;
@@ -218,7 +198,7 @@ template<>
 struct RandomReal<PCGRandom64, float> {
   using UIType = uint32_t;
   using FPType = float;
-  MSHADOW_XINLINE static FPType Generate(PCGRandom64& rng) {
+  MSHADOW_XINLINE static FPType Generate(PCGRandom64& rng) {  // NOLINT(runtime/references)
     constexpr FPType e = FPType(1) / (UIType(1) << 24);
     return (UIType(rng()) >> 8) * e;
   }
@@ -228,7 +208,7 @@ template<>
 struct RandomReal<PCGRandom64, double> {
   using UIType = uint64_t;
   using FPType = double;
-  MSHADOW_XINLINE static FPType Generate(PCGRandom64& rng) {
+  MSHADOW_XINLINE static FPType Generate(PCGRandom64& rng) {  // NOLINT(runtime/references)
     constexpr FPType e = FPType(1) / (UIType(1) << 53);
     return (rng() >> 11) * e;
   }
@@ -239,7 +219,6 @@ struct UniformRealDistribution;
 
 template<typename Rng, typename DType>
 struct UniformRealDistribution<cpu, Rng, DType> {
-
   using result_type = DType;
 
   MSHADOW_FORCE_INLINE explicit UniformRealDistribution(result_type a = 0, result_type b = 1)
@@ -249,7 +228,7 @@ struct UniformRealDistribution<cpu, Rng, DType> {
   /*!
    * \brief return a uniform random number assuming that `g` generates the full range of ingeters.
    */
-  MSHADOW_FORCE_INLINE result_type operator()(Rng& g) const {
+  MSHADOW_FORCE_INLINE result_type operator()(Rng& g) const {  // NOLINT(runtime/references)
     DType r;
     do {
       r = a + w * RandomReal<Rng, FType>::Generate(g);
@@ -257,12 +236,12 @@ struct UniformRealDistribution<cpu, Rng, DType> {
     return r;
   }
 
-  private:
-    using FType = typename std::conditional<sizeof(DType) <= 4, float, double>::type;
+ private:
+  using FType = typename std::conditional< sizeof(DType) <= 4, float, double>::type;
 
-    FType a;
-    DType b;
-    FType w;
+  FType a;
+  DType b;
+  FType w;
 };
 
 template<typename Device, typename Rng, typename DType>
@@ -279,7 +258,7 @@ struct GaussianDistribution<cpu, Rng, DType> {
   /*!
    * \brief return a Gaussian random number assuming that `g` generates the full range of ingeters.
    */
-  MSHADOW_FORCE_INLINE result_type operator()(Rng& g) {
+  MSHADOW_FORCE_INLINE result_type operator()(Rng& g) {  // NOLINT(runtime/references)
     // Marsaglia polar method
     if (has_spare) {
       has_spare = false;
@@ -298,7 +277,7 @@ struct GaussianDistribution<cpu, Rng, DType> {
   }
 
  private:
-  using FType = typename std::conditional<sizeof(DType) <= 4, float, double>::type;
+  using FType = typename std::conditional< sizeof(DType) <= 4, float, double>::type;
 
   FType mean;
   FType stddev;
@@ -321,7 +300,8 @@ template<typename DType>
 class Random<cpu, DType> {
  public:
 #if MSHADOW_IN_CXX11
-  using RandomBitGenerator = typename RandomBitGeneratorTrait<DType>::type;
+  using RandomBitGenerator =
+    typename std::conditional< sizeof(DType) <= 4, PCGRandom32, PCGRandom64>::type;
 #endif
 
   /*!
@@ -371,7 +351,7 @@ class Random<cpu, DType> {
    * \tparam IntType integer type
    */
   template<typename IntType>
-  inline void GetRandInt(Tensor<cpu, 1, IntType>& dst) {
+  inline void GetRandInt(Tensor<cpu, 1, IntType>& dst) {  // NOLINT(runtime/references)
     std::generate_n(dst.dptr_, dst.size(0), [&](){ return rnd_engine_(); });
   }
 
@@ -663,7 +643,6 @@ namespace mshadow {
 
 template<typename DType>
 struct Random<gpu, DType> {
-
   /*! \brief default number of internal parallel random number generators */
   static const unsigned DEFAULT_NUMBER_OF_RNGS = 4096;
 
@@ -711,7 +690,7 @@ struct Random<gpu, DType> {
    * \tparam IntType integer type
    */
   template<typename IntType>
-  inline void GetRandInt(Tensor<gpu, 1, IntType>& dst) {
+  inline void GetRandInt(Tensor<gpu, 1, IntType>& dst) {  // NOLINT(runtime/references)
     impl.GenerateInt(stream, dst.dptr_, dst.shape_.Size());
   }
 
@@ -792,7 +771,9 @@ struct Random<gpu, DType> {
   }
 
  private:
-  using Impl = cuda::GPURandomImpl<typename RandomBitGeneratorTrait<DType>::type, DType>;
+  using RandomBitGenerator =
+    typename std::conditional< sizeof(DType) <= 4, PCGRandom32, PCGRandom64>::type;
+  using Impl = cuda::GPURandomImpl<RandomBitGenerator, DType>;
 
   /*! \brief temporal buffer */
   TensorContainer<gpu, 1, DType> buffer_;
