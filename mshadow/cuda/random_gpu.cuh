@@ -165,13 +165,13 @@ __global__ void RandomUniformRealKernel(
   for (DType* offset = ret; offset < bound; offset += n_rngs) {
     // Rounding down is used to ensure the upper bound exclusive.
     *(offset + rng_id) = CastWithRounginDown<FType, DType>(
-      CM::FmaRD(FType(RandomReal<Rng, FType>::Generate(rng)), w, lo)
+      CM::FmaRD(rng.template generate<FType>(), w, lo)
     );
   }
   if (rng_id < size % n_rngs) {
     // Rounding down is used to ensure the upper bound exclusive.
     *(bound + rng_id) = CastWithRounginDown<FType, DType>(
-      CM::FmaRD(FType(RandomReal<Rng, FType>::Generate(rng)), w, lo)
+      CM::FmaRD(rng.template generate<FType>(), w, lo)
     );
   }
   rngs[rng_id] = rng;
@@ -236,11 +236,11 @@ __global__ void RandomGaussianKernel(
   DType* const bound1 = ret + 2 * n_rngs * (size / (2 * n_rngs));
   DType* const bound2 = ret + size;
   for (DType* offset = ret; offset < bound1; offset += 2 * n_rngs) {
-    FType u1 = RandomReal<Rng, FType>::Generate(rng);
+    FType u1 = rng.template generate<FType>();
     while (u1 == 0) {
-      u1 = RandomReal<Rng, FType>::Generate(rng);
+      u1 = rng.template generate<FType>();
     }
-    const FType u2 = RandomReal<Rng, FType>::Generate(rng);
+    const FType u2 = rng.template generate<FType>();
     const FType v1 = stddev * CM::Sqrt(-FType(2) * CM::Log(u1));
     const FType v2 = two_pi * u2;
     *(offset + rng_id) = static_cast<DType>(CM::Fma(v1, CM::Cos(v2), mean));
@@ -248,11 +248,11 @@ __global__ void RandomGaussianKernel(
     *i = static_cast<DType>(CM::Fma(v1, CM::Sin(v2), mean));
   }
   if (2 * rng_id < size % (2 * n_rngs)) {
-    FType u1 = RandomReal<Rng, FType>::Generate(rng);
+    FType u1 = rng.template generate<FType>();
     while (u1 == 0) {
-      u1 = RandomReal<Rng, FType>::Generate(rng);
+      u1 = rng.template generate<FType>();
     }
-    const FType u2 = RandomReal<Rng, FType>::Generate(rng);
+    const FType u2 = rng.template generate<FType>();
     const FType v1 = stddev * CM::Sqrt(-FType(2) * CM::Log(u1));
     const FType v2 = two_pi * u2;
     DType* i = bound1 + 2 * rng_id;
@@ -437,7 +437,7 @@ struct UniformRealDistribution<gpu, Rng, DType> {
   MSHADOW_FORCE_INLINE __device__ result_type operator()(Rng& g) const {
     using CM = cuda::CuMath<FType>;
     return cuda::CastWithRounginDown<FType, DType>(
-      CM::FmaRD(FType(RandomReal<Rng, FType>::Generate(g)), w, a)
+      CM::FmaRD(g.template generate<FType>(), w, a)
     );
   }
 
@@ -470,11 +470,11 @@ struct GaussianDistribution<gpu, Rng, DType> {
     }
     using CM = cuda::CuMath<FType>;
     const FType two_pi = 6.283185307179586;
-    FType u1 = RandomReal<Rng, FType>::Generate(g);
+    FType u1 = g.template generate<FType>();
     while (u1 == 0) {
-      u1 = RandomReal<Rng, FType>::Generate(g);
+      u1 = g.template generate<FType>();
     }
-    const FType u2 = RandomReal<Rng, FType>::Generate(g);
+    const FType u2 = g.template generate<FType>();
     const FType v1 = stddev * CM::Sqrt(-FType(2) * CM::Log(u1));
     const FType v2 = two_pi * u2;
     spare = CM::Fma(v1, CM::Cos(v2), mean);

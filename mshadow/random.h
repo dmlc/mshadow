@@ -106,6 +106,12 @@ class PCGRandom32 {
     return 0xfffffffful;
   }
 
+  /*!
+    * \brief generate a random number of type T.
+    */
+  template<typename T>
+  MSHADOW_XINLINE T generate();
+
  public:
   static constexpr uint32_t default_seed = 3917ull;
   static constexpr uint32_t default_sequence = 0ull;
@@ -113,6 +119,19 @@ class PCGRandom32 {
  private:
   PCG32 pcg;
 };
+
+template<>
+MSHADOW_XINLINE float PCGRandom32::generate<float>() {
+  constexpr float e = 1.f / (uint32_t(1) << 24);
+  return (operator()() >> 8) * e;
+}
+
+template<>
+MSHADOW_XINLINE double PCGRandom32::generate<double>() {
+  constexpr double e = 1. / (uint64_t(1) << 53);
+  uint64_t u = (uint64_t(operator()()) << 32) | operator()();
+  return (u >> 11) * e;
+}
 
 /*!
  * C++11 style PCG random number generator for 64 random bits.
@@ -154,6 +173,12 @@ class PCGRandom64 {
     return 0xffffffffffffffffull;
   }
 
+  /*!
+    * \brief generate a random number of type T.
+    */
+  template<typename T>
+  MSHADOW_XINLINE T generate();
+
  public:
   static constexpr uint64_t default_seed = 81917ull;
   static constexpr uint64_t default_sequence = 10920ull;
@@ -170,49 +195,17 @@ class PCGRandom64 {
   PCG32 pcg1;
 };
 
-template<typename Rng, typename FPType>
-struct RandomReal;
+template<>
+MSHADOW_XINLINE float PCGRandom64::generate<float>() {
+  constexpr float e = 1.f / (uint32_t(1) << 24);
+  return (uint32_t(operator()()) >> 8) * e;
+}
 
 template<>
-struct RandomReal<PCGRandom32, float> {
-  using UIType = uint32_t;
-  using FPType = float;
-  MSHADOW_XINLINE static FPType Generate(PCGRandom32& rng) {  // NOLINT(runtime/references)
-    constexpr FPType e = FPType(1) / (UIType(1) << 24);
-    return (rng() >> 8) * e;
-  }
-};
-
-template<>
-struct RandomReal<PCGRandom32, double> {
-  using UIType = uint64_t;
-  using FPType = double;
-  MSHADOW_XINLINE static FPType Generate(PCGRandom32& rng) {  // NOLINT(runtime/references)
-    constexpr FPType e = FPType(1) / (UIType(1) << 53);
-    uint64_t u = (uint64_t(rng()) << 32) | rng();
-    return (u >> 11) * e;
-  }
-};
-
-template<>
-struct RandomReal<PCGRandom64, float> {
-  using UIType = uint32_t;
-  using FPType = float;
-  MSHADOW_XINLINE static FPType Generate(PCGRandom64& rng) {  // NOLINT(runtime/references)
-    constexpr FPType e = FPType(1) / (UIType(1) << 24);
-    return (UIType(rng()) >> 8) * e;
-  }
-};
-
-template<>
-struct RandomReal<PCGRandom64, double> {
-  using UIType = uint64_t;
-  using FPType = double;
-  MSHADOW_XINLINE static FPType Generate(PCGRandom64& rng) {  // NOLINT(runtime/references)
-    constexpr FPType e = FPType(1) / (UIType(1) << 53);
-    return (rng() >> 11) * e;
-  }
-};
+MSHADOW_XINLINE double PCGRandom64::generate<double>() {
+  constexpr double e = 1. / (uint64_t(1) << 53);
+  return (operator()() >> 11) * e;
+}
 
 template<typename Device, typename Rng, typename DType>
 struct UniformRealDistribution;
@@ -231,7 +224,7 @@ struct UniformRealDistribution<cpu, Rng, DType> {
   MSHADOW_FORCE_INLINE result_type operator()(Rng& g) const {  // NOLINT(runtime/references)
     DType r;
     do {
-      r = a + w * RandomReal<Rng, FType>::Generate(g);
+      r = a + w * g.template generate<FType>();
     } while (b <= r);  // This can happen due to floating point rounding.
     return r;
   }
@@ -266,8 +259,8 @@ struct GaussianDistribution<cpu, Rng, DType> {
     }
     FType u, v, s;
     do {
-      u = RandomReal<Rng, FType>::Generate(g) * 2 - 1;
-      v = RandomReal<Rng, FType>::Generate(g) * 2 - 1;
+      u = g.template generate<FType>() * 2 - 1;
+      v = g.template generate<FType>() * 2 - 1;
       s = u * u + v * v;
     } while (s >= 1 || s == 0);
     const FType t = stddev * sqrt(-FType(2) * log(s) / s);
