@@ -1,12 +1,17 @@
 # set LD_LIBRARY_PATH
-export CC  = gcc
-export CXX = g++
-export NVCC =nvcc
+
+# set compilers if not set before
+CC ?= gcc
+CXX ?= g++
+NVCC ?= nvcc
+
 include config.mk
 include ../make/mshadow.mk
-export CFLAGS = -Wall -O3 -std=c++11 -I../ $(MSHADOW_CFLAGS)
-export LDFLAGS= -lm $(MSHADOW_LDFLAGS)
-export NVCCFLAGS = -O3 --use_fast_math -ccbin $(CXX) $(MSHADOW_NVCCFLAGS)
+
+# extend compiler and linker flags
+CFLAGS += -Wall -O3 -std=c++11 -I../ $(MSHADOW_CFLAGS)
+LDFLAGS += -lm $(MSHADOW_LDFLAGS)
+NVCCFLAGS += -O3 --use_fast_math -ccbin "${CXX}" $(MSHADOW_NVCCFLAGS)
 
 # specify tensor path
 BIN = basic defop
