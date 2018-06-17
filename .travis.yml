@@ -16,6 +16,7 @@ addons:
       - wget
       - unzip
       - libblas-dev
+      - python3-pip
 
 before_install:
   - git clone https://github.com/dmlc/dmlc-core
@@ -23,7 +24,7 @@ before_install:
   - source ${TRAVIS}/travis_setup_env.sh
 
 install:
-  - pip install  --user  cpplint pylint
+  - pip3 install  --user  cpplint pylint
   
 script: scripts/travis_script.sh
 
