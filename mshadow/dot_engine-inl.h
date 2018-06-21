@@ -291,11 +291,75 @@ struct BLASEngine<cpu, float> {
                                   const float *A, int lda, const float *B, int ldb,
                                   float beta, float *C, int ldc, int batch_count,
                                   float **workspace) {
+#if MSHADOW_USE_MKL
+
+  std::vector<int> p_m;
+  p_m.reserve(batch_count);
+  std::vector<int> p_n;
+  p_n.reserve(batch_count);
+  std::vector<int> p_k;
+  p_k.reserve(batch_count);
+  std::vector<int> p_lda;
+  p_lda.reserve(batch_count);
+  std::vector<int> p_ldb;
+  p_ldb.reserve(batch_count);
+  std::vector<int> p_ldc;
+  p_ldc.reserve(batch_count);
+  std::vector<float> p_alpha;
+  p_alpha.reserve(batch_count);
+  std::vector<float> p_beta;
+  p_beta.reserve(batch_count);
+  std::vector<const float*> pp_A;
+  pp_A.reserve(batch_count);
+  std::vector<const float*> pp_B;
+  pp_B.reserve(batch_count);
+  std::vector<float*> pp_C;
+  pp_C.reserve(batch_count);
+
+  CBLAS_TRANSPOSE cblas_a_trans = GetT(transa);
+  CBLAS_TRANSPOSE cblas_b_trans = GetT(transb);
+
+  std::vector<int> p_group_sizeb;
+  p_group_sizeb.reserve(batch_count);
+  std::vector<CBLAS_TRANSPOSE> p_transa;
+  p_transa.reserve(batch_count);
+  std::vector<CBLAS_TRANSPOSE> p_transb;
+  p_transb.reserve(batch_count);
+
+  for(int i=0; i<batch_count; i++)
+  {
+    p_m.push_back(m);
+    p_n.push_back(n);
+    p_k.push_back(k);
+    p_lda.push_back(lda);
+    p_ldb.push_back(ldb);
+    p_ldc.push_back(ldc);
+    pp_A.push_back(A + i * m * k);
+    pp_B.push_back(B + i * k * n);
+    pp_C.push_back(C + i * m * n);
+
+    p_alpha.push_back(alpha);
+    p_beta.push_back(beta);
+
+    p_transa.push_back(cblas_a_trans);
+    p_transb.push_back(cblas_b_trans);
+
+    p_group_sizeb.push_back(batch_count);
+  }
+
+    cblas_sgemm_batch(CblasColMajor, p_transa.data(), p_transb.data(),
+		      p_m.data(), p_n.data(), p_k.data(),
+		      p_alpha.data(), pp_A.data(), p_lda.data(), pp_B.data(),
+		      p_ldb.data(), p_beta.data(), pp_C.data(), p_ldc.data(),
+		      1, p_group_sizeb.data());
+
+#else
     for (int i = 0; i < batch_count; ++i) {
       gemm(stream, transa, transb, m, n, k, alpha,
            A + i * m * k, lda, B + i * k * n, ldb,
            beta, C + i * m * n, ldc);
     }
+#endif
   }
   inline static void gemv(Stream<cpu> *stream,
                           bool trans, int m, int n,
