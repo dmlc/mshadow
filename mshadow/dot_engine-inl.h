@@ -292,23 +292,15 @@ struct BLASEngine<cpu, float> {
                                   float beta, float *C, int ldc, int batch_count,
                                   float **workspace) {
 #if MSHADOW_USE_MKL
+  std::vector<int> p_m(batch_count, m);
+  std::vector<int> p_n(batch_count, n);
+  std::vector<int> p_k(batch_count, k);
+  std::vector<int> p_lda(batch_count, lda);
+  std::vector<int> p_ldb(batch_count, ldb);
+  std::vector<int> p_ldc(batch_count, ldc);
+  std::vector<float> p_alpha(batch_count, alpha);
+  std::vector<float> p_beta(batch_count, beta);
 
-  std::vector<int> p_m;
-  p_m.reserve(batch_count);
-  std::vector<int> p_n;
-  p_n.reserve(batch_count);
-  std::vector<int> p_k;
-  p_k.reserve(batch_count);
-  std::vector<int> p_lda;
-  p_lda.reserve(batch_count);
-  std::vector<int> p_ldb;
-  p_ldb.reserve(batch_count);
-  std::vector<int> p_ldc;
-  p_ldc.reserve(batch_count);
-  std::vector<float> p_alpha;
-  p_alpha.reserve(batch_count);
-  std::vector<float> p_beta;
-  p_beta.reserve(batch_count);
   std::vector<const float*> pp_A;
   pp_A.reserve(batch_count);
   std::vector<const float*> pp_B;
@@ -319,32 +311,15 @@ struct BLASEngine<cpu, float> {
   CBLAS_TRANSPOSE cblas_a_trans = GetT(transa);
   CBLAS_TRANSPOSE cblas_b_trans = GetT(transb);
 
-  std::vector<int> p_group_sizeb;
-  p_group_sizeb.reserve(batch_count);
-  std::vector<CBLAS_TRANSPOSE> p_transa;
-  p_transa.reserve(batch_count);
-  std::vector<CBLAS_TRANSPOSE> p_transb;
-  p_transb.reserve(batch_count);
+  std::vector<int> p_group_sizeb(batch_count, batch_count);
+  std::vector<CBLAS_TRANSPOSE> p_transa(batch_count, cblas_a_trans);
+  std::vector<CBLAS_TRANSPOSE> p_transb(batch_count, cblas_b_trans);
 
   for(int i=0; i<batch_count; i++)
   {
-    p_m.push_back(m);
-    p_n.push_back(n);
-    p_k.push_back(k);
-    p_lda.push_back(lda);
-    p_ldb.push_back(ldb);
-    p_ldc.push_back(ldc);
     pp_A.push_back(A + i * m * k);
     pp_B.push_back(B + i * k * n);
     pp_C.push_back(C + i * m * n);
-
-    p_alpha.push_back(alpha);
-    p_beta.push_back(beta);
-
-    p_transa.push_back(cblas_a_trans);
-    p_transb.push_back(cblas_b_trans);
-
-    p_group_sizeb.push_back(batch_count);
   }
 
     cblas_sgemm_batch(CblasColMajor, p_transa.data(), p_transb.data(),
@@ -352,7 +327,6 @@ struct BLASEngine<cpu, float> {
 		      p_alpha.data(), pp_A.data(), p_lda.data(), pp_B.data(),
 		      p_ldb.data(), p_beta.data(), pp_C.data(), p_ldc.data(),
 		      1, p_group_sizeb.data());
-
 #else
     for (int i = 0; i < batch_count; ++i) {
       gemm(stream, transa, transb, m, n, k, alpha,
