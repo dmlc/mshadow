@@ -7,6 +7,7 @@
 #ifndef MSHADOW_DOT_ENGINE_INL_H_
 #define MSHADOW_DOT_ENGINE_INL_H_
 
+#include <vector>
 #include "./base.h"
 #include "./extension/implicit_gemm.h"
 
@@ -315,18 +316,17 @@ struct BLASEngine<cpu, float> {
   auto k_n = k * n;
   auto m_n = m * n;
 
-  for(int i=0; i<batch_count; i++)
-  {
+  for (int i = 0; i < batch_count; i++) {
     pp_A.push_back(A + i * m_k);
     pp_B.push_back(B + i * k_n);
     pp_C.push_back(C + i * m_n);
   }
 
     cblas_sgemm_batch(CblasColMajor, p_transa.data(), p_transb.data(),
-		      p_m.data(), p_n.data(), p_k.data(),
-		      p_alpha.data(), pp_A.data(), p_lda.data(), pp_B.data(),
-		      p_ldb.data(), p_beta.data(), pp_C.data(), p_ldc.data(),
-		      1, p_group_sizeb.data());
+                      p_m.data(), p_n.data(), p_k.data(),
+                      p_alpha.data(), pp_A.data(), p_lda.data(), pp_B.data(),
+                      p_ldb.data(), p_beta.data(), pp_C.data(), p_ldc.data(),
+                      1, p_group_sizeb.data());
 #else
     for (int i = 0; i < batch_count; ++i) {
       gemm(stream, transa, transb, m, n, k, alpha,
@@ -423,18 +423,17 @@ struct BLASEngine<cpu, double> {
   auto k_n = k * n;
   auto m_n = m * n;
 
-  for(int i=0; i<batch_count; i++)
-  {
+  for (int i = 0; i < batch_count; i++) {
     pp_A.push_back(A + i * m_k);
     pp_B.push_back(B + i * k_n);
     pp_C.push_back(C + i * m_n);
   }
 
     cblas_dgemm_batch(CblasColMajor, p_transa.data(), p_transb.data(),
-		      p_m.data(), p_n.data(), p_k.data(),
-		      p_alpha.data(), pp_A.data(), p_lda.data(), pp_B.data(),
-		      p_ldb.data(), p_beta.data(), pp_C.data(), p_ldc.data(),
-		      1, p_group_sizeb.data());
+                      p_m.data(), p_n.data(), p_k.data(),
+                      p_alpha.data(), pp_A.data(), p_lda.data(), pp_B.data(),
+                      p_ldb.data(), p_beta.data(), pp_C.data(), p_ldc.data(),
+                      1, p_group_sizeb.data());
 #else
     for (int i = 0; i < batch_count; ++i) {
       gemm(stream, transa, transb, m, n, k, alpha,
