@@ -300,13 +300,9 @@ struct BLASEngine<cpu, float> {
   std::vector<int> p_ldc(batch_count, ldc);
   std::vector<float> p_alpha(batch_count, alpha);
   std::vector<float> p_beta(batch_count, beta);
-
   std::vector<const float*> pp_A;
-  pp_A.reserve(batch_count);
   std::vector<const float*> pp_B;
-  pp_B.reserve(batch_count);
   std::vector<float*> pp_C;
-  pp_C.reserve(batch_count);
 
   CBLAS_TRANSPOSE cblas_a_trans = GetT(transa);
   CBLAS_TRANSPOSE cblas_b_trans = GetT(transb);
@@ -412,13 +408,9 @@ struct BLASEngine<cpu, double> {
   std::vector<int> p_ldc(batch_count, ldc);
   std::vector<double> p_alpha(batch_count, alpha);
   std::vector<double> p_beta(batch_count, beta);
-
   std::vector<const double*> pp_A;
-  pp_A.reserve(batch_count);
   std::vector<const double*> pp_B;
-  pp_B.reserve(batch_count);
   std::vector<double*> pp_C;
-  pp_C.reserve(batch_count);
 
   CBLAS_TRANSPOSE cblas_a_trans = GetT(transa);
   CBLAS_TRANSPOSE cblas_b_trans = GetT(transb);
