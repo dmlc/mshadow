@@ -292,7 +292,7 @@ struct BLASEngine<cpu, float> {
                                   const float *A, int lda, const float *B, int ldb,
                                   float beta, float *C, int ldc, int batch_count,
                                   float **workspace) {
-#if MSHADOW_USE_MKL
+#if (MSHADOW_USE_MKL && INTEL_MKL_VERSION >= 20160000)
   std::vector<int> p_m(batch_count, m);
   std::vector<int> p_n(batch_count, n);
   std::vector<int> p_k(batch_count, k);
@@ -399,7 +399,7 @@ struct BLASEngine<cpu, double> {
                                   const double *A, int lda, const double *B, int ldb,
                                   double beta, double *C, int ldc, int batch_count,
                                   double **workspace) {
-#if MSHADOW_USE_MKL
+#if (MSHADOW_USE_MKL && INTEL_MKL_VERSION >= 20160000)
   std::vector<int> p_m(batch_count, m);
   std::vector<int> p_n(batch_count, n);
   std::vector<int> p_k(batch_count, k);
