@@ -116,7 +116,7 @@ class MSHADOW_ALIGNED(2) half_t {
   MSHADOW_XINLINE explicit half_t(const uint32_t& value) { constructor(value); }
   MSHADOW_XINLINE explicit half_t(const int64_t& value) { constructor(value); }
   // MSHADOW_XINLINE explicit half_t(const uint64_t& value) { constructor(value); }
-  // Replace constructor with uint64_t argument by the following two due to 
+  // Replace constructor with uint64_t argument by the following two due to
   // ambiguous casting from size_t
   MSHADOW_XINLINE explicit half_t(const unsigned long& value) { constructor(value); } /* NOLINT(*) */
   MSHADOW_XINLINE explicit half_t(const unsigned long long& value) { constructor(value); } /* NOLINT(*) */
