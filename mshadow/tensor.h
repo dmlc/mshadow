@@ -420,7 +420,7 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
    * \brief storing the stride information in x dimension
    *    this is used to deal with pitch allocation in gpu or sse(align x dimension to 64bit) for efficiency
    */
-  index_t stride_;
+  size_t stride_;
   /*!
    * \brief stream where the computation lies
    * stream is a device dependency concept where each computation
@@ -444,7 +444,7 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
   /*! \brief constructor from data pointer and shape  */
   MSHADOW_XINLINE Tensor(DType *dptr,
                          const Shape<dimension> &shape,
-                         index_t stride, Stream<Device> *stream)
+                         size_t stride, Stream<Device> *stream)
       : dptr_(dptr), shape_(shape), stride_(stride), stream_(stream) {}
   /*!
    * \brief set the stream to do computation of current tensor
@@ -552,7 +552,7 @@ struct Tensor<Device, 1, DType>:
  public:
   DType *dptr_;
   Shape<1> shape_;
-  index_t stride_;
+  size_t stride_;
   Stream<Device> *stream_;
   // constructor
   MSHADOW_XINLINE Tensor(void) : stream_(NULL) {}
@@ -563,7 +563,7 @@ struct Tensor<Device, 1, DType>:
   MSHADOW_XINLINE Tensor(DType *dptr, Shape<1> shape, Stream<Device> *stream)
       : dptr_(dptr), shape_(shape), stride_(shape[0]), stream_(stream) {}
   MSHADOW_XINLINE Tensor(DType *dptr, Shape<1> shape,
-                         index_t stride, Stream<Device> *stream)
+                         size_t stride, Stream<Device> *stream)
       : dptr_(dptr), shape_(shape), stride_(stride), stream_(stream) {}
   inline void set_stream(Stream<Device> *stream) {
     this->stream_ = stream;

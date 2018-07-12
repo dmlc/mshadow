@@ -23,7 +23,7 @@ the declaration in [mashadow/tensor.h](../mshadow/tensor.h)
 typedef unsigned index_t;
 template<int dimension>
 struct Shape {
-  index_t shape_[dimension];
+  size_t shape_[dimension];
 };
 template<typename Device, int dimension, typename DType = float>
 struct Tensor {
@@ -49,7 +49,7 @@ struct Shape<2> {
 struct Tensor<cpu, 2, float> {
   float *dptr_;
   Shape<2> shape_;
-  index_t stride_;
+  size_t stride_;
 };
 ```
 * ``` Tensor<cpu, 2>``` contains ```dptr_```, which points to the space that backs up the tensor.
