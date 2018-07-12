@@ -54,7 +54,7 @@ struct Shape {
   /*! \brief dimension of current shape minus one */
   static const int kSubdim = dimension - 1;
   /*! \brief storing the dimension information */
-  index_t shape_[kDimension];
+  size_t shape_[kDimension];
   /*! \brief default constructor, do nothing */
   MSHADOW_XINLINE Shape(void) {}
   /*! \brief constuctor */
@@ -69,7 +69,7 @@ struct Shape {
    * \param idx dimension index
    * \return the corresponding dimension size
    */
-  MSHADOW_XINLINE index_t &operator[](index_t idx) {
+  MSHADOW_XINLINE size_t &operator[](index_t idx) {
     return shape_[idx];
   }
   /*!
@@ -77,7 +77,7 @@ struct Shape {
    * \param idx dimension index
    * \return the corresponding dimension size
    */
-  MSHADOW_XINLINE const index_t &operator[](index_t idx) const {
+  MSHADOW_XINLINE const size_t &operator[](index_t idx) const {
     return shape_[idx];
   }
   /*!
@@ -114,7 +114,7 @@ struct Shape {
   MSHADOW_XINLINE Shape<2> FlatTo2D(void) const {
     Shape<2> s;
     s.shape_[1] = this->shape_[kDimension - 1];
-    index_t ymax = 1;
+    size_t ymax = 1;
     #pragma unroll
     for (int i = 0; i < kDimension - 1; ++i) {
       ymax *= this->shape_[i];
@@ -136,8 +136,8 @@ struct Shape {
    * \param dimstart start dimension
    * \param dimend end dimension
    */
-  MSHADOW_XINLINE index_t ProdShape(int dimstart, int dimend) const {
-    index_t num = 1;
+  MSHADOW_XINLINE size_t ProdShape(int dimstart, int dimend) const {
+    size_t num = 1;
     #pragma unroll
     for (int i = dimstart; i < dimend; ++i) {
       num *= this->shape_[i];
@@ -185,7 +185,7 @@ v   * \return subshape
  * \param s0 size of dimension 0
  * \return the shape construction
  */
-MSHADOW_XINLINE Shape<1> Shape1(index_t s0) {
+MSHADOW_XINLINE Shape<1> Shape1(size_t s0) {
   Shape<1> s; s[0] = s0;
   return s;
 }
@@ -195,7 +195,7 @@ MSHADOW_XINLINE Shape<1> Shape1(index_t s0) {
  * \param s1 size of dimension 1
  * \return the shape construction
  */
-MSHADOW_XINLINE Shape<2> Shape2(index_t s0, index_t s1) {
+MSHADOW_XINLINE Shape<2> Shape2(size_t s0, size_t s1) {
   Shape<2> s; s[0] = s0; s[1] = s1;
   return s;
 }
@@ -206,7 +206,7 @@ MSHADOW_XINLINE Shape<2> Shape2(index_t s0, index_t s1) {
  * \param s2 size of dimension 2
  * \return the shape construction
  */
-MSHADOW_XINLINE Shape<3> Shape3(index_t s0, index_t s1, index_t s2) {
+MSHADOW_XINLINE Shape<3> Shape3(size_t s0, size_t s1, size_t s2) {
   Shape<3> s;
   s[0] = s0; s[1] = s1; s[2] = s2;
   return s;
@@ -219,8 +219,8 @@ MSHADOW_XINLINE Shape<3> Shape3(index_t s0, index_t s1, index_t s2) {
  * \param s3 size of dimension 3
  * \return the shape construction
  */
-MSHADOW_XINLINE Shape<4> Shape4(index_t s0, index_t s1,
-                                index_t s2, index_t s3) {
+MSHADOW_XINLINE Shape<4> Shape4(size_t s0, size_t s1,
+                                size_t s2, size_t s3) {
   Shape<4> s;
   s[0] = s0; s[1] = s1; s[2] = s2; s[3] = s3;
   return s;
@@ -234,8 +234,8 @@ MSHADOW_XINLINE Shape<4> Shape4(index_t s0, index_t s1,
 * \param s4 size of dimension 4
 * \return the shape construction
 */
-MSHADOW_XINLINE Shape<5> Shape5(index_t s0, index_t s1, index_t s2,
-                                index_t s3, index_t s4) {
+MSHADOW_XINLINE Shape<5> Shape5(size_t s0, size_t s1, size_t s2,
+                                size_t s3, size_t s4) {
   Shape<5> s;
   s[0] = s0; s[1] = s1; s[2] = s2; s[3] = s3; s[4] = s4;
   return s;
@@ -267,7 +267,7 @@ inline Shape<3> ConvertLayout(const Shape<3>& src, int src_layout, int dst_layou
     return dst;
   case kNWC:
     {
-      index_t tmp = dst[1];
+      size_t tmp = dst[1];
       dst[1] = dst[2];
       dst[2] = tmp;
     }
@@ -484,7 +484,7 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
    * \param idx the dimension count from the highest dimensin
    * \return the size
    */
-  MSHADOW_XINLINE index_t size(index_t idx) const {
+  MSHADOW_XINLINE size_t size(index_t idx) const {
     return shape_[idx];
   }
   /*!
@@ -517,7 +517,7 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
    * \return tensor after slice
    */
   MSHADOW_XINLINE Tensor<Device, dimension, DType>
-  Slice(index_t begin, index_t end) const {
+  Slice(size_t begin, size_t end) const {
     Shape<dimension> s = this->shape_;
     s[0] = end - begin;
     return Tensor<Device, dimension, DType>(dptr_ + this->MemSize<1>() * begin,
@@ -574,7 +574,7 @@ struct Tensor<Device, 1, DType>:
   MSHADOW_XINLINE Tensor<Device, 2, DType> FlatTo2D(void) const {
     return Tensor<Device, 2, DType>(dptr_, shape_.FlatTo2D(), stride_, stream_);
   }
-  MSHADOW_XINLINE Tensor<Device, 1, DType> Slice(index_t begin, index_t end) const {
+  MSHADOW_XINLINE Tensor<Device, 1, DType> Slice(size_t begin, size_t end) const {
     Shape<1> s;
     s[0] = end  - begin;
     return Tensor<Device, 1, DType>(dptr_ + begin, s, s[0], stream_);
@@ -585,7 +585,7 @@ struct Tensor<Device, 1, DType>:
   MSHADOW_XINLINE size_t MSize(void) const {
     return shape_[0];
   }
-  MSHADOW_XINLINE index_t size(index_t i) const {
+  MSHADOW_XINLINE size_t size(index_t i) const {
     return shape_[0];
   }
   MSHADOW_XINLINE DType &operator[](index_t idx) {
