@@ -15,7 +15,7 @@ template<typename DType>
 struct Packet<DType, kPlain> {
  public:
   /*! \brief number of float in vector */
-  static inline index_t Size() { return 1; }
+  static constexpr index_t size = 1;
   /*! \brief The internal data */
   DType data_;
   // enable default copy constructor

@@ -844,7 +844,7 @@ inline void AddTakeGrad(Tensor<gpu, 2, DType> dst,
  */
 template<typename IndexType, typename DType>
 inline void AddTakeGradLargeBatch(Tensor<cpu, 2, DType> dst,
-                                  const Tensor<gpu, 1, IndexType>& sorted,
+                                  const Tensor<cpu, 1, IndexType>& sorted,
                                   const Tensor<cpu, 1, IndexType>& index,
                                   const Tensor<cpu, 2, DType> &src);
 /*!

@@ -395,7 +395,7 @@ inline void MapPacketPlan(Tensor<cpu, dim, DType> _dst,
                           const expr::PacketPlan<E, DType, Arch>& plan) {
   Tensor<cpu, 2, DType> dst = _dst.FlatTo2D();
   const index_t xlen = packet::LowerAlign<DType, Arch>(dst.size(1));
-  const size_t packetSize = packet::Packet<DType, Arch>::Size();
+  const size_t packetSize = packet::Packet<DType, Arch>::size;
 #if (MSHADOW_USE_CUDA == 0)
   #pragma omp parallel for
 #endif
