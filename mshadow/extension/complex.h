@@ -344,8 +344,10 @@ template<int dim, int calctype, typename OP, typename TA, typename DType, int et
 struct ShapeCheck<dim, ComplexUnitaryExp<calctype, OP, TA, DType, etype> > {
   inline static Shape<dim> Check(const ComplexUnitaryExp<calctype, OP, TA, DType, etype> &t) {
     Shape<dim> s = ShapeCheck<dim, TA>::Check(t.src_);
-    CHECK_EQ(s[dim - 1] % 2, 0) << "ComplexUnitaryExp: Shape of the last dimension is not even. "
-      "We must have real + imaginary.";
+    if (calctype == op::complex::kUnitaryC2C || calctype == op::complex::kUnitaryC2R) {
+      CHECK_EQ(s[dim - 1] % 2, 0) << "ComplexUnitaryExp: Shape of the last dimension is not even. "
+        "We must have real + imaginary.";
+    }
     if (calctype == op::complex::kUnitaryC2C) {
       return s;
     } else if (calctype == op::complex::kUnitaryC2R) {
