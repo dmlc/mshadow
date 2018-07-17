@@ -206,7 +206,7 @@ MSHADOW_XINLINE Shape<2> Shape2(index_t s0, index_t s1) {
  * \param s2 size of dimension 2
  * \return the shape construction
  */
-MSHADOW_XINLINE Shape<3> Shape3(size_t s0, size_t s1, size_t s2) {
+MSHADOW_XINLINE Shape<3> Shape3(index_t s0, index_t s1, index_t s2) {
   Shape<3> s;
   s[0] = s0; s[1] = s1; s[2] = s2;
   return s;
