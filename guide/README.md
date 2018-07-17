@@ -49,7 +49,7 @@ struct Shape<2> {
 struct Tensor<cpu, 2, float> {
   float *dptr_;
   Shape<2> shape_;
-  size_t stride_;
+  index_t stride_;
 };
 ```
 * ``` Tensor<cpu, 2>``` contains ```dptr_```, which points to the space that backs up the tensor.
