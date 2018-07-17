@@ -23,7 +23,7 @@ the declaration in [mashadow/tensor.h](../mshadow/tensor.h)
 typedef unsigned index_t;
 template<int dimension>
 struct Shape {
-  size_t shape_[dimension];
+  index_t shape_[dimension];
 };
 template<typename Device, int dimension, typename DType = float>
 struct Tensor {
