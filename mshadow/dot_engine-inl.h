@@ -531,7 +531,7 @@ struct BLASEngine<gpu, half::half_t> {
                                   const half::half_t *A, int lda, const half::half_t *B, int ldb,
                                   half::half_t beta, half::half_t *C, int ldc, int batch_count,
                                   half::half_t **workspace) {
-#if defined(__CUDACC__) && CUDA_VERSION >= 9000 && MSHADOW_CUDA_HALF
+#if defined(__CUDACC__) && CUDA_VERSION >= 9000
     const __half* A_h = reinterpret_cast<const __half*>(A);
     const __half* B_h = reinterpret_cast<const __half*>(B);
     __half* alpha_h = reinterpret_cast<__half*>(&alpha);
