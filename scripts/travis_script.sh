@@ -1,6 +1,6 @@
 # main script of travis
 if [ ${TASK} == "lint" ]; then
-    python3 dmlc-core/scripts/lint.py mshadow all mshadow mshadow-ps || exit -1
+    dmlc-core/scripts/lint.py mshadow all mshadow mshadow-ps || exit -1
 fi
 
 if [ ${TASK} == "doc" ]; then

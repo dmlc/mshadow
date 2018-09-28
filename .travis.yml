@@ -24,8 +24,6 @@ before_install:
   - source ${TRAVIS}/travis_setup_env.sh
 
 install:
-
-  - pip3 install --upgrade pip --user
   - pip3 install  --user  cpplint pylint
   
 script: scripts/travis_script.sh
