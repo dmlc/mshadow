@@ -146,7 +146,7 @@ inline void MapPlan(TRValue<R, cpu, dim, DType> *dst,
                     const expr::Plan<E, DType> &plan) {
   Shape<2> shape = expr::ShapeCheck<dim, R>::Check(dst->self()).FlatTo2D();
   expr::Plan<R, DType> dplan = expr::MakePlan(dst->self());
-#if (MSHADOW_USE_CUDA == 0)
+#ifndef __CUDACC__
   #pragma omp parallel for
 #endif
   // temp remove openmp, as default setting throttles CPU
@@ -215,7 +215,7 @@ inline void MapReduceKeepLowest(TRValue<R, cpu, 1, DType> *dst,
   // execution
   expr::Plan<R, DType> dplan = MakePlan(dst->self());
   expr::Plan<E, DType> splan = MakePlan(exp.self());
-#if (MSHADOW_USE_CUDA == 0)
+#ifndef __CUDACC__
   #pragma omp parallel for
 #endif
   for (openmp_index_t x = 0; x < eshape[1]; ++x) {
@@ -248,7 +248,7 @@ inline void MapReduceKeepHighDim(TRValue<R, cpu, 1, DType> *dst,
   // execution
   expr::Plan<R, DType> dplan = MakePlan(dst->self());
   expr::Plan<E, DType> splan = MakePlan(exp.self());
-#if (MSHADOW_USE_CUDA == 0)
+#ifndef __CUDACC__
   #pragma omp parallel for
 #endif
   for (openmp_index_t c = 0; c < pshape[1]; ++c) {
