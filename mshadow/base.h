@@ -285,7 +285,7 @@ const unsigned kRandBufferSize = 1000000;
 /*! \brief pi  */
 const float kPi = 3.1415926f;
 /*! \brief type that will be used for index */
-typedef unsigned index_t;
+typedef int64_t index_t;
 
 #ifdef _WIN32
   /*! \brief openmp index for windows */
