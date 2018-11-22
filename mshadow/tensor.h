@@ -123,8 +123,8 @@ struct Shape {
     return s;
   }
   /*! \return number of valid elements */
-  MSHADOW_XINLINE size_t Size(void) const {
-    size_t size = this->shape_[0];
+  MSHADOW_XINLINE index_t Size(void) const {
+    index_t size = this->shape_[0];
     #pragma unroll
     for (int i = 1; i < kDimension; ++i) {
       size *= this->shape_[i];
@@ -413,7 +413,7 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
   // struct memembers
   //--------------------------------
   /*! \brief pointer to the data */
-  DType *dptr_;
+  DType *dptr_ = nullptr;
   /*! \brief shape of the tensor */
   Shape<dimension> shape_;
   /*!
@@ -458,8 +458,8 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
    * \tparam startdim the starting dimension
    */
   template<int startdim>
-  MSHADOW_XINLINE size_t MemSize(void) const {
-    size_t memsz = this->stride_;
+  MSHADOW_XINLINE index_t MemSize(void) const {
+    index_t memsz = this->stride_;
     #pragma unroll
     for (int i = startdim; i < kSubdim; ++i) {
       memsz *= this->shape_[i];
@@ -476,7 +476,7 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
   /*!
    * \return memory cost of the tensor, including the aligned x dimension
    */
-  MSHADOW_XINLINE size_t MSize(void) const {
+  MSHADOW_XINLINE index_t MSize(void) const {
     return this->MemSize<0>();
   }
   /*!
@@ -582,7 +582,7 @@ struct Tensor<Device, 1, DType>:
   MSHADOW_XINLINE bool CheckContiguous(void) const {
     return true;
   }
-  MSHADOW_XINLINE size_t MSize(void) const {
+  MSHADOW_XINLINE index_t MSize(void) const {
     return shape_[0];
   }
   MSHADOW_XINLINE index_t size(index_t i) const {
