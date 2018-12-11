@@ -90,10 +90,10 @@ ifeq ($(USE_INTEL_PATH), NONE)
 else
 	MKLROOT = $(USE_INTEL_PATH)/mkl
 endif
-	MSHADOW_LDFLAGS += -L${MKLROOT}/../compiler/lib/intel64 -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_intel_thread.a -Wl,--end-group -liomp5 -ldl -lpthread -lm
+	MSHADOW_LDFLAGS += -L${MKLROOT}/../compiler/lib/intel64 -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_ilp64.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_intel_thread.a -Wl,--end-group -liomp5 -ldl -lpthread -lm
 else
 ifneq ($(USE_MKLML), 1)
-  MSHADOW_LDFLAGS += -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5
+  MSHADOW_LDFLAGS += -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core -liomp5
 endif
 endif
 else
