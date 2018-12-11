@@ -82,6 +82,7 @@ ifneq ($(USE_INTEL_PATH), NONE)
 		MSHADOW_LDFLAGS += -L$(USE_INTEL_PATH)/compiler/lib/intel64
 		MSHADOW_LDFLAGS += -L$(USE_INTEL_PATH)/lib/intel64
 	endif
+	MSHADOW_CFLAGS += -DMKL_ILP64
 	MSHADOW_CFLAGS += -I$(USE_INTEL_PATH)/mkl/include
 endif
 ifneq ($(USE_STATIC_MKL), NONE)
