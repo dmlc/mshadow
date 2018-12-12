@@ -113,6 +113,8 @@ struct Stream<gpu> {
     cublasStatus_t err = cublasCreate(&blas_handle_);
     blas_handle_ownership_ = OwnHandle;
     CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Create cublas handle failed";
+    err = cublasSetStream(blas_handle_, stream_);
+    CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Setting cublas stream failed";
   }
 #if MSHADOW_USE_CUSOLVER == 1
   inline static cusolverDnHandle_t GetSolverHandle(Stream<gpu> *stream) {

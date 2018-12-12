@@ -413,7 +413,7 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
   // struct memembers
   //--------------------------------
   /*! \brief pointer to the data */
-  DType *dptr_;
+  DType *dptr_ = nullptr;
   /*! \brief shape of the tensor */
   Shape<dimension> shape_;
   /*!
