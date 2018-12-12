@@ -294,23 +294,23 @@ struct BLASEngine<cpu, float> {
                                   float **workspace) {
 #if (MSHADOW_USE_MKL && INTEL_MKL_VERSION >= 20160000)
   // since same m/n/k is used for all single gemms, so we put all gemms into one group
-  // group size = 1
-  MKL_INT p_m[1] = {m};
-  MKL_INT p_n[1] = {n};
-  MKL_INT p_k[1] = {k};
-  MKL_INT p_lda[1] = {lda};
-  MKL_INT p_ldb[1] = {ldb};
-  MKL_INT p_ldc[1] = {ldc};
+  const int GROUP_SIZE = 1;
+  MKL_INT p_m[GROUP_SIZE] = {m};
+  MKL_INT p_n[GROUP_SIZE] = {n};
+  MKL_INT p_k[GROUP_SIZE] = {k};
+  MKL_INT p_lda[GROUP_SIZE] = {lda};
+  MKL_INT p_ldb[GROUP_SIZE] = {ldb};
+  MKL_INT p_ldc[GROUP_SIZE] = {ldc};
 
-  float p_alpha[1] = {alpha};
-  float p_beta[1] = {beta};
+  float p_alpha[GROUP_SIZE] = {alpha};
+  float p_beta[GROUP_SIZE] = {beta};
 
   CBLAS_TRANSPOSE cblas_a_trans = GetT(transa);
   CBLAS_TRANSPOSE cblas_b_trans = GetT(transb);
 
-  MKL_INT p_group_sizeb[1] = {batch_count};
-  CBLAS_TRANSPOSE p_transa[1] = {cblas_a_trans};
-  CBLAS_TRANSPOSE p_transb[1] = {cblas_b_trans};
+  MKL_INT p_group_sizeb[GROUP_SIZE] = {batch_count};
+  CBLAS_TRANSPOSE p_transa[GROUP_SIZE] = {cblas_a_trans};
+  CBLAS_TRANSPOSE p_transb[GROUP_SIZE] = {cblas_b_trans};
 
   std::vector<const float*> pp_A;
   std::vector<const float*> pp_B;
@@ -331,7 +331,7 @@ struct BLASEngine<cpu, float> {
 
   cblas_sgemm_batch(CblasColMajor, p_transa, p_transb,
                     p_m, p_n, p_k, p_alpha, pp_A.data(), p_lda, pp_B.data(),
-                    p_ldb, p_beta, pp_C.data(), p_ldc, 1, p_group_sizeb);
+                    p_ldb, p_beta, pp_C.data(), p_ldc, GROUP_SIZE, p_group_sizeb);
 #else
     for (int i = 0; i < batch_count; ++i) {
       gemm(stream, transa, transb, m, n, k, alpha,
@@ -406,23 +406,23 @@ struct BLASEngine<cpu, double> {
                                   double **workspace) {
 #if (MSHADOW_USE_MKL && INTEL_MKL_VERSION >= 20160000)
   // since same m/n/k is used for all single gemms, so we put all gemms into one group
-  // group size = 1
-  MKL_INT p_m[1] = {m};
-  MKL_INT p_n[1] = {n};
-  MKL_INT p_k[1] = {k};
-  MKL_INT p_lda[1] = {lda};
-  MKL_INT p_ldb[1] = {ldb};
-  MKL_INT p_ldc[1] = {ldc};
+  const int GROUP_SIZE = 1
+  MKL_INT p_m[GROUP_SIZE] = {m};
+  MKL_INT p_n[GROUP_SIZE] = {n};
+  MKL_INT p_k[GROUP_SIZE] = {k};
+  MKL_INT p_lda[GROUP_SIZE] = {lda};
+  MKL_INT p_ldb[GROUP_SIZE] = {ldb};
+  MKL_INT p_ldc[GROUP_SIZE] = {ldc};
 
-  double p_alpha[1] = {alpha};
-  double p_beta[1] = {beta};
+  double p_alpha[GROUP_SIZE] = {alpha};
+  double p_beta[GROUP_SIZE] = {beta};
 
   CBLAS_TRANSPOSE cblas_a_trans = GetT(transa);
   CBLAS_TRANSPOSE cblas_b_trans = GetT(transb);
 
-  MKL_INT p_group_sizeb[1] = {batch_count};
-  CBLAS_TRANSPOSE p_transa[1] = {cblas_a_trans};
-  CBLAS_TRANSPOSE p_transb[1] = {cblas_b_trans};
+  MKL_INT p_group_sizeb[GROUP_SIZE] = {batch_count};
+  CBLAS_TRANSPOSE p_transa[GROUP_SIZE] = {cblas_a_trans};
+  CBLAS_TRANSPOSE p_transb[GROUP_SIZE] = {cblas_b_trans};
 
   std::vector<const double*> pp_A;
   std::vector<const double*> pp_B;
@@ -443,7 +443,7 @@ struct BLASEngine<cpu, double> {
 
   cblas_dgemm_batch(CblasColMajor, p_transa, p_transb,
                     p_m, p_n, p_k, p_alpha, pp_A.data(), p_lda, pp_B.data(),
-                    p_ldb, p_beta, pp_C.data(), p_ldc, 1, p_group_sizeb);
+                    p_ldb, p_beta, pp_C.data(), p_ldc, GROUP_SIZE, p_group_sizeb);
 #else
     for (int i = 0; i < batch_count; ++i) {
       gemm(stream, transa, transb, m, n, k, alpha,
