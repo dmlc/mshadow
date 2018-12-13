@@ -293,12 +293,12 @@ struct BLASEngine<cpu, float> {
                                   float beta, float *C, int ldc, int batch_count,
                                   float **workspace) {
 #if (MSHADOW_USE_MKL && INTEL_MKL_VERSION >= 20160000)
-  std::vector<MKL_INT> p_m(batch_count, m);
-  std::vector<MKL_INT> p_n(batch_count, n);
-  std::vector<MKL_INT> p_k(batch_count, k);
-  std::vector<MKL_INT> p_lda(batch_count, lda);
-  std::vector<MKL_INT> p_ldb(batch_count, ldb);
-  std::vector<MKL_INT> p_ldc(batch_count, ldc);
+  std::vector<int> p_m(batch_count, m);
+  std::vector<int> p_n(batch_count, n);
+  std::vector<int> p_k(batch_count, k);
+  std::vector<int> p_lda(batch_count, lda);
+  std::vector<int> p_ldb(batch_count, ldb);
+  std::vector<int> p_ldc(batch_count, ldc);
   std::vector<float> p_alpha(batch_count, alpha);
   std::vector<float> p_beta(batch_count, beta);
   std::vector<const float*> pp_A;
@@ -308,7 +308,7 @@ struct BLASEngine<cpu, float> {
   CBLAS_TRANSPOSE cblas_a_trans = GetT(transa);
   CBLAS_TRANSPOSE cblas_b_trans = GetT(transb);
 
-  std::vector<MKL_INT> p_group_sizeb(batch_count, batch_count);
+  std::vector<int> p_group_sizeb(batch_count, batch_count);
   std::vector<CBLAS_TRANSPOSE> p_transa(batch_count, cblas_a_trans);
   std::vector<CBLAS_TRANSPOSE> p_transb(batch_count, cblas_b_trans);
 
@@ -400,12 +400,12 @@ struct BLASEngine<cpu, double> {
                                   double beta, double *C, int ldc, int batch_count,
                                   double **workspace) {
 #if (MSHADOW_USE_MKL && INTEL_MKL_VERSION >= 20160000)
-  std::vector<MKL_INT> p_m(batch_count, m);
-  std::vector<MKL_INT> p_n(batch_count, n);
-  std::vector<MKL_INT> p_k(batch_count, k);
-  std::vector<MKL_INT> p_lda(batch_count, lda);
-  std::vector<MKL_INT> p_ldb(batch_count, ldb);
-  std::vector<MKL_INT> p_ldc(batch_count, ldc);
+  std::vector<int> p_m(batch_count, m);
+  std::vector<int> p_n(batch_count, n);
+  std::vector<int> p_k(batch_count, k);
+  std::vector<int> p_lda(batch_count, lda);
+  std::vector<int> p_ldb(batch_count, ldb);
+  std::vector<int> p_ldc(batch_count, ldc);
   std::vector<double> p_alpha(batch_count, alpha);
   std::vector<double> p_beta(batch_count, beta);
   std::vector<const double*> pp_A;
@@ -415,7 +415,7 @@ struct BLASEngine<cpu, double> {
   CBLAS_TRANSPOSE cblas_a_trans = GetT(transa);
   CBLAS_TRANSPOSE cblas_b_trans = GetT(transb);
 
-  std::vector<MKL_INT> p_group_sizeb(batch_count, batch_count);
+  std::vector<int> p_group_sizeb(batch_count, batch_count);
   std::vector<CBLAS_TRANSPOSE> p_transa(batch_count, cblas_a_trans);
   std::vector<CBLAS_TRANSPOSE> p_transb(batch_count, cblas_b_trans);
 
