@@ -413,7 +413,7 @@ struct Tensor: public TRValue<Tensor<Device, dimension, DType>,
   // struct memembers
   //--------------------------------
   /*! \brief pointer to the data */
-  DType *dptr_;
+  DType *dptr_ = nullptr;
   /*! \brief shape of the tensor */
   Shape<dimension> shape_;
   /*!
@@ -1070,6 +1070,9 @@ inline void BatchGEMM(Tensor<Device, 3, DType> dst,
 #include "./expr_scalar-inl.h"
 #undef MSHADOW_SCALAR_
 #define MSHADOW_SCALAR_ int
+#include "./expr_scalar-inl.h"
+#undef MSHADOW_SCALAR_
+#define MSHADOW_SCALAR_ mshadow::index_t
 #include "./expr_scalar-inl.h"
 #undef MSHADOW_SCALAR_
 #define MSHADOW_SCALAR_ mshadow::half::half_t
