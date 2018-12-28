@@ -123,7 +123,7 @@ struct Shape {
     return s;
   }
   /*! \return number of valid elements */
-  MSHADOW_XINLINE index_t Size(void) const {
+  MSHADOW_XINLINE size_t Size(void) const {
     index_t size = this->shape_[0];
     #pragma unroll
     for (int i = 1; i < kDimension; ++i) {
