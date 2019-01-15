@@ -169,9 +169,9 @@ class MSHADOW_ALIGNED(2) half_t {
   static int const fp32FractionBits = 23;
   static int32_t const fp32FractionMask = ~(~0 << fp32FractionBits);  // == 0x7fffff
   static int32_t const fp32HiddenBit = 1 << fp32FractionBits;         // == 0x800000
-  static int const shift = fp32FractionBits - fp16FractionBits;	      // == 13
+  static int const shift = fp32FractionBits - fp16FractionBits;       // == 13
   static int const shiftSign = 16;
-  static int32_t const expAdjust = 127 - 15;	// exp32-127 = exp16-15, so exp16 = exp32 - (127-15)
+  static int32_t const expAdjust = 127 - 15;    // exp32-127 = exp16-15, so exp16 = exp32 - (127-15)
 
   static int32_t const infN = 0x7F800000;  // flt32 infinity
   static int32_t const maxN = 0x477FFFFF;  // max flt32 that's a flt16 normal after >> by shift
