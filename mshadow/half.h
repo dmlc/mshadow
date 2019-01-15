@@ -220,13 +220,13 @@ class MSHADOW_ALIGNED(2) half_t {
       // be true for vshift >=12 (since even the 'hidden bit' has been shifted to the
       // right of the '1' bit in 0x1000). And when vshift <= 11, both terms combine to make
       // the proper test of the flt32 significand bits, including those lost during the vshift.
-#if ROUND_TO_NEAREST == 1
+#if MSHADOW_HALF_ROUND_TO_NEAREST == 1
       // Rounding may increase the exponent to 1, but that's OK.
       v.ui += (v.ui & 0x3fff) != 0x1000 || (significand & 0x7ff) ? 0x1000 : 0;
 #endif
     } else if (v.si <= maxN) {
       // Handle norms
-#if ROUND_TO_NEAREST == 1
+#if MSHADOW_HALF_ROUND_TO_NEAREST == 1
       // Rounding may increase the exponent, possibly creating an inf, but that's OK.
       v.ui += (v.ui & 0x3fff) != 0x1000 ? 0x1000 : 0;
 #endif
@@ -261,13 +261,13 @@ class MSHADOW_ALIGNED(2) half_t {
       uint32_t vshift = 1 - exp16;
       uint32_t significand = fp32HiddenBit | (v.ui & fp32FractionMask);
       v.ui = significand >> vshift;
-#if ROUND_TO_NEAREST == 1
+#if MSHADOW_HALF_ROUND_TO_NEAREST == 1
       // Rounding may increase the exponent to 1, but that's OK.
       v.ui += (v.ui & 0x3fff) != 0x1000 || (significand & 0x7ff) ? 0x1000 : 0;
 #endif
     } else if (v.si <= maxN) {
       // Handle norms
-#if ROUND_TO_NEAREST == 1
+#if MSHADOW_HALF_ROUND_TO_NEAREST == 1
       // Rounding may increase the exponent, possibly creating an inf, but that's OK.
       v.ui += (v.ui & 0x3fff) != 0x1000 ? 0x1000 : 0;
 #endif
