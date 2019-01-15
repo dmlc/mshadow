@@ -167,7 +167,7 @@ class MSHADOW_ALIGNED(2) half_t {
 
   static int const fp16FractionBits = 10;
   static int const fp32FractionBits = 23;
-  static int32_t const fp32FractionMask = ~(~0 << fp32FractionBits);  // == 0x7fffff
+  static int32_t const fp32FractionMask = ~(~0u << fp32FractionBits);  // == 0x7fffff
   static int32_t const fp32HiddenBit = 1 << fp32FractionBits;         // == 0x800000
   static int const shift = fp32FractionBits - fp16FractionBits;       // == 13
   static int const shiftSign = 16;
