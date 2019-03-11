@@ -406,7 +406,7 @@ struct BLASEngine<cpu, double> {
                                   double **workspace) {
 #if (MSHADOW_USE_MKL && INTEL_MKL_VERSION >= 20160000)
   // since same m/n/k is used for all single gemms, so we put all gemms into one group
-  const int GROUP_SIZE = 1
+  const int GROUP_SIZE = 1;
   MKL_INT p_m[GROUP_SIZE] = {m};
   MKL_INT p_n[GROUP_SIZE] = {n};
   MKL_INT p_k[GROUP_SIZE] = {k};
