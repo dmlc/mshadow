@@ -71,7 +71,7 @@ class TensorContainer: public Tensor<Device, dimension, DType> {
       mshadow::Copy(*this, src, this->stream_);
     }
   }
-  ~TensorContainer(void) {
+  ~TensorContainer(void) MSHADOW_THROW_EXCEPTION {
     this->Release();
   }
   /*!
