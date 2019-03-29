@@ -288,7 +288,7 @@ const float kPi = 3.1415926f;
 #if MSHADOW_INT64_TENSOR_SIZE == 1
   typedef int64_t index_t;
 #else
-  typedef uint32_t index_t;
+  typedef int32_t index_t;
 #endif
 
 #ifdef _WIN32
