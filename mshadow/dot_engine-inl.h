@@ -8,6 +8,7 @@
 #define MSHADOW_DOT_ENGINE_INL_H_
 
 #include <vector>
+#include <cstdarg>
 #include "./base.h"
 #include "./extension/implicit_gemm.h"
 
@@ -43,6 +44,37 @@ inline void GetBatchedView(DType **dst, DType *src, int num, int stride,
 }
 #endif  // #ifdef __CUDACC__
 
+
+
+/*
+void check_gemm_not_overflow32(index_t m_, index_t k_, index_t n_, index_t batch_size_) {
+  static_assert(std::numeric_limits<index_t>::is_signed, "index_t should be signed");
+  CHECK(!(m_ < std::numeric_limits<int32_t>::min || m_ > std::numeric_limits<int32_t>::max))
+    << "Tensor shape overflows signed 32 bit index";
+  CHECK(!(k_ < std::numeric_limits<int32_t>::min || k_ > std::numeric_limits<int32_t>::max))
+    << "Tensor shape overflows signed 32 bit index";
+  CHECK(!(n_ < std::numeric_limits<int32_t>::min || n_ > std::numeric_limits<int32_t>::max))
+    << "Tensor shape overflows signed 32 bit index";
+  CHECK(!(batch_size_ < std::numeric_limits<int32_t>::min || batch_size_ > std::numeric_limits<int32_t>::max))
+    << "Tensor shape overflows signed 32 bit index";
+  int m_k = 0;
+  CHECK(mult_not_overflow<int>(m, k, &m_k));
+  int b_m_k = 0;
+  CHECK(mult_not_overflow<int>(batch_count, m_k, &b_m_k))
+    << "LHS Tensor shape (" << batch_count << "x" << m << "x" << k << ") is too big, will overflow gemm signed 32 bit index";
+  int k_n = 0;
+  CHECK(mult_not_overflow<int>(k, n, &k_n));
+  int b_k_n = 0;
+  CHECK(mult_not_overflow<int>(batch_count, k_n, &b_k_n))
+    << "RHS Tensor shape (" << batch_count << "x" << k << "x" << n << ") is too big, will overflow gemm signed 32 bit index";
+  int m_n = 0;
+  CHECK(mult_not_overflow<int>(m, n, &m_n));
+  int b_m_n = 0;
+  CHECK(mult_not_overflow<int>(batch_count, m_n, &b_m_n))
+    << "Result Tensor shape (" << batch_count << "x" << m << "x" << n  << ") is too big, will overflow gemm signed 32 bit index";
+}
+*/
+
 namespace expr {
 //---------------------------------------------------------------------
 // Matrix Multiplications, depends on BLAS Engine
@@ -55,6 +87,7 @@ struct DotEngine {
                           const Tensor<Device, rdim, DType> &rhs,
                           DType scale);
 };
+
 // handles the dot, use CblasColMajor
 template<typename Device, typename DType = default_real_t>
 struct BLASEngine {
@@ -313,17 +346,7 @@ struct BLASEngine<cpu, float> {
     std::vector<CBLAS_TRANSPOSE> p_transa(batch_count, cblas_a_trans);
     std::vector<CBLAS_TRANSPOSE> p_transb(batch_count, cblas_b_trans);
 
-
-    int m_k = 0;
-    CHECK(mult_not_overflow(m,k, &m_k));
-    int k_n = 0;
-    CHECK(mult_not_overflow(k,n, &k_n));
-    int m_n = 0;
-    CHECK(mult_not_overflow(m,n, &m_n));
-
-    CHECK(mult_not_overflow(batch_count, m_k));
-    CHECK(mult_not_overflow(batch_count, k_n));
-    CHECK(mult_not_overflow(batch_count, m_n));
+    CHECK(mult_not_overflow<int>(m, k, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
     for (index_t i = 0; i < batch_count; ++i) {
       pp_A.push_back(A + i * m_k);
       pp_B.push_back(B + i * k_n);
@@ -336,19 +359,7 @@ struct BLASEngine<cpu, float> {
                       p_ldb.data(), p_beta.data(), pp_C.data(), p_ldc.data(),
                       1, p_group_sizeb.data());
 #else
-    index_t m_k = 0;
-    CHECK(mult_not_overflow(m, k, &m_k));
-    index_t b_m_k = 0;
-    CHECK(mult_not_overflow(batch_count, m_k, &b_m_k));
-    index_t k_n = 0;
-    CHECK(mult_not_overflow(k, n, &k_n));
-    index_t b_k_n = 0;
-    CHECK(mult_not_overflow(batch_count, k_n, &b_k_n));
-    index_t m_n = 0;
-    CHECK(mult_not_overflow(m, n, &m_n));
-    index_t b_m_n = 0;
-    CHECK(mult_not_overflow(batch_count, m_n, &b_m_n));
-
+    CHECK(mult_not_overflow<int>(m, k, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
     for (index_t i = 0; i < batch_count; ++i) {
       gemm(stream, transa, transb, m, n, k, alpha,
            A + i * m * k, lda, B + i * k * n, ldb,
@@ -357,43 +368,43 @@ struct BLASEngine<cpu, float> {
 #endif
   }
   inline static void gemv(Stream<cpu> *stream,
-                          bool trans, int m, int n,
-                          float alpha, const float *A, int lda,
-                          const float *X, int incX,
-                          float beta, float *Y, int incY) {
+                          bool trans, index_t m, index_t n,
+                          float alpha, const float *A, index_t lda,
+                          const float *X, index_t incX,
+                          float beta, float *Y, index_t incY) {
     cblas_sgemv(CblasColMajor, GetT(trans), m, n, alpha,
                 A, lda, X, incX, beta, Y, incY);
   }
   inline static void batched_gemv(Stream<cpu> *stream,
-                                  bool trans, int m, int n,
-                                  float alpha, const float *A, int lda,
-                                  const float *X, int incX,
-                                  float beta, float *Y, int incY, int batch_count) {
-    for (int i = 0; i < batch_count; ++i) {
+                                  bool trans, index_t m, index_t n,
+                                  float alpha, const float *A, index_t lda,
+                                  const float *X, index_t incX,
+                                  float beta, float *Y, index_t incY, index_t batch_count) {
+    for (index_t i = 0; i < batch_count; ++i) {
       gemv(stream, trans, m, n, alpha, A + i * m * n, lda,
            X + i * (trans ? m : n) * incX, incX,
            beta, Y + i * (trans ? n : m) * incY, incY);
     }
   }
   inline static void ger(Stream<cpu> *stream,
-                         int m, int n, float alpha,
-                         const float *X, int incX,
-                         const float *Y, int incY, float *A, int lda) {
+                         index_t m, index_t n, float alpha,
+                         const float *X, index_t incX,
+                         const float *Y, index_t incY, float *A, index_t lda) {
     cblas_sger(CblasColMajor, m, n, alpha, X, incX, Y, incY, A, lda);
   }
   inline static void batched_ger(Stream<cpu> *stream,
-                         int m, int n, float alpha,
-                         const float *X, int incX,
-                         const float *Y, int incY, float *A, int lda, int batch_count) {
-    for (int i = 0; i < batch_count; ++i) {
+                         index_t m, index_t n, float alpha,
+                         const float *X, index_t incX,
+                         const float *Y, index_t incY, float *A, index_t lda, index_t batch_count) {
+    for (index_t i = 0; i < batch_count; ++i) {
       ger(stream, m, n, alpha, X + i * m * incX, incX, Y + i * n * incY, incY,
           A + i * lda * n, lda);
     }
   }
   inline static void dot(Stream<cpu> *stream,
-                         int n,
-                         const float* X, int incX,
-                         const float* Y, int incY,
+                         index_t n,
+                         const float* X, index_t incX,
+                         const float* Y, index_t incY,
                          float* ret) {
     *ret = cblas_sdot(n, X, incX, Y, incY);
   }
@@ -408,47 +419,51 @@ struct BLASEngine<cpu, double> {
   }
   inline static void gemm(Stream<cpu> *stream,
                           bool transa, bool transb,
-                          int m, int n, int k, double alpha,
-                          const double *A, int lda, const double *B, int ldb,
-                          double beta, double *C, int ldc) {
+                          index_t m, index_t n, index_t k, double alpha,
+                          const double *A, index_t lda, const double *B, index_t ldb,
+                          double beta, double *C, index_t ldc) {
+
     cblas_dgemm(CblasColMajor, GetT(transa), GetT(transb),
                 m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
   }
   inline static void batched_gemm(Stream<cpu> *stream,
                                   bool transa, bool transb,
-                                  int m, int n, int k, double alpha,
-                                  const double *A, int lda, const double *B, int ldb,
-                                  double beta, double *C, int ldc, int batch_count,
+                                  index_t m, index_t n, index_t k, double alpha,
+                                  const double *A, index_t lda, const double *B, index_t ldb,
+                                  double beta, double *C, index_t ldc, index_t batch_count,
                                   double **workspace) {
 #if (MSHADOW_USE_MKL && INTEL_MKL_VERSION >= 20160000)
-  std::vector<int> p_m(batch_count, m);
-  std::vector<int> p_n(batch_count, n);
-  std::vector<int> p_k(batch_count, k);
-  std::vector<int> p_lda(batch_count, lda);
-  std::vector<int> p_ldb(batch_count, ldb);
-  std::vector<int> p_ldc(batch_count, ldc);
-  std::vector<double> p_alpha(batch_count, alpha);
-  std::vector<double> p_beta(batch_count, beta);
-  std::vector<const double*> pp_A;
-  std::vector<const double*> pp_B;
-  std::vector<double*> pp_C;
+    CHECK(narrow_not_overflow<int>(m));
+    CHECK(narrow_not_overflow<int>(n));
+    CHECK(narrow_not_overflow<int>(k));
+    CHECK(narrow_not_overflow<int>(lda));
+    CHECK(narrow_not_overflow<int>(ldb));
+    CHECK(narrow_not_overflow<int>(ldc));
+    std::vector<int> p_m(batch_count, m);
+    std::vector<int> p_n(batch_count, n);
+    std::vector<int> p_k(batch_count, k);
+    std::vector<int> p_lda(batch_count, lda);
+    std::vector<int> p_ldb(batch_count, ldb);
+    std::vector<int> p_ldc(batch_count, ldc);
+    std::vector<double> p_alpha(batch_count, alpha);
+    std::vector<double> p_beta(batch_count, beta);
+    std::vector<const double*> pp_A;
+    std::vector<const double*> pp_B;
+    std::vector<double*> pp_C;
 
-  CBLAS_TRANSPOSE cblas_a_trans = GetT(transa);
-  CBLAS_TRANSPOSE cblas_b_trans = GetT(transb);
+    CBLAS_TRANSPOSE cblas_a_trans = GetT(transa);
+    CBLAS_TRANSPOSE cblas_b_trans = GetT(transb);
 
-  std::vector<int> p_group_sizeb(batch_count, batch_count);
-  std::vector<CBLAS_TRANSPOSE> p_transa(batch_count, cblas_a_trans);
-  std::vector<CBLAS_TRANSPOSE> p_transb(batch_count, cblas_b_trans);
+    std::vector<int> p_group_sizeb(batch_count, batch_count);
+    std::vector<CBLAS_TRANSPOSE> p_transa(batch_count, cblas_a_trans);
+    std::vector<CBLAS_TRANSPOSE> p_transb(batch_count, cblas_b_trans);
 
-  auto m_k = m * k;
-  auto k_n = k * n;
-  auto m_n = m * n;
-
-  for (int i = 0; i < batch_count; i++) {
-    pp_A.push_back(A + i * m_k);
-    pp_B.push_back(B + i * k_n);
-    pp_C.push_back(C + i * m_n);
-  }
+    CHECK(mult_not_overflow<int>(m, k, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    for (index_t i = 0; i < batch_count; i++) {
+      pp_A.push_back(A + i * m_k);
+      pp_B.push_back(B + i * k_n);
+      pp_C.push_back(C + i * m_n);
+    }
 
     cblas_dgemm_batch(CblasColMajor, p_transa.data(), p_transb.data(),
                       p_m.data(), p_n.data(), p_k.data(),
@@ -456,7 +471,7 @@ struct BLASEngine<cpu, double> {
                       p_ldb.data(), p_beta.data(), pp_C.data(), p_ldc.data(),
                       1, p_group_sizeb.data());
 #else
-    for (int i = 0; i < batch_count; ++i) {
+    for (index_t i = 0; i < batch_count; ++i) {
       gemm(stream, transa, transb, m, n, k, alpha,
            A + i * m * k, lda, B + i * k * n, ldb,
            beta, C + i * m * n, ldc);
@@ -464,43 +479,43 @@ struct BLASEngine<cpu, double> {
 #endif
   }
   inline static void gemv(Stream<cpu> *stream,
-                          bool trans, int m, int n, double alpha,
-                          const double *A, int lda,
-                          const double *X, int incX,
-                          double beta, double *Y, int incY) {
+                          bool trans, index_t m, index_t n, double alpha,
+                          const double *A, index_t lda,
+                          const double *X, index_t incX,
+                          double beta, double *Y, index_t incY) {
     cblas_dgemv(CblasColMajor, GetT(trans), m, n, alpha,
                 A, lda, X, incX, beta, Y, incY);
   }
   inline static void batched_gemv(Stream<cpu> *stream,
-                                  bool trans, int m, int n,
-                                  double alpha, const double *A, int lda,
-                                  const double *X, int incX,
-                                  double beta, double *Y, int incY, int batch_count) {
-    for (int i = 0; i < batch_count; ++i) {
+                                  bool trans, index_t m, index_t n,
+                                  double alpha, const double *A, index_t lda,
+                                  const double *X, index_t incX,
+                                  double beta, double *Y, index_t incY, index_t batch_count) {
+    for (index_t i = 0; i < batch_count; ++i) {
       gemv(stream, trans, m, n, alpha, A + i * m * n, lda,
            X + i * (trans ? m : n) * incX, incX,
            beta, Y + i * (trans ? n : m) * incY, incY);
     }
   }
   inline static void ger(Stream<cpu> *stream,
-                         int m, int n, double alpha,
-                         const double *X, int incX,
-                         const double *Y, int incY, double *A, int lda) {
+                         index_t m, index_t n, double alpha,
+                         const double *X, index_t incX,
+                         const double *Y, index_t incY, double *A, index_t lda) {
     cblas_dger(CblasColMajor, m, n, alpha, X, incX, Y, incY, A, lda);
   }
   inline static void batched_ger(Stream<cpu> *stream,
-                         int m, int n, double alpha,
-                         const double *X, int incX,
-                         const double *Y, int incY, double *A, int lda, int batch_count) {
-    for (int i = 0; i < batch_count; ++i) {
+                         index_t m, index_t n, double alpha,
+                         const double *X, index_t incX,
+                         const double *Y, index_t incY, double *A, index_t lda, index_t batch_count) {
+    for (index_t i = 0; i < batch_count; ++i) {
       ger(stream, m, n, alpha, X + i * m * incX, incX, Y + i * n * incY, incY,
           A + i * lda * n, lda);
     }
   }
   inline static void dot(Stream<cpu> *stream,
-                         int n,
-                         const double* X, int incX,
-                         const double* Y, int incY,
+                         index_t n,
+                         const double* X, index_t incX,
+                         const double* Y, index_t incY,
                          double* ret) {
     *ret = cblas_ddot(n, X, incX, Y, incY);
   }
@@ -521,10 +536,10 @@ struct BLASEngine<gpu, half::half_t> {
   }
   inline static void gemm(Stream<gpu> *stream,
                           bool transa, bool transb,
-                          int m, int n, int k, half::half_t alpha,
-                          const half::half_t *A, int lda,
-                          const half::half_t *B, int ldb, half::half_t beta,
-                          half::half_t *C, int ldc) {
+                          index_t m, index_t n, index_t k, half::half_t alpha,
+                          const half::half_t *A, index_t lda,
+                          const half::half_t *B, index_t ldb, half::half_t beta,
+                          half::half_t *C, index_t ldc) {
 #if defined(CUDA_VERSION) && CUDA_VERSION >= 7050
   // Always use pseudo-fp16: fp32 compute with fp16 I/O.
   float alpha_f = float(alpha);  // NOLINT(*)

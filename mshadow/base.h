@@ -1102,8 +1102,12 @@ inline size_t mshadow_sizeof(int type) {
   return size;
 }
 
+
+/*!
+ * \return true if multiplication won't overflow
+ */
 template<typename T>
-inline bool mult_not_overflow(T a, T b, T *result = nullptr) {
+inline bool mult_not_overflow_binary(T a, T b, T *result = nullptr) {
   static_assert(std::numeric_limits<T>::is_integer, "mult_not_overflow is only supported for integer types");
   T res = {};
   res = a * b;
@@ -1112,6 +1116,31 @@ inline bool mult_not_overflow(T a, T b, T *result = nullptr) {
   if (result)
     *result = res;
   return true;
+}
+
+/*!
+ * \return true if multiplication won't overflow
+ */
+template<typename T>
+inline bool mult_not_overflow(int count, ...) {
+  using namespace std;
+  T accum = 1;
+  va_list args;
+  va_start(args, count);
+  for (int i=0; i < count; ++i) {
+    T x = va_arg(args, T);
+    if(! mult_not_overflow_binary<T>(accum, x, &accum))
+      return false;
+  }
+  return true;
+}
+
+template<typename From, typename To>
+inline bool narrow_not_overflow(From x) {
+  if (static_cast<To>(x) >= static_cast<To>(std::numeric_limits<From>::min()) &&
+    static_cast<To>(x) <= static_cast<To>(std::numeric_limits<From>::max()))
+    return true;
+  return false;
 }
 
 }  // namespace mshadow
