@@ -1102,5 +1102,17 @@ inline size_t mshadow_sizeof(int type) {
   return size;
 }
 
+template<typename T>
+inline bool mult_not_overflow(T a, T b, T *result = nullptr) {
+  static_assert(std::numeric_limits<T>::is_integer, "mult_not_overflow is only supported for integer types");
+  T res = {};
+  res = a * b;
+  if (a != 0 && (res / a) != b)
+    return false;
+  if (result)
+    *result = res;
+  return true;
+}
+
 }  // namespace mshadow
 #endif  // MSHADOW_BASE_H_
