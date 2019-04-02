@@ -258,7 +258,8 @@ struct BLASEngine<cpu, double> {
   inline static void batched_ger(Stream<cpu> *stream,
                          index_t m, index_t n, double alpha,
                          const double *X, index_t incX,
-                         const double *Y, index_t incY, double *A, index_t lda, index_t batch_count) {
+                         const double *Y, index_t incY, double *A, index_t lda,
+                         index_t batch_count) {
     LOG(FATAL) << "Not implmented!";
   }
   inline static void dot(Stream<cpu> *stream,
@@ -368,7 +369,8 @@ struct BLASEngine<cpu, float> {
   inline static void batched_ger(Stream<cpu> *stream,
                          index_t m, index_t n, float alpha,
                          const float *X, index_t incX,
-                         const float *Y, index_t incY, float *A, index_t lda, index_t batch_count) {
+                         const float *Y, index_t incY, float *A, index_t lda,
+                         index_t batch_count) {
     for (index_t i = 0; i < batch_count; ++i) {
       ger(stream, m, n, alpha, X + i * m * incX, incX, Y + i * n * incY, incY,
           A + i * lda * n, lda);
@@ -480,7 +482,8 @@ struct BLASEngine<cpu, double> {
   inline static void batched_ger(Stream<cpu> *stream,
                          index_t m, index_t n, double alpha,
                          const double *X, index_t incX,
-                         const double *Y, index_t incY, double *A, index_t lda, index_t batch_count) {
+                         const double *Y, index_t incY, double *A, index_t lda,
+                         index_t batch_count) {
     for (index_t i = 0; i < batch_count; ++i) {
       ger(stream, m, n, alpha, X + i * m * incX, incX, Y + i * n * incY, incY,
           A + i * lda * n, lda);
@@ -538,9 +541,9 @@ struct BLASEngine<gpu, half::half_t> {
   inline static void batched_gemm(Stream<gpu> *stream,
                                   bool transa, bool transb,
                                   index_t m, index_t n, index_t k, half::half_t alpha,
-                                  const half::half_t *A, index_t lda, const half::half_t *B, index_t ldb,
-                                  half::half_t beta, half::half_t *C, index_t ldc, index_t batch_count,
-                                  half::half_t **workspace) {
+                                  const half::half_t *A, index_t lda, const half::half_t *B,
+                                  index_t ldb, half::half_t beta, half::half_t *C, index_t ldc,
+                                  index_t batch_count, half::half_t **workspace) {
 #if defined(__CUDACC__) && CUDA_VERSION >= 9000
     int major = stream->prop.major;
     int minor = stream->prop.minor;
@@ -578,7 +581,8 @@ struct BLASEngine<gpu, half::half_t> {
                                   bool trans, index_t m, index_t n,
                                   half::half_t alpha, const half::half_t *A, index_t lda,
                                   const half::half_t *X, index_t incX,
-                                  half::half_t beta, half::half_t *Y, index_t incY, index_t batch_count) {
+                                  half::half_t beta, half::half_t *Y, index_t incY,
+                                  index_t batch_count) {
     LOG(FATAL) << "Not implmented!";
   }
   inline static void ger(Stream<gpu> *stream,
@@ -815,7 +819,8 @@ struct BLASEngine<gpu, double> {
   inline static void batched_ger(Stream<gpu> *stream,
                          index_t m, index_t n, double alpha,
                          const double *X, index_t incX,
-                         const double *Y, index_t incY, double *A, index_t lda, index_t batch_count) {
+                         const double *Y, index_t incY, double *A, index_t lda,
+                         index_t batch_count) {
     for (index_t i = 0; i < batch_count; ++i) {
       ger(stream, m, n, alpha, X + i * m * incX, incX, Y + i * n * incY, incY,
           A + i * lda * n, lda);
