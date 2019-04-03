@@ -1153,7 +1153,7 @@ inline bool narrow_not_overflow(From x) {
   return false;
 }
 
-auto narrow_not_overflow_index_int = narrow_not_overflow<index_t, int>;
+auto const narrow_not_overflow_index_int = narrow_not_overflow<index_t, int>;
 
 }  // namespace mshadow
 #endif  // MSHADOW_BASE_H_
