@@ -1104,7 +1104,9 @@ inline size_t mshadow_sizeof(int type) {
 
 
 /*!
- * \return true if multiplication won't overflow
+ * \param result the result of a * b is stored in result if the pointer is not nullptr
+ * \return true if multiplication of a and b won't overflow
+ * Uses division method
  */
 template<typename T>
 inline bool mult_not_overflow_binary(T a, T b, T *result = nullptr) {
@@ -1119,7 +1121,8 @@ inline bool mult_not_overflow_binary(T a, T b, T *result = nullptr) {
 }
 
 /*!
- * \return true if multiplication won't overflow
+ * Provide a list of operands to check if multiplying them will overflow
+ * \return true if multiplication won't overflow, false otherwise
  */
 template<typename T>
 inline bool mult_not_overflow(int count, ...) {
@@ -1135,13 +1138,22 @@ inline bool mult_not_overflow(int count, ...) {
   return true;
 }
 
+/*!
+ * @tparam From from type, wider than To
+ * @tparam To narrower type
+ * @param x argument
+ * @return true if the narrowing doesn't overflow, false otherwise
+ */
 template<typename From, typename To>
 inline bool narrow_not_overflow(From x) {
+  static_assert(sizeof(From) > sizeof(To), "valid only for narrowing conversions");
   if (static_cast<To>(x) >= static_cast<To>(std::numeric_limits<From>::min()) &&
     static_cast<To>(x) <= static_cast<To>(std::numeric_limits<From>::max()))
     return true;
   return false;
 }
+
+auto narrow_not_overflow_index_int = narrow_not_overflow<index_t, int>;
 
 }  // namespace mshadow
 #endif  // MSHADOW_BASE_H_

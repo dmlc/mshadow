@@ -422,7 +422,12 @@ struct BLASEngine<cpu, double> {
                           index_t m, index_t n, index_t k, double alpha,
                           const double *A, index_t lda, const double *B, index_t ldb,
                           double beta, double *C, index_t ldc) {
-
+    CHECK(narrow_not_overflow_index_int(m));
+    CHECK(narrow_not_overflow_index_int(n));
+    CHECK(narrow_not_overflow_index_int(k));
+    CHECK(narrow_not_overflow_index_int(lda));
+    CHECK(narrow_not_overflow_index_int(ldb));
+    CHECK(narrow_not_overflow_index_int(ldc));
     cblas_dgemm(CblasColMajor, GetT(transa), GetT(transb),
                 m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
   }
@@ -432,13 +437,14 @@ struct BLASEngine<cpu, double> {
                                   const double *A, index_t lda, const double *B, index_t ldb,
                                   double beta, double *C, index_t ldc, index_t batch_count,
                                   double **workspace) {
+    CHECK(narrow_not_overflow_index_int(m));
+    CHECK(narrow_not_overflow_index_int(n));
+    CHECK(narrow_not_overflow_index_int(k));
+    CHECK(narrow_not_overflow_index_int(lda));
+    CHECK(narrow_not_overflow_index_int(ldb));
+    CHECK(narrow_not_overflow_index_int(ldc));
+    CHECK(narrow_not_overflow_index_int(batch_count));
 #if (MSHADOW_USE_MKL && INTEL_MKL_VERSION >= 20160000)
-    CHECK(narrow_not_overflow<int>(m));
-    CHECK(narrow_not_overflow<int>(n));
-    CHECK(narrow_not_overflow<int>(k));
-    CHECK(narrow_not_overflow<int>(lda));
-    CHECK(narrow_not_overflow<int>(ldb));
-    CHECK(narrow_not_overflow<int>(ldc));
     std::vector<int> p_m(batch_count, m);
     std::vector<int> p_n(batch_count, n);
     std::vector<int> p_k(batch_count, k);
@@ -471,6 +477,7 @@ struct BLASEngine<cpu, double> {
                       p_ldb.data(), p_beta.data(), pp_C.data(), p_ldc.data(),
                       1, p_group_sizeb.data());
 #else
+    CHECK(mult_not_overflow<int>(m, k, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
     for (index_t i = 0; i < batch_count; ++i) {
       gemm(stream, transa, transb, m, n, k, alpha,
            A + i * m * k, lda, B + i * k * n, ldb,
@@ -483,6 +490,12 @@ struct BLASEngine<cpu, double> {
                           const double *A, index_t lda,
                           const double *X, index_t incX,
                           double beta, double *Y, index_t incY) {
+
+    CHECK(narrow_not_overflow_index_int(m));
+    CHECK(narrow_not_overflow_index_int(n));
+    CHECK(narrow_not_overflow_index_int(lda));
+    CHECK(narrow_not_overflow_index_int(incX));
+    CHECK(narrow_not_overflow_index_int(incY));
     cblas_dgemv(CblasColMajor, GetT(trans), m, n, alpha,
                 A, lda, X, incX, beta, Y, incY);
   }
@@ -491,6 +504,13 @@ struct BLASEngine<cpu, double> {
                                   double alpha, const double *A, index_t lda,
                                   const double *X, index_t incX,
                                   double beta, double *Y, index_t incY, index_t batch_count) {
+    CHECK(narrow_not_overflow_index_int(m));
+    CHECK(narrow_not_overflow_index_int(n));
+    CHECK(narrow_not_overflow_index_int(lda));
+    CHECK(narrow_not_overflow_index_int(incX));
+    CHECK(narrow_not_overflow_index_int(incY));
+    CHECK(mult_not_overflow<int>(m, incX, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    CHECK(mult_not_overflow<int>(m, incY, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
     for (index_t i = 0; i < batch_count; ++i) {
       gemv(stream, trans, m, n, alpha, A + i * m * n, lda,
            X + i * (trans ? m : n) * incX, incX,
@@ -501,12 +521,20 @@ struct BLASEngine<cpu, double> {
                          index_t m, index_t n, double alpha,
                          const double *X, index_t incX,
                          const double *Y, index_t incY, double *A, index_t lda) {
+    CHECK(narrow_not_overflow_index_int(m));
+    CHECK(narrow_not_overflow_index_int(n));
+    CHECK(narrow_not_overflow_index_int(lda));
+    CHECK(narrow_not_overflow_index_int(incX));
+    CHECK(narrow_not_overflow_index_int(incY));
     cblas_dger(CblasColMajor, m, n, alpha, X, incX, Y, incY, A, lda);
   }
   inline static void batched_ger(Stream<cpu> *stream,
                          index_t m, index_t n, double alpha,
                          const double *X, index_t incX,
                          const double *Y, index_t incY, double *A, index_t lda, index_t batch_count) {
+    CHECK(mult_not_overflow<int>(m, incX, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    CHECK(mult_not_overflow<int>(incY, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    CHECK(mult_not_overflow<int>(lda, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
     for (index_t i = 0; i < batch_count; ++i) {
       ger(stream, m, n, alpha, X + i * m * incX, incX, Y + i * n * incY, incY,
           A + i * lda * n, lda);
