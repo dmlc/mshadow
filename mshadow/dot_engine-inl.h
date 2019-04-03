@@ -8,7 +8,6 @@
 #define MSHADOW_DOT_ENGINE_INL_H_
 
 #include <vector>
-#include <cstdarg>
 #include "./base.h"
 #include "./extension/implicit_gemm.h"
 

@@ -26,6 +26,7 @@
 #include <functional>
 #include <sstream>
 #include <string>
+#include <cstdarg>
 
 #ifdef _MSC_VER
 //! \cond Doxygen_Suppress
