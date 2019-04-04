@@ -331,6 +331,8 @@ struct BLASEngine<cpu, float> {
     CHECK(narrow_not_overflow_index_int(m));
     CHECK(narrow_not_overflow_index_int(k));
     CHECK(narrow_not_overflow_index_int(n));
+    CHECK(narrow_not_overflow_index_int(lda));
+    CHECK(narrow_not_overflow_index_int(ldb));
     CHECK(narrow_not_overflow_index_int(batch_count));
     CHECK(mult_not_overflow<int>(4, m, k, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
     for (index_t i = 0; i < batch_count; ++i) {
@@ -479,7 +481,9 @@ struct BLASEngine<cpu, double> {
                       p_ldb.data(), p_beta.data(), pp_C.data(), p_ldc.data(),
                       1, p_group_sizeb.data());
 #else
-    CHECK(mult_not_overflow<int>(4, m, k, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    CHECK(mult_not_overflow<int>(4, m, k, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    CHECK(mult_not_overflow<int>(4, k, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    CHECK(mult_not_overflow<int>(4, m, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
     for (index_t i = 0; i < batch_count; ++i) {
       gemm(stream, transa, transb, m, n, k, alpha,
            A + i * m * k, lda, B + i * k * n, ldb,
@@ -602,11 +606,21 @@ struct BLASEngine<gpu, half::half_t> {
   }
   inline static void batched_gemm(Stream<gpu> *stream,
                                   bool transa, bool transb,
-                                  int m, int n, int k, half::half_t alpha,
-                                  const half::half_t *A, int lda, const half::half_t *B, int ldb,
-                                  half::half_t beta, half::half_t *C, int ldc, int batch_count,
+                                  index_t m, index_t n, index_t k, half::half_t alpha,
+                                  const half::half_t *A, index_t lda, const half::half_t *B, index_t ldb,
+                                  half::half_t beta, half::half_t *C, index_t ldc, index_t batch_count,
                                   half::half_t **workspace) {
+    CHECK(narrow_not_overflow_index_int(m));
+    CHECK(narrow_not_overflow_index_int(k));
+    CHECK(narrow_not_overflow_index_int(n));
+    CHECK(narrow_not_overflow_index_int(lda));
+    CHECK(narrow_not_overflow_index_int(ldb));
+    CHECK(narrow_not_overflow_index_int(ldc));
+    CHECK(narrow_not_overflow_index_int(batch_count));
 #if defined(__CUDACC__) && CUDA_VERSION >= 9000
+    CHECK(mult_not_overflow<int>(4, m, k)) << "Tensor shapes arithmetic overflow int type";
+    CHECK(mult_not_overflow<int>(4, k, n)) << "Tensor shapes arithmetic overflow int type";
+    CHECK(mult_not_overflow<int>(4, m, n)) << "Tensor shapes arithmetic overflow int type";
     int major = stream->prop.major;
     int minor = stream->prop.minor;
     // fp16 is not supported before ARCH 53
@@ -625,43 +639,47 @@ struct BLASEngine<gpu, half::half_t> {
       CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas: HgemmStridedBatched fail";
       return;
     }
-#endif
-    for (int i = 0; i < batch_count; ++i) {
+#else
+    CHECK(mult_not_overflow<int>(4, k, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    CHECK(mult_not_overflow<int>(4, m, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    CHECK(mult_not_overflow<int>(4, m, k, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    for (index_t i = 0; i < batch_count; ++i) {
       gemm(stream, transa, transb, m, n, k, alpha,
            A + i * m * k, lda, B + i * k * n, ldb,
            beta, C + i * m * n, ldc);
     }
+#endif
   }
   inline static void gemv(Stream<gpu> *stream,
-                          bool trans, int m, int n, half::half_t alpha,
-                          const half::half_t *A, int lda,
-                          const half::half_t *X, int incX, half::half_t beta,
-                          half::half_t *Y, int incY) {
+                          bool trans, index_t m, index_t n, half::half_t alpha,
+                          const half::half_t *A, index_t lda,
+                          const half::half_t *X, index_t incX, half::half_t beta,
+                          half::half_t *Y, index_t incY) {
     LOG(FATAL) << "Not implmented!";
   }
   inline static void batched_gemv(Stream<gpu> *stream,
-                                  bool trans, int m, int n,
-                                  half::half_t alpha, const half::half_t *A, int lda,
-                                  const half::half_t *X, int incX,
-                                  half::half_t beta, half::half_t *Y, int incY, int batch_count) {
+                                  bool trans, index_t m, index_t n,
+                                  half::half_t alpha, const half::half_t *A, index_t lda,
+                                  const half::half_t *X, index_t incX,
+                                  half::half_t beta, half::half_t *Y, index_t incY, index_t batch_count) {
     LOG(FATAL) << "Not implmented!";
   }
   inline static void ger(Stream<gpu> *stream,
-                         int m, int n, half::half_t alpha,
-                         const half::half_t *X, int incX,
-                         const half::half_t *Y, int incY, half::half_t *A, int lda) {
+                         index_t m, index_t n, half::half_t alpha,
+                         const half::half_t *X, index_t incX,
+                         const half::half_t *Y, index_t incY, half::half_t *A, index_t lda) {
     LOG(FATAL) << "Not implmented!";
   }
   inline static void batched_ger(Stream<gpu> *stream,
-                         int m, int n, half::half_t alpha,
-                         const half::half_t *X, int incX, const half::half_t *Y, int incY,
-                         half::half_t *A, int lda, int batch_count) {
+                         index_t m, index_t n, half::half_t alpha,
+                         const half::half_t *X, index_t incX, const half::half_t *Y, index_t incY,
+                         half::half_t *A, index_t lda, index_t batch_count) {
     LOG(FATAL) << "Not implmented!";
   }
   inline static void dot(Stream<gpu> *stream,
-                         int n,
-                         const half::half_t* X, int incX,
-                         const half::half_t* Y, int incY,
+                         index_t n,
+                         const half::half_t* X, index_t incX,
+                         const half::half_t* Y, index_t incY,
                          half::half_t *ret) {
     LOG(FATAL) << "Not implmented!";
   }
@@ -679,10 +697,16 @@ struct BLASEngine<gpu, float> {
   }
   inline static void gemm(Stream<gpu> *stream,
                           bool transa, bool transb,
-                          int m, int n, int k, float alpha,
-                          const float *A, int lda,
-                          const float *B, int ldb, float beta,
-                          float *C, int ldc) {
+                          index_t m, index_t n, index_t k, float alpha,
+                          const float *A, index_t lda,
+                          const float *B, index_t ldb, float beta,
+                          float *C, index_t ldc) {
+    CHECK(narrow_not_overflow_index_int(m));
+    CHECK(narrow_not_overflow_index_int(k));
+    CHECK(narrow_not_overflow_index_int(n));
+    CHECK(narrow_not_overflow_index_int(lda));
+    CHECK(narrow_not_overflow_index_int(ldb));
+    CHECK(narrow_not_overflow_index_int(ldc));
     cublasStatus_t err = cublasSgemm(Stream<gpu>::GetBlasHandle(stream),
                 GetT(transa), GetT(transb), m, n, k, &alpha,
                 A, lda, B, ldb, &beta, C, ldc);
@@ -690,10 +714,20 @@ struct BLASEngine<gpu, float> {
   }
   inline static void batched_gemm(Stream<gpu> *stream,
                                   bool transa, bool transb,
-                                  int m, int n, int k, float alpha,
-                                  const float *A, int lda, const float *B, int ldb,
-                                  float beta, float *C, int ldc, int batch_count,
+                                  index_t m, index_t n, index_t k, float alpha,
+                                  const float *A, index_t lda, const float *B, index_t ldb,
+                                  float beta, float *C, index_t ldc, index_t batch_count,
                                   float **workspace) {
+    CHECK(narrow_not_overflow_index_int(m));
+    CHECK(narrow_not_overflow_index_int(k));
+    CHECK(narrow_not_overflow_index_int(n));
+    CHECK(narrow_not_overflow_index_int(lda));
+    CHECK(narrow_not_overflow_index_int(ldb));
+    CHECK(narrow_not_overflow_index_int(ldc));
+    CHECK(narrow_not_overflow_index_int(batch_count));
+    CHECK(mult_not_overflow<int>(4, k, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    CHECK(mult_not_overflow<int>(4, m, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    CHECK(mult_not_overflow<int>(4, m, k, batch_count)) << "Tensor shapes arithmetic overflow int type";
 #if defined(__CUDACC__) && CUDA_VERSION >= 4010 && CUDA_VERSION < 8000
     // Cast DType* to DType** using workspace as a buffer
     bool alloc_workspace = false;
@@ -737,6 +771,11 @@ struct BLASEngine<gpu, float> {
                           const float *A, int lda,
                           const float *X, int incX, float beta,
                           float *Y, int incY) {
+    CHECK(narrow_not_overflow_index_int(m));
+    CHECK(narrow_not_overflow_index_int(n));
+    CHECK(narrow_not_overflow_index_int(lda));
+    CHECK(narrow_not_overflow_index_int(incX));
+    CHECK(narrow_not_overflow_index_int(incY));
     cublasStatus_t err = cublasSgemv(Stream<gpu>::GetBlasHandle(stream),
                 GetT(trans), m, n, &alpha, A, lda, X, incX, &beta, Y, incY);
     CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas: Sgemv fail";
@@ -746,6 +785,14 @@ struct BLASEngine<gpu, float> {
                                   float alpha, const float *A, int lda,
                                   const float *X, int incX,
                                   float beta, float *Y, int incY, int batch_count) {
+    CHECK(narrow_not_overflow_index_int(m));
+    CHECK(narrow_not_overflow_index_int(n));
+    CHECK(narrow_not_overflow_index_int(lda));
+    CHECK(narrow_not_overflow_index_int(incX));
+    CHECK(narrow_not_overflow_index_int(incY));
+    CHECK(narrow_not_overflow_index_int(batch_count));
+    CHECK(mult_not_overflow<int>(4, m, n, batch_count, incX)) << "Tensor shapes arithmetic overflow int type";
+    CHECK(mult_not_overflow<int>(4, m, n, batch_count, incY)) << "Tensor shapes arithmetic overflow int type";
     for (int i = 0; i < batch_count; ++i) {
       gemv(stream, trans, m, n, alpha, A + i * m * n, lda,
            X + i * (trans ? m : n) * incX, incX,
@@ -756,6 +803,11 @@ struct BLASEngine<gpu, float> {
                          int m, int n, float alpha,
                          const float *X, int incX,
                          const float *Y, int incY, float *A, int lda) {
+    CHECK(narrow_not_overflow_index_int(m));
+    CHECK(narrow_not_overflow_index_int(n));
+    CHECK(narrow_not_overflow_index_int(lda));
+    CHECK(narrow_not_overflow_index_int(incX));
+    CHECK(narrow_not_overflow_index_int(incY));
     cublasStatus_t err = cublasSger(Stream<gpu>::GetBlasHandle(stream),
                                     m, n, &alpha, X, incX, Y, incY, A, lda);
     CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas: Sger fail";
@@ -764,6 +816,14 @@ struct BLASEngine<gpu, float> {
                          int m, int n, float alpha,
                          const float *X, int incX,
                          const float *Y, int incY, float *A, int lda, int batch_count) {
+    CHECK(narrow_not_overflow_index_int(m));
+    CHECK(narrow_not_overflow_index_int(n));
+    CHECK(narrow_not_overflow_index_int(lda));
+    CHECK(narrow_not_overflow_index_int(incX));
+    CHECK(narrow_not_overflow_index_int(incY));
+    CHECK(narrow_not_overflow_index_int(batch_count));
+    CHECK(mult_not_overflow<int>(4, m, batch_count, incX)) << "Tensor shapes arithmetic overflow int type";
+    CHECK(mult_not_overflow<int>(4, n, batch_count, incY)) << "Tensor shapes arithmetic overflow int type";
     for (int i = 0; i < batch_count; ++i) {
       ger(stream, m, n, alpha, X + i * m * incX, incX, Y + i * n * incY, incY,
           A + i * lda * n, lda);
@@ -774,6 +834,9 @@ struct BLASEngine<gpu, float> {
                          const float* X, int incX,
                          const float* Y, int incY,
                          float *ret) {
+    CHECK(narrow_not_overflow_index_int(n));
+    CHECK(narrow_not_overflow_index_int(incX));
+    CHECK(narrow_not_overflow_index_int(incY));
     cublasSetPointerMode(Stream<gpu>::GetBlasHandle(stream),
                          CUBLAS_POINTER_MODE_DEVICE);
     cublasStatus_t err = cublasSdot(Stream<gpu>::GetBlasHandle(stream),
@@ -796,10 +859,16 @@ struct BLASEngine<gpu, double> {
   }
   inline static void gemm(Stream<gpu> *stream,
                           bool transa, bool transb,
-                          int m, int n, int k, double alpha,
-                          const double *A, int lda,
-                          const double *B, int ldb,
-                          double beta, double *C, int ldc) {
+                          index_t m, index_t n, index_t k, double alpha,
+                          const double *A, index_t lda,
+                          const double *B, index_t ldb,
+                          double beta, double *C, index_t ldc) {
+    CHECK(narrow_not_overflow_index_int(m));
+    CHECK(narrow_not_overflow_index_int(n));
+    CHECK(narrow_not_overflow_index_int(k));
+    CHECK(narrow_not_overflow_index_int(lda));
+    CHECK(narrow_not_overflow_index_int(ldb));
+    CHECK(narrow_not_overflow_index_int(ldc));
     cublasStatus_t err = cublasDgemm(Stream<gpu>::GetBlasHandle(stream),
                 GetT(transa), GetT(transb), m, n, k, &alpha,
                 A, lda, B, ldb, &beta, C, ldc);
@@ -807,10 +876,17 @@ struct BLASEngine<gpu, double> {
   }
   inline static void batched_gemm(Stream<gpu> *stream,
                                   bool transa, bool transb,
-                                  int m, int n, int k, double alpha,
-                                  const double *A, int lda, const double *B, int ldb,
-                                  double beta, double *C, int ldc, int batch_count,
+                                  index_t m, index_t n, index_t k, double alpha,
+                                  const double *A, index_t lda, const double *B, index_t ldb,
+                                  double beta, double *C, index_t ldc, index_t batch_count,
                                   double **workspace) {
+    CHECK(narrow_not_overflow_index_int(m));
+    CHECK(narrow_not_overflow_index_int(n));
+    CHECK(narrow_not_overflow_index_int(k));
+    CHECK(narrow_not_overflow_index_int(lda));
+    CHECK(narrow_not_overflow_index_int(ldb));
+    CHECK(narrow_not_overflow_index_int(ldc));
+    CHECK(narrow_not_overflow_index_int(batch_count));
 #if defined(__CUDACC__) && CUDA_VERSION >= 4010 && CUDA_VERSION < 8000
     // Cast DType* to DType** using workspace as a buffer
     bool alloc_workspace = false;
@@ -842,7 +918,10 @@ struct BLASEngine<gpu, double> {
       batch_count);
     CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas: DgemmStridedBatched fail";
 #else
-    for (int i = 0; i < batch_count; ++i) {
+    CHECK(mult_not_overflow<int>(4, m, k, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    CHECK(mult_not_overflow<int>(4, k, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    CHECK(mult_not_overflow<int>(4, m, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    for (index_t i = 0; i < batch_count; ++i) {
       gemm(stream, transa, transb, m, n, k, alpha,
            A + i * m * k, lda, B + i * k * n, ldb,
            beta, C + i * m * n, ldc);
@@ -850,47 +929,76 @@ struct BLASEngine<gpu, double> {
 #endif  // defined(__CUDACC__) && CUDA_VERSION >= 4010
   }
   inline static void gemv(Stream<gpu> *stream,
-                          bool trans, int m, int n, double alpha,
-                          const double *A, int lda,
-                          const double *X, int incX,
-                          double beta, double *Y, int incY) {
+                          bool trans, index_t m, index_t n, double alpha,
+                          const double *A, index_t lda,
+                          const double *X, index_t incX,
+                          double beta, double *Y, index_t incY) {
+    CHECK(narrow_not_overflow_index_int(m));
+    CHECK(narrow_not_overflow_index_int(n));
+    CHECK(narrow_not_overflow_index_int(lda));
+    CHECK(narrow_not_overflow_index_int(incX));
+    CHECK(narrow_not_overflow_index_int(incY));
     cublasStatus_t err = cublasDgemv(Stream<gpu>::GetBlasHandle(stream),
                 GetT(trans), m, n, &alpha, A, lda, X, incX, &beta, Y, incY);
     CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas: Dgemv fail";
   }
   inline static void batched_gemv(Stream<gpu> *stream,
-                                  bool trans, int m, int n,
-                                  double alpha, const double *A, int lda,
-                                  const double *X, int incX,
-                                  double beta, double *Y, int incY, int batch_count) {
-    for (int i = 0; i < batch_count; ++i) {
+                                  bool trans, index_t m, index_t n,
+                                  double alpha, const double *A, index_t lda,
+                                  const double *X, index_t incX,
+                                  double beta, double *Y, index_t incY, index_t batch_count) {
+    CHECK(narrow_not_overflow_index_int(m));
+    CHECK(narrow_not_overflow_index_int(n));
+    CHECK(narrow_not_overflow_index_int(lda));
+    CHECK(narrow_not_overflow_index_int(incX));
+    CHECK(narrow_not_overflow_index_int(incY));
+    CHECK(mult_not_overflow<int>(4, m, incX, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    CHECK(mult_not_overflow<int>(4, m, incY, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    for (index_t i = 0; i < batch_count; ++i) {
       gemv(stream, trans, m, n, alpha, A + i * m * n, lda,
            X + i * (trans ? m : n) * incX, incX,
            beta, Y + i * (trans ? n : m) * incY, incY);
     }
   }
   inline static void ger(Stream<gpu> *stream,
-                         int m, int n, double alpha,
-                         const double *X, int incX,
-                         const double *Y, int incY, double *A, int lda) {
+                         index_t m, index_t n, double alpha,
+                         const double *X, index_t incX,
+                         const double *Y, index_t incY, double *A, index_t lda) {
+    CHECK(narrow_not_overflow_index_int(m));
+    CHECK(narrow_not_overflow_index_int(n));
+    CHECK(narrow_not_overflow_index_int(lda));
+    CHECK(narrow_not_overflow_index_int(incX));
+    CHECK(narrow_not_overflow_index_int(incY));
     cublasStatus_t err = cublasDger(Stream<gpu>::GetBlasHandle(stream),
                                     m, n, &alpha, X, incX, Y, incY, A, lda);
     CHECK_EQ(err, CUBLAS_STATUS_SUCCESS) << "Cublas: Dger fail";
   }
   inline static void batched_ger(Stream<gpu> *stream,
-                         int m, int n, double alpha,
-                         const double *X, int incX,
-                         const double *Y, int incY, double *A, int lda, int batch_count) {
+                         index_t m, index_t n, double alpha,
+                         const double *X, index_t incX,
+                         const double *Y, index_t incY, double *A, index_t lda, index_t batch_count) {
+    CHECK(narrow_not_overflow_index_int(m));
+    CHECK(narrow_not_overflow_index_int(n));
+    CHECK(narrow_not_overflow_index_int(lda));
+    CHECK(narrow_not_overflow_index_int(incX));
+    CHECK(narrow_not_overflow_index_int(incY));
+    CHECK(narrow_not_overflow_index_int(batch_count));
+    CHECK(mult_not_overflow<int>(3, m, incX, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    CHECK(mult_not_overflow<int>(3, incY, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    CHECK(mult_not_overflow<int>(3, lda, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
     for (int i = 0; i < batch_count; ++i) {
       ger(stream, m, n, alpha, X + i * m * incX, incX, Y + i * n * incY, incY,
           A + i * lda * n, lda);
     }
   }
   inline static void dot(Stream<gpu> *stream,
-                         int n,
-                         const double* X, int incX,
-                         const double* Y, int incY,
+                         index_t n,
+                         const double* X, index_t incX,
+                         const double* Y, index_t incY,
                          double *ret) {
+    CHECK(narrow_not_overflow_index_int(n));
+    CHECK(narrow_not_overflow_index_int(incX));
+    CHECK(narrow_not_overflow_index_int(incY));
     cublasSetPointerMode(Stream<gpu>::GetBlasHandle(stream),
                          CUBLAS_POINTER_MODE_DEVICE);
     cublasStatus_t err = cublasDdot(Stream<gpu>::GetBlasHandle(stream),
