@@ -44,36 +44,6 @@ inline void GetBatchedView(DType **dst, DType *src, int num, int stride,
 #endif  // #ifdef __CUDACC__
 
 
-
-/*
-void check_gemm_not_overflow32(index_t m_, index_t k_, index_t n_, index_t batch_size_) {
-  static_assert(std::numeric_limits<index_t>::is_signed, "index_t should be signed");
-  CHECK(!(m_ < std::numeric_limits<int32_t>::min || m_ > std::numeric_limits<int32_t>::max))
-    << "Tensor shape overflows signed 32 bit index";
-  CHECK(!(k_ < std::numeric_limits<int32_t>::min || k_ > std::numeric_limits<int32_t>::max))
-    << "Tensor shape overflows signed 32 bit index";
-  CHECK(!(n_ < std::numeric_limits<int32_t>::min || n_ > std::numeric_limits<int32_t>::max))
-    << "Tensor shape overflows signed 32 bit index";
-  CHECK(!(batch_size_ < std::numeric_limits<int32_t>::min || batch_size_ > std::numeric_limits<int32_t>::max))
-    << "Tensor shape overflows signed 32 bit index";
-  int m_k = 0;
-  CHECK(mult_not_overflow<int>(m, k, &m_k));
-  int b_m_k = 0;
-  CHECK(mult_not_overflow<int>(batch_count, m_k, &b_m_k))
-    << "LHS Tensor shape (" << batch_count << "x" << m << "x" << k << ") is too big, will overflow gemm signed 32 bit index";
-  int k_n = 0;
-  CHECK(mult_not_overflow<int>(k, n, &k_n));
-  int b_k_n = 0;
-  CHECK(mult_not_overflow<int>(batch_count, k_n, &b_k_n))
-    << "RHS Tensor shape (" << batch_count << "x" << k << "x" << n << ") is too big, will overflow gemm signed 32 bit index";
-  int m_n = 0;
-  CHECK(mult_not_overflow<int>(m, n, &m_n));
-  int b_m_n = 0;
-  CHECK(mult_not_overflow<int>(batch_count, m_n, &b_m_n))
-    << "Result Tensor shape (" << batch_count << "x" << m << "x" << n  << ") is too big, will overflow gemm signed 32 bit index";
-}
-*/
-
 namespace expr {
 //---------------------------------------------------------------------
 // Matrix Multiplications, depends on BLAS Engine
@@ -345,7 +315,7 @@ struct BLASEngine<cpu, float> {
     std::vector<CBLAS_TRANSPOSE> p_transa(batch_count, cblas_a_trans);
     std::vector<CBLAS_TRANSPOSE> p_transb(batch_count, cblas_b_trans);
 
-    CHECK(mult_not_overflow<int>(m, k, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    CHECK(mult_not_overflow<int>(4, m, k, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
     for (index_t i = 0; i < batch_count; ++i) {
       pp_A.push_back(A + i * m_k);
       pp_B.push_back(B + i * k_n);
@@ -358,7 +328,7 @@ struct BLASEngine<cpu, float> {
                       p_ldb.data(), p_beta.data(), pp_C.data(), p_ldc.data(),
                       1, p_group_sizeb.data());
 #else
-    CHECK(mult_not_overflow<int>(m, k, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    CHECK(mult_not_overflow<int>(4, m, k, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
     for (index_t i = 0; i < batch_count; ++i) {
       gemm(stream, transa, transb, m, n, k, alpha,
            A + i * m * k, lda, B + i * k * n, ldb,
@@ -405,6 +375,9 @@ struct BLASEngine<cpu, float> {
                          const float* X, index_t incX,
                          const float* Y, index_t incY,
                          float* ret) {
+    CHECK(narrow_not_overflow_index_int(n));
+    CHECK(narrow_not_overflow_index_int(incX));
+    CHECK(narrow_not_overflow_index_int(incY));
     *ret = cblas_sdot(n, X, incX, Y, incY);
   }
 };
@@ -476,7 +449,7 @@ struct BLASEngine<cpu, double> {
                       p_ldb.data(), p_beta.data(), pp_C.data(), p_ldc.data(),
                       1, p_group_sizeb.data());
 #else
-    CHECK(mult_not_overflow<int>(m, k, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    CHECK(mult_not_overflow<int>(4, m, k, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
     for (index_t i = 0; i < batch_count; ++i) {
       gemm(stream, transa, transb, m, n, k, alpha,
            A + i * m * k, lda, B + i * k * n, ldb,
@@ -508,8 +481,8 @@ struct BLASEngine<cpu, double> {
     CHECK(narrow_not_overflow_index_int(lda));
     CHECK(narrow_not_overflow_index_int(incX));
     CHECK(narrow_not_overflow_index_int(incY));
-    CHECK(mult_not_overflow<int>(m, incX, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
-    CHECK(mult_not_overflow<int>(m, incY, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    CHECK(mult_not_overflow<int>(4, m, incX, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    CHECK(mult_not_overflow<int>(4, m, incY, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
     for (index_t i = 0; i < batch_count; ++i) {
       gemv(stream, trans, m, n, alpha, A + i * m * n, lda,
            X + i * (trans ? m : n) * incX, incX,
@@ -531,9 +504,9 @@ struct BLASEngine<cpu, double> {
                          index_t m, index_t n, double alpha,
                          const double *X, index_t incX,
                          const double *Y, index_t incY, double *A, index_t lda, index_t batch_count) {
-    CHECK(mult_not_overflow<int>(m, incX, batch_count)) << "Tensor shapes arithmetic overflow int type";
-    CHECK(mult_not_overflow<int>(incY, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
-    CHECK(mult_not_overflow<int>(lda, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    CHECK(mult_not_overflow<int>(3, m, incX, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    CHECK(mult_not_overflow<int>(3, incY, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    CHECK(mult_not_overflow<int>(3, lda, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
     for (index_t i = 0; i < batch_count; ++i) {
       ger(stream, m, n, alpha, X + i * m * incX, incX, Y + i * n * incY, incY,
           A + i * lda * n, lda);
@@ -544,6 +517,9 @@ struct BLASEngine<cpu, double> {
                          const double* X, index_t incX,
                          const double* Y, index_t incY,
                          double* ret) {
+    CHECK(narrow_not_overflow_index_int(n));
+    CHECK(narrow_not_overflow_index_int(incX));
+    CHECK(narrow_not_overflow_index_int(incY));
     *ret = cblas_ddot(n, X, incX, Y, incY);
   }
 };

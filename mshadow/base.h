@@ -1126,12 +1126,12 @@ inline bool mult_not_overflow_binary(T a, T b, T *result = nullptr) {
  * \return true if multiplication won't overflow, false otherwise
  */
 template<typename T>
-inline bool mult_not_overflow(int count, ...) {
+inline bool mult_not_overflow(size_t count, ...) {
   using namespace std;
   T accum = 1;
   va_list args;
   va_start(args, count);
-  for (int i=0; i < count; ++i) {
+  for (size_t i=0; i < count; ++i) {
     T x = va_arg(args, T);
     if(! mult_not_overflow_binary<T>(accum, x, &accum))
       return false;
