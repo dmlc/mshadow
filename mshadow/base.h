@@ -1158,7 +1158,7 @@ inline bool narrow_not_overflow(From x) {
   } else {
     if (x < 0)
       return false;
-    if (x > static_cast<uintmax_t>(numeric_limits<To>::max()))
+    if (static_cast<uintmax_t>(x) > static_cast<uintmax_t>(numeric_limits<To>::max()))
       return false;
   }
   return true;
