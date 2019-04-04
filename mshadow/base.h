@@ -1147,11 +1147,21 @@ inline bool mult_not_overflow(size_t count, ...) {
  */
 template<typename From, typename To>
 inline bool narrow_not_overflow(From x) {
-  static_assert(sizeof(From) > sizeof(To), "valid only for narrowing conversions");
-  if (static_cast<To>(x) >= static_cast<To>(std::numeric_limits<From>::min()) &&
-    static_cast<To>(x) <= static_cast<To>(std::numeric_limits<From>::max()))
-    return true;
-  return false;
+  using std::numeric_limits;
+  static_assert(numeric_limits<From>::is_integer, "only works for integers");
+  static_assert(numeric_limits<To>::is_integer, "only works for integers");
+  if (numeric_limits<To>::is_signed) {
+    if (static_cast<intmax_t>(x) < static_cast<intmax_t>(numeric_limits<To>::min()))
+      return false;
+    if (static_cast<intmax_t>(x) > static_cast<intmax_t>(numeric_limits<To>::max()))
+      return false;
+  } else {
+    if (x < 0)
+      return false;
+    if (x > static_cast<uintmax_t>(numeric_limits<To>::max()))
+      return false;
+  }
+  return true;
 }
 
 auto const narrow_not_overflow_index_int = narrow_not_overflow<index_t, int>;
