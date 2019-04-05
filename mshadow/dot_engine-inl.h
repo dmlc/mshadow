@@ -475,6 +475,9 @@ struct BLASEngine<cpu, double> {
     CHECK(mult_not_overflow<int>(3, m, k, batch_count)) << "Tensor shapes arithmetic overflow int type";
     CHECK(mult_not_overflow<int>(3, k, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
     CHECK(mult_not_overflow<int>(3, m, n, batch_count)) << "Tensor shapes arithmetic overflow int type";
+    const int m_k = m * k;
+    const int k_n = k * n;
+    const int m_n = m * n;
     for (index_t i = 0; i < batch_count; i++) {
       pp_A.push_back(A + i * m_k);
       pp_B.push_back(B + i * k_n);
