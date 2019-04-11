@@ -1072,9 +1072,6 @@ inline void BatchGEMM(Tensor<Device, 3, DType> dst,
 #define MSHADOW_SCALAR_ int32_t
 #include "./expr_scalar-inl.h"
 #undef MSHADOW_SCALAR_
-#define MSHADOW_SCALAR_ uint32_t
-#include "./expr_scalar-inl.h"
-#undef MSHADOW_SCALAR_
 #define MSHADOW_SCALAR_ int64_t
 #include "./expr_scalar-inl.h"
 #undef MSHADOW_SCALAR_
