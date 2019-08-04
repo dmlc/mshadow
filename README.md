@@ -1,6 +1,6 @@
 mshadow: Matrix Shadow
 ======
-This code base has been donated to the Apache MXNet project per #373, and repo is deprecated. Future development should continue in Apache MXNet.
+This code base has been donated to the Apache MXNet project per [#373](https://github.com/dmlc/mshadow/issues/373), and repo is deprecated. Future development should continue in Apache MXNet.
 
 [![Build Status](https://travis-ci.org/dmlc/mshadow.svg?branch=master)](https://travis-ci.org/dmlc/mshadow)
 
